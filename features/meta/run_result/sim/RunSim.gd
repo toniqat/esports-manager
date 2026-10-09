@@ -27,11 +27,11 @@ extends Node
 #
 # Usage (args after `--`, all optional):
 #   godot --headless --path <project> res://features/meta/run_result/sim/RunSim.tscn -- \
-#       --runs=200 --edge=1.6 --seed=1 --level=1 --out=C:/tmp/t2_runs.csv
+#       --runs=200 --edge=1.6 --seed=1 --level=0 --out=C:/tmp/t2_runs.csv
 #   --runs   number of runs (default 200)
 #   --edge   player win-odds multiplier (default 1.0)
 #   --seed   global RNG seed for match coins / setups (default 1; roster deal still uses run_seed)
-#   --level  pilot level of my five (default 1)
+#   --level  pilot level of my five (default 0; rank = stars — test run, `pilot_levels`)
 #   --team   fixed team id (default: random 0..7 per run)
 #   --scenario  fixed scenario id (default: random per run)
 #   --no-coach  leave the training board empty (default course) instead of the coach layout
@@ -41,7 +41,7 @@ const SEASON_SCENE: String = "res://scenes/Season.tscn"
 const MAX_WEEKS: int = 80   # safety stop — a full campaign is ~50 weeks
 
 var _opt: Dictionary = {
-	"runs": 200, "edge": 1.0, "seed": 1, "level": 1, "team": -1, "scenario": -1,
+	"runs": 200, "edge": 1.0, "seed": 1, "level": 0, "team": -1, "scenario": -1,
 	"coach": true, "out": "",
 }
 var _rows: Array = []
@@ -207,6 +207,7 @@ func _one_run(gm: Node, starters: Dictionary) -> Dictionary:
 		"weeks": weeks, "score": int(res["score"]),
 		"outgame": int((res["currency"] as Dictionary)["outgame"]),
 		"levelup": int((res["currency"] as Dictionary)["levelup"]),
+		"rank_stone": int((res["currency"] as Dictionary).get("rank_stone", 0)),
 		"manager_exp": int(res["manager_exp"]), "pass_exp": int(res["pass_exp"]),
 		"pilot_exp_avg": float(pexp_sum) / maxf(1.0, float(pexp.size())),
 	}
@@ -292,7 +293,7 @@ func _report() -> void:
 		var c: int = int(phase_hist.get(k, 0))
 		print("  %-6s %4d  %5.1f%%" % [k, c, 100.0 * c / n])
 	for f in ["phases_cleared", "phase_reached", "wins", "losses", "matches", "titles", "weeks",
-			"score", "outgame", "levelup", "manager_exp", "pass_exp", "pilot_exp_avg"]:
+			"score", "outgame", "levelup", "rank_stone", "manager_exp", "pass_exp", "pilot_exp_avg"]:
 		var vals: Array = []
 		for r in _rows:
 			vals.append(float(r[f]))
@@ -318,7 +319,8 @@ func _report() -> void:
 			avg_rows.append(r)
 	var mgr25: int = _manager_exp_at(ConstTable.int_of("PRESTIGE_LEVEL"))
 	var pass_need: int = (ConstTable.int_of("PASS_MAX_LEVEL") - 1) * ConstTable.int_of("PASS_EXP_PER_LEVEL")
-	var pmax: int = RunRules.max_level()
+	# Pilot target = the rank-1 ladder (Lv0 → level cap of rank 1; EXP restarts every rank).
+	var pmax: int = RunRules.level_cap(1)
 	print("targets (current consts) — avg run n=%d / all n=%d:" % [avg_rows.size(), n])
 	for basis in [["avg run", avg_rows], ["all", _rows]]:
 		var rows: Array = basis[1]
@@ -384,7 +386,7 @@ func _write_csv(path: String) -> void:
 		return
 	var cols: Array = ["run", "team", "scenario", "outcome", "phase_reached", "phases_cleared",
 			"wins", "losses", "matches", "titles", "weeks", "score", "outgame", "levelup",
-			"manager_exp", "pass_exp", "pilot_exp_avg"]
+			"rank_stone", "manager_exp", "pass_exp", "pilot_exp_avg"]
 	f.store_line(",".join(cols))
 	for r in _rows:
 		var vals: PackedStringArray = []

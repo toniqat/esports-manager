@@ -143,7 +143,6 @@ func _bind_slots() -> void:
 			break
 		slot.set_role(int(TeamDraft.SLOT_ROLES[i]))
 		slot.art_pressed.connect(_on_slot_pressed.bind(i))
-		slot.level_step.connect(func(delta: int) -> void: _on_level_step(i, delta))
 		_slots.append(slot)
 
 
@@ -265,18 +264,6 @@ func _on_slot_pressed(slot: int) -> void:
 		_detail.open(p)
 
 
-func _on_level_step(slot: int, delta: int) -> void:
-	if _busy:
-		return
-	var pid: int = int(_picks[slot])
-	if pid == -1:
-		return
-	if _draft.set_level(pid, _draft.level_of(pid) + delta):
-		_start_error = ""
-		_refresh_thumb_tag(pid)
-		_refresh_slots()
-
-
 func _on_next_pressed() -> void:
 	if _busy or _validation_error() != "":
 		return
@@ -359,8 +346,7 @@ func _refresh_slots() -> void:
 			slot.show_empty()
 		else:
 			var role: int = int(TeamDraft.SLOT_ROLES[i])
-			slot.show_pilot(p, ROLE_COLORS[role], _draft.level_of(pid),
-					_draft.max_level_of(pid), _draft.salary_of(pid))
+			slot.show_pilot(p, ROLE_COLORS[role], _draft.salary_of(pid))
 	_refresh_rules()
 
 
@@ -447,12 +433,12 @@ func _fill_preview() -> void:
 		return
 	var pm: Node = get_node("/root/ProfileManager")
 	var pool: Array = data["players"]
-	RunRules.apply_breakthroughs(pool, pm.owned_breakthroughs())
+	RunRules.apply_progress(pool, pm.owned_ranks(), pm.owned_levels())
 	var scens: Array = RunRules.scenarios()
 	var d := TeamDraft.new()
 	d.name = "PreviewDraft"
 	d.visible = false
-	d.setup(pool, pm.owned_max_levels(),
+	d.setup(pool, pm.owned_levels(),
 			int((scens[0] as Dictionary).get("id", 0)) if not scens.is_empty() else 0)
 	add_child(d)
 	_draft = d

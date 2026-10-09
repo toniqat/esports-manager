@@ -21,7 +21,7 @@ extends Node
 
 const PROFILE_PATH := "user://profile.save"
 const PROFILE_BACKUP_PATH := "user://profile.save.bak"
-const PROFILE_VERSION := 2
+const PROFILE_VERSION := 3  # 3 = collection entries {rank, breakthrough, level, exp} (B)
 
 # 하위 키 하나까지 기본값으로 채우는 딕셔너리들.
 const _NESTED_FILL_KEYS: Array = ["manager", "currency", "traits", "pass"]
@@ -52,9 +52,16 @@ func _ready() -> void:
 		save_profile()
 
 
-# ── 컬렉션 (M1) ──────────────────────────────────────────────────────────────
-## 컬렉션이 비어 있으면 `players.starter = 1` 인 선수들을 Lv1 로 지급한다.
-## 무언가 지급했으면 true(호출자가 저장한다).
+# ── Collection: stars · rank · breakthrough · level (B) ─────────────────────
+# Entry `profile.collection["<pid>"]` = `{owned, rank, breakthrough, level, exp, dupes}`:
+#   rank          1..RANK_MAX, starts at the stars (`players.rarity` 1..3)
+#   breakthrough  0..(RANK_MAX − stars) — only raises the max rank (= stars + breakthrough)
+#   level         0..10 × rank (`RunRules.level_cap`), reset to 0 on rank-up
+#   exp           EXP inside the current rank (`RunRules.exp_required` curve), reset on rank-up
+# Mutators do not save — the caller saves once per user action.
+
+## Grants the `players.starter = 1` pilots when the collection is empty. true when something
+## was granted (the caller saves).
 func ensure_starter_collection() -> bool:
 	var col: Dictionary = profile["collection"]
 	if not col.is_empty():
@@ -67,123 +74,41 @@ func ensure_starter_collection() -> bool:
 		return false
 	db.query("SELECT id FROM players WHERE starter = 1 ORDER BY id")
 	for row in db.query_result:
-		col[str(int(row["id"]))] = _new_collection_entry()
+		var pid: int = int(row["id"])
+		col[str(pid)] = _new_collection_entry(pid)
 	db.close_db()
 	return not col.is_empty()
 
 
-func _new_collection_entry() -> Dictionary:
-	return {"owned": true, "max_level": 1, "breakthrough": 0, "dupes": 0, "exp": 0}
+func _new_collection_entry(pilot_id: int) -> Dictionary:
+	return {"owned": true, "rank": maxi(1, stars_of(pilot_id)), "breakthrough": 0,
+			"level": 0, "exp": 0, "dupes": 0}
 
 
-## 보유한 선수 id 목록(int, 오름차순).
+func _entry(pilot_id: int) -> Dictionary:
+	var e: Variant = (profile["collection"] as Dictionary).get(str(pilot_id), null)
+	if typeof(e) != TYPE_DICTIONARY or not bool((e as Dictionary).get("owned", false)):
+		return {}
+	return e
+
+
+## Owned pilot ids (int, ascending).
 func owned_pilot_ids() -> Array:
 	var out: Array = []
 	for k in (profile["collection"] as Dictionary).keys():
-		var e: Dictionary = profile["collection"][k]
-		if bool(e.get("owned", false)):
+		var e: Variant = profile["collection"][k]
+		if typeof(e) == TYPE_DICTIONARY and bool((e as Dictionary).get("owned", false)):
 			out.append(int(k))
 	out.sort()
 	return out
 
 
-## 달성 최대 레벨. 보유하지 않았으면 0.
-func max_level_of(pilot_id: int) -> int:
-	var e: Variant = (profile["collection"] as Dictionary).get(str(pilot_id), null)
-	if typeof(e) != TYPE_DICTIONARY or not bool((e as Dictionary).get("owned", false)):
-		return 0
-	return maxi(1, int((e as Dictionary).get("max_level", 1)))
+func owns_pilot(pilot_id: int) -> bool:
+	return not _entry(pilot_id).is_empty()
 
 
-## `RunRules.validate_lineup` 의 `owned_max_levels` 모양 — {"<pilot_id>": max_level}.
-func owned_max_levels() -> Dictionary:
-	var out: Dictionary = {}
-	for pid in owned_pilot_ids():
-		out[str(pid)] = max_level_of(int(pid))
-	return out
-
-
-## M10 — 돌파 단계. 보유하지 않았으면 0.
-func breakthrough_of(pilot_id: int) -> int:
-	if max_level_of(pilot_id) <= 0:
-		return 0
-	return int((profile["collection"][str(pilot_id)] as Dictionary).get("breakthrough", 0))
-
-
-## M10 — 보유 선수의 돌파 `{"<pilot_id>": stage}`(0 단계는 빠진다). 런 시작 · 편성 풀이 쓴다.
-func owned_breakthroughs() -> Dictionary:
-	var out: Dictionary = {}
-	for pid in owned_pilot_ids():
-		var st: int = breakthrough_of(int(pid))
-		if st > 0:
-			out[str(pid)] = st
-	return out
-
-
-## M10 — 선수 EXP(누적).
-func pilot_exp_of(pilot_id: int) -> int:
-	var e: Variant = (profile["collection"] as Dictionary).get(str(pilot_id), null)
-	return int((e as Dictionary).get("exp", 0)) if typeof(e) == TYPE_DICTIONARY else 0
-
-
-## M10 — 선수 획득(가챠 · 확정 구매). 미보유 → 새로 보유(Lv1). 보유 중 → 중복:
-## 돌파 단계 +1(`BREAKTHROUGH_MAX` 까지), 그 뒤로는 선수 파편
-## (`SHARD_PER_EXTRA_DUPE` × 등급). → `{result: "new"|"breakthrough"|"shard", stage, shards}`.
-func grant_pilot(pilot_id: int) -> Dictionary:
-	var col: Dictionary = profile["collection"]
-	var key: String = str(pilot_id)
-	if max_level_of(pilot_id) <= 0:
-		var fresh: Dictionary = _new_collection_entry()
-		var old: Variant = col.get(key, null)
-		if typeof(old) == TYPE_DICTIONARY:
-			fresh["exp"] = int((old as Dictionary).get("exp", 0))
-		col[key] = fresh
-		return {"result": "new", "stage": 0, "shards": 0}
-	var e: Dictionary = col[key]
-	e["dupes"] = int(e.get("dupes", 0)) + 1
-	if int(e.get("breakthrough", 0)) < RunRules.breakthrough_max():
-		e["breakthrough"] = int(e.get("breakthrough", 0)) + 1
-		return {"result": "breakthrough", "stage": int(e["breakthrough"]), "shards": 0}
-	var shards: int = maxi(1, ConstTable.int_of("SHARD_PER_EXTRA_DUPE") * maxi(1, pilot_rarity(pilot_id)))
-	add_currency("pilot_shard", shards)
-	return {"result": "shard", "stage": int(e["breakthrough"]), "shards": shards}
-
-
-## M10 — 선수 EXP 를 더하고 최대 레벨을 EXP 표(`pilot_levels.exp_required`)까지
-## 자동으로 올린다(내리지는 않는다). → `{from, to}`.
-func add_pilot_exp(pilot_id: int, amount: int) -> Dictionary:
-	var from_lv: int = max_level_of(pilot_id)
-	if from_lv <= 0:
-		return {"from": 0, "to": 0}
-	var e: Dictionary = profile["collection"][str(pilot_id)]
-	e["exp"] = int(e.get("exp", 0)) + maxi(0, amount)
-	var to_lv: int = maxi(from_lv, mini(RunRules.max_level(), RunRules.level_for_exp(int(e["exp"]))))
-	e["max_level"] = to_lv
-	return {"from": from_lv, "to": to_lv}
-
-
-## M10: 다음 최대 레벨에 드는 레벨업 재화. 올릴 수 없으면 -1.
-func level_up_cost(pilot_id: int) -> int:
-	var lv: int = max_level_of(pilot_id)
-	if lv <= 0 or lv >= RunRules.max_level():
-		return -1
-	return RunRules.levelup_cost(lv + 1)
-
-
-## M10: 레벨업 재화로 최대 레벨을 `PILOT_MAX_LEVEL_GAIN` 만큼 올린다(`RunRules.max_level()` 까지). 성공이면 "".
-func level_up_pilot(pilot_id: int) -> String:
-	var cost: int = level_up_cost(pilot_id)
-	if cost < 0:
-		return Loc.t(L.UI_LEVEL_UP_CANNOT_RAISE)
-	if not spend_currency("levelup", cost):
-		return Loc.t(L.UI_LEVEL_UP_NOT_ENOUGH, {"n": cost})
-	var e: Dictionary = profile["collection"][str(pilot_id)]
-	e["max_level"] = mini(RunRules.max_level(), int(e.get("max_level", 1)) + ConstTable.int_of("PILOT_MAX_LEVEL_GAIN"))
-	return ""
-
-
-## `players.rarity` (캐시). 모르는 선수는 0.
-func pilot_rarity(pilot_id: int) -> int:
+## Stars ★1..★3 (`players.rarity`, cached). 0 = unknown / mob.
+func stars_of(pilot_id: int) -> int:
 	if _rarity_cache.is_empty():
 		var db := SQLite.new()
 		db.path = GameDb.path()
@@ -196,9 +121,211 @@ func pilot_rarity(pilot_id: int) -> int:
 	return int(_rarity_cache.get(pilot_id, 0))
 
 
+## @deprecated — use `stars_of`.
+func pilot_rarity(pilot_id: int) -> int:
+	return stars_of(pilot_id)
+
+
+## Current rank (0 = not owned).
+func rank_of(pilot_id: int) -> int:
+	var e: Dictionary = _entry(pilot_id)
+	return 0 if e.is_empty() else int(e.get("rank", 1))
+
+
+## Breakthrough count (0 = not owned / none).
+func breakthrough_of(pilot_id: int) -> int:
+	var e: Dictionary = _entry(pilot_id)
+	return 0 if e.is_empty() else int(e.get("breakthrough", 0))
+
+
+## Breakthrough cap = RANK_MAX − stars (★1: 4, ★2: 3, ★3: 2).
+func breakthrough_cap_of(pilot_id: int) -> int:
+	return maxi(0, RunRules.rank_max() - maxi(1, stars_of(pilot_id)))
+
+
+## Highest rank this pilot can reach now = stars + breakthrough (0 = not owned).
+func max_rank_of(pilot_id: int) -> int:
+	if not owns_pilot(pilot_id):
+		return 0
+	return mini(RunRules.rank_max(), maxi(1, stars_of(pilot_id)) + breakthrough_of(pilot_id))
+
+
+## Current level (0 when not owned — use `owns_pilot` for ownership, Lv0 is a real level).
+func level_of(pilot_id: int) -> int:
+	var e: Dictionary = _entry(pilot_id)
+	return 0 if e.is_empty() else int(e.get("level", 0))
+
+
+## Level cap of the current rank (10 × rank; 0 = not owned).
+func level_cap_of(pilot_id: int) -> int:
+	return RunRules.level_cap(rank_of(pilot_id))
+
+
+## @deprecated — old "max level" (now the current level). Not an ownership test.
+func max_level_of(pilot_id: int) -> int:
+	return level_of(pilot_id)
+
+
+## `{"<pilot_id>": rank}` of every owned pilot — run setup pool / run start.
+func owned_ranks() -> Dictionary:
+	var out: Dictionary = {}
+	for pid in owned_pilot_ids():
+		out[str(pid)] = rank_of(int(pid))
+	return out
+
+
+## `{"<pilot_id>": level}` of every owned pilot — run setup pool / run start / lineup owner set.
+func owned_levels() -> Dictionary:
+	var out: Dictionary = {}
+	for pid in owned_pilot_ids():
+		out[str(pid)] = level_of(int(pid))
+	return out
+
+
+## EXP inside the current rank (resets on rank-up).
+func pilot_exp_of(pilot_id: int) -> int:
+	var e: Dictionary = _entry(pilot_id)
+	return 0 if e.is_empty() else int(e.get("exp", 0))
+
+
+## `{into, need}` — EXP into the current level / EXP the next level needs. `need = 0` at the
+## level cap (or not owned).
+func pilot_exp_progress(pilot_id: int) -> Dictionary:
+	var lv: int = level_of(pilot_id)
+	if not owns_pilot(pilot_id) or lv >= level_cap_of(pilot_id):
+		return {"into": 0, "need": 0}
+	var base: int = RunRules.exp_required(lv)
+	return {"into": maxi(0, pilot_exp_of(pilot_id) - base),
+			"need": maxi(1, RunRules.exp_required(lv + 1) - base)}
+
+
+## Pilot acquired (gacha · shard purchase). Not owned → owned at rank = stars, Lv0. Owned →
+## dupe: breakthrough +1 up to `breakthrough_cap_of`; after that pilot shards
+## (`SHARD_PER_EXTRA_DUPE` × stars) **and** rank stones (`RANK_STONE_PER_EXTRA_DUPE` × stars).
+## → `{result: "new"|"breakthrough"|"shard", stage (= breakthrough), shards, rank_stone}`.
+func grant_pilot(pilot_id: int) -> Dictionary:
+	var col: Dictionary = profile["collection"]
+	var key: String = str(pilot_id)
+	if not owns_pilot(pilot_id):
+		col[key] = _new_collection_entry(pilot_id)
+		return {"result": "new", "stage": 0, "shards": 0, "rank_stone": 0}
+	var e: Dictionary = col[key]
+	e["dupes"] = int(e.get("dupes", 0)) + 1
+	if int(e.get("breakthrough", 0)) < breakthrough_cap_of(pilot_id):
+		e["breakthrough"] = int(e.get("breakthrough", 0)) + 1
+		return {"result": "breakthrough", "stage": int(e["breakthrough"]), "shards": 0, "rank_stone": 0}
+	var st: int = maxi(1, stars_of(pilot_id))
+	var shards: int = maxi(0, ConstTable.int_of("SHARD_PER_EXTRA_DUPE") * st)
+	var stones: int = maxi(0, ConstTable.int_of("RANK_STONE_PER_EXTRA_DUPE") * st)
+	add_currency("pilot_shard", shards)
+	add_currency("rank_stone", stones)
+	return {"result": "shard", "stage": int(e["breakthrough"]), "shards": shards, "rank_stone": stones}
+
+
+## Adds pilot EXP (current rank) and raises the level along the EXP curve up to the level
+## cap (never lowers it). EXP past the cap's threshold is dropped. → `{from, to}` levels
+## (`from = to = -1` when not owned).
+func add_pilot_exp(pilot_id: int, amount: int) -> Dictionary:
+	if not owns_pilot(pilot_id):
+		return {"from": -1, "to": -1}
+	var e: Dictionary = profile["collection"][str(pilot_id)]
+	var cap: int = level_cap_of(pilot_id)
+	var from_lv: int = int(e.get("level", 0))
+	e["exp"] = mini(RunRules.exp_required(cap), int(e.get("exp", 0)) + maxi(0, amount))
+	var to_lv: int = maxi(from_lv, mini(cap, RunRules.level_for_exp(int(e["exp"]))))
+	e["level"] = to_lv
+	return {"from": from_lv, "to": to_lv}
+
+
+## Levelup currency for the next level. -1 when not owned or at the level cap.
+func level_up_cost(pilot_id: int) -> int:
+	if not owns_pilot(pilot_id):
+		return -1
+	var lv: int = level_of(pilot_id)
+	if lv >= level_cap_of(pilot_id):
+		return -1
+	return RunRules.levelup_cost(lv + 1)
+
+
+## Spends levelup currency: level + `PILOT_MAX_LEVEL_GAIN` (up to the cap); EXP is raised to
+## the new level's threshold so the bar stays consistent. "" on success.
+func level_up_pilot(pilot_id: int) -> String:
+	if not owns_pilot(pilot_id):
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_NOT_OWNED)
+	var cost: int = level_up_cost(pilot_id)
+	if cost < 0:
+		return Loc.t(L.BREAKTHROUGH_LEVEL_UP_AT_CAP, {"level": level_cap_of(pilot_id)})
+	if not spend_currency("levelup", cost):
+		return Loc.t(L.UI_LEVEL_UP_NOT_ENOUGH, {"n": cost})
+	var e: Dictionary = profile["collection"][str(pilot_id)]
+	var lv: int = mini(level_cap_of(pilot_id),
+			int(e.get("level", 0)) + maxi(1, ConstTable.int_of("PILOT_MAX_LEVEL_GAIN")))
+	e["level"] = lv
+	e["exp"] = maxi(int(e.get("exp", 0)), RunRules.exp_required(lv))
+	return ""
+
+
+## Rank stones for the next rank. -1 when not owned or already at RANK_MAX.
+func rank_up_cost(pilot_id: int) -> int:
+	var rk: int = rank_of(pilot_id)
+	if rk <= 0 or rk >= RunRules.rank_max():
+		return -1
+	return RunRules.rank_up_cost(rk + 1)
+
+
+## "" when `rank_up_pilot` would succeed now, else the translated reason.
+func rank_up_block_reason(pilot_id: int) -> String:
+	if not owns_pilot(pilot_id):
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_NOT_OWNED)
+	var rk: int = rank_of(pilot_id)
+	if rk >= RunRules.rank_max():
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_RANK_MAX)
+	if rk >= max_rank_of(pilot_id):
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_NEED_BREAKTHROUGH, {"max": max_rank_of(pilot_id)})
+	if level_of(pilot_id) < level_cap_of(pilot_id):
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_LEVEL_BELOW_CAP, {"level": level_cap_of(pilot_id)})
+	var cost: int = rank_up_cost(pilot_id)
+	if currency_of("rank_stone") < cost:
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_NOT_ENOUGH, {"n": cost})
+	return ""
+
+
+## Spends rank stones: rank + 1, level 0, exp 0. "" on success (the caller saves).
+func rank_up_pilot(pilot_id: int) -> String:
+	var why: String = rank_up_block_reason(pilot_id)
+	if why != "":
+		return why
+	if not spend_currency("rank_stone", rank_up_cost(pilot_id)):
+		return Loc.t(L.BREAKTHROUGH_RANK_UP_NOT_ENOUGH, {"n": rank_up_cost(pilot_id)})
+	var e: Dictionary = profile["collection"][str(pilot_id)]
+	e["rank"] = int(e.get("rank", 1)) + 1
+	e["level"] = 0
+	e["exp"] = 0
+	return ""
+
+
+## Normalises one collection entry in place (ints, missing keys) and migrates the old
+## `{max_level, breakthrough 0..5}` shape: rank = stars, breakthrough clamped to the cap,
+## level = old max level clamped to the rank's cap, exp clamped into that level's band.
+func _normalize_entry(pilot_id: int, ed: Dictionary) -> void:
+	var stars: int = maxi(1, stars_of(pilot_id))
+	var cap_bt: int = maxi(0, RunRules.rank_max() - stars)
+	var old_shape: bool = not ed.has("rank")
+	ed["owned"] = bool(ed.get("owned", false))
+	ed["dupes"] = int(ed.get("dupes", 0))
+	ed["breakthrough"] = clampi(int(ed.get("breakthrough", 0)), 0, cap_bt)
+	ed["rank"] = clampi(int(ed.get("rank", stars)), 1, mini(RunRules.rank_max(), stars + int(ed["breakthrough"])))
+	var cap_lv: int = RunRules.level_cap(int(ed["rank"]))
+	var lv: int = int(ed.get("max_level", 0)) if old_shape else int(ed.get("level", 0))
+	lv = clampi(lv, 0, cap_lv)
+	var xp: int = clampi(int(ed.get("exp", 0)), RunRules.exp_required(lv), RunRules.exp_required(cap_lv))
+	ed["level"] = clampi(maxi(lv, RunRules.level_for_exp(xp)), 0, cap_lv)
+	ed["exp"] = xp
+	ed.erase("max_level")
+
 
 # ── 재화 (M10) ───────────────────────────────────────────────────────────────
-## 재화 키는 `default_profile().currency` 의 여덟 개.
+## 재화 키는 `default_profile().currency` 의 아홉 개 (`rank_stone` = 승급석).
 func currency_of(key: String) -> int:
 	return int((profile["currency"] as Dictionary).get(key, 0))
 
@@ -278,12 +405,12 @@ func apply_run_result(result: Dictionary) -> String:
 	# M9 — manager exp → level-ups (removal points follow the level).
 	var delta: Dictionary = {}
 	delta["manager"] = ManagerProgress.add_exp(profile, int(result.get("manager_exp", 0)))
-	# M10 — pilot exp (my five) → automatic max-level ups.
+	# M10 / B — pilot exp (my five) → automatic level-ups (up to the rank's level cap).
 	var pilot_delta: Dictionary = {}
 	var pexp: Dictionary = result.get("pilot_exp", {})
 	for pk in pexp.keys():
 		var d: Dictionary = add_pilot_exp(int(pk), int(pexp[pk]))
-		if int(d["to"]) > int(d["from"]):
+		if int(d["from"]) >= 0 and int(d["to"]) > int(d["from"]):
 			pilot_delta[str(int(pk))] = d
 	delta["pilots"] = pilot_delta
 	# M10 — weekly pass exp.
@@ -360,7 +487,7 @@ func default_profile() -> Dictionary:
 		"version": PROFILE_VERSION,
 		# 고른 언어의 로케일 코드(`L.LOCALES` 중 하나). "" = 고른 적 없음 → 기기 언어(D11).
 		"locale": "",
-		# pilot_id(String) → {owned, max_level, breakthrough, dupes}
+		# pilot_id(String) → {owned, rank, breakthrough, level, exp, dupes} — see the collection section
 		"collection": {},
 		"manager": {
 			"type": 0,
@@ -386,6 +513,8 @@ func default_profile() -> Dictionary:
 			"outgame": 0, "levelup": 0,
 			"gacha_ticket_pilot": 0, "gacha_ticket_trait": 0,
 			"trait_mat": 0, "cosmetic": 0, "premium": 0, "pilot_shard": 0,
+			# B — 승급석: pilot rank-up currency (`rank_up_pilot`).
+			"rank_stone": 0,
 		},
 		# M10 — weekly pass `{week_id, exp, claimed: [level], overflow}` — `PassSystem`.
 		"pass": {"week_id": "", "exp": 0, "claimed": [], "overflow": 0},
@@ -538,17 +667,14 @@ func _merge_over_defaults(loaded: Dictionary) -> Dictionary:
 		presets.append(ManagerProgress.new_preset())
 	out["presets"] = presets
 	out["active_preset"] = clampi(int(out["active_preset"]), 0, presets.size() - 1)
-	# M10 — collection entries: ints, `exp` added.
+	# M10 / B — collection entries: ints; v2 `{max_level, breakthrough}` → `{rank, level}`.
 	var col: Dictionary = out["collection"]
 	for pk in col.keys():
 		var e: Variant = col[pk]
 		if typeof(e) != TYPE_DICTIONARY:
 			col.erase(pk)
 			continue
-		var ed: Dictionary = e
-		for ik in ["max_level", "breakthrough", "dupes", "exp"]:
-			ed[ik] = int(ed.get(ik, 1 if ik == "max_level" else 0))
-		ed["owned"] = bool(ed.get("owned", false))
+		_normalize_entry(int(pk), e)
 	out["version"] = PROFILE_VERSION
 	return out
 

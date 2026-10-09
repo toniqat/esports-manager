@@ -34,8 +34,9 @@ tx_NC5BF9FXM3,run_setup.roster.pool_mismatch,active,런 시작 실패 사유: �
 tx_42EJTTYFX4,run_setup.lineup.gauge_title,active,편성 게이지 제목. scenario = 시나리오 이름,,,{scenario} · 샐러리캡,{scenario} · Salary Cap,draft,135fcaea
 tx_8HD5KTG0WT,run_setup.lineup.gauge_title_trait,active,편성 게이지 제목: 특성이 캡을 바꿀 때. adj = +20,,,{scenario} · 샐러리캡 (특성 {adj}),{scenario} · Salary Cap (traits {adj}),draft,8f7cbdef
 tx_4HM99WN4PS,run_setup.lineup.start_failed,active,편성 게이지 메시지,,,시작 실패: {error},Start failed: {error},draft,863b3978
-tx_EN0H79ACA8,run_setup.lineup.over_cap,active,편성 게이지 메시지,,,{tx_JZ4R0P1ESK}. 레벨을 내리거나 다른 선수를 고르세요,{tx_JZ4R0P1ESK}. Lower levels or pick other players,draft,4ff86392
+tx_EN0H79ACA8,run_setup.lineup.over_cap,active,편성 게이지 메시지,,,{tx_JZ4R0P1ESK}. 다른 선수를 고르세요,{tx_JZ4R0P1ESK}. Pick other players,draft,716b5524
 tx_PYSFH9VR8V,run_setup.lineup.progress,active,편성 게이지 메시지,,,포지션마다 1명씩: {n} / {max}명,One per position: {n} / {max},draft,3ca7c5b9
 tx_Z7WZT1J6Q7,run_setup.lineup.done_left,active,편성 게이지 메시지,,,{tx_RQV5HNW8TV} · 남은 샐러리 {n},{tx_RQV5HNW8TV} · {n} salary left,draft,d03f4978
 tx_RQV5HNW8TV,run_setup.lineup.done,active,편성 게이지 메시지 (캡 없음),,,편성 완료,Lineup complete,draft,b94c957c
 tx_N58C8KX6P1,run_setup.lineup.start,active,편성 하단 버튼,,,게임 시작,Start Game,draft,62d82d76
+tx_B0NGFXJ0F2,run_setup.slot.rank_level,active,편성 칸 일러스트 아래 — 보유 선수의 지금 랭크와 레벨 (런 준비에서 고를 수 없다),,,랭크 {rank} · Lv {level},Rank {rank} · Lv {level},draft,4db9996e

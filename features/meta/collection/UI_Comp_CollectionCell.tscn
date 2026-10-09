@@ -5,10 +5,10 @@
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="3_badge"]
 
 [node name="CollectionCell" type="Button"]
-editor_description = "One cell of the 컬렉션 grid (CollectionTab %Grid), 240x330. Frame = variation by owned state (code, CollectionCell.FRAME_*). Owned: name + Lv + breakthrough pips. Unowned: dimmed face (ArtMask modulate), 미보유 pill, hint. Face, role badge, rarity stars / colour / width and the pip count are data → code. Mouse = Pass (the grid is a DragScroll)."
-custom_minimum_size = Vector2(240, 330)
+editor_description = "One cell of the 컬렉션 grid (CollectionTab %Grid), 240x240 — owned pilots only. Square face (role badge top-left), level ribbon bottom-left and rank stars bottom-right inside the face. Face, role, level and the star count / state are data → code. Mouse = Pass (the grid is a DragScroll)."
+custom_minimum_size = Vector2(240, 240)
 offset_right = 240.0
-offset_bottom = 330.0
+offset_bottom = 240.0
 focus_mode = 0
 mouse_filter = 1
 theme = ExtResource("2_theme")
@@ -16,9 +16,7 @@ theme_type_variation = &"CollectionCellFrame"
 script = ExtResource("1_cell")
 
 [node name="ArtMask" type="Panel" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd refresh()
-Rounded face crop: the white mask clips the TextureRect child (clip_children). Inset 8."
+editor_description = "Rounded face crop: the white mask clips its children (clip_children) — the face and the two corner tabs, so the tabs follow the rounded corners. Inset 8."
 clip_children = 1
 layout_mode = 0
 offset_left = 8.0
@@ -41,6 +39,82 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 6
 
+[node name="LevelRibbon" type="PanelContainer" parent="ArtMask"]
+editor_description = "Level ribbon, flush with the face's bottom-left corner; grows right with its text."
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -38.0
+offset_right = 76.0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"CollectionCellLevelRibbon"
+
+[node name="Level" type="Label" parent="ArtMask/LevelRibbon"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — CollectionCell.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 24
+text = "Lv 7"
+vertical_alignment = 1
+
+[node name="RankPlate" type="PanelContainer" parent="ArtMask"]
+editor_description = "Rank stars, flush with the face's bottom-right corner; grows left with the star count."
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -106.0
+offset_top = -38.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"CollectionCellRankPlate"
+
+[node name="Stars" type="HBoxContainer" parent="ArtMask/RankPlate"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — CollectionCell.gd _fill_stars()
+One %Star per rank up to the max rank (stars + breakthrough): code duplicates %Star and switches each one's variation (CollectionCellStarOn = reached rank / CollectionCellStar = unlocked, not reached). Nothing past the max rank."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 2
+
+[node name="Star" type="Label" parent="ArtMask/RankPlate/Stars"]
+editor_description = "[필수] 지우면 오류 — CollectionCell.gd _fill_stars()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CollectionCellStarOn"
+theme_override_font_sizes/font_size = 24
+text = "★"
+vertical_alignment = 1
+
+[node name="Star2" type="Label" parent="ArtMask/RankPlate/Stars"]
+layout_mode = 2
+theme_type_variation = &"CollectionCellStarOn"
+theme_override_font_sizes/font_size = 24
+text = "★"
+vertical_alignment = 1
+
+[node name="Star3" type="Label" parent="ArtMask/RankPlate/Stars"]
+layout_mode = 2
+theme_type_variation = &"CollectionCellStarOn"
+theme_override_font_sizes/font_size = 24
+text = "★"
+vertical_alignment = 1
+
+[node name="Star4" type="Label" parent="ArtMask/RankPlate/Stars"]
+layout_mode = 2
+theme_type_variation = &"CollectionCellStar"
+theme_override_font_sizes/font_size = 24
+text = "★"
+vertical_alignment = 1
+
 [node name="PositionBadge" parent="." instance=ExtResource("3_badge")]
 editor_description = "[필수] 지우면 오류 — CollectionCell.gd setup()"
 unique_name_in_owner = true
@@ -49,123 +123,3 @@ offset_left = 14.0
 offset_top = 14.0
 offset_right = 58.0
 offset_bottom = 44.0
-
-[node name="Rarity" type="Panel" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd setup()
-Rarity pill, hangs from the top-right (14px in). Fill = rarity colour and width = star count → code (set_rarity)."
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -84.6
-offset_top = 14.0
-offset_right = -14.0
-offset_bottom = 44.0
-grow_horizontal = 0
-mouse_filter = 2
-theme_type_variation = &"AccentChip"
-
-[node name="RarityText" type="Label" parent="Rarity"]
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd setup()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"OnFillLabel"
-theme_override_font_sizes/font_size = 18
-text = "★★★"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Unowned" type="Panel" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd refresh()
-미보유 pill over the face centre — shown only when the pilot is not owned."
-visible = false
-layout_mode = 0
-offset_left = 60.0
-offset_top = 100.0
-offset_right = 180.0
-offset_bottom = 140.0
-mouse_filter = 2
-theme_type_variation = &"CollectionCellUnownedPill"
-
-[node name="UnownedText" type="Label" parent="Unowned"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"OnFillLabel"
-text = "tx_MQ1VXWXR6C"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Name" type="Label" parent="."]
-auto_translate_mode = 2
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd refresh()
-BodyLabel when owned, SubLabel when not (code)."
-layout_mode = 0
-offset_left = 12.0
-offset_top = 240.0
-offset_right = 228.0
-offset_bottom = 276.0
-theme_type_variation = &"BodyLabel"
-text = "Corin"
-clip_text = true
-
-[node name="Level" type="Label" parent="."]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd refresh()"
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 12.0
-offset_top = 280.0
-offset_right = 102.0
-offset_bottom = 314.0
-theme_type_variation = &"AccentLabel"
-theme_override_font_sizes/font_size = 24
-text = "Lv 7"
-vertical_alignment = 1
-
-[node name="Pips" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd _fill_pips() · CollectionCell.gd refresh()
-Breakthrough pips, right-aligned. Code duplicates %Pip up to RunRules.breakthrough_max() and switches each one's variation (CollectionCellPipOn = reached / CollectionCellPip)."
-layout_mode = 0
-offset_left = 102.0
-offset_top = 289.0
-offset_right = 228.0
-offset_bottom = 305.0
-mouse_filter = 2
-theme_override_constants/separation = 6
-alignment = 2
-
-[node name="Pip" type="Panel" parent="Pips"]
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd _fill_pips()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(16, 16)
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"CollectionCellPipOn"
-
-[node name="Hint" type="Label" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionCell.gd refresh()
-Shown instead of the level row when the pilot is not owned."
-visible = false
-layout_mode = 0
-offset_left = 12.0
-offset_top = 280.0
-offset_right = 228.0
-offset_bottom = 314.0
-theme_type_variation = &"FaintLabel"
-theme_override_font_sizes/font_size = 20
-text = "tx_0QNPGM6VF5"
-vertical_alignment = 1

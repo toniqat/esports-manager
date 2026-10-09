@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=166 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=163 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -279,48 +279,21 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
-[sub_resource type="StyleBoxFlat" id="CollectionCellFrameUnowned_disabled"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="CollectionCellPip_panel"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.78, 0.784, 0.808, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="CollectionCellPipOn_panel"]
+[sub_resource type="StyleBoxFlat" id="CollectionCellLevelRibbon_panel"]
+content_margin_left = 12.0
+content_margin_top = 1.0
+content_margin_right = 12.0
+content_margin_bottom = 1.0
 bg_color = Color(0.961, 0.651, 0.137, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.769, 0.521, 0.11, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+corner_radius_top_right = 12
 
-[sub_resource type="StyleBoxFlat" id="CollectionCellUnownedPill_panel"]
-bg_color = Color(0.11, 0.11, 0.122, 1)
-corner_radius_top_left = 999
-corner_radius_top_right = 999
-corner_radius_bottom_right = 999
-corner_radius_bottom_left = 999
+[sub_resource type="StyleBoxFlat" id="CollectionCellRankPlate_panel"]
+content_margin_left = 10.0
+content_margin_top = 1.0
+content_margin_right = 8.0
+content_margin_bottom = 1.0
+bg_color = Color(0.11, 0.11, 0.122, 0.78)
+corner_radius_top_left = 12
 
 [sub_resource type="StyleBoxFlat" id="DangerButton_disabled"]
 content_margin_left = 18.0
@@ -1609,13 +1582,6 @@ bg_color = Color(0.29, 0.76, 0.78, 0.22)
 corner_radius_top_left = 12
 corner_radius_top_right = 12
 
-[sub_resource type="StyleBoxFlat" id="TrainingCourseLockChip_panel"]
-bg_color = Color(0.11, 0.11, 0.122, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-
 [sub_resource type="StyleBoxFlat" id="TrainingCoursePopoverFrame_panel"]
 bg_color = Color(1, 1, 1, 1)
 border_width_left = 2
@@ -2033,19 +1999,14 @@ CollectionCellFrame/styles/hover = SubResource("CollectionCellFrame_disabled")
 CollectionCellFrame/styles/hover_pressed = SubResource("CollectionCellFrame_disabled")
 CollectionCellFrame/styles/normal = SubResource("CollectionCellFrame_disabled")
 CollectionCellFrame/styles/pressed = SubResource("CollectionCellFrame_disabled")
-CollectionCellFrameUnowned/base_type = &"SelectableCardButton"
-CollectionCellFrameUnowned/styles/disabled = SubResource("CollectionCellFrameUnowned_disabled")
-CollectionCellFrameUnowned/styles/focus = SubResource("CollectionCellFrameUnowned_disabled")
-CollectionCellFrameUnowned/styles/hover = SubResource("CollectionCellFrameUnowned_disabled")
-CollectionCellFrameUnowned/styles/hover_pressed = SubResource("CollectionCellFrameUnowned_disabled")
-CollectionCellFrameUnowned/styles/normal = SubResource("CollectionCellFrameUnowned_disabled")
-CollectionCellFrameUnowned/styles/pressed = SubResource("CollectionCellFrameUnowned_disabled")
-CollectionCellPip/base_type = &"ProgressTrack"
-CollectionCellPip/styles/panel = SubResource("CollectionCellPip_panel")
-CollectionCellPipOn/base_type = &"ProgressFill"
-CollectionCellPipOn/styles/panel = SubResource("CollectionCellPipOn_panel")
-CollectionCellUnownedPill/base_type = &"SurfaceChip"
-CollectionCellUnownedPill/styles/panel = SubResource("CollectionCellUnownedPill_panel")
+CollectionCellLevelRibbon/base_type = &"AccentChip"
+CollectionCellLevelRibbon/styles/panel = SubResource("CollectionCellLevelRibbon_panel")
+CollectionCellRankPlate/base_type = &"SurfaceChip"
+CollectionCellRankPlate/styles/panel = SubResource("CollectionCellRankPlate_panel")
+CollectionCellStar/base_type = &"OnFillLabel"
+CollectionCellStar/colors/font_color = Color(1, 1, 1, 0.38)
+CollectionCellStarOn/base_type = &"OnFillLabel"
+CollectionCellStarOn/colors/font_color = Color(0.961, 0.651, 0.137, 1)
 DangerButton/base_type = &"Button"
 DangerButton/colors/font_color = Color(1, 1, 1, 1)
 DangerButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -2312,8 +2273,6 @@ TrainingCourseCardFrame/base_type = &"Card"
 TrainingCourseCardFrame/styles/panel = SubResource("TrainingCourseCardFrame_panel")
 TrainingCourseGradeBand/base_type = &"SunkPanel"
 TrainingCourseGradeBand/styles/panel = SubResource("TrainingCourseGradeBand_panel")
-TrainingCourseLockChip/base_type = &"SurfaceChip"
-TrainingCourseLockChip/styles/panel = SubResource("TrainingCourseLockChip_panel")
 TrainingCoursePopoverFrame/base_type = &"PopupCard"
 TrainingCoursePopoverFrame/styles/panel = SubResource("TrainingCoursePopoverFrame_panel")
 TrainingCourseShapeWell/base_type = &"SunkPanel"

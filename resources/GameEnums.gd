@@ -110,7 +110,7 @@ static func phase_label(phase: int) -> String:
 	return Loc.t(String(PHASE_LABELS[phase]))  # l10n-dynamic: term.phase.*
 
 
-## 등급 이름 0..4 (일반 · 고급 · 희귀 · 영웅 · 전설) — 특성 · 기벽이 함께 쓴다.
+## 등급 이름 0..4 (일반 · 고급 · 희귀 · 영웅 · 전설) — 특성 · 기벽이 함께 쓴다 (선수는 별 — `star_label`).
 ## 범위 밖은 양끝으로 자른다. 3단 등급(기벽 일반 · 희귀 · 영웅)은 부르는 쪽이 0 · 2 · 3 으로 옮긴다.
 const RARITY_LABELS: Array = [  # l10n-keys: term.rarity.*
 	L.TERM_RARITY_COMMON, L.TERM_RARITY_UNCOMMON, L.TERM_RARITY_RARE,
@@ -120,6 +120,19 @@ const RARITY_LABELS: Array = [  # l10n-keys: term.rarity.*
 
 static func rarity_label(tier: int) -> String:
 	return Loc.t(String(RARITY_LABELS[clampi(tier, 0, RARITY_LABELS.size() - 1)]))  # l10n-dynamic: term.rarity.*
+
+
+## Pilot stars ★1..★3 (`players.rarity`) — "★2". Pilots never use `rarity_label` (that tier
+## list is the trait / quirk one). 0 (mob / unknown) → "".
+static func star_label(stars: int) -> String:
+	if stars <= 0:
+		return ""
+	return Loc.t(L.TERM_STAR_N, {"n": stars})
+
+
+## Pilot rank 1..5 — "랭크 3".
+static func rank_label(rank: int) -> String:
+	return Loc.t(L.TERM_RANK_N, {"n": rank})
 
 
 # ─── 성향 태그 (`pilot_skills.keyword` · `mech_passives.keyword`) ─────────────

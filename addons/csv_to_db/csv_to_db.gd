@@ -45,7 +45,7 @@ const SCHEMAS: Dictionary = {
 	# M8~M10 (특성 · 감독 성장 · 수집 경제) — 계약: docs/outgame_dev_plan.md §12
 	"traits":        {"req": ["id","key","name_key","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc_key"], "pk": "id"},
 	"manager_levels": {"req": ["level","exp_required"], "pk": "level"},
-	"pilot_breakthrough": {"req": ["id","pilot_id","stage","kind","value"], "pk": "id"},
+	"pilot_ranks":   {"req": ["id","pilot_id","rank","kind","value"], "pk": "id"},
 	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
 	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
 	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
@@ -132,9 +132,9 @@ const TABLE_DEFS: Dictionary = {
 		# 비어 있으면 GameManager 가 `pilot_card_slots` 로 선수 id 를 씨앗 삼아
 		# 결정적으로 뽑는다(매 판 같은 3장).
 		"pilot_cards": {"data_type": "text", "not_null": true},
-		# 런 준비(샐러리캡) — Lv1 기준 샐러리. 레벨 가산은 pilot_levels.salary_bonus.
+		# Run setup (salary cap) — Lv0 base salary; level bonus = pilot_levels.salary_bonus.
 		"salary":    {"data_type": "int",  "not_null": true},
-		# 등급(자리표시). 네임드 1 / 모브 0 — 가챠 등급 표는 M10.
+		# Stars ★1..★3 for named pilots (mobs 0) — gacha tier, start rank.
 		"rarity":    {"data_type": "int",  "not_null": true},
 		# 1 = 프로필 첫 생성 때 지급하는 초기 보유 선수(ProfileManager).
 		"starter":   {"data_type": "int",  "not_null": true},
@@ -274,6 +274,9 @@ const TABLE_DEFS: Dictionary = {
 		"id":          {"data_type": "text", "primary_key": true, "not_null": true},
 		"name_key":        {"data_type": "text", "not_null": true},
 		"grade":       {"data_type": "int",  "not_null": true},
+		# Upgrade line (`basic`, `field_hit` …) — optional, "" = the tile is its own line.
+		# Owning a higher grade of a line replaces the lower one (`TrainingCourses`).
+		"line":        {"data_type": "text", "not_null": false},
 		"shape":       {"data_type": "text", "not_null": true},
 		"exp":         {"data_type": "text", "not_null": true},
 		"effect":      {"data_type": "text", "not_null": true},
@@ -291,9 +294,9 @@ const TABLE_DEFS: Dictionary = {
 		"level":        {"data_type": "int", "primary_key": true, "not_null": true},
 		"stat_bonus":   {"data_type": "int", "not_null": true},
 		"salary_bonus": {"data_type": "int", "not_null": true},
-		# M10 — 최대 레벨을 이 레벨로 올리는 레벨업 재화(`currency.levelup`, Lv1 = 0).
+		# Levelup currency to go from level-1 to this level (`currency.levelup`, Lv0 = 0).
 		"levelup_cost": {"data_type": "int", "not_null": true},
-		# M10 — 이 최대 레벨에 자동으로 닿는 **누적** 선수 EXP(런 출전으로 쌓인다).
+		# Cumulative pilot EXP from Lv0 **inside one rank** to reach this level (reset on rank-up).
 		"exp_required": {"data_type": "int", "not_null": true},
 	},
 	# ── M3~M7 ──────────────────────────────────────────────────────────────
@@ -381,14 +384,14 @@ const TABLE_DEFS: Dictionary = {
 		"level":        {"data_type": "int", "primary_key": true, "not_null": true},
 		"exp_required": {"data_type": "int", "not_null": true},
 	},
-	# 선수 돌파 1..5 단계(선수별). `kind` stat_flat(여섯 스탯 +value) /
-	# salary_down(Lv1 샐러리 −value) / stat_growth(그 선수 훈련 EXP +value%) /
-	# card_swap(value = "칸:카드id", 0 부터 센 파일럿 카드 칸을 교체). 단계는 누적.
-	# 설명문은 kind 별 l10n 틀(`breakthrough.kind.*`)에 value 를 채운다.
-	"pilot_breakthrough": {
+	# Per-pilot rank rows, rank 1..5 (cumulative: reaching rank R applies rows 1..R; several
+	# rows may share a rank). `kind` stat_flat (six stats +value) / salary_down (base salary
+	# −value) / stat_growth (that pilot's training EXP +value%) / card_swap (value =
+	# "slot:card_id", 0-based pilot-card slot). Text = l10n template `breakthrough.kind.*`.
+	"pilot_ranks": {
 		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
 		"pilot_id": {"data_type": "int",  "not_null": true},
-		"stage":    {"data_type": "int",  "not_null": true},
+		"rank":     {"data_type": "int",  "not_null": true},
 		"kind":     {"data_type": "text", "not_null": true},
 		"value":    {"data_type": "text", "not_null": true},
 	},

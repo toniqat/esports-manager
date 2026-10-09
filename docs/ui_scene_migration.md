@@ -180,7 +180,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | 1 | `ConfirmPopup` | `meta/lobby/` | 팝업 | ✅ 커밋됨 |
 | 2 | `ManagerTypePopup` | `meta/lobby/` | 팝업 (선택지 반복 → 아이템 씬) | ✅ 전환 (+ `ManagerTypeOption` 아이템 씬) |
 | 3 | `ShopPopup` | `meta/shop/` | 팝업 | ✅ 전환 (+ `ShopRevealItem` · `ShopRateRow` 아이템 씬) |
-| 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ✅ 전환 (+ `CollectionStatChip` · `CollectionBreakthroughRow` 아이템 씬) |
+| 4 | `CollectionDetailSheet` | `meta/collection/` | 시트 | ✅ 전환 (+ `CollectionStatChip` · `CollectionRankRow` 아이템 씬) |
 | 5 | `DraftDetailPanel` | `meta/run_setup/` | 모달 | ✅ 전환 (+ `DraftStatChip` 아이템 씬) — 스타일은 새 variation 모양으로 확정 |
 | 6 | `HubSheet` | `season/` | 시트 (허브 관리 카드 공용 틀) | ✅ 틀만 전환 (본문은 #10) |
 | 7 | `LobbyScreen` + `HomeTab` · `CollectionTab` · `ManagerTab` · `ShopTab` · `PassTab` | `meta/lobby/` 등 | 화면 / 탭 | ✅ 전환 (웨이브 3) |

@@ -99,22 +99,29 @@ static var STAT_MIN: int = ConstTable.int_of("PLAYER_STAT_MIN")
 # `GameManager.pilot_card_ids_for` 가 선수 id 를 씨앗 삼아 결정적으로 채운다.
 @export var pilot_cards: Array = []
 
-# ─── 런 준비 (샐러리캡 · 레벨) ────────────────────────────────────────────────
-# `salary` 는 **Lv1 기준** 샐러리(`players.salary`). 레벨 가산은 `RunRules` 가
-# `pilot_levels.csv` 에서 더한다 — 레벨이 반영된 샐러리는 `RunRules.salary_of(pd)`.
+# ─── Run setup (salary cap · rank · level) ───────────────────────────────────
+# `salary` = base salary (`players.salary`) plus the applied rank effects (`apply_rank`:
+# `salary_down` rows, `RANK_SALARY_STEP`). The level bonus is added on read —
+# `RunRules.salary_of(pd)`.
 @export var salary: int = 0
-# 등급(자리표시, `players.rarity`). 가챠 등급 표는 M10.
+# Stars ★1..★3 (`players.rarity`; mobs 0) — gacha tier and acquisition rank. Never changes.
 @export var rarity: int = 0
-# 이 런에서 쓰는 선수 레벨(1..10). 런 시작 때 `RunRules.apply_level` 이 스탯에
-# 가산을 **이미 얹은 뒤** 이 값을 적는다 — 스탯 필드는 언제나 레벨 반영 후 값이다.
-@export var level: int = 1
+# Level of this copy (0 .. 10 × rank). `RunRules.apply_level` has **already** added the level
+# bonus to the stats before writing it — stat fields are always post-level values.
+@export var level: int = 0
 # 주력 메크 `mechs.id` 목록(`players.main_mechs`, M4). 런 시작 메크 숙련도가
 # 이 메크들만 높게 시작한다(`MechMastery.init_run`).
 @export var main_mechs: Array = []
-# M10 — breakthrough stage 0..5 applied to this copy (`RunRules.apply_breakthrough`
-# already folded its stat / salary / card effects into the fields above).
-@export var breakthrough: int = 0
-# M10 — extra training EXP % from the `stat_growth` breakthrough (TrainingBoard multiplies).
+# Rank 0..5 applied to this copy (`RunRules.apply_rank` already folded the rank rows'
+# stat / salary / card effects into the fields above). 0 = CSV base (no rows applied).
+@export var rank: int = 0
+## @deprecated — old name of `rank` (kept so older readers / saves still work).
+var breakthrough: int:
+	get:
+		return rank
+	set(v):
+		rank = v
+# Extra training EXP % from `stat_growth` rank rows (TrainingBoard multiplies).
 @export var train_bonus_pct: int = 0
 
 # Set during the assign phase: which mech this player is piloting this match.

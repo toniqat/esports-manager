@@ -146,8 +146,9 @@ static func check(pm: Node, pool: String, count: int) -> String:
 # ── The pull action ──────────────────────────────────────────────────────────
 ## Spends, rolls `count` items, grants them and saves once (`save`). Result:
 ## `{error, cost: {tickets, currency}, results: [entry], save_error}` where an entry is
-## `{pool, id, rarity, result, stage, shards, amount}` (`result` = grant result:
-## new / breakthrough / shard for pilots, new / material for traits).
+## `{pool, id, rarity, result, stage, shards, rank_stone, amount}` (`result` = grant result:
+## new / breakthrough / shard for pilots, new / material for traits; pilot `rarity` = stars).
+## Sum the `rank_stone` of the results with `rank_stone_total`.
 ## On error nothing is spent and `results` is empty.
 static func pull(pm: Node, pool: String, count: int,
 		rng: RandomNumberGenerator = null, save: bool = true) -> Dictionary:
@@ -180,7 +181,7 @@ static func pull(pm: Node, pool: String, count: int,
 		results.append({
 			"pool": pool, "id": id, "rarity": rar, "result": String(g.get("result", "")),
 			"stage": int(g.get("stage", 0)), "shards": int(g.get("shards", 0)),
-			"amount": int(g.get("amount", 0)),
+			"rank_stone": int(g.get("rank_stone", 0)), "amount": int(g.get("amount", 0)),
 		})
 	out["results"] = results
 	if save:
@@ -212,3 +213,11 @@ static func _ensure_loaded() -> void:
 		_pilots.append({"id": int(r["id"]), "name_key": String(r["name_key"]),
 				"role": int(r["role"]), "rarity": int(r["rarity"])})
 	db.close_db()
+
+
+## Σ `rank_stone` over pull / purchase results (capped-breakthrough dupes pay rank stones).
+static func rank_stone_total(results: Array) -> int:
+	var n: int = 0
+	for raw in results:
+		n += int((raw as Dictionary).get("rank_stone", 0))
+	return n

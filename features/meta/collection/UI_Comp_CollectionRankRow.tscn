@@ -2,18 +2,18 @@
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
-[node name="CollectionBreakthroughRow" type="Panel"]
+[node name="CollectionRankRow" type="Panel"]
 auto_translate_mode = 2
-editor_description = "One stage of the 돌파 table (CollectionDetailSheet). Row / disc styles and the reached · next colours are data — the sheet applies them."
-custom_minimum_size = Vector2(0, 76)
+editor_description = "One rank of the rank table (CollectionDetailSheet, RunRules.rank_rows grouped by rank — one line per data row in Kind / Desc, same font size so the lines pair up; height = 44 + 32 × lines, set by code): disc = rank number, kind, effect text, state (달성 / 다음 / 돌파 필요). Row / disc styles and the reached · next · locked colours are data — the sheet applies them."
+custom_minimum_size = Vector2(0, 108)
 offset_right = 960.0
-offset_bottom = 76.0
+offset_bottom = 108.0
 size_flags_horizontal = 3
 mouse_filter = 2
 theme = ExtResource("1_theme")
 
 [node name="Disc" type="Panel" parent="."]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 4
@@ -27,7 +27,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Num" type="Label" parent="Disc"]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -42,7 +42,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Kind" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 9
@@ -51,36 +51,38 @@ offset_left = 80.0
 offset_right = 160.0
 grow_vertical = 2
 theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 20
-text = "능력치"
+theme_override_font_sizes/font_size = 24
+text = "능력치
+성장"
 vertical_alignment = 1
 
 [node name="Desc" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 164.0
-offset_right = -136.0
+offset_right = -176.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 24
-text = "스탯 여섯 모두 +2"
+text = "모든 파일럿 능력치 +2
+훈련 경험치 +10%"
 vertical_alignment = 1
 clip_text = true
 
 [node name="State" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -136.0
+offset_left = -176.0
 offset_right = -16.0
 grow_horizontal = 0
 grow_vertical = 2

@@ -12,7 +12,7 @@ Two layers of state (plan §2.1):
 | Folder | Status | Role |
 |---|---|---|
 | `lobby/` | M0 ✅ | Project entry (`scenes/Lobby.tscn`): continue / new run, abandon confirm → `lobby/README.md` |
-| `run_setup/` | M1 ✅ M9 ✅ | Run setup (`scenes/RunSetup.tscn`): scenario → team → manager preset (traits) → 5-pilot lineup (levels · salary cap) → `GameManager.start_run` → `Season.tscn` → `run_setup/README.md` |
+| `run_setup/` | M1 ✅ M9 ✅ | Run setup (`scenes/RunSetup.tscn`): scenario → team → manager preset (traits) → 5-pilot lineup (collection rank + level, salary cap) → `GameManager.start_run` → `Season.tscn` → `run_setup/README.md` |
 | `run_result/` | M2 | Run-end settlement (`RunResult.settle_current_run`: score, currency, manager EXP, MVP/POM achievements → profile) + result screen `scenes/RunResult.tscn` → `run_result/README.md` |
 | `traits/` | M8 | `TraitSystem` — trait table, bonus points, run-time effect reads, unlocks → `traits/README.md` |
 | `manager/` | M9 ✅ | `ManagerProgress` (levels, removal / specialisation, presets, prestige) + lobby `감독` tab → `manager/README.md` |

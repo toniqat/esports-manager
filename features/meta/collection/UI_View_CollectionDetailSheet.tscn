@@ -165,7 +165,7 @@ clip_text = true
 [node name="Chips" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()
-Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유) — pills sized to their text, laid left to right by code."
+Chip row: 등급 stars · 랭크 n / max · 돌파 n / cap · Lv n / cap — pills sized to their text, laid left to right by code."
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 mouse_filter = 2
@@ -201,7 +201,7 @@ offset_bottom = 32.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 24
-text = "780 / 1060  →  Lv 6"
+text = "180 / 400  →  Lv 13"
 horizontal_alignment = 2
 
 [node name="ExpTrack" type="Panel" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/ExpBlock"]
@@ -218,7 +218,7 @@ theme_type_variation = &"ProgressTrack"
 [node name="ExpFill" type="Panel" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/ExpBlock/ExpTrack"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_exp()
-anchor_right = EXP ratio (set by code); the minimum width keeps a sliver visible."
+EXP toward the next level within the current rank. anchor_right = EXP ratio (set by code); the minimum width keeps a sliver visible."
 custom_minimum_size = Vector2(14, 0)
 layout_mode = 1
 anchors_preset = -1
@@ -227,25 +227,6 @@ anchor_bottom = 1.0
 grow_vertical = 2
 mouse_filter = 2
 theme_type_variation = &"ProgressFill"
-
-[node name="UnownedBlock" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(0, 84)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="UnownedNote" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/UnownedBlock"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 70.0
-grow_horizontal = 2
-theme_type_variation = &"SubLabel"
-theme_override_font_sizes/font_size = 24
-text = "tx_2AGPWN10YF"
-autowrap_mode = 3
 
 [node name="SalaryGap" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info"]
 custom_minimum_size = Vector2(0, 14)
@@ -266,7 +247,7 @@ anchors_preset = -1
 anchor_right = 0.6
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
-text = "샐러리 (Lv 5 기준)"
+text = "샐러리 (랭크 3 · Lv 12)"
 
 [node name="Salary" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/SalaryRow"]
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
@@ -295,7 +276,7 @@ anchors_preset = -1
 anchor_right = 0.6
 offset_bottom = 32.0
 theme_type_variation = &"CaptionLabel"
-text = "tx_JEPJHXHB1A"
+text = "tx_W1P4FE4Q31"
 
 [node name="Bonus" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/Hero/Info/BonusRow"]
 editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_hero()"
@@ -331,7 +312,7 @@ anchor_right = 1.0
 offset_bottom = 44.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
-text = "능력치 · Lv 5 · 돌파 5 반영"
+text = "능력치 · 랭크 3 · Lv 12"
 clip_text = true
 
 [node name="Divider" type="HSeparator" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/StatsSection/StatsHeader"]
@@ -370,31 +351,31 @@ offset_bottom = 36.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
-text = "tx_FN1RTFB39A"
+text = "tx_BWEJSV365E"
 horizontal_alignment = 2
 clip_text = true
 
-[node name="BtSection" type="VBoxContainer" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body"]
+[node name="RankSection" type="VBoxContainer" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="BtHeader" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection"]
+[node name="RankHeader" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection"]
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="BtTitle" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtHeader"]
+[node name="RankTitle" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection/RankHeader"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 44.0
 grow_horizontal = 2
 theme_type_variation = &"BodyLabel"
-text = "tx_E8MWC8R25R"
+text = "tx_S02DYG4RPW"
 clip_text = true
 
-[node name="Divider" type="HSeparator" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtHeader"]
+[node name="Divider" type="HSeparator" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection/RankHeader"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -404,24 +385,24 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"Divider"
 
-[node name="BtRows" type="VBoxContainer" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection"]
+[node name="RankRows" type="VBoxContainer" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()
-One UI_Comp_CollectionBreakthroughRow.tscn per stage, added by code."
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()
+One UI_Comp_CollectionRankRow.tscn per rank row (RunRules.rank_rows), added by code."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
 
-[node name="BtAfter" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection"]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+[node name="RankAfter" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection"]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="BtAfterLabel" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtAfter"]
+[node name="RankAfterLabel" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection/RankAfter"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
@@ -431,26 +412,26 @@ offset_bottom = 38.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 20
-text = "5단계 이후의 중복은 선수 파편으로 바뀝니다"
+text = "중복 영입마다 돌파 +1 = 최대 랭크 +1 (돌파 상한 2)"
 horizontal_alignment = 2
 clip_text = true
 
-[node name="BtEmpty" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection"]
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_breakthrough()"
+[node name="RankEmpty" type="Control" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection"]
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_ranks()"
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="BtEmptyLabel" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/BtSection/BtEmpty"]
+[node name="RankEmptyLabel" type="Label" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body/RankSection/RankEmpty"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 32.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
-text = "tx_MJR84KHMPT"
+text = "tx_HJ1DCGDYTB"
 
 [node name="CardsSection" type="VBoxContainer" parent="Root/SafeArea/Sheet/VBox/ScrollSlot/Scroll/Body"]
 layout_mode = 2
@@ -520,7 +501,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
-text = "레벨업 재화 100 보유 · 최대 레벨 +1 = 런에서 고를 수 있는 레벨 +1"
+text = "레벨업 재화 100 보유 · 레벨 상한 Lv 30"
 horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
@@ -546,12 +527,27 @@ text = "tx_R1DMEF1S3E"
 
 [node name="LevelUp" type="Button" parent="Root/SafeArea/Sheet/VBox/Buttons"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_footer() · CollectionDetailSheet.gd _fill_preview() · CollectionDetailSheet.gd _ready()"
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_footer() · CollectionDetailSheet.gd _fill_preview() · CollectionDetailSheet.gd _ready() · CollectionTab.gd _fill_preview()
+레벨업 (levelup currency). Disabled at the level cap of the current rank."
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 2.0
+size_flags_stretch_ratio = 1.6
 focus_mode = 0
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 32
 text = "레벨업  ·  40"
+
+[node name="RankUp" type="Button" parent="Root/SafeArea/Sheet/VBox/Buttons"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — CollectionDetailSheet.gd _fill_footer() · CollectionDetailSheet.gd _fill_preview() · CollectionDetailSheet.gd _ready() · CollectionTab.gd _fill_preview()
+랭크업 (rank_stone). Enabled only at the level cap with rank < max rank (ProfileManager.rank_up_block_reason)."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.6
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 32
+disabled = true
+text = "랭크업  ·  1"

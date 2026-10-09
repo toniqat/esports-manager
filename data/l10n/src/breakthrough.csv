@@ -3,3 +3,9 @@ tx_CT7HANNW9F,breakthrough.kind.stat_flat,active,돌파 효과 stat_flat. n = pi
 tx_WWXBFY3CCH,breakthrough.kind.stat_growth,active,돌파 효과 stat_growth. n = pilot_breakthrough.value (퍼센트),,,훈련 경험치 +{n}%,Training EXP +{n}%,draft,bf1b7b8b
 tx_NGS28BKV7X,breakthrough.kind.salary_down,active,돌파 효과 salary_down. n = pilot_breakthrough.value,,,샐러리 -{n},Salary -{n},draft,a16b09b7
 tx_JA0XRDKBW0,breakthrough.kind.card_swap,active,돌파 효과 card_swap. slot = 교체되는 파일럿 카드 칸 번호(1부터). 뒤에 새 카드 이름이 붙는다,,,{slot}번째 {tx_0ZQK3N7THW} 교체,Swap pilot card {slot},draft,32983065
+tx_9G6D9XEJGY,breakthrough.rank_up.not_owned,active,랭크 승급 불가 사유 — ProfileManager.rank_up_block_reason,,,보유하지 않은 선수입니다,You don't own this player,draft,722e5e99
+tx_3R7MK9D1MX,breakthrough.rank_up.level_below_cap,active,랭크 승급 불가 사유 — level = 지금 랭크의 레벨 상한,,,Lv {level}에 도달해야 승급할 수 있습니다,Reach Lv {level} to rank up,draft,dc99d8c3
+tx_PBKVCHGXV5,breakthrough.rank_up.need_breakthrough,active,랭크 승급 불가 사유 — max = 등급 + 돌파,,,최대 랭크 {max}입니다 · 돌파하면 더 올릴 수 있습니다,Max rank {max} · Break through to go higher,draft,e08b2d81
+tx_89EPGD3DM8,breakthrough.rank_up.rank_max,active,랭크 승급 불가 사유 — 랭크 5,,,최고 랭크입니다,Already at the highest rank,draft,cd3e1654
+tx_9FRC0J6AKT,breakthrough.rank_up.not_enough,active,랭크 승급 불가 사유 — n = 필요한 승급석,,,{tx_95JG2WTYR0}{i} 부족합니다 ({n} 필요),Not enough {tx_95JG2WTYR0} ({n} needed),draft,87a64769
+tx_F6X41NRVWG,breakthrough.level_up.at_cap,active,레벨업 불가 사유 — level = 지금 랭크의 레벨 상한 (10 × 랭크),,,레벨 상한 Lv {level}입니다 · 승급하면 더 올릴 수 있습니다,Level cap Lv {level} · Rank up to go higher,draft,3721b160

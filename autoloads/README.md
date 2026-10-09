@@ -107,8 +107,11 @@ When `match_ctx.active == false`, BattleSim falls back to `ROLE_STATS` defaults
 (loaded from `pilots.csv`).
 
 #### Run start — `start_run(run_setup) -> String`, `init_season()`, `default_run_setup()`
-`start_run` is the only run entry (validate → season skeleton → `run_seed` → AI
-rosters via `RunRoster` → level my 5 → `team_rosters` → `season_state.run_setup`).
+`start_run` is the only run entry (rank / level the pool via `RunRules.apply_progress` — every
+named pilot at its stars, **my five at their profile rank + level** (`run_setup.pilot_levels` is
+ignored for a real run; a test run reads `pilot_ranks` / `pilot_levels` from `run_setup`) → validate
+→ season skeleton → `run_seed` → AI rosters via `RunRoster` → `team_rosters` →
+`season_state.run_setup` with `pilot_levels` / `pilot_ranks` of my five).
 `init_season(team_id := 0)` = `start_run(default_run_setup(team_id))` (editor
 direct-run default). Test runs (`use_test_run`) skip the profile ownership check.
 Errors come back as translated text (`ui.run.*`, `ui.lineup.*` from `RunRules.validate_lineup`).
@@ -135,13 +138,30 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   a top-level value of the wrong type is dropped. JSON floats are cast back to int for
   `version`, `active_preset`, manager ints, alloc, currency and `pass.exp`.
 - M0 only creates / loads it; later milestones write to it (M1 collection, M2 run results …).
-- **Collection (M1)** — `profile.collection`: `"<pilot_id>" → {owned, max_level,
-  breakthrough, dupes}`.
+- **Collection (B — stars · rank · breakthrough · level, profile v3)** — `profile.collection`:
+  `"<pilot_id>" → {owned, rank, breakthrough, level, exp, dupes}` (rules: `resources/README.md` → RunRules).
   - `ensure_starter_collection() -> bool` — on an empty collection grants every
-    `players.starter = 1` pilot at `max_level` 1 (called in `_ready`, saved if it granted).
-  - `owned_pilot_ids() -> Array` (int, ascending), `max_level_of(pilot_id) -> int`
-    (0 = not owned), `owned_max_levels() -> {"<pilot_id>": max_level}` — the shape
-    `RunRules.validate_lineup` and `GameManager.start_run` read.
+    `players.starter = 1` pilot at rank = stars, Lv0 (called in `_ready`, saved if it granted).
+  - Reads: `owned_pilot_ids()`, **`owns_pilot(pid)`** (the ownership test — Lv0 is a real level),
+    `stars_of(pid)` (1..3, 0 unknown), `rank_of` (0 = not owned), `max_rank_of` (= stars + breakthrough),
+    `breakthrough_of`, `breakthrough_cap_of` (= RANK_MAX − stars), `level_of`, `level_cap_of` (= 10 × rank),
+    `pilot_exp_of` (EXP inside the current rank), `pilot_exp_progress(pid) -> {into, need}` (`need` 0 at the
+    cap), `owned_ranks()` / `owned_levels()` (`{"<pid>": int}` — run setup pool, `start_run`, lineup owner set).
+  - `grant_pilot(pid) -> {result: new|breakthrough|shard, stage, shards, rank_stone}` — new = rank = stars, Lv0;
+    dupe → breakthrough +1 up to the cap; past the cap → `SHARD_PER_EXTRA_DUPE` × stars shards **and**
+    `RANK_STONE_PER_EXTRA_DUPE` × stars rank stones.
+  - `add_pilot_exp(pid, n) -> {from, to}` — EXP (capped at the cap level's threshold) raises the level along
+    `RunRules.exp_required`, never past the cap (`from = to = -1` when not owned).
+  - `level_up_cost(pid)` (-1 at the cap) · `level_up_pilot(pid)` (levelup currency, +`PILOT_MAX_LEVEL_GAIN`
+    levels, EXP raised to the new level's threshold) · `rank_up_cost(pid)` (-1 at RANK_MAX) ·
+    `rank_up_block_reason(pid)` ("" or translated: not owned / rank max / need breakthrough / below level cap /
+    not enough 승급석) · `rank_up_pilot(pid)` (spends `rank_stone`, rank + 1, level 0, exp 0).
+  - Deprecated aliases: `max_level_of` (= `level_of`, not an ownership test), `pilot_rarity` (= `stars_of`).
+  - **Migration (v2 → v3, `_normalize_entry` in `_merge_over_defaults`)**: an entry without `rank` is the old
+    `{max_level, breakthrough 0..5}` shape → rank = stars, breakthrough = min(old, RANK_MAX − stars),
+    level = clamp(old max_level, 0, 10 × rank), exp clamped into [exp_required(level), exp_required(cap)]
+    (level then follows that exp up to the cap); `max_level` is dropped. Non-dictionary entries are removed.
+    Currency `rank_stone` defaults to 0.
 - `apply_run_result(result) -> String` (M2, called only by `RunResult.settle_current_run`
   for non-test runs; shape `docs/outgame_dev_plan.md` §10.3): adds `currency.outgame` and
   `manager.exp` (no level-ups until M9), adds this run's `mvp` / `pom` into
@@ -151,8 +171,8 @@ access via `get_node("/root/ProfileManager").profile`. Run state is **not** here
   Idempotent: a `result.id` already in `runs` is a no-op.
 - **v2 (M8~M10, `docs/outgame_dev_plan.md` §12.1)** — presets (`ManagerProgress`), `manager.removed`,
   owned traits (`ensure_default_traits` in `_ready`, `grant_trait`), currencies (`currency_of` /
-  `add_currency` / `spend_currency`), pilot growth (`grant_pilot` dupes → breakthrough → shards,
-  `add_pilot_exp`, `level_up_cost` / `level_up_pilot` (raises max level by const `PILOT_MAX_LEVEL_GAIN`, capped at `RunRules.max_level()`), `owned_breakthroughs`, `pilot_rarity`), weekly pass
+  `add_currency` / `spend_currency`; keys = `default_profile().currency`, incl. `rank_stone`), pilot growth
+  (collection API above), weekly pass
   (`PassSystem`). **These mutators do not save** — the screen calls `save_profile()` once per action.
   `apply_run_result` also pays every `result.currency` key, manager exp (→ level-ups), `pilot_exp`,
   `pass_exp`, grants `unlocked_traits` (+ `traits.unlocked_pending`) and writes `result.profile_delta`.

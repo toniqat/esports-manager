@@ -32,7 +32,7 @@ tx_4JW54W3MFD,run_result.reward.manager_exp,active,런 결과 보상 줄,,,감�
 tx_ERBNFWJ2H9,run_result.reward.remove_points,active,런 결과 보상 줄,,,새 제거 포인트 (감독 탭),New removal points (Manager tab),draft,8805ea53
 tx_36E6M38JM0,run_result.growth.title,active,런 결과 카드 제목,,,선수 성장,Player Growth,draft,ba3c10ab
 tx_6DXJDQC258,run_result.growth.exp,active,런 결과 선수 성장 줄,,,선수 EXP +{n},Player EXP +{n},draft,200aa9ff
-tx_RQ4SQ39BQ7,run_result.growth.max_lv,active,런 결과 선수 성장 칩,,,최대 Lv {from} → {to},Max Lv {from} → {to},draft,c784530e
+tx_RQ4SQ39BQ7,run_result.growth.max_lv,active,런 결과 선수 성장 칩 — 선수 EXP 로 오른 레벨 (지금 랭크의 레벨 상한까지),,,Lv {from} → {to},Lv {from} → {to},draft,2e18fdd3
 tx_RRX6FCNZ2Q,run_result.achievement.title,active,런 결과 카드 제목,,,이번 런 업적,Run Achievements,draft,00825a55
 tx_ZA35FTB9TG,run_result.achievement.empty,active,런 결과 업적 카드: 비었을 때,,,기록된 선수가 없습니다,No players recorded,draft,6e4631c2
 tx_6DT1P5Z0AS,run_result.empty.title,active,런 결과 화면: 결과가 없을 때 제목,,,런 정산,Run Settlement,draft,3be38df5

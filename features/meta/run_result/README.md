@@ -48,7 +48,8 @@ Autoloads are fetched via `Engine.get_main_loop().root` (static class, no `@onre
   titles·RUN_SCORE_PER_TITLE + (clear ? RUN_SCORE_CLEAR_BONUS : 0) + bonus_points·phases_cleared·RUN_SCORE_PER_BONUS` (M8 trait bonus points, per cleared phase).
   `breakdown` holds each term.
 - `currency.outgame` = floor(score · `RUN_CURRENCY_PER_SCORE`), `manager_exp` =
-  floor(score · `RUN_MGR_EXP_PER_SCORE`) (tiny epsilon guards float error).
+  floor(score · `RUN_MGR_EXP_PER_SCORE`) (tiny epsilon guards float error); likewise
+  `currency.levelup` (`RUN_LEVELUP_PER_SCORE`) and `currency.rank_stone` (승급석, `RUN_RANK_STONE_PER_SCORE`).
 - **My pilots only** (`run_setup.pilot_ids`, fallback: player team roster):
   `mvp` = per-pilot sum over `run_stats.mvp_count` phases; `pom` = `run_stats.pom_by_phase`
   entries whose pilot is mine; `achievements` = `{pid: {mvp, pom}}` for all 5.
@@ -108,11 +109,12 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
     `TraitSystem.desc_of`, rarity chip coloured per rarity (`TraitUi.rarity_color` — the card
     stays amber, the chip no longer is).
   - 점수: `특성 보너스 × <bonus_points>` row = `breakdown.bonus`.
-  - 보상: `currency.outgame` · `currency.levelup` · `pass_exp` (+ `Lv a → b` from `profile_delta.pass`,
+  - 보상: `currency.outgame` · `currency.levelup` · `currency.rank_stone` (승급석, row only when > 0) · `pass_exp` (+ `Lv a → b` from `profile_delta.pass`,
     plus a row for `overflow_outgame` when > 0) · `manager_exp` (+ `Lv a → b` from
     `profile_delta.manager`, then a `새 제거 포인트` row = level gain × `MANAGER_REMOVE_PER_LEVEL`).
     Level-ups are amber text.
-  - **선수 성장**: per pilot `pilot_exp` and an amber `최대 Lv a → b` chip from `profile_delta.pilots`.
+  - **선수 성장**: per pilot `pilot_exp` and an amber `Lv a → b` chip from `profile_delta.pilots` (EXP raises
+    the level up to the rank's level cap; rank-ups are bought in the collection).
 - Bottom bar, one full-width primary button: `로비로` → `Lobby.tscn`; when `outcome == "abandon"`
   `새 런` → `RunSetup.tscn`. Both call `reset_season_state()` first.
 - `last_run_result` empty (scene opened directly) → empty-state card + `로비로`.
@@ -129,7 +131,7 @@ Run (PowerShell 5.1, from the repo root):
 & "D:\Projects\Godot Project\godot.exe" --headless --path . res://features/meta/run_result/sim/RunSim.tscn -- --runs=200 --edge=1.5 "--out=$env:TEMP\t2_runs.csv"
 ```
 Args (after `--`): `--runs`, `--edge` (player win-odds multiplier), `--seed`,
-`--level` (my five's level), `--team` / `--scenario` (fixed, else random per run),
+`--level` (my five's level, default 0 — rank = stars), `--team` / `--scenario` (fixed, else random per run),
 `--no-coach`, `--out` (per-run CSV of raw counts). Filter the console with
 `Select-String "=== RunSim" -Context 0,40` — the hub views log image-load noise headlessly.
 

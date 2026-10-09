@@ -73,8 +73,9 @@ func _ready() -> void:
 		_load_error = String(data["error"])
 	else:
 		_pool = data["players"]
-		# M10 — owned pilots show (and are capped) at their breakthrough stage.
-		RunRules.apply_breakthroughs(_pool, _pm.owned_breakthroughs())
+		# Named pilots at their stars, owned pilots at their collection rank + level —
+		# the same copies `GameManager.start_run` builds (salary / stats agree).
+		RunRules.apply_progress(_pool, _pm.owned_ranks(), _pm.owned_levels())
 	go_to_step(0)
 
 
@@ -138,7 +139,7 @@ func _make_step_view(id: String) -> Control:
 		"lineup":
 			_draft = TeamDraft.new()
 			_draft.set_anchors_preset(Control.PRESET_FULL_RECT)
-			_draft.setup(_pool, _pm.owned_max_levels(), maxi(0, scenario_id))
+			_draft.setup(_pool, _pm.owned_levels(), maxi(0, scenario_id))
 			%Steps.add_child(_draft)
 			_draft.ensure_view()
 			_draft.back_requested.connect(_prev_step)
@@ -181,6 +182,8 @@ func manager_traits() -> Array:
 
 # ── 런 시작 ──────────────────────────────────────────────────────────────────
 ## 계약 §10.2 의 `run_setup`. `pilot_ids` 는 `GameEnums.Role` 순, 레벨 키는 문자열.
+## `pilot_levels` is informational — `GameManager.start_run` reads ranks / levels from the
+## profile (the same values the pool shows).
 func build_run_setup(pilot_ids: Array) -> Dictionary:
 	var levels: Dictionary = {}
 	for pid in pilot_ids:

@@ -153,13 +153,13 @@ func _fill_header() -> void:
 	%Name.text = _pilot.name
 	(%PositionBadge_Position as PositionBadge).set_role(int(_pilot.role))
 	%Sub.text = Loc.t(L.RUN_SETUP_DRAFT_ORIGIN_TEAM, {"team": _team_short(_pilot.team_id)})
-	# M10 — breakthrough stage. The copy handed in already carries it (stats, salary,
-	# swapped pilot card: `RunRules.apply_breakthrough` on the pool / run copies), so
-	# this chip only names *why* the numbers below differ from the base pilot.
+	# Stars · rank. The copy handed in already carries the rank rows (stats, salary,
+	# swapped pilot card: `RunRules.apply_rank` on the pool / run copies), so this chip only
+	# names *why* the numbers below differ from the base pilot.
 	_clear(%BtChips)
-	%BtRow.visible = _pilot.breakthrough > 0
-	if _pilot.breakthrough > 0:
-		_bt_chip(Loc.t(L.RUN_SETUP_DRAFT_BREAKTHROUGH, {"n": _pilot.breakthrough}),
+	%BtRow.visible = _pilot.rank > 0
+	if _pilot.rank > 0:
+		_bt_chip("%s · %s" % [GameEnums.star_label(_pilot.rarity), GameEnums.rank_label(_pilot.rank)],
 				OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
 		if _pilot.train_bonus_pct != 0:
 			_bt_chip(Loc.t(L.RUN_SETUP_DRAFT_TRAIN_BONUS, {"pct": _pilot.train_bonus_pct}),
@@ -319,5 +319,6 @@ func _fill_preview() -> void:
 	if best == null:
 		return
 	var copy := best.duplicate() as PlayerData
+	RunRules.apply_rank(copy, maxi(1, copy.rarity))
 	RunRules.apply_level(copy, 3)
 	open(copy)

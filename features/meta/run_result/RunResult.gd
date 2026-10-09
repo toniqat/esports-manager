@@ -9,7 +9,7 @@ extends RefCounted
 # 프로필 반영이 한 군데에만 산다.
 #
 # 수치는 전부 const.csv 의 `RUN_SCORE_*` · `RUN_CURRENCY_PER_SCORE` ·
-# `RUN_MGR_EXP_PER_SCORE` 에서 읽는다 — 여기에도 문서에도 값을 적지 않는다.
+# `RUN_MGR_EXP_PER_SCORE` · `RUN_LEVELUP_PER_SCORE` · `RUN_RANK_STONE_PER_SCORE` 에서 읽는다 — 여기에도 문서에도 값을 적지 않는다.
 
 const SCENE_PATH: String = "res://scenes/RunResult.tscn"
 
@@ -114,6 +114,8 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 	var manager_exp: int = int(floor(score * ConstTable.num("RUN_MGR_EXP_PER_SCORE") + _FLOOR_EPS))
 	# M10 — levelup currency and weekly-pass exp scale with the score too.
 	var levelup: int = int(floor(score * ConstTable.num("RUN_LEVELUP_PER_SCORE") + _FLOOR_EPS))
+	# B — rank stones (승급석) for pilot rank-ups.
+	var rank_stone: int = int(floor(score * ConstTable.num("RUN_RANK_STONE_PER_SCORE") + _FLOOR_EPS))
 	var pass_exp: int = int(floor(score * ConstTable.num("PASS_EXP_PER_SCORE") + _FLOOR_EPS))
 
 	var mine: Array = my_pilot_ids(state)
@@ -153,7 +155,7 @@ static func build_result(state: Dictionary, outcome: String, test_run: bool) -> 
 		"titles": titles,
 		"score": score,
 		"bonus_points": bonus_points,
-		"currency": {"outgame": currency, "levelup": levelup},
+		"currency": {"outgame": currency, "levelup": levelup, "rank_stone": rank_stone},
 		"manager_exp": manager_exp,
 		# M10 — §12.
 		"pass_exp": pass_exp,

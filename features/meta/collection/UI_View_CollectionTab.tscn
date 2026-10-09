@@ -38,7 +38,7 @@ mouse_filter = 2
 theme_override_constants/separation = 20
 
 [node name="Summary" type="MarginContainer" parent="VBox/Top/TopVBox"]
-custom_minimum_size = Vector2(0, 128)
+custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
 mouse_filter = 2
 
@@ -68,7 +68,9 @@ theme_type_variation = &"CaptionLabel"
 text = "tx_WEMGESKYB6"
 
 [node name="OwnedCount" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
-editor_description = "[필수] 지우면 오류 — CollectionTab.gd _owned_lbl"
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — CollectionTab.gd _owned_lbl
+Owned pilot count (the grid shows owned pilots only, so no n / pool progress)."
 unique_name_in_owner = true
 layout_mode = 0
 offset_top = 44.0
@@ -76,26 +78,7 @@ offset_right = 300.0
 offset_bottom = 94.0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 40
-text = "12 / 25"
-
-[node name="OwnedTrack" type="Panel" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
-layout_mode = 0
-offset_top = 100.0
-offset_right = 300.0
-offset_bottom = 110.0
-mouse_filter = 2
-theme_type_variation = &"ProgressTrack"
-
-[node name="OwnedFill" type="Panel" parent="VBox/Top/TopVBox/Summary/Pad/Content/OwnedTrack"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — CollectionTab.gd _owned_fill
-anchor_right = owned / pool size (code)."
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.48
-anchor_bottom = 1.0
-mouse_filter = 2
-theme_type_variation = &"ProgressFill"
+text = "12"
 
 [node name="LevelupTitle" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
 layout_mode = 1
@@ -112,6 +95,7 @@ text = "tx_R68VA861B3"
 horizontal_alignment = 2
 
 [node name="Levelup" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — CollectionTab.gd _levelup_lbl"
 unique_name_in_owner = true
 layout_mode = 1
@@ -128,7 +112,7 @@ theme_override_font_sizes/font_size = 40
 text = "1234"
 horizontal_alignment = 2
 
-[node name="ShardTitle" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+[node name="RankStoneTitle" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -138,11 +122,12 @@ offset_top = 16.0
 offset_bottom = 46.0
 grow_horizontal = 0
 theme_type_variation = &"CaptionLabel"
-text = "tx_V9830054XS"
+text = "tx_95JG2WTYR0"
 horizontal_alignment = 2
 
-[node name="Shards" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
-editor_description = "[필수] 지우면 오류 — CollectionTab.gd _shard_lbl"
+[node name="RankStone" type="Label" parent="VBox/Top/TopVBox/Summary/Pad/Content"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — CollectionTab.gd _rank_stone_lbl"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
@@ -154,7 +139,7 @@ offset_bottom = 94.0
 grow_horizontal = 0
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 40
-text = "56"
+text = "5"
 horizontal_alignment = 2
 
 [node name="Filters" type="HBoxContainer" parent="VBox/Top/TopVBox"]
@@ -245,6 +230,25 @@ theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 24
 text = "선수 데이터를 읽지 못했습니다: <error>"
 
+[node name="Empty" type="MarginContainer" parent="VBox/Scroll/Body"]
+editor_description = "[필수] 지우면 오류 — CollectionTab.gd _refresh_all()
+Shown when the profile owns no pilot."
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 0
+
+[node name="EmptyText" type="Label" parent="VBox/Scroll/Body/Empty"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+text = "tx_BBXCHB19XW"
+horizontal_alignment = 1
+autowrap_mode = 3
+
 [node name="GridPad" type="MarginContainer" parent="VBox/Scroll/Body"]
 layout_mode = 2
 theme_override_constants/margin_left = 0
@@ -255,7 +259,7 @@ theme_override_constants/margin_bottom = 24
 [node name="Grid" type="GridContainer" parent="VBox/Scroll/Body/GridPad"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — CollectionTab.gd _grid
-One UI_Comp_CollectionCell.tscn item (240×330) per named pilot, added by code in sort order; filtered-out cells are hidden, so the grid closes up without holes."
+One UI_Comp_CollectionCell.tscn item (240×240) per owned pilot, added by code in sort order; filtered-out cells are hidden, so the grid closes up without holes."
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/h_separation = 16

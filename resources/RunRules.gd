@@ -1,20 +1,20 @@
 class_name RunRules
 extends RefCounted
 
-# ── 런 준비 규칙 (M1) — 시나리오 · 팀 패키지 · 선수 레벨 · 샐러리캡 ──────────
+# ── 런 준비 규칙 (M1) — 시나리오 · 팀 패키지 · 선수 랭크 · 레벨 · 샐러리캡 ────
 # 런 준비 화면(`features/meta/run_setup/`)과 런 시작(`GameManager.start_run`)이
 # **같은 규칙**을 읽도록 한 곳에 모았다. 화면이 "고를 때 보이는 규칙"과 시작이
 # "거절하는 규칙"이 갈라지면, 편성 중에는 되던 조합이 시작 버튼에서 막힌다.
 #
-# 표: `scenarios.csv` · `pilot_levels.csv` · `teams.csv`(패키지 컬럼). 처음 읽힐
-# 때 DB 를 한 번 열어 캐시한다(ConstTable 과 같은 방식).
+# Tables: `scenarios.csv` · `pilot_levels.csv` · `pilot_ranks.csv` · `teams.csv` (package
+# columns). Opened once on first use and cached (like ConstTable).
 #
-# 레벨 키 규칙: `levels` 딕셔너리는 **문자열 pilot id → int 레벨**이다 — 런
-# 세이브(JSON)를 지나도 모양이 같도록.
+# Key rule: `levels` / `ranks` dictionaries are **String pilot id → int** so they survive
+# the run save (JSON) unchanged.
 
 static var _scenarios: Array = []
-static var _levels: Dictionary = {}       # int level → {stat_bonus, salary_bonus, levelup_cost, exp_required}
-static var _breakthrough: Dictionary = {} # int pilot_id → Array[{stage, kind, value}] by stage
+static var _levels: Dictionary = {}       # int level (0..) → {stat_bonus, salary_bonus, levelup_cost, exp_required}
+static var _ranks: Dictionary = {}        # int pilot_id → Array[{rank, stage, kind, value}] by rank
 static var _teams: Array = []
 static var _loaded: bool = false
 
@@ -87,43 +87,55 @@ static func area_label(area: String) -> String:
 	return area
 
 
-# ── 레벨 ─────────────────────────────────────────────────────────────────────
+# ── Level (rank-local ladder) ────────────────────────────────────────────────
+# A pilot's level runs 0 .. `level_cap(rank)` (= RANK_LEVEL_CAP_PER_RANK × rank) and resets to
+# 0 on rank-up. `pilot_levels.csv` (Lv0..50) holds the **absolute** bonus of a level — the same
+# table for every rank; CSV pilot values are the Lv0 / rank-0 base.
+
+## Highest level in the table (Lv50).
 static func max_level() -> int:
 	_ensure_loaded()
-	var top: int = 1
+	var top: int = 0
 	for lv in _levels.keys():
 		top = maxi(top, int(lv))
 	return top
 
 
-## Lv1 대비 누적 스탯 가산(여섯 스탯 각각에 더한다).
+## Level cap of a rank (`RANK_LEVEL_CAP_PER_RANK` × rank, never above the table). 0 for rank 0.
+static func level_cap(rank: int) -> int:
+	var per: int = maxi(1, ConstTable.int_of("RANK_LEVEL_CAP_PER_RANK"))
+	return mini(max_level(), clampi(rank, 0, rank_max()) * per)
+
+
+## Stat bonus at `level` over the Lv0 base (added to each of the six stats).
 static func stat_bonus_at(level: int) -> int:
 	_ensure_loaded()
 	return int((_levels.get(level, {}) as Dictionary).get("stat_bonus", 0))
 
 
-## Lv1 대비 누적 샐러리 가산.
+## Salary bonus at `level` over the Lv0 base.
 static func salary_bonus_at(level: int) -> int:
 	_ensure_loaded()
 	return int((_levels.get(level, {}) as Dictionary).get("salary_bonus", 0))
 
 
-## M10 — levelup currency to raise the max level **to** `level` (0 at Lv1 / unknown).
+## Levelup currency to go from `level - 1` to `level` (0 at Lv0 / unknown).
 static func levelup_cost(level: int) -> int:
 	_ensure_loaded()
 	return int((_levels.get(level, {}) as Dictionary).get("levelup_cost", 0))
 
 
-## M10 — cumulative pilot exp at which the max level reaches `level` automatically.
+## Cumulative pilot EXP **from Lv0 inside one rank** to reach `level` (`exp_required(0)` = 0).
+## The profile's `exp` resets to 0 on rank-up, so this curve restarts every rank.
 static func exp_required(level: int) -> int:
 	_ensure_loaded()
 	return int((_levels.get(level, {}) as Dictionary).get("exp_required", 0))
 
 
-## M10 — highest level whose `exp_required` ≤ `exp_total`.
+## Highest level whose `exp_required` ≤ `exp_total` (0 at least). Callers clamp to the cap.
 static func level_for_exp(exp_total: int) -> int:
 	_ensure_loaded()
-	var lv: int = 1
+	var lv: int = 0
 	for k in _levels.keys():
 		if exp_total >= exp_required(int(k)):
 			lv = maxi(lv, int(k))
@@ -134,16 +146,17 @@ static func salary_at(base_salary: int, level: int) -> int:
 	return base_salary + salary_bonus_at(level)
 
 
-## 이 선수의 지금 레벨 기준 샐러리.
+## Salary of this copy at its current level (rank effects are already folded into
+## `pd.salary` by `apply_rank`).
 static func salary_of(pd: PlayerData) -> int:
 	return salary_at(pd.salary, pd.level)
 
 
-## `pd` 를 `level` 로 맞춘다 — 지금 레벨과의 **차이만큼** 여섯 스탯을 올리거나
-## 내리고 `pd.level` 을 적는다. 같은 레벨로 다시 불러도 아무 일도 없다.
-## 런 사본(`season_state.all_pilots`)에만 쓴다 — CSV 원본 값은 Lv1 기준이다.
+## Sets `pd` to `level` — raises / lowers the six stats by the bonus **difference** to
+## its current `pd.level` and writes `pd.level`. Idempotent. Run copies / run setup pool
+## only — CSV values are the Lv0 base.
 static func apply_level(pd: PlayerData, level: int) -> void:
-	var lv: int = clampi(level, 1, max_level())
+	var lv: int = clampi(level, 0, max_level())
 	var delta: int = stat_bonus_at(lv) - stat_bonus_at(pd.level)
 	if delta != 0:
 		for key in PlayerData.STAT_KEYS:
@@ -151,29 +164,52 @@ static func apply_level(pd: PlayerData, level: int) -> void:
 	pd.level = lv
 
 
-# ── 돌파 (M10) ───────────────────────────────────────────────────────────────
-static func breakthrough_max() -> int:
-	return maxi(0, ConstTable.int_of("BREAKTHROUGH_MAX"))
+## Applies `{"<pilot_id>": level}` to the matching pilots of `pool` (others untouched).
+static func apply_levels(pool: Array, levels: Dictionary) -> void:
+	for raw in pool:
+		var pd := raw as PlayerData
+		if levels.has(str(pd.id)):
+			apply_level(pd, int(levels[str(pd.id)]))
 
 
-## `[{stage, kind, value: String}]` of one pilot, stage order (empty for mobs). Display text =
-## `breakthrough.kind.<kind>` filled from `value` (`CollectionDetailSheet._bt_desc`).
-static func breakthrough_rows(pilot_id: int) -> Array:
+# ── Rank ─────────────────────────────────────────────────────────────────────
+# Rank 1..RANK_MAX. A pilot is acquired at rank = stars (`players.rarity` 1..3);
+# breakthrough only raises the max rank (`ProfileManager`). Reaching rank R applies the
+# pilot's `pilot_ranks.csv` rows 1..R cumulatively, plus `RANK_SALARY_STEP` salary for
+# every rank above the stars (ranks bought with rank stones).
+
+static func rank_max() -> int:
+	return maxi(1, ConstTable.int_of("RANK_MAX"))
+
+
+## Rank stones to reach `rank` from `rank - 1` (`RANK_UP_STONE_R<rank>`). -1 outside 2..RANK_MAX.
+static func rank_up_cost(rank: int) -> int:
+	if rank < 2 or rank > rank_max():
+		return -1
+	return maxi(0, ConstTable.int_of("RANK_UP_STONE_R%d" % rank))
+
+
+## `[{rank, kind, value: String}]` of one pilot, rank order (empty for mobs). Several rows can
+## share a rank. Display text = `breakthrough.kind.<kind>` filled from `value`. Each row also
+## carries `stage` (= rank) for callers written against the old breakthrough rows.
+static func rank_rows(pilot_id: int) -> Array:
 	_ensure_loaded()
-	return _breakthrough.get(pilot_id, [])
+	return _ranks.get(pilot_id, [])
 
 
-## Raises `pd` from its current `pd.breakthrough` to `stage` (cumulative stages,
-## applied once each — calling again with the same stage does nothing). Effects:
-## `stat_flat` +v to the six stats, `salary_down` −v to the Lv1 salary (≥ 0),
-## `stat_growth` +v% to `pd.train_bonus_pct`, `card_swap` "slot:card_id" replaces
-## that pilot-card slot. Run copies / run setup pool only — never CSV values.
-static func apply_breakthrough(pd: PlayerData, stage: int) -> void:
-	var target: int = clampi(stage, 0, breakthrough_max())
-	for raw in breakthrough_rows(pd.id):
+## Raises `pd` from its current `pd.rank` to `rank` (rows applied once each — calling again
+## with the same rank does nothing). Effects: `stat_flat` +v to the six stats, `salary_down`
+## −v salary (≥ 0), `stat_growth` +v% to `pd.train_bonus_pct`, `card_swap` "slot:card_id"
+## replaces that pilot-card slot; each rank above `pd.rarity` (stars) adds `RANK_SALARY_STEP`.
+## Run copies / run setup pool only — never CSV values.
+static func apply_rank(pd: PlayerData, rank: int) -> void:
+	var target: int = clampi(rank, 0, rank_max())
+	if target <= pd.rank:
+		return
+	for raw in rank_rows(pd.id):
 		var r: Dictionary = raw
-		var st: int = int(r["stage"])
-		if st <= pd.breakthrough or st > target:
+		var rk: int = int(r["rank"])
+		if rk <= pd.rank or rk > target:
 			continue
 		var v: String = String(r["value"])
 		match String(r["kind"]):
@@ -190,36 +226,72 @@ static func apply_breakthrough(pd: PlayerData, stage: int) -> void:
 					var slot: int = int(parts[0])
 					if slot >= 0 and slot < pd.pilot_cards.size():
 						pd.pilot_cards[slot] = int(parts[1])
-	pd.breakthrough = maxi(pd.breakthrough, target)
+	var step: int = ConstTable.int_of("RANK_SALARY_STEP")
+	for rk2 in range(pd.rank + 1, target + 1):
+		if rk2 > pd.rarity:
+			pd.salary += step
+	pd.rank = target
 
 
-## Applies `{"<pilot_id>": stage}` to the matching pilots of `pool` (others untouched).
-static func apply_breakthroughs(pool: Array, stages: Dictionary) -> void:
+## Applies `{"<pilot_id>": rank}` to the matching pilots of `pool` (others untouched).
+static func apply_ranks(pool: Array, ranks: Dictionary) -> void:
 	for raw in pool:
 		var pd := raw as PlayerData
-		var st: int = int(stages.get(str(pd.id), 0))
-		if st > 0:
-			apply_breakthrough(pd, st)
+		var rk: int = int(ranks.get(str(pd.id), 0))
+		if rk > 0:
+			apply_rank(pd, rk)
 
 
-# ── 편성 ─────────────────────────────────────────────────────────────────────
-## 고른 선수들의 샐러리 합. `levels` 에 없는 선수는 Lv1.
-static func lineup_salary(pilots: Array, levels: Dictionary) -> int:
+## Every named pilot of `pool` at its acquisition rank (= stars) — the strength of a pilot
+## nobody ranked up (AI teams, unowned pilots in the run setup pool).
+static func apply_base_ranks(pool: Array) -> void:
+	for raw in pool:
+		var pd := raw as PlayerData
+		if not pd.is_mob and pd.rarity > 0:
+			apply_rank(pd, pd.rarity)
+
+
+## Run copies of the whole pool: every named pilot at its stars (`apply_base_ranks`), then
+## `ranks` / `levels` (`{"<pid>": int}` — the owned collection) on top. Run setup pool and
+## `GameManager.start_run` both build their copies through this sequence.
+static func apply_progress(pool: Array, ranks: Dictionary, levels: Dictionary) -> void:
+	apply_base_ranks(pool)
+	apply_ranks(pool, ranks)
+	apply_levels(pool, levels)
+
+
+## @deprecated — use `rank_max`.
+static func breakthrough_max() -> int:
+	return rank_max()
+
+
+## @deprecated — use `rank_rows`.
+static func breakthrough_rows(pilot_id: int) -> Array:
+	return rank_rows(pilot_id)
+
+
+## @deprecated — use `apply_rank`.
+static func apply_breakthrough(pd: PlayerData, stage: int) -> void:
+	apply_rank(pd, stage)
+
+
+# ── Lineup ───────────────────────────────────────────────────────────────────
+## Salary sum of the picked copies at their current level (`salary_of`).
+static func lineup_salary(pilots: Array) -> int:
 	var total: int = 0
 	for raw in pilots:
-		var pd := raw as PlayerData
-		total += salary_at(pd.salary, int(levels.get(str(pd.id), 1)))
+		total += salary_of(raw as PlayerData)
 	return total
 
 
-## 편성 검증. 성공이면 "" — 실패면 사람이 읽는 한 줄.
-##   pilot_ids        : 고른 5명(순서 무관)
-##   levels           : {"<pilot_id>": level}
-##   pool             : Array[PlayerData] — id 를 찾을 선수 목록(CSV Lv1 사본)
-##   owned_max_levels : {"<pilot_id>": 달성 최대 레벨} — 보유 컬렉션
-##   cap_bonus        : M8 — the equipped traits' `salary_cap` sum (`TraitSystem.sum_p1`)
-static func validate_lineup(pilot_ids: Array, levels: Dictionary, scenario_id: int,
-		pool: Array, owned_max_levels: Dictionary, cap_bonus: int = 0) -> String:
+## Lineup check. "" when valid, else one translated line.
+##   pilot_ids : the five picks (any order)
+##   pool      : Array[PlayerData] to look ids up in — copies already at their run rank + level
+##               (salary is read from them; there is no level choice)
+##   owned     : {"<pilot_id>": anything} — the owned collection (keys only)
+##   cap_bonus : M8 — the equipped traits' `salary_cap` sum (`TraitSystem.sum_p1`)
+static func validate_lineup(pilot_ids: Array, scenario_id: int, pool: Array,
+		owned: Dictionary, cap_bonus: int = 0) -> String:
 	if pilot_ids.size() != 5:
 		return Loc.t(L.UI_LINEUP_NEED_FIVE, {"n": pilot_ids.size()})
 	var by_id: Dictionary = {}
@@ -231,18 +303,15 @@ static func validate_lineup(pilot_ids: Array, levels: Dictionary, scenario_id: i
 		var id_i: int = int(pid)
 		if not by_id.has(id_i):
 			return Loc.t(L.UI_LINEUP_UNKNOWN_PILOT, {"id": id_i})
-		if not owned_max_levels.has(str(id_i)):
+		if not owned.has(str(id_i)):
 			return Loc.t(L.UI_LINEUP_NOT_OWNED, {"name": (by_id[id_i] as PlayerData).name})
 		var pd := by_id[id_i] as PlayerData
 		if seen_roles.has(pd.role):
 			return Loc.t(L.UI_LINEUP_DUPLICATE_POSITION)
 		seen_roles[pd.role] = true
-		var lv: int = int(levels.get(str(id_i), 1))
-		if lv < 1 or lv > int(owned_max_levels[str(id_i)]):
-			return Loc.t(L.UI_LINEUP_LEVEL_NOT_ALLOWED, {"name": pd.name, "level": lv})
 		picked.append(pd)
 	var cap: int = maxi(0, salary_cap(scenario_id) + cap_bonus)
-	var total: int = lineup_salary(picked, levels)
+	var total: int = lineup_salary(picked)
 	if cap > 0 and total > cap:
 		return Loc.t(L.UI_LINEUP_OVER_CAP, {"total": total, "cap": cap})
 	return ""
@@ -276,17 +345,17 @@ static func _ensure_loaded() -> void:
 				"exp_required": int(row.get("exp_required", 0)),
 			}
 	if _levels.is_empty():
-		_levels[1] = {"stat_bonus": 0, "salary_bonus": 0}
-	if _has_table(db, "pilot_breakthrough"):
-		db.query("SELECT * FROM pilot_breakthrough ORDER BY pilot_id, stage")
+		_levels[0] = {"stat_bonus": 0, "salary_bonus": 0}
+	if _has_table(db, "pilot_ranks"):
+		db.query("SELECT * FROM pilot_ranks ORDER BY pilot_id, rank, id")
 		for row in db.query_result:
 			var pid: int = int(row["pilot_id"])
-			var list: Array = _breakthrough.get(pid, [])
+			var list: Array = _ranks.get(pid, [])
 			list.append({
-				"stage": int(row["stage"]), "kind": String(row["kind"]),
-				"value": String(row["value"]),
+				"rank": int(row["rank"]), "stage": int(row["rank"]),
+				"kind": String(row["kind"]), "value": String(row["value"]),
 			})
-			_breakthrough[pid] = list
+			_ranks[pid] = list
 	db.query("SELECT * FROM teams ORDER BY id")
 	for row in db.query_result:
 		var areas: Array = []

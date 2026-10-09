@@ -148,7 +148,7 @@ func _fill_gacha(pool: String) -> void:
 	var sub: String = Loc.t(L.SHOP_TAB_BANNER_SUB_PILOT, {"n": Gacha.named_pilots().size()}) if is_pilot \
 			else Loc.t(L.SHOP_TAB_BANNER_SUB_TRAIT, {"n": TraitSystem.rows().size()})
 	%BannerSub.text = UiHelpers.keep_words(sub)
-	# Rate chips — one per rarity.
+	# Rate chips — one per tier (pilots: stars, traits: rarity).
 	var chips: Node = %RateChips
 	_clear(chips)
 	var chip_scene := load(RATE_CHIP_SCENE) as PackedScene
@@ -157,8 +157,8 @@ func _fill_gacha(pool: String) -> void:
 		var chip: Control = chip_scene.instantiate()
 		chips.add_child(chip)
 		var t: Label = chip.get_node("%Text")
-		t.text = "%s %s%%" % [GameEnums.rarity_label(int(r["rarity"])), _pct(float(r["pct"]))]
-		t.add_theme_color_override("font_color", ShopPopup.rarity_color(int(r["rarity"])))
+		t.text = "%s %s%%" % [ShopPopup.tier_label(pool, int(r["rarity"])), _pct(float(r["pct"]))]
+		t.add_theme_color_override("font_color", ShopPopup.tier_color(pool, int(r["rarity"])))
 
 	# Holdings.
 	var tk: String = Gacha.ticket_key(pool)
@@ -169,7 +169,7 @@ func _fill_gacha(pool: String) -> void:
 	if is_pilot:
 		var owned_named: int = 0
 		for r in Gacha.named_pilots():
-			if int(_pm.max_level_of(int((r as Dictionary)["id"]))) > 0:
+			if bool(_pm.owns_pilot(int((r as Dictionary)["id"]))):
 				owned_named += 1
 		%OwnedLabel.text = Loc.t(L.TERM_PILOT_OWNED)
 		%OwnedValue.text = "%d / %d" % [owned_named, Gacha.named_pilots().size()]
@@ -222,6 +222,7 @@ func _on_pull(pool: String, count: int) -> void:
 	_after_purchase()
 	_popup.open_reveal(Loc.t(L.SHOP_TAB_RESULT_PILOT) if pool == Gacha.POOL_PILOT
 			else Loc.t(L.SHOP_TAB_RESULT_TRAIT), res["results"])
+	_toast_rank_stones(Gacha.rank_stone_total(res["results"]))
 
 
 # ── Shard shop ───────────────────────────────────────────────────────────────
@@ -236,18 +237,18 @@ func _fill_shard() -> void:
 	for raw in pilots:
 		var r: Dictionary = raw
 		var pid: int = int(r["id"])
-		var rar_col: Color = ShopPopup.rarity_color(int(r["rarity"]))
+		var rar_col: Color = ShopPopup.star_color(int(r["rarity"]))
 		var row: Control = _add_row(row_scene)
 		var slot: Control = row.get_node("%FaceSlot")
 		OutgameTheme.add_round_portrait(slot, PilotImages.face_for(pid), Vector2.ZERO,
 				slot.size.x, rar_col)
 		(row.get_node("%Name") as Label).text = Gacha.pilot_name(pid)
 		_paint_chip(row.get_node("%Chip"), rar_col)
-		(row.get_node("%ChipText") as Label).text = GameEnums.rarity_label(int(r["rarity"]))
+		(row.get_node("%ChipText") as Label).text = GameEnums.star_label(int(r["rarity"]))
 		(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(r["role"]))
-		var owned: bool = int(_pm.max_level_of(pid)) > 0
+		var owned: bool = bool(_pm.owns_pilot(pid))
 		(row.get_node("%Status") as Label).text = Loc.t(L.SHOP_TAB_BT_PROGRESS, {
-				"n": int(_pm.breakthrough_of(pid)), "max": RunRules.breakthrough_max()}) if owned \
+				"n": int(_pm.breakthrough_of(pid)), "max": int(_pm.breakthrough_cap_of(pid))}) if owned \
 				else Loc.t(L.UI_WORD_UNOWNED)
 		var why: String = ShopCatalog.shard_block_reason(_pm, pid)
 		var price: int = ShopCatalog.shard_price(pid)
@@ -271,7 +272,9 @@ func _on_buy_pilot(pid: int) -> void:
 	var r: Dictionary = Gacha.pilot_row(pid)
 	_popup.open_reveal(Loc.t(L.SHOP_TAB_BOUGHT), [{"pool": Gacha.POOL_PILOT, "id": pid,
 			"rarity": int(r.get("rarity", 0)), "result": String(g.get("result", "")),
-			"stage": int(g.get("stage", 0)), "shards": int(g.get("shards", 0))}])
+			"stage": int(g.get("stage", 0)), "shards": int(g.get("shards", 0)),
+			"rank_stone": int(g.get("rank_stone", 0))}])
+	_toast_rank_stones(int(g.get("rank_stone", 0)))
 
 
 # ── Trait craft ──────────────────────────────────────────────────────────────
@@ -318,6 +321,13 @@ func _fill_exchange() -> void:
 				"levelup": int(_pm.currency_of("levelup"))}),
 		 "btn": Loc.t(L.UI_BUTTON_EXCHANGE), "ok": int(_pm.currency_of("outgame")) >= ShopCatalog.levelup_exchange_cost(),
 		 "cb": _on_exchange_levelup},
+		{"title": Loc.t(L.SHOP_TAB_EX_RANK_STONE_TITLE),
+		 "desc": Loc.t(L.SHOP_TAB_EX_RANK_STONE_DESC, {"cost": ShopCatalog.rank_stone_exchange_cost(),
+				"gain": ShopCatalog.rank_stone_exchange_gain()}),
+		 "have": Loc.t(L.SHOP_TAB_EX_RANK_STONE_HAVE, {"coins": int(_pm.currency_of("outgame")),
+				"stones": int(_pm.currency_of("rank_stone"))}),
+		 "btn": Loc.t(L.UI_BUTTON_EXCHANGE), "ok": int(_pm.currency_of("outgame")) >= ShopCatalog.rank_stone_exchange_cost(),
+		 "cb": _on_exchange_rank_stone},
 		{"title": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_TITLE),
 		 "desc": Loc.t(L.SHOP_TAB_EX_PILOT_TICKET_DESC, {"cost": ShopCatalog.ticket_premium_price(Gacha.POOL_PILOT),
 				"gain": ShopCatalog.ticket_exchange_gain()}),
@@ -353,6 +363,18 @@ func _fill_exchange() -> void:
 func _on_exchange_levelup() -> void:
 	_simple_action(ShopCatalog.exchange_levelup(_pm),
 			Loc.t(L.SHOP_TAB_TOAST_LEVELUP, {"n": ShopCatalog.levelup_exchange_gain()}))
+
+
+func _on_exchange_rank_stone() -> void:
+	_simple_action(ShopCatalog.exchange_rank_stone(_pm),
+			Loc.t(L.SHOP_TAB_TOAST_RANK_STONE, {"n": ShopCatalog.rank_stone_exchange_gain()}))
+
+
+## Capped-breakthrough dupes also pay rank stones — the reveal tag shows the shards, this
+## toast the stones (nothing when `n` = 0).
+func _toast_rank_stones(n: int) -> void:
+	if n > 0:
+		_host.show_toast(Loc.t(L.SHOP_TAB_TOAST_RANK_STONE, {"n": n}))
 
 
 func _on_buy_ticket(pool: String) -> void:

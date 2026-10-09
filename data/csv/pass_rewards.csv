@@ -6,7 +6,7 @@ level,currency,amount
 5,gacha_ticket_pilot,1
 6,levelup,10
 7,trait_mat,5
-8,cosmetic,10
+8,rank_stone,1
 9,outgame,30
 10,gacha_ticket_trait,1
 11,trait_mat,5
@@ -14,7 +14,7 @@ level,currency,amount
 13,outgame,30
 14,levelup,10
 15,gacha_ticket_pilot,1
-16,cosmetic,10
+16,rank_stone,2
 17,outgame,30
 18,levelup,10
 19,trait_mat,5
@@ -22,5 +22,5 @@ level,currency,amount
 21,outgame,30
 22,levelup,10
 23,trait_mat,5
-24,cosmetic,10
+24,rank_stone,3
 25,gacha_ticket_pilot,3

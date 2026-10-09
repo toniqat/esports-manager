@@ -5,53 +5,57 @@ extends CanvasLayer
 # `docs/mobile_safe_area.md`): dim = whole viewport, sheet between `top_y()` and
 # `bottom_y()`, the footer buttons end above the bottom gesture zone.
 #
-#   ┌ hero: bust · name · role · rarity / Lv / 돌파 / 중복 chips · EXP bar · salary ┐
-#   │ 능력치 (max level + breakthrough, delta vs Lv1)                             │  scrolls
-#   │ 돌파 table (5 stages, reached highlighted, card_swap names the card)       │
-#   │ 파일럿 카드 (after breakthrough swaps)                                      │
-#   ├ status line (why 레벨업 is disabled / what just happened) ─────────────────┤
-#   └ [닫기] [레벨업 · cost] ──────────────────────────────────────────────────────┘
+#   ┌ hero: bust · name · team · 등급 / 랭크 / 돌파 / Lv chips · EXP bar · salary ┐
+#   │ 능력치 (current rank + level, delta vs the raw data)                       │  scrolls
+#   │ 랭크 table (RunRules.rank_rows: reached / next / needs breakthrough)      │
+#   │ 파일럿 카드 (after rank card swaps)                                        │
+#   ├ status line (why an action is disabled / what just happened) ────────────┤
+#   └ [닫기] [레벨업 · cost] [랭크업 · cost] ─────────────────────────────────────┘
 #
 # **The layout lives in `UI_View_CollectionDetailSheet.tscn`** (plus the item scenes
-# `UI_Comp_CollectionStatChip.tscn` · `UI_Comp_CollectionBreakthroughRow.tscn`). This script makes no
+# `UI_Comp_CollectionStatChip.tscn` · `UI_Comp_CollectionRankRow.tscn`). This script makes no
 # static nodes: it fills `%` nodes with text, shows / hides the optional blocks and
-# wires signals. What stays in code is data: role / rarity / reached tints, the chip
+# wires signals. What stays in code is data: role / stars / reached tints, the chip
 # pills (sized to their text), the EXP fill width, the bust art + role badge, the
 # `CardDescBox` panels, and the safe-area offset of `%SafeArea`.
 #
-# Numbers come from a **copy** of the Lv1 pool pilot: `RunRules.apply_level(max_level)`
-# then `RunRules.apply_breakthrough(stage)` — the same two calls run start makes, so
-# what this sheet shows is what the pilot brings into a run at that level.
+# Numbers come from a **copy** of the pool pilot (`fielded_copy`): `RunRules.apply_rank(rank)`
+# then `RunRules.apply_level(level)` — the same calls run start makes, so what this sheet shows
+# is what the pilot brings into a run today.
 #
-# 레벨업: `ProfileManager.level_up_pilot` → `save_profile()` → `leveled_up` (the tab
-# refreshes the cell, currency strip and toasts). The sheet refills in place.
+# 레벨업: `ProfileManager.level_up_pilot` → `save_profile()` → `leveled_up`.
+# 랭크업: `ProfileManager.rank_up_pilot` (spends `rank_stone`, rank +1, level 0) →
+# `save_profile()` → `ranked_up`. The tab refreshes the cell, summary, currency strip and
+# toasts; the sheet refills in place.
 #
 # 쓰는 법:
 #   var s := CollectionDetailSheet.create()
 #   add_child(s)
 #   s.leveled_up.connect(...)
+#   s.ranked_up.connect(...)
 #   s.open(pilot)
 
 signal leveled_up(pilot_id: int, new_level: int)
+signal ranked_up(pilot_id: int, new_rank: int)
 
 const SCENE_PATH: String = "res://features/meta/collection/UI_View_CollectionDetailSheet.tscn"
 const STAT_CHIP_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionStatChip.tscn")
-const BT_ROW_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionBreakthroughRow.tscn")
+const RANK_ROW_SCENE: PackedScene = preload("res://features/meta/collection/UI_Comp_CollectionRankRow.tscn")
 
-## Breakthrough line templates by kind (`{n}` = row value). `card_swap` is built in `_bt_desc`.
-const BT_DESC: Dictionary = {  # l10n-keys: breakthrough.kind.*
+## Rank-row line templates by kind (`{n}` = row value). `card_swap` is built in `_row_desc`.
+const ROW_DESC: Dictionary = {  # l10n-keys: breakthrough.kind.*
 	"stat_flat": L.BREAKTHROUGH_KIND_STAT_FLAT, "salary_down": L.BREAKTHROUGH_KIND_SALARY_DOWN,
 	"stat_growth": L.BREAKTHROUGH_KIND_STAT_GROWTH,
 }
-const BT_KIND_LABELS: Dictionary = {  # l10n-keys: collection.bt_kind.*
+const ROW_KIND_LABELS: Dictionary = {  # l10n-keys: collection.bt_kind.*
 	"stat_flat": L.COLLECTION_BT_KIND_STAT_FLAT, "salary_down": L.COLLECTION_BT_KIND_SALARY_DOWN,
 	"stat_growth": L.COLLECTION_BT_KIND_STAT_GROWTH, "card_swap": L.COLLECTION_BT_KIND_CARD_SWAP,
 }
 
 var _pm: Node = null
 var _gm: Node = null
-var _base: PlayerData = null      # Lv1 pool copy (never mutated)
-var _fielded: PlayerData = null   # what the sheet shows (max level + breakthrough)
+var _base: PlayerData = null      # pool copy (never mutated)
+var _fielded: PlayerData = null   # what the sheet shows (rank + level applied)
 var _status_text: String = ""
 var _status_ok: bool = false
 var _art: TextureRect = null
@@ -74,6 +78,7 @@ func _ready() -> void:
 	%Dim.pressed.connect(close)
 	%Close.pressed.connect(close)
 	%LevelUp.pressed.connect(_on_level_up_pressed)
+	%RankUp.pressed.connect(_on_rank_up_pressed)
 	# Sheet is STOP in the scene: taps on its empty parts must not reach the dim.
 	var bust: Control = %Bust
 	_art = PilotThumb.add_rounded_art(bust, Vector2.ZERO, bust.custom_minimum_size, 20)
@@ -104,15 +109,15 @@ func is_open() -> bool:
 	return visible
 
 
-## The pilot as this profile would field it: Lv `max_level`, breakthrough applied.
-## Unowned → Lv1, no breakthrough.
-static func fielded_copy(base: PlayerData, max_level: int, stage: int) -> PlayerData:
+## The pilot as this profile fields it: rank rows 1..`rank` and Lv `level` applied — the same
+## two calls run start makes (rank first, then level; both are delta-based).
+static func fielded_copy(base: PlayerData, rank: int, level: int) -> PlayerData:
 	var copy := base.duplicate() as PlayerData
-	# Own array — `card_swap` writes into it, and the pool copy must stay Lv1 / stage 0.
+	# Own array — `card_swap` writes into it, and the pool copy must stay untouched.
 	copy.pilot_cards = base.pilot_cards.duplicate()
-	RunRules.apply_level(copy, maxi(1, max_level))
-	if stage > 0:
-		RunRules.apply_breakthrough(copy, stage)
+	if rank > 0:
+		RunRules.apply_rank(copy, rank)
+	RunRules.apply_level(copy, level)
 	return copy
 
 
@@ -127,90 +132,76 @@ func _fit_safe_area() -> void:
 func _fill() -> void:
 	if _base == null:
 		return
-	var max_lv: int = _pm.max_level_of(_base.id)
-	var owned: bool = max_lv > 0
-	var stage: int = _pm.breakthrough_of(_base.id) if owned else 0
-	_fielded = fielded_copy(_base, max_lv, stage)
-	_fill_hero(owned, max_lv, stage)
-	_fill_stats(owned)
-	_fill_breakthrough(stage, owned)
+	var pid: int = _base.id
+	var rank: int = _pm.rank_of(pid)
+	_fielded = fielded_copy(_base, rank, _pm.level_of(pid))
+	_fill_hero(pid, rank)
+	_fill_stats(rank)
+	_fill_ranks(pid, rank)
 	_fill_cards()
-	_fill_footer(owned)
+	_fill_footer(pid, rank)
 
 
-func _fill_hero(owned: bool, max_lv: int, stage: int) -> void:
+func _fill_hero(pid: int, rank: int) -> void:
 	var r: int = int(_base.role)
 	var role_col: Color = OutgameTheme.ROLE_COLORS[r] if r >= 0 and r < 5 else OutgameTheme.NEUTRAL
 	(%BustPlate as Panel).add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(role_col.lerp(OutgameTheme.SURFACE, 0.78), 20))
-	var tex: Texture2D = PilotImages.bust_for(_base.id)
-	_art.texture = tex if tex != null else PilotImages.face_for(_base.id)
-	(_art.get_parent() as Control).modulate = Color.WHITE if owned else CollectionCell.UNOWNED_MODULATE
+	var tex: Texture2D = PilotImages.bust_for(pid)
+	_art.texture = tex if tex != null else PilotImages.face_for(pid)
 	if _badge != null:
 		_badge.free()
 	_badge = PilotThumb.add_position_badge(%Bust, r, Vector2(10, 10))
 
 	%Name.text = _base.name
 	# The position is the badge on the bust (`PositionBadge`) — this line only names the home team.
-	%RoleLine.text = Loc.t(L.RUN_SETUP_DRAFT_ORIGIN_TEAM, {"team": _team_short(_base.team_id)})
+	%RoleLine.text = Loc.t(L.RUN_SETUP_DRAFT_ORIGIN_TEAM, {"team": RunRules.team_short_name(_base.team_id)})
 
-	# Chip row: rarity · 최대 Lv · 돌파 · 중복 (or 미보유).
+	# Chip row: 등급 stars · 랭크 n / max · 돌파 n / cap · Lv n / cap.
+	var level: int = _pm.level_of(pid)
+	var cap: int = _pm.level_cap_of(pid)
 	var chips: Control = %Chips
 	_clear(chips)
-	var pill: Panel = CollectionCell.add_rarity_pill(chips, _fielded.rarity, Vector2.ZERO, 44.0, 24)
+	var pill: Panel = CollectionCell.add_stars_pill(chips, _pm.stars_of(pid), Vector2.ZERO, 44.0, 24)
 	var cx: float = pill.size.x + 10.0
-	if owned:
-		var dupes: int = int(((_pm.profile["collection"] as Dictionary)
-				.get(str(_base.id), {}) as Dictionary).get("dupes", 0))
-		cx = _chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_MAX_LEVEL, {"level": max_lv}), cx, OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
-		cx = _chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_BREAKTHROUGH,
-				{"n": stage, "max": RunRules.breakthrough_max()}), cx,
-				OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
-		_chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_DUPES, {"n": dupes}), cx, OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT_SUB)
-	else:
-		_chip(chips, Loc.t(L.UI_WORD_UNOWNED), cx, OutgameTheme.RAIL, OutgameTheme.TEXT_ON_FILL)
+	cx = _chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_RANK, {"n": rank, "max": _pm.max_rank_of(pid)}),
+			cx, OutgameTheme.ACCENT_DIM, OutgameTheme.ACCENT_TEXT)
+	cx = _chip(chips, Loc.t(L.COLLECTION_DETAIL_CHIP_BREAKTHROUGH,
+			{"n": _pm.breakthrough_of(pid), "max": _pm.breakthrough_cap_of(pid)}), cx,
+			OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
+	_chip(chips, "Lv %d / %d" % [level, cap], cx, OutgameTheme.SURFACE_SUNK, OutgameTheme.TEXT)
 
-	%ExpBlock.visible = owned
-	%UnownedBlock.visible = not owned
-	if owned:
-		_fill_exp(max_lv)
+	_fill_exp(pid, level)
 
-	# Salary at the shown level (breakthrough `salary_down` included).
-	%SalaryTitle.text = Loc.t(L.COLLECTION_DETAIL_SALARY_AT_LEVEL, {"level": _fielded.level})
+	# Salary at the shown rank + level (rank `salary_down` rows included).
+	%SalaryTitle.text = Loc.t(L.COLLECTION_DETAIL_SALARY_NOW, {"rank": rank, "level": level})
 	%Salary.text = str(RunRules.salary_of(_fielded))
 	%BonusRow.visible = _fielded.train_bonus_pct != 0
 	%Bonus.text = "+%d%%" % _fielded.train_bonus_pct
 
 
-## EXP towards the next **automatic** max-level raise (`add_pilot_exp` lifts the max
-## level to `level_for_exp(exp)`; bought levels are never taken back).
-func _fill_exp(max_lv: int) -> void:
-	var exp_total: int = _pm.pilot_exp_of(_base.id)
-	var at_max: bool = max_lv >= RunRules.max_level()
-	var need: int = 0 if at_max else RunRules.exp_required(max_lv + 1)
-	%ExpValue.text = Loc.t(L.COLLECTION_DETAIL_EXP_MAXED, {"exp": exp_total}) if at_max \
-			else "%d / %d  →  Lv %d" % [exp_total, need, max_lv + 1]
-	var ratio: float = 1.0
-	if not at_max:
-		var from: int = RunRules.exp_required(max_lv)
-		ratio = clampf(float(exp_total - from) / float(maxi(1, need - from)), 0.0, 1.0)
-	# The fill is anchored to the track: its right anchor is the ratio (min width in the scene).
+## EXP toward the next level **within the current rank** (`ProfileManager.pilot_exp_progress`:
+## EXP into the current level / EXP the next level needs, `need` 0 at the level cap = full bar).
+func _fill_exp(pid: int, level: int) -> void:
 	var fill: Panel = %ExpFill
+	var prog: Dictionary = _pm.pilot_exp_progress(pid)
+	var into: int = int(prog.get("into", 0))
+	var need: int = int(prog.get("need", 0))
+	if need <= 0:
+		%ExpValue.text = Loc.t(L.COLLECTION_DETAIL_EXP_AT_CAP, {"cap": _pm.level_cap_of(pid)})
+		fill.visible = true
+		fill.anchor_right = 1.0
+		return
+	%ExpValue.text = "%d / %d  →  Lv %d" % [into, need, level + 1]
+	var ratio: float = clampf(float(into) / float(need), 0.0, 1.0)
+	# The fill is anchored to the track: its right anchor is the ratio (min width in the scene).
 	fill.visible = ratio > 0.0
 	fill.anchor_right = ratio
 
 
-func _fill_stats(owned: bool) -> void:
-	# Unowned pilots are shown at stage 0, so the unowned and breakthrough titles never meet.
-	var title: String
-	if not owned:
-		title = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE_UNOWNED, {"level": _fielded.level})
-	elif _fielded.breakthrough > 0:
-		title = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE_BT,
-				{"level": _fielded.level, "bt": _fielded.breakthrough})
-	else:
-		title = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE, {"level": _fielded.level})
-	%StatsTitle.text = title
+func _fill_stats(rank: int) -> void:
+	%StatsTitle.text = Loc.t(L.COLLECTION_DETAIL_STATS_TITLE_RANK,
+			{"rank": rank, "level": _fielded.level})
 	for i in _stat_chips.size():
 		var chip: Panel = _stat_chips[i]
 		var key: String
@@ -240,49 +231,75 @@ func _fill_stats(owned: bool) -> void:
 	%StatNote.visible = _fielded.stat_total() != _base.stat_total()
 
 
-func _fill_breakthrough(stage: int, owned: bool) -> void:
-	var rows_box: Control = %BtRows
+## Rank table, one row per rank (`rank_rows` can hold several data rows per rank — one line
+## each). Reached (rank ≤ current) = amber row + 달성; next (current + 1, unlocked) = 다음;
+## above the max rank = dimmed + 돌파 필요.
+func _fill_ranks(pid: int, rank: int) -> void:
+	var rows_box: Control = %RankRows
 	_clear(rows_box)
-	var rows: Array = RunRules.breakthrough_rows(_base.id)
-	%BtEmpty.visible = rows.is_empty()
-	%BtAfter.visible = not rows.is_empty()
-	%BtAfterLabel.text = Loc.t(L.COLLECTION_DETAIL_BT_AFTER, {"n": RunRules.breakthrough_max()})
-	for raw in rows:
-		var r: Dictionary = raw
-		var st: int = int(r["stage"])
-		var reached: bool = owned and st <= stage
-		var is_next: bool = owned and st == stage + 1
-		var row: Panel = BT_ROW_SCENE.instantiate()
+	var groups: Dictionary = {}       # int rank → Array[Dictionary] (data order)
+	var order: Array = []
+	for raw in RunRules.rank_rows(pid):
+		var rr: int = int((raw as Dictionary)["rank"])
+		if not groups.has(rr):
+			groups[rr] = []
+			order.append(rr)
+		(groups[rr] as Array).append(raw)
+	order.sort()
+	var max_rank: int = _pm.max_rank_of(pid)
+	%RankEmpty.visible = order.is_empty()
+	%RankAfter.visible = not order.is_empty()
+	%RankAfterLabel.text = Loc.t(L.COLLECTION_DETAIL_RANK_AFTER, {"cap": _pm.breakthrough_cap_of(pid)})
+	for rr in order:
+		var reached: bool = rr <= rank
+		var locked: bool = rr > max_rank
+		var is_next: bool = rr == rank + 1 and not locked
+		var kinds: PackedStringArray = []
+		var descs: PackedStringArray = []
+		for raw in groups[rr]:
+			var r: Dictionary = raw
+			var kind: String = String(r["kind"])
+			kinds.append(Loc.t(String(ROW_KIND_LABELS[kind])) if ROW_KIND_LABELS.has(kind) else kind)  # l10n-dynamic: collection.bt_kind.*
+			descs.append(_row_desc(r))
+		var row: Panel = RANK_ROW_SCENE.instantiate()
+		row.custom_minimum_size.y = 44.0 + 32.0 * float(descs.size())
 		rows_box.add_child(row)
 		row.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-				OutgameTheme.ACCENT_DIM if reached else OutgameTheme.SURFACE,
+				OutgameTheme.ACCENT_DIM if reached else (OutgameTheme.SURFACE_SUNK if locked else OutgameTheme.SURFACE),
 				14, OutgameTheme.ACCENT if reached else OutgameTheme.BORDER, 2))
 		(row.get_node("%Disc") as Panel).add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-				OutgameTheme.ACCENT if reached else OutgameTheme.SURFACE_SUNK, 24))
+				OutgameTheme.ACCENT if reached else (OutgameTheme.SURFACE if locked else OutgameTheme.SURFACE_SUNK), 24))
 		var num: Label = row.get_node("%Num")
-		num.text = str(st)
-		num.add_theme_color_override("font_color",
-				OutgameTheme.TEXT_ON_FILL if reached else OutgameTheme.TEXT_SUB)
-		var kind: String = String(r["kind"])
+		num.text = str(rr)
+		num.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL if reached
+				else (OutgameTheme.TEXT_FAINT if locked else OutgameTheme.TEXT_SUB))
 		var kind_lbl: Label = row.get_node("%Kind")
-		kind_lbl.text = Loc.t(String(BT_KIND_LABELS[kind])) if BT_KIND_LABELS.has(kind) else kind  # l10n-dynamic: collection.bt_kind.*
-		kind_lbl.theme_type_variation = &"AccentLabel" if reached else &"CaptionLabel"
+		kind_lbl.text = "\n".join(kinds)
+		kind_lbl.theme_type_variation = &"AccentLabel" if reached \
+				else (&"FaintLabel" if locked else &"CaptionLabel")
 		var desc: Label = row.get_node("%Desc")
-		desc.text = _bt_desc(r)
+		desc.text = "\n".join(descs)
 		desc.theme_type_variation = &"BodyLabel" if reached or is_next else &"SubLabel"
 		var state: Label = row.get_node("%State")
-		state.text = Loc.t(L.COLLECTION_DETAIL_BT_REACHED) if reached \
-				else (Loc.t(L.COLLECTION_DETAIL_BT_NEXT) if is_next else "")
-		state.theme_type_variation = &"AccentLabel" if reached else &"CaptionLabel"
+		if reached:
+			state.text = Loc.t(L.COLLECTION_DETAIL_BT_REACHED)
+		elif is_next:
+			state.text = Loc.t(L.COLLECTION_DETAIL_BT_NEXT)
+		elif locked:
+			state.text = Loc.t(L.COLLECTION_DETAIL_RANK_LOCKED)
+		else:
+			state.text = ""
+		state.theme_type_variation = &"AccentLabel" if reached \
+				else (&"FaintLabel" if locked else &"CaptionLabel")
 
 
-## Breakthrough line from the kind template + `value`; a `card_swap` row also names the new
+## Rank-row line from the kind template + `value`; a `card_swap` row also names the new
 ## card ("… → 카드명"). Numbers come only from the data row, never from the text.
-func _bt_desc(r: Dictionary) -> String:
+func _row_desc(r: Dictionary) -> String:
 	var kind: String = String(r["kind"])
 	var v: String = String(r["value"])
 	if kind != "card_swap":
-		return Loc.t(String(BT_DESC[kind]), {"n": v}) if BT_DESC.has(kind) else v  # l10n-dynamic: breakthrough.kind.*
+		return Loc.t(String(ROW_DESC[kind]), {"n": v}) if ROW_DESC.has(kind) else v  # l10n-dynamic: breakthrough.kind.*
 	var parts: PackedStringArray = v.split(":")
 	if parts.size() != 2:
 		return v
@@ -295,7 +312,7 @@ func _bt_desc(r: Dictionary) -> String:
 
 func _fill_cards() -> void:
 	var swapped: bool = _fielded.pilot_cards != _base.pilot_cards
-	%CardsTitle.text = Loc.t(L.COLLECTION_DETAIL_CARDS_TITLE_SWAPPED) if swapped \
+	%CardsTitle.text = Loc.t(L.COLLECTION_DETAIL_CARDS_TITLE_SWAPPED_RANK) if swapped \
 			else Loc.t(L.TERM_CARD_PILOT_CARD)
 	var box_parent: Control = %Cards
 	_clear(box_parent)
@@ -319,51 +336,104 @@ func _on_cards_resized() -> void:
 		_fill_cards()
 
 
-func _fill_footer(owned: bool) -> void:
-	var cost: int = _pm.level_up_cost(_base.id) if owned else -1
-	var have: int = _pm.currency_of("levelup")
-	var reason: String = ""
+## Buttons + status line. Below the level cap only 레벨업 can be enabled, at the cap only
+## 랭크업 (`rank_up_block_reason` = "" — rank < max rank and enough `rank_stone`). The status
+## line shows the last action's result, else why the relevant action is blocked, else a hint.
+func _fill_footer(pid: int, rank: int) -> void:
+	var owned: bool = _pm.owns_pilot(pid)
+	var level: int = _pm.level_of(pid)
+	var cap: int = _pm.level_cap_of(pid)
+	var at_cap: bool = owned and level >= cap
+	var lv_cost: int = _pm.level_up_cost(pid) if owned else -1
+	var lv_have: int = _pm.currency_of("levelup")
+	var lv_reason: String = ""
 	if not owned:
-		reason = Loc.t(L.COLLECTION_DETAIL_CANNOT_UNOWNED)
-	elif cost < 0:
-		reason = Loc.t(L.COLLECTION_DETAIL_AT_MAX_LEVEL, {"level": RunRules.max_level()})
-	elif have < cost:
-		reason = Loc.t(L.COLLECTION_DETAIL_NOT_ENOUGH, {"cost": cost, "have": have})
-	var line: String = _status_text if _status_text != "" else reason
-	var st: Label = %Status
+		lv_reason = Loc.t(L.COLLECTION_DETAIL_CANNOT_UNOWNED)
+	elif at_cap or lv_cost < 0:
+		lv_reason = Loc.t(L.COLLECTION_DETAIL_AT_LEVEL_CAP, {"cap": cap})
+	elif lv_have < lv_cost:
+		lv_reason = Loc.t(L.COLLECTION_DETAIL_NOT_ENOUGH, {"cost": lv_cost, "have": lv_have})
+	var rk_cost: int = _pm.rank_up_cost(pid) if owned else -1
+	var rk_reason: String = _pm.rank_up_block_reason(pid) if owned else lv_reason
+
+	# Status: last action → the blocking reason of the action that matters now → a hint.
+	var line: String = _status_text
+	var bad: bool = not _status_ok
 	if line == "":
-		line = Loc.t(L.COLLECTION_DETAIL_STATUS_HINT, {"have": have})
-		st.remove_theme_color_override("font_color")
+		bad = false
+		if not at_cap:
+			line = lv_reason if lv_reason != "" \
+					else Loc.t(L.COLLECTION_DETAIL_STATUS_HINT_LEVEL, {"have": lv_have, "cap": cap})
+			bad = lv_reason != ""
+		elif rank >= RunRules.rank_max():
+			line = Loc.t(L.COLLECTION_DETAIL_FULLY_GROWN, {"rank": rank, "cap": cap})
+		elif rk_reason != "":
+			line = rk_reason
+			bad = true
+		else:
+			line = Loc.t(L.COLLECTION_DETAIL_STATUS_HINT_RANK,
+					{"have": _pm.currency_of("rank_stone"), "cost": rk_cost})
+	var st: Label = %Status
+	if line != "" and (bad or _status_text != ""):
+		st.add_theme_color_override("font_color", OutgameTheme.NEGATIVE if bad else OutgameTheme.POSITIVE)
 	else:
-		st.add_theme_color_override("font_color", OutgameTheme.POSITIVE
-				if _status_text != "" and _status_ok else OutgameTheme.NEGATIVE)
+		st.remove_theme_color_override("font_color")
 	st.text = line
-	var btn: Button = %LevelUp
-	btn.text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_COST, {"cost": cost}) if cost >= 0 \
+
+	var lv_btn: Button = %LevelUp
+	lv_btn.text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_COST, {"cost": lv_cost}) if lv_cost >= 0 \
 			else Loc.t(L.UI_BUTTON_LEVEL_UP)
-	btn.disabled = reason != ""
+	lv_btn.disabled = lv_reason != ""
+	var rk_btn: Button = %RankUp
+	rk_btn.text = Loc.t(L.COLLECTION_DETAIL_RANK_UP_COST, {"cost": rk_cost}) if rk_cost > 0 \
+			else Loc.t(L.COLLECTION_DETAIL_RANK_UP_BUTTON)
+	rk_btn.disabled = not at_cap or rk_reason != ""
 
 
 func _on_level_up_pressed() -> void:
 	var pid: int = _base.id
 	var err: String = _pm.level_up_pilot(pid)
 	if err != "":
-		_status_text = err
-		_status_ok = false
-		Haptics.play(Haptics.Kind.ERROR)
-		_fill()
+		_fail(err)
 		return
+	var lv: int = _pm.level_of(pid)
 	var save_err: String = _pm.save_profile()
-	var lv: int = _pm.max_level_of(pid)
 	if save_err != "":
 		_status_text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_SAVE_FAILED, {"level": lv, "error": save_err})
 		_status_ok = false
 	else:
-		_status_text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_DONE, {"level": lv})
+		_status_text = Loc.t(L.COLLECTION_DETAIL_LEVEL_UP_REACHED, {"level": lv})
 		_status_ok = true
 	Haptics.play(Haptics.Kind.SUCCESS)
 	_fill()            # in place — the scroll position stays
 	leveled_up.emit(pid, lv)
+
+
+func _on_rank_up_pressed() -> void:
+	var pid: int = _base.id
+	var err: String = _pm.rank_up_pilot(pid)
+	if err != "":
+		_fail(err)
+		return
+	var rank: int = _pm.rank_of(pid)
+	var save_err: String = _pm.save_profile()
+	if save_err != "":
+		_status_text = Loc.t(L.COLLECTION_DETAIL_RANK_UP_SAVE_FAILED, {"rank": rank, "error": save_err})
+		_status_ok = false
+	else:
+		_status_text = Loc.t(L.COLLECTION_DETAIL_RANK_UP_DONE,
+				{"rank": rank, "cap": _pm.level_cap_of(pid)})
+		_status_ok = true
+	Haptics.play(Haptics.Kind.SUCCESS)
+	_fill()
+	ranked_up.emit(pid, rank)
+
+
+func _fail(err: String) -> void:
+	_status_text = err
+	_status_ok = false
+	Haptics.play(Haptics.Kind.ERROR)
+	_fill()
 
 
 # ── Pieces ───────────────────────────────────────────────────────────────────
@@ -382,29 +452,53 @@ func _clear(parent: Node) -> void:
 		c.queue_free()
 
 
-func _team_short(team_id: int) -> String:
-	return RunRules.team_short_name(team_id)
+## 미리보기 전용 — **메모리 프로필만** 손본다(저장하지 않는다; 미리보기는 저장 버튼을 끊는다).
+## 풀에서 등급이 가장 높은 선수(동률이면 id 작은 쪽)를 보유시키고(없으면 영입) 중복 1회 → 돌파 1
+## (★3 이면 ★★★ + 흐린 ★), 레벨 상한까지 레벨업, 승급석을 채워 랭크업 가능 상태로 만든다
+## (랭크 표의 달성 · 다음 · 돌파 필요가 한 번에 보인다). 그 id 를 돌려준다(풀이 비면 -1).
+static func preview_stage_pilots(pm: Node, pool: Array) -> int:  # l10n-ignore
+	var ready_id: int = -1
+	for raw in pool:
+		var pd := raw as PlayerData
+		if pd != null and (ready_id < 0 or pm.stars_of(pd.id) > pm.stars_of(ready_id)):
+			ready_id = pd.id
+	if ready_id < 0:
+		return -1
+	if not pm.owns_pilot(ready_id):
+		pm.grant_pilot(ready_id)
+	if pm.breakthrough_of(ready_id) == 0 and pm.breakthrough_cap_of(ready_id) > 0:
+		pm.grant_pilot(ready_id)
+	var guard: int = 0
+	while pm.level_of(ready_id) < pm.level_cap_of(ready_id) and guard < 100:
+		pm.add_currency("levelup", maxi(0, pm.level_up_cost(ready_id)))
+		if pm.level_up_pilot(ready_id) != "":
+			break
+		guard += 1
+	pm.add_currency("rank_stone", maxi(0, pm.rank_up_cost(ready_id)))
+	return ready_id
 
 
-## F6 단독 실행 미리보기 — 실제 프로필에서 가장 많이 키운 보유 선수(없으면 풀의 첫 선수)로
-## 연다 (`resources/UiPreview.gd`). 레벨업은 프로필을 저장하므로 누름을 출력만 하게 끊는다.
+## F6 단독 실행 미리보기 — 실제 프로필(메모리에서만 손봄, `preview_stage_pilots`)의 랭크업 준비된
+## 선수로 연다 (`resources/UiPreview.gd`). 두 버튼은 프로필을 저장하므로 누름을 출력만 하게 끊는다.
 func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
 	UiPreview.mute(%LevelUp, self, "레벨업")
+	UiPreview.mute(%RankUp, self, "랭크업")
 	UiPreview.trace(leveled_up)
+	UiPreview.trace(ranked_up)
 	var data: Dictionary = _gm.load_match_data()
 	if data.has("error"):
 		push_error("CollectionDetailSheet 미리보기: " + String(data["error"]))
 		return
-	var pick: PlayerData = null
-	var best: int = -1
+	var pool: Array = []
 	for raw in data["players"]:
 		var pd := raw as PlayerData
-		if pd == null or pd.is_mob:
-			continue
-		var score: int = _pm.breakthrough_of(pd.id) * 100 + _pm.max_level_of(pd.id)
-		if score > best:
-			best = score
-			pick = pd
-	if pick != null:
-		open(pick)
+		if pd != null and not pd.is_mob:
+			pool.append(pd)
+	var pick_id: int = preview_stage_pilots(_pm, pool)
+	for pd in pool:
+		if (pd as PlayerData).id == pick_id:
+			open(pd)
+			return
+	if not pool.is_empty():
+		open(pool[0])

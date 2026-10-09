@@ -811,8 +811,6 @@ static func _add_screen_variations(th: Theme) -> void:
 	# 버튼 판은 상태마다 같은 판 — 상태(보유 · 선택 · 장착 · 잠김 · 칸 초과)는 코드가 이름만 바꾼다.
 	var r2a_buttons := {
 		"CollectionCellFrame": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER_STRONG, 2)],
-		"CollectionCellFrameUnowned": [&"SelectableCardButton",
-				flat_style(SURFACE_SUNK, 16, BORDER, 2)],
 		"ManagerPresetChip": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER, 2)],
 		"ManagerPresetChipOn": [&"SelectableCardButtonOn", flat_style(ACCENT_DIM, 16, ACCENT, 4)],
 		"TraitPickerSlot": [&"SelectableCardButton", flat_style(SURFACE, 14, BORDER_STRONG, 2)],
@@ -826,10 +824,27 @@ static func _add_screen_variations(th: Theme) -> void:
 		for n in BUTTON_STATES:
 			th.set_stylebox(n, v, r2a_buttons[v][1])
 	_add_derived(th, "CollectionCellArtMask", &"SunkPanel", _mask_box(12))
-	_add_derived(th, "CollectionCellPip", &"ProgressTrack",
-			flat_style(SURFACE_SUNK, 4, BORDER_STRONG, 1))
-	_add_derived(th, "CollectionCellPipOn", &"ProgressFill", flat_style(ACCENT, 4, ACCENT_TEXT, 1))
-	_add_derived(th, "CollectionCellUnownedPill", &"SurfaceChip", flat_style(RAIL, CHIP_RADIUS))
+	# Thumbnail corner tabs (inside the clipped ArtMask, flush with its bottom edge): level ribbon
+	# bottom-left (amber, rounded top-right), rank stars bottom-right (dark plate, rounded top-left).
+	var ribbon := flat_style(ACCENT, 0)
+	ribbon.corner_radius_top_right = 12
+	ribbon.content_margin_left = 12.0
+	ribbon.content_margin_right = 12.0
+	ribbon.content_margin_top = 1.0
+	ribbon.content_margin_bottom = 1.0
+	_add_derived(th, "CollectionCellLevelRibbon", &"AccentChip", ribbon)
+	var plate := flat_style(Color(RAIL, 0.78), 0)
+	plate.corner_radius_top_left = 12
+	plate.content_margin_left = 10.0
+	plate.content_margin_right = 8.0
+	plate.content_margin_top = 1.0
+	plate.content_margin_bottom = 1.0
+	_add_derived(th, "CollectionCellRankPlate", &"SurfaceChip", plate)
+	# Rank stars: reached = amber, unlocked by breakthrough but not reached = faint white.
+	th.set_type_variation(&"CollectionCellStarOn", &"OnFillLabel")
+	th.set_color(&"font_color", &"CollectionCellStarOn", ACCENT)
+	th.set_type_variation(&"CollectionCellStar", &"OnFillLabel")
+	th.set_color(&"font_color", &"CollectionCellStar", Color(TEXT_ON_FILL, 0.38))
 	_add_derived(th, "TraitPickerGauge", &"SelectableCard", flat_style(SURFACE, 16, BORDER, 1))
 	_add_derived(th, "TraitPickerGaugeBad", &"ManagerDangerCard",
 			flat_style(SURFACE.lerp(NEGATIVE, 0.12), 16, NEGATIVE, 3))
@@ -891,7 +906,6 @@ static func _add_screen_variations(th: Theme) -> void:
 	band.corner_radius_top_right = 12
 	_add_derived(th, "TrainingCourseGradeBand", &"SunkPanel", band)
 	_add_derived(th, "TrainingCourseShapeWell", &"SunkPanel", flat_style(SURFACE_SUNK, 8))
-	_add_derived(th, "TrainingCourseLockChip", &"SurfaceChip", flat_style(RAIL, 18))
 	var pop := flat_style(SURFACE, 10, CARD_TINTS[0], 2)
 	pop.shadow_color = Color(SHADOW, 0.28)
 	pop.shadow_size = 10

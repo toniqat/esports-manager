@@ -29,9 +29,9 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8, `{id, name_key, short_name_key, budget, facility_level, manual_areas, desc_key}` — text fields are l10n keys) → one `TeamCard` each. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. Scene inherits `UI_View_ChoiceListView.tscn`. `create()`. |
 | `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene: name · short name, budget (+ bar relative to the highest budget — `%Fill.anchor_right`), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음" in green), desc. Name / short / desc are `Loc.t` of the package's `name_key` · `short_name_key` · `desc_key`. `fill(item, max_budget)`. F6 preview uses team 3's real keys. |
 | `UI_View_ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
-| `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), chosen levels (`levels`, `set_level`, `leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `slot_of_role` (position names: `GameEnums.role_position_label`), `skill_type_label` (localized; charge / passive reuse `term.skill_type.*`, cooldown is `term.skill_type.cooldown`). Signals `back_requested`, `start_requested(pilot_ids)`. |
+| `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 4 data layer: owned pool (`get_pool_grid()`), the pool copies' level (`level_of`) and a duplicate for the popup (`leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `slot_of_role` (position names: `GameEnums.role_position_label`), `skill_type_label` (localized; charge / passive reuse `term.skill_type.*`, cooldown is `term.skill_type.cooldown`). Signals `back_requested`, `start_requested(pilot_ids)`. |
 | `UI_View_TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 4 screen: salary gauge, 5 role-fixed `DraftSlot`s, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM. Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
-| `UI_Comp_DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `PositionBadge`) + `− Lv N +` stepper + salary / overall lines. Signals `art_pressed`, `level_step(delta)`; `set_role`, `show_empty()`, `show_pilot(p, role_color, lv, top, salary)`. Frame shape = variation `DraftSlotFrame` (code colours a copy), mask = `DraftSlotArtMask`. |
+| `UI_Comp_DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `PositionBadge`) + `랭크 R · Lv N` line (`run_setup.slot.rank_level`, read-only — the old `− Lv +` stepper buttons were deleted) + salary / overall lines. Signal `art_pressed`; `set_role`, `show_empty()`, `show_pilot(p, role_color, salary)` (rank / level from `p.rank` / `p.level`). Frame shape = variation `DraftSlotFrame` (code colours a copy), mask = `DraftSlotArtMask`. |
 | `UI_Comp_PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell — square face crop + top-left `PositionBadge` (`resources/`) + gold border / check when selected + bottom-right salary tag (`set_tag`). Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset, variation `PilotThumbArtMask`) has radius 14 to follow it; check / tag = `PilotThumbCheck` / `PilotThumbTag`. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
 | `UI_View_DraftDetailPanel.tscn` + `.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). Layout lives in the `.tscn`; construct with `DraftDetailPanel.create()` (not `.new()`), then `open(p: PlayerData)` / `close()` / `is_open()`. See "DraftDetailPanel — scene" below. |
 | `UI_Comp_DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
@@ -81,20 +81,21 @@ preset chips (`ManagerPresetChips`, from `../manager/`) → stats card (`<type> 
 
 ## Lineup step (편성) — the old draft, adapted
 **Uma Musume–style character pick.** Bottom half: scrolling grid of owned pilots; above it
-one row of role filters; above that the **upper-body illustrations** of the 5 picks with a
-level stepper underneath; at the top the salary gauge.
+one row of role filters; above that the **upper-body illustrations** of the 5 picks with their
+rank · level underneath; at the top the salary gauge.
 
 ### Grid = owned collection only
-`TeamDraft.get_pool_grid()` is the single filter: pilots in `ProfileManager.owned_max_levels()`
+`TeamDraft.get_pool_grid()` is the single filter: pilots in `ProfileManager.owned_levels()`
 (mobs are excluded as well — they are never collectible). Grid order is slot order, then overall
-stat descending. Each thumbnail shows that pilot's salary **at the currently chosen level**.
+stat descending. Each thumbnail shows that pilot's salary at its rank + level.
 
-### Levels
-Under each filled slot: `−  Lv N  +` (1 … `ProfileManager.max_level_of(pid)`), then the
-salary (`RunRules.salary_at`) and overall stat at that level. Buttons disable at the bounds
-— with max level 1 both are disabled but the control still stands. Levels live only in
-`TeamDraft.levels` (`{"<pilot_id>": int}`); the pool is never mutated — the slot numbers and
-the detail popup read `TeamDraft.leveled(pid)`, a duplicate with `RunRules.apply_level`.
+### Rank · level (no picker)
+Pilots enter a run at their **collection rank + level** — there is no level choice. `RunSetupScreen`
+builds the pool once with `RunRules.apply_progress(pool, pm.owned_ranks(), pm.owned_levels())` (every
+named pilot at its stars, owned pilots at their rank + level — the same copies `GameManager.start_run`
+builds), so stats, salary (`RunRules.salary_of`) and swapped pilot cards are final. Under each filled
+slot: `랭크 R · Lv N`, then salary and overall stat. The salary cap therefore constrains only **which**
+five are combined. The detail popup reads `TeamDraft.leveled(pid)` (a duplicate of the pool copy).
 
 ### Rules are visible while picking
 The gauge card shows `<scenario> · 샐러리캡` (+ ` (특성 ±n)` when the preset's traits move the cap —
@@ -115,7 +116,8 @@ While animating (`_busy`) all input is ignored.
 1. The view re-validates **before the fade** (a start that would be rejected never covers
    the screen) and emits `TeamDraft.start_requested(pilot_ids)` in `GameEnums.Role` order.
 2. `RunSetupScreen.build_run_setup` builds the §10.2 dictionary:
-   `scenario`, `team_id`, `pilot_ids` (Role order), `pilot_levels` (String keys),
+   `scenario`, `team_id`, `pilot_ids` (Role order), `pilot_levels` (String keys — informational;
+   `start_run` re-reads ranks / levels from the profile),
    `salary_cap` (`salary_cap_with` the preset's traits), `salary_total`, `preset` (§12.2 — the
    감독 step's index; `start_run` re-validates it and snapshots traits / stats).
 3. `SceneFade.play` (fade to black → fake loading → fade in, a root `CanvasLayer` that
@@ -145,7 +147,7 @@ one per role.
 The only outgame place to inspect one pilot: opened from the lineup slots (with the leveled
 copy) and from the **assignment step of ban/pick** (both teams' portraits). It needs only a
 `PlayerData` and the `GameManager` autoload. Left full-body art / right scrolling info panel:
-header (name · position badge + original team, + breakthrough chips) → 6 stat chips + total → pilot skill (icon tile +
+header (name · position badge + original team, + stars · rank chips) → 6 stat chips + total → pilot skill (icon tile +
 rich description) → the pilot's
 **3 fixed pilot cards** (`GameManager.pilot_card_ids_for(pd)`, `CardDescBox.build(..., light = true)`).
 The original-team short name is `GameManager.team_short_name(team_id)` — `season_state.team_meta`
@@ -195,14 +197,13 @@ every `open`; the 7 stat chips are instantiated once in `_ready`.
 Candidate-card pools per role (`pilot_card_slots_for_role` …) were deleted long ago and are not
 revived — the single source of cards is `GameManager.pilot_card_ids_for`.
 
-### Breakthrough (M10)
-The panel never applies breakthroughs itself — the `PlayerData` it receives already carries them
-(run setup pool: `RunRules.apply_breakthroughs(_pool, owned_breakthroughs())` in
-`RunSetupScreen`; ban/pick: the run copies from `GameManager.start_run`), so stats, salary and the
-`card_swap`-ed pilot card shown are already the broken-through ones. When `pd.breakthrough > 0` a
-chip row under the header names it: `돌파 n` (amber) and, if `train_bonus_pct ≠ 0`,
-`훈련 EXP +n%`. The full breakthrough table lives in the lobby collection sheet
-(`features/meta/collection/`).
+### Stars · rank (B)
+The panel never applies rank rows itself — the `PlayerData` it receives already carries them
+(run setup pool: `RunRules.apply_progress` in `RunSetupScreen`; ban/pick: the run copies from
+`GameManager.start_run`), so stats, salary and the `card_swap`-ed pilot card shown are final. When
+`pd.rank > 0` a chip row under the header names it: `★n · 랭크 R` (amber, `GameEnums.star_label` /
+`rank_label`) and, if `train_bonus_pct ≠ 0`, `훈련 EXP +n%`. The full rank table lives in the lobby
+collection sheet (`features/meta/collection/`).
 
 ### Skill block — icon tile + rich description
 `DraftDetailPanel._fill_skill`: a 64px skill icon tile

@@ -6,11 +6,11 @@ extends Control
 # 예전에는 시즌 씬(`Season.tscn`)의 노드로 살며 `season_state.all_pilots` 에서
 # 네임드 25인을 골라 팀 0 과 **맞교환**(`apply_draft`)했다. 지금은 런 준비
 # (`RunSetupScreen`)의 마지막 단계라 시즌이 아직 열리지 않았다 — 그래서:
-#   - 선수 풀은 `RunSetupScreen` 이 넘겨 주는 **CSV Lv1 사본**(`load_match_data()`)
-#     이고, 격자에는 그중 **보유 컬렉션**만 선다(`get_pool_grid()` 한 곳).
-#   - 칸마다 **레벨**을 고른다(1 ~ 달성 최대 레벨). 레벨은 `levels`
-#     (`{"<pilot_id>": int}`)에만 적고 풀의 원본은 건드리지 않는다 — 화면에
-#     보이는 레벨 반영 스탯은 `leveled()` 사본이다.
+#   - 선수 풀은 `RunSetupScreen` 이 넘겨 주는 **CSV 사본**(`load_match_data()`)에
+#     랭크 · 레벨을 얹은 것이다(네임드 전원 = 별, 보유 선수 = 컬렉션 랭크 + 레벨,
+#     `RunRules.apply_progress`). 격자에는 그중 **보유 컬렉션**만 선다(`get_pool_grid()`).
+#   - 레벨은 **고르지 않는다** — 선수는 컬렉션의 랭크 · 레벨 그대로 런에 들어가고,
+#     샐러리도 거기서 나온다. 샐러리캡은 선수 조합만 제약한다.
 #   - 규칙 검사는 `RunRules.validate_lineup` 하나다 — 시작(`GameManager.start_run`)
 #     이 거절하는 규칙과 고를 때 보이는 규칙이 같은 함수에서 나온다.
 #   - 맞교환은 사라졌다 — AI 로스터 분배는 `GameManager.start_run` 의 몫이다.
@@ -32,28 +32,23 @@ signal back_requested
 signal start_requested(pilot_ids: Array)
 
 var scenario_id: int = 0
-## 고른 레벨 — `{"<pilot_id>": int}`. 보유 선수 전원이 Lv1 로 시작한다.
-var levels: Dictionary = {}
 ## M8 — trait ids of the chosen manager preset; their `salary_cap` sum moves the cap.
 var trait_ids: Array = []
 
-var _pool: Array = []                 # Array[PlayerData] — CSV Lv1 사본 40명
+var _pool: Array = []                 # Array[PlayerData] — CSV 사본 40명 (랭크 · 레벨 반영)
 var _by_id: Dictionary = {}           # int id → PlayerData
-var _owned_max: Dictionary = {}       # {"<pilot_id>": 달성 최대 레벨}
+var _owned: Dictionary = {}           # {"<pilot_id>": level} — 보유 컬렉션 (키만 본다)
 var _view: TeamDraftView = null
 
 
 ## `RunSetupScreen` 이 단계를 처음 열 때 한 번 부른다.
-func setup(pool: Array, owned_max_levels: Dictionary, p_scenario_id: int) -> void:
+func setup(pool: Array, owned: Dictionary, p_scenario_id: int) -> void:
 	_pool = pool
-	_owned_max = owned_max_levels.duplicate()
+	_owned = owned.duplicate()
 	scenario_id = p_scenario_id
 	_by_id.clear()
 	for raw in _pool:
 		_by_id[(raw as PlayerData).id] = raw
-	levels.clear()
-	for key in _owned_max.keys():
-		levels[str(key)] = 1
 
 
 ## 시나리오 단계로 돌아가 캡을 바꾸고 다시 들어왔을 때 — 고른 다섯은 그대로 두고
@@ -96,7 +91,7 @@ func get_pool_grid() -> Array:
 	var by_role: Dictionary = {0: [], 1: [], 2: [], 3: [], 4: []}
 	for p_raw in _pool:
 		var p := p_raw as PlayerData
-		if p.is_mob or not _owned_max.has(str(p.id)):
+		if p.is_mob or not _owned.has(str(p.id)):
 			continue
 		by_role[int(p.role)].append(p)
 	var entries: Array = []
@@ -116,44 +111,22 @@ func pilot(pilot_id: int) -> PlayerData:
 	return _by_id.get(pilot_id, null) as PlayerData
 
 
-# ── 레벨 ─────────────────────────────────────────────────────────────────────
+# ── 랭크 · 레벨 · 샐러리 ──────────────────────────────────────────────────────
+## The pilot's level in this run (= collection level; 0 for unknown ids).
 func level_of(pilot_id: int) -> int:
-	return int(levels.get(str(pilot_id), 1))
+	var p: PlayerData = pilot(pilot_id)
+	return p.level if p != null else 0
 
 
-## 이 선수의 달성 최대 레벨(보유하지 않았으면 0).
-func max_level_of(pilot_id: int) -> int:
-	return int(_owned_max.get(str(pilot_id), 0))
-
-
-## 레벨을 [1, 달성 최대] 로 잘라 적는다. 실제로 바뀌었으면 true.
-func set_level(pilot_id: int, level: int) -> bool:
-	var top: int = max_level_of(pilot_id)
-	if top <= 0:
-		return false
-	var lv: int = clampi(level, 1, top)
-	if lv == level_of(pilot_id):
-		return false
-	levels[str(pilot_id)] = lv
-	return true
-
-
-## 고른 레벨이 반영된 **사본** — 스탯 · 샐러리 표시와 상세 팝업이 읽는다.
-## 풀의 원본(Lv1)은 그대로 둔다.
+## A **copy** of the pool pilot (rank + level already applied) — the detail popup reads it.
 func leveled(pilot_id: int) -> PlayerData:
 	var src: PlayerData = pilot(pilot_id)
-	if src == null:
-		return null
-	var copy := src.duplicate() as PlayerData
-	RunRules.apply_level(copy, level_of(pilot_id))
-	return copy
+	return src.duplicate() as PlayerData if src != null else null
 
 
 func salary_of(pilot_id: int) -> int:
 	var p: PlayerData = pilot(pilot_id)
-	if p == null:
-		return 0
-	return RunRules.salary_at(p.salary, level_of(pilot_id))
+	return RunRules.salary_of(p) if p != null else 0
 
 
 # ── 편성 ─────────────────────────────────────────────────────────────────────
@@ -168,13 +141,12 @@ func lineup_salary(pilot_ids: Array) -> int:
 		var p: PlayerData = pilot(int(pid))
 		if p != null:
 			picked.append(p)
-	return RunRules.lineup_salary(picked, levels)
+	return RunRules.lineup_salary(picked)
 
 
 ## 편성 검증 — "" 면 시작할 수 있다. 시작이 거절하는 규칙과 같은 함수다.
 func validate(pilot_ids: Array) -> String:
-	return RunRules.validate_lineup(pilot_ids, levels, scenario_id, _pool, _owned_max,
-			cap_bonus())
+	return RunRules.validate_lineup(pilot_ids, scenario_id, _pool, _owned, cap_bonus())
 
 
 # ─── 파일럿 스킬 ─────────────────────────────────────────────────────────────

@@ -188,7 +188,7 @@ func _fill_score_card() -> void:
 	%ScoreTotal.text = "%d" % int(_result.get("score", 0))
 
 
-## Rewards: both currencies, pass EXP (+ pass level change, overflow payout),
+## Rewards: the currencies (outgame · levelup · rank stones when > 0), pass EXP (+ pass level change, overflow payout),
 ## manager EXP (+ level change and the removal points it grants). Level changes
 ## come from `profile_delta` only — a test run has none.
 func _fill_reward_card() -> void:
@@ -198,6 +198,9 @@ func _fill_reward_card() -> void:
 		[Loc.t(L.TERM_CURRENCY_OUTGAME), "+%d" % int(cur.get("outgame", 0)), OutgameTheme.POSITIVE],
 		[Loc.t(L.TERM_CURRENCY_LEVELUP), "+%d" % int(cur.get("levelup", 0)), OutgameTheme.POSITIVE],
 	]
+	# B — rank stones (승급석); hidden while a run pays none (old results / short runs).
+	if int(cur.get("rank_stone", 0)) > 0:
+		rows.append([Loc.t(L.TERM_CURRENCY_RANK_STONE), "+%d" % int(cur["rank_stone"]), OutgameTheme.POSITIVE])
 	var pass_d: Dictionary = delta.get("pass", {})
 	var pass_txt: String = "+%d" % int(_result.get("pass_exp", 0))
 	var pass_up: bool = int(pass_d.get("to", 0)) > int(pass_d.get("from", 0))
@@ -225,7 +228,8 @@ func _fill_reward_card() -> void:
 
 
 ## Pilot growth (M10): per pilot the run's pilot EXP (`pilot_exp`) and, when the
-## profile raised it, the max-level change (`profile_delta.pilots`, amber chip).
+## profile raised it, the level change (`profile_delta.pilots`, amber chip — capped at the
+## rank's level cap).
 func _fill_growth_card() -> void:
 	var pilots: Array = _result.get("pilots", [])
 	%GrowthCard.visible = not pilots.is_empty()

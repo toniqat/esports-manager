@@ -22,12 +22,13 @@ const SCENE_PATH: String = "res://features/meta/shop/UI_View_ShopPopup.tscn"
 const RATE_ROW_SCENE: String = "res://features/meta/shop/UI_Comp_ShopRateRow.tscn"
 const ITEM_COLS: int = 5
 
-## Display-name keys of the eight profile currencies — show them with `currency_label`.
+## Display-name keys of the nine profile currencies — show them with `currency_label`.
 const CURRENCY_LABELS: Dictionary = {  # l10n-keys: term.currency.* term.currency.levelup
 	"outgame": L.TERM_CURRENCY_OUTGAME, "levelup": L.TERM_CURRENCY_LEVELUP,
 	"gacha_ticket_pilot": L.TERM_CURRENCY_GACHA_TICKET_PILOT, "gacha_ticket_trait": L.TERM_CURRENCY_GACHA_TICKET_TRAIT,
 	"trait_mat": L.TERM_CURRENCY_TRAIT_MAT, "cosmetic": L.TERM_CURRENCY_COSMETIC,
 	"premium": L.TERM_CURRENCY_PREMIUM, "pilot_shard": L.TERM_CURRENCY_PILOT_SHARD,
+	"rank_stone": L.TERM_CURRENCY_RANK_STONE,
 }
 
 var _fit_queued: bool = false
@@ -56,6 +57,24 @@ func _ready() -> void:
 ## both gacha pools so pilot and trait results read the same.
 static func rarity_color(rarity: int) -> Color:
 	return TraitUi.rarity_color(rarity)
+
+
+## Pilot stars ★1..★3 → the shared palette's tiers (uncommon · rare · legendary).
+const STAR_TIERS: Array = [0, 1, 2, 4]
+
+
+static func star_color(stars: int) -> Color:
+	return TraitUi.rarity_color(int(STAR_TIERS[clampi(stars, 0, STAR_TIERS.size() - 1)]))
+
+
+## Tier name of a gacha item: pilots = stars (`GameEnums.star_label`), traits = rarity.
+static func tier_label(pool: String, tier: int) -> String:
+	return GameEnums.star_label(tier) if pool == Gacha.POOL_PILOT else GameEnums.rarity_label(tier)
+
+
+## Tier colour of a gacha item: pilots = `star_color`, traits = `rarity_color`.
+static func tier_color(pool: String, tier: int) -> Color:
+	return star_color(tier) if pool == Gacha.POOL_PILOT else rarity_color(tier)
 
 
 ## Turns `l` into a word-wrapped block of `sz`. The size is set **after** autowrap: a Label
@@ -110,9 +129,9 @@ func open_rates(pool: String) -> void:
 		rows_box.add_child(row)
 		var chip: Panel = row.get_node("%Chip")
 		chip.add_theme_stylebox_override("panel",
-				OutgameTheme.flat_style(rarity_color(rar), int(chip.size.y * 0.5)))
+				OutgameTheme.flat_style(tier_color(pool, rar), int(chip.size.y * 0.5)))
 		var chip_text: Label = row.get_node("%ChipText")
-		chip_text.text = GameEnums.rarity_label(rar)
+		chip_text.text = tier_label(pool, rar)
 		(row.get_node("%Pct") as Label).text = "%.1f%%" % float(r["pct"])
 		(row.get_node("%Count") as Label).text = "%d" % n_items
 		(row.get_node("%Each") as Label).text = "—" if n_items == 0 				else "%.2f%%" % (float(r["pct"]) / float(n_items))

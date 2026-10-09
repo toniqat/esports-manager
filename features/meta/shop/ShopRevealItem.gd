@@ -21,19 +21,21 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## `e` = one entry of `Gacha.pull(...).results` — `{pool, id, rarity, result, stage, shards, amount}`.
+## `e` = one entry of `Gacha.pull(...).results` — `{pool, id, rarity, result, stage, shards,
+## rank_stone, amount}` (`rarity` = stars for pilots).
 func show_result(e: Dictionary) -> void:
 	var rar: int = int(e.get("rarity", 0))
-	var col: Color = ShopPopup.rarity_color(rar)
+	var pool: String = String(e.get("pool", ""))
+	var col: Color = ShopPopup.tier_color(pool, rar)
 	add_theme_stylebox_override("panel", OutgameTheme.flat_style(OutgameTheme.SURFACE, 14, col, 3))
 	var band_sb: StyleBoxFlat = OutgameTheme.flat_style(col, 0)
 	band_sb.corner_radius_top_left = 12
 	band_sb.corner_radius_top_right = 12
 	%Band.add_theme_stylebox_override("panel", band_sb)
-	%Rarity.text = GameEnums.rarity_label(rar)
+	%Rarity.text = ShopPopup.tier_label(pool, rar)
 
 	var id: int = int(e.get("id", -1))
-	var is_pilot: bool = String(e.get("pool", "")) == Gacha.POOL_PILOT
+	var is_pilot: bool = pool == Gacha.POOL_PILOT
 	%Face.visible = is_pilot
 	%Mark.visible = not is_pilot
 	if is_pilot:

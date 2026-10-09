@@ -171,3 +171,6 @@ tx_WSY436KCVQ,term.keyword.bounty,active,특수 키워드 이름 (설명문 [현
 tx_EQ77MGHTT1,term.keyword.stun,active,특수 키워드 이름 (설명문 [기절]),,,기절,Stun,draft,8d7ad8b7
 tx_WAPNWFECJE,term.keyword.vulnerable,active,특수 키워드 이름 (설명문 [취약]),,,취약,Vulnerable,draft,bae7a9a6
 tx_9Z3YXBGMTT,term.game.engage,active,"게임 용어 (용어집 engage). 문장 안 {tx_…} 참조용, en 은 문장 중간 소문자",,,교전,engage,draft,b6bf4b17
+tx_95JG2WTYR0,term.currency.rank_stone,active,재화 이름 — 선수 랭크 승급에 쓰는 재화. 상점 · 로비 재화 줄 · 런 결과 보상 줄 · 컬렉션,,,승급석,Rank Stone,draft,a06d3930
+tx_ZNA4AGXBVT,term.star.n,active,선수 등급(별) 표기 — GameEnums.star_label. n = 1..3,,,★{n},★{n},draft,4cd8a749
+tx_K0DXAWF4R1,term.rank.n,active,선수 랭크 표기 — n = 1..5,,,랭크 {n},Rank {n},draft,c9705a67

@@ -56,8 +56,10 @@ var season_state: Dictionary = {
 	"match_schedule": [],         # Array of {phase, year, month, day, weekday, round, team_a, team_b, played, winner}
 	# 주간 훈련판 — 5열(선수, 자리 순서) × 5행(월~금)에 올려 둔 타일 목록.
 	# Array of {tile: String(training_tiles.id), x: int(0..4 선수), y: int(0..4 요일)}.
-	# 빈 칸은 기초 훈련(T01)이 자동으로 메우므로 목록에 적지 않는다.
+	# 빈 칸은 보유한 기초 훈련 단계가 자동으로 메우므로 목록에 적지 않는다.
 	"training_board": [],
+	# Owned training courses `{line: {tile, count}}` (`TrainingCourses`, count -1 = unlimited).
+	"training_courses": {},
 	# ── 주 진행 (시간 경과 화면) ──────────────────────────────
 	# 지금 보고 있는 요일 (0 = 월 … 6 = 일). **-1 은 주가 아직 안 열렸다는
 	# 뜻**이다 — 허브 · 기자회견 · 훈련 계획 구간이 전부 -1 이고, 그 값이
@@ -116,7 +118,8 @@ var season_state: Dictionary = {
 	"run_seed": 0,
 	# 런 설정 스냅샷 — 런 중 바뀌지 않는다. 모양은 §10.2:
 	#   {scenario: int, team_id: int, pilot_ids: Array[int](5, 역할 순),
-	#    pilot_levels: {"<pilot_id>": int}, salary_cap: int, salary_total: int}
+	#    pilot_levels: {"<pilot_id>": int}, pilot_ranks: {"<pilot_id>": int},
+	#    salary_cap: int, salary_total: int}
 	"run_setup": {},
 	# 경기 MVP / 페이즈 POM 집계(`RunStats`). 문자열 키만 쓴다 — §10.4.
 	"run_stats": {},
@@ -162,6 +165,7 @@ func reset_season_state() -> void:
 		"league_standings": {},
 		"match_schedule": [],
 		"training_board": [],
+		"training_courses": {},
 	"week_day": -1,
 	"week_day_log": {},
 	"training_exp_carry": {},
@@ -199,12 +203,14 @@ var last_run_result: Dictionary = {}
 ## `Season.tscn` 은 DRAFT 없이 HUB 부터 연다. 실패면 사람이 읽는 한 줄이고
 ## `season_state` 는 건드리지 않은(검증 실패) 또는 비운(분배 실패) 상태다.
 ##
-## 순서: 검증(`RunRules.validate_lineup`, Lv1 풀 · 프로필 보유 레벨) → 시즌 뼈대
-## (`_init_season_core`) → `run_seed` → 내 5인을 내 팀으로 · `RunRules.apply_level`
-## → 나머지 선수 AI 분배(`RunRoster`) → `team_rosters` 재구성 → `run_setup` 스냅샷.
+## Order: every named pilot at its acquisition rank (= stars, `RunRules.apply_base_ranks`)
+## → my five at their **profile** rank + level (`apply_ranks` · `apply_levels`; there is no
+## level choice — `run_setup.pilot_levels` is ignored for a real run) → validation
+## (`RunRules.validate_lineup`: owned, roles, salary cap) → season core (`_init_season_core`)
+## → `run_seed` → AI distribution (`RunRoster`) → `team_rosters` → `run_setup` snapshot.
 ##
-## 테스트 런(`use_test_run`, 에디터 직접 실행)은 프로필 보유를 보지 않는다 —
-## 네임드 선수 누구나 최대 레벨까지 고를 수 있다(샐러리캡 · 역할 규칙은 그대로).
+## Test run (`use_test_run`, editor direct launch / RunSim) ignores the profile — any named
+## pilot, at `run_setup.pilot_ranks` / `pilot_levels` when given (else stars / Lv0).
 func start_run(run_setup: Dictionary) -> String:
 	var data := load_match_data()
 	if data.has("error"):
@@ -220,27 +226,28 @@ func start_run(run_setup: Dictionary) -> String:
 	var pilot_ids: Array = []
 	for raw in (run_setup.get("pilot_ids", []) as Array):
 		pilot_ids.append(int(raw))
-	var levels: Dictionary = {}
-	var raw_levels: Dictionary = run_setup.get("pilot_levels", {})
-	for pid in pilot_ids:
-		levels[str(pid)] = int(raw_levels.get(str(pid), 1))
 
 	# M8 / M9 — manager preset (stats + traits). `run_setup.preset` = profile preset index.
 	var mgr_setup: Dictionary = _manager_setup_for_run(int(run_setup.get("preset", -1)))
 	if String(mgr_setup.get("error", "")) != "":
 		return String(mgr_setup["error"])
 	var traits: Array = mgr_setup["traits"]
-	# M10 — breakthroughs of **my five only** (an unpicked owned pilot goes to an AI
-	# team at its base strength). Applied before validation: `salary_down` moves the cap.
-	var bts: Dictionary = {}
-	var owned_bts: Dictionary = _owned_breakthroughs_for_run()
+	# B — rank + level. Every named pilot starts at its stars (base strength — AI teams and
+	# unpicked owned pilots); **my five** at their profile rank + level. Applied before
+	# validation: rank rows / level move the salary the cap checks.
+	var progress: Dictionary = _pilot_progress_for_run(pool, run_setup)
+	var ranks: Dictionary = {}
+	var levels: Dictionary = {}
 	for pid in pilot_ids:
-		if owned_bts.has(str(pid)):
-			bts[str(pid)] = int(owned_bts[str(pid)])
-	RunRules.apply_breakthroughs(pool, bts)
+		var key: String = str(pid)
+		if (progress["ranks"] as Dictionary).has(key):
+			ranks[key] = int(progress["ranks"][key])
+		if (progress["levels"] as Dictionary).has(key):
+			levels[key] = int(progress["levels"][key])
+	RunRules.apply_progress(pool, ranks, levels)
 
-	var err: String = RunRules.validate_lineup(pilot_ids, levels, scenario_id, pool,
-			_owned_levels_for_run(pool), TraitSystem.sum_p1(traits, "salary_cap"))
+	var err: String = RunRules.validate_lineup(pilot_ids, scenario_id, pool,
+			progress["owned"], TraitSystem.sum_p1(traits, "salary_cap"))
 	if err != "":
 		return err
 
@@ -257,36 +264,38 @@ func start_run(run_setup: Dictionary) -> String:
 		return String(assignment["error"])
 	RunRoster.apply(pilots, assignment["teams"])
 
-	# 내 5인 — 레벨은 런 사본(all_pilots)에만 얹는다. 스냅샷은 역할 순으로 적는다.
+	# My five — rank / level already sit on the run copies (`pool` is `all_pilots`).
+	# The snapshot is written in role order.
 	var picked: Array = []
 	for raw in pilots:
 		var pd := raw as PlayerData
 		if pilot_ids.has(pd.id):
-			RunRules.apply_level(pd, int(levels[str(pd.id)]))
 			picked.append(pd)
 	picked.sort_custom(func(a, b): return (a as PlayerData).role < (b as PlayerData).role)
 	var ordered_ids: Array = []
 	var applied_levels: Dictionary = {}
+	var applied_ranks: Dictionary = {}
 	for raw in picked:
 		var pd := raw as PlayerData
 		ordered_ids.append(pd.id)
 		applied_levels[str(pd.id)] = pd.level
+		applied_ranks[str(pd.id)] = pd.rank
 	season_state["team_rosters"] = RunRoster.build_rosters(pilots, TEAM_COUNT)
 
-	# 캡 · 합계는 화면이 보낸 값을 믿지 않고 여기서 다시 낸다(샐러리는 Lv1 기준
-	# `pd.salary` + 레벨 가산이라 레벨을 얹은 뒤에도 같은 식이 맞다).
+	# Cap and total are recomputed here, never trusted from the screen.
 	season_state["run_setup"] = {
 		"scenario": scenario_id,
 		"team_id": team_id,
 		"pilot_ids": ordered_ids,
 		"pilot_levels": applied_levels,
 		"salary_cap": RunRules.salary_cap_with(scenario_id, traits),
-		"salary_total": RunRules.lineup_salary(picked, applied_levels),
+		"salary_total": RunRules.lineup_salary(picked),
 		# M8 / M9 / M10 — §12.
 		"preset": int(mgr_setup["preset"]),
 		"traits": traits,
 		"bonus_points": TraitSystem.bonus_points(traits),
-		"pilot_breakthrough": bts,
+		# B — ranks of my five (rank rows already folded into the copies).
+		"pilot_ranks": applied_ranks,
 	}
 	# M3 — 감독 스탯 · 팀 스태프 스냅샷(`StaffSystem.snapshot_for_run`): run_setup
 	# 에 `manager_type` / `manager_stats` / `staff` 가 더해진다. 런 중 바뀌지 않는다.
@@ -329,12 +338,28 @@ func _manager_setup_for_run(preset_idx: int) -> Dictionary:
 	return {"preset": idx, "traits": traits, "manager_stats": stats}
 
 
-# M10 — breakthrough stages for the run (test runs: none).
-func _owned_breakthroughs_for_run() -> Dictionary:
-	if use_test_run:
-		return {}
+# B — `{owned: {"<pid>": level}, ranks: {"<pid>": rank}, levels: {"<pid>": level}}` for the
+# run. Real run = the profile collection. Test run (or no profile) = every named pilot owned,
+# ranks / levels from `run_setup.pilot_ranks` / `pilot_levels` when given (RunSim `--level`).
+func _pilot_progress_for_run(pool: Array, run_setup: Dictionary) -> Dictionary:
 	var pm: Node = get_node_or_null("/root/ProfileManager")
-	return pm.owned_breakthroughs() if pm != null else {}
+	if not use_test_run and pm != null:
+		var lv: Dictionary = pm.owned_levels()
+		return {"owned": lv, "ranks": pm.owned_ranks(), "levels": lv}
+	var owned: Dictionary = {}
+	for raw in pool:
+		var pd := raw as PlayerData
+		if not pd.is_mob:
+			owned[str(pd.id)] = 0
+	var ranks: Dictionary = {}
+	var raw_ranks: Dictionary = run_setup.get("pilot_ranks", {})
+	for k in raw_ranks.keys():
+		ranks[str(k)] = int(raw_ranks[k])
+	var levels: Dictionary = {}
+	var raw_levels: Dictionary = run_setup.get("pilot_levels", {})
+	for k in raw_levels.keys():
+		levels[str(k)] = int(raw_levels[k])
+	return {"owned": owned, "ranks": ranks, "levels": levels}
 
 
 # 런에 쓸 감독 타입 — 프로필의 `manager.type`(첫 프로필 생성 때 로비가 고른다).
@@ -347,7 +372,7 @@ func _manager_type_for_run() -> int:
 
 
 ## 에디터 직접 실행용 기본 편성 — 샐러리캡이 가장 높은 시나리오, `team_id` 팀,
-## 역할마다 스타터(`players.starter = 1`) 중 id 가 가장 낮은 선수, 전원 Lv1.
+## 역할마다 스타터(`players.starter = 1`) 중 id 가 가장 낮은 선수, 전원 Lv0 · 랭크 = 별.
 ## 스타터가 없는 역할은 그 역할의 네임드 중 id 가 가장 낮은 선수로 채운다.
 func default_run_setup(team_id: int = 0) -> Dictionary:
 	var scenario_id: int = 0
@@ -385,7 +410,7 @@ func default_run_setup(team_id: int = 0) -> Dictionary:
 		if best.has(r):
 			var pid: int = int(best[r]) % non_starter_rank
 			pilot_ids.append(pid)
-			levels[str(pid)] = 1
+			levels[str(pid)] = 0
 	return {
 		"scenario": scenario_id,
 		"team_id": team_id,
@@ -395,22 +420,6 @@ func default_run_setup(team_id: int = 0) -> Dictionary:
 		"salary_total": 0,   # start_run 이 다시 낸다
 		"preset": -1,        # 활성 프리셋
 	}
-
-
-# `validate_lineup` 의 `owned_max_levels`. 테스트 런은 네임드 전원 최대 레벨,
-# 아니면 프로필 컬렉션.
-func _owned_levels_for_run(pool: Array) -> Dictionary:
-	if not use_test_run:
-		var pm: Node = get_node_or_null("/root/ProfileManager")
-		if pm != null:
-			return pm.owned_max_levels()
-	var out: Dictionary = {}
-	var top: int = RunRules.max_level()
-	for raw in pool:
-		var pd := raw as PlayerData
-		if not pd.is_mob:
-			out[str(pd.id)] = top
-	return out
 
 
 # 0 이 아닌 새 런 시드. 0 은 "런 시드 없음"(옛 세이브 · 시작 전)으로 읽힌다.
@@ -458,6 +467,8 @@ func _init_season_core(player_team_id: int, pilots: Array) -> String:
 	# 훈련판은 빈 채 시작한다 — 빈 칸은 기초 훈련이 자동으로 메우므로
 	# "아무것도 안 놓은 판"과 "기초로 도배한 판"이 같은 결과를 낸다.
 	season_state["training_board"] = []
+	# Owned training courses — a new run owns only Basic Training I (`TrainingCourses`).
+	season_state["training_courses"] = TrainingCourses.new_inventory()
 
 	season_state["active"] = true
 	return ""
@@ -948,7 +959,7 @@ func _load_pilot_skills() -> void:
 #
 # 문법 해석은 여기서 하지 않는다 — `TrainingTile.from_def()` 가 한 행을 타일
 # 하나로 조립한다. 이젠은 DB 행을 그대로 나르는 자리다(카드 풀과 같은 규칙).
-var training_tiles: Array = []   # Array of {id,name_key,grade,shape,exp,effect} — name_key = l10n key
+var training_tiles: Array = []   # Array of {id,name_key,grade,line,shape,exp,effect} — name_key = l10n key
 
 
 ## 타일 id 로 한 행을 찾는다. 없으면 빈 Dictionary — 세이브에 남은 타일을
@@ -980,6 +991,7 @@ func _load_training_tiles() -> void:
 			"id":          String(row["id"]),
 			"name_key":    String(row["name_key"]),
 			"grade":       int(row["grade"]),
+			"line":        "" if row.get("line") == null else String(row["line"]),
 			"shape":       String(row["shape"]),
 			"exp":         String(row["exp"]),
 			"effect":      String(row["effect"]),

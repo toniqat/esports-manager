@@ -6,23 +6,24 @@ extends RefCounted
 # (or an error message and changes nothing). **They do not save** — the shop screen
 # calls `save_profile()` once after a successful action (§12.1 rule).
 #
-# - Shard shop: a named pilot for `SHOP_SHARD_PRICE_R<rarity>` pilot shards →
-#   `grant_pilot` (new, or a dupe → breakthrough). Not sold once the breakthrough is maxed
-#   (the dupe would only turn back into shards).
+# - Shard shop: a named pilot for `SHOP_SHARD_PRICE_R<stars>` pilot shards →
+#   `grant_pilot` (new, or a dupe → breakthrough = max rank +1). Not sold once the
+#   breakthrough is at its cap (RANK_MAX − stars; the dupe would only turn back into shards).
 # - Trait craft: `traits.craft_cost` trait materials → `grant_trait`. 0 = not craftable;
 #   owned traits are not craftable (a dupe would only turn back into material).
 # - Exchanges: `SHOP_LEVELUP_EXCHANGE_COST` outgame → `SHOP_LEVELUP_EXCHANGE_GAIN` levelup;
+#   `SHOP_RANK_STONE_EXCHANGE_COST` outgame → `SHOP_RANK_STONE_EXCHANGE_GAIN` rank stones (승급석);
 #   `SHOP_PILOT_TICKET_PREMIUM` / `SHOP_TRAIT_TICKET_PREMIUM` premium → one gacha ticket.
 # - Dev: `SHOP_DEV_PREMIUM_GRANT` premium for free (premium is a local number, §12.0).
 
 
 # ── Shard shop ───────────────────────────────────────────────────────────────
-## Shard price of a named pilot (by `players.rarity`). -1 when not sold.
+## Shard price of a named pilot (by its stars, `players.rarity` 1..3). -1 when not sold.
 static func shard_price(pilot_id: int) -> int:
 	var row: Dictionary = Gacha.pilot_row(pilot_id)
 	if row.is_empty():
 		return -1
-	var rar: int = clampi(int(row["rarity"]), 1, 4)
+	var rar: int = clampi(int(row["rarity"]), 1, 3)
 	return maxi(0, ConstTable.int_of("SHOP_SHARD_PRICE_R%d" % rar))
 
 
@@ -30,8 +31,8 @@ static func shard_price(pilot_id: int) -> int:
 static func shard_block_reason(pm: Node, pilot_id: int) -> String:
 	if shard_price(pilot_id) < 0:
 		return Loc.t(L.SHOP_CATALOG_NOT_SOLD)
-	if int(pm.max_level_of(pilot_id)) > 0 \
-			and int(pm.breakthrough_of(pilot_id)) >= RunRules.breakthrough_max():
+	if bool(pm.owns_pilot(pilot_id)) \
+			and int(pm.breakthrough_of(pilot_id)) >= int(pm.breakthrough_cap_of(pilot_id)):
 		return Loc.t(L.SHOP_CATALOG_BT_COMPLETE)
 	return ""
 
@@ -86,6 +87,22 @@ static func exchange_levelup(pm: Node) -> String:
 	if not pm.spend_currency("outgame", cost):
 		return Loc.t(L.UI_ERROR_NOT_ENOUGH_CURRENCY, {"n": cost})
 	pm.add_currency("levelup", levelup_exchange_gain())
+	return ""
+
+
+static func rank_stone_exchange_cost() -> int:
+	return maxi(1, ConstTable.int_of("SHOP_RANK_STONE_EXCHANGE_COST"))
+
+
+static func rank_stone_exchange_gain() -> int:
+	return maxi(1, ConstTable.int_of("SHOP_RANK_STONE_EXCHANGE_GAIN"))
+
+
+static func exchange_rank_stone(pm: Node) -> String:
+	var cost: int = rank_stone_exchange_cost()
+	if not pm.spend_currency("outgame", cost):
+		return Loc.t(L.UI_ERROR_NOT_ENOUGH_CURRENCY, {"n": cost})
+	pm.add_currency("rank_stone", rank_stone_exchange_gain())
 	return ""
 
 

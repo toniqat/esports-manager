@@ -39,12 +39,13 @@ const TABS: Array = [    # l10n-keys: lobby.tab.*
 ]
 
 ## 재화 줄에 보이는 재화(순서대로). 나머지 재화는 상점 · 컬렉션 화면이 보인다. `label` = l10n key.
-const CURRENCY_STRIP: Array = [    # l10n-keys: lobby.currency.levelup lobby.currency.pilot_shard term.currency.outgame term.currency.gacha_ticket_pilot term.currency.gacha_ticket_trait
+const CURRENCY_STRIP: Array = [    # l10n-keys: lobby.currency.levelup lobby.currency.pilot_shard term.currency.outgame term.currency.gacha_ticket_pilot term.currency.gacha_ticket_trait term.currency.rank_stone
 	{"key": "outgame",            "label": L.TERM_CURRENCY_OUTGAME},
 	{"key": "levelup",            "label": L.LOBBY_CURRENCY_LEVELUP},
 	{"key": "gacha_ticket_pilot", "label": L.TERM_CURRENCY_GACHA_TICKET_PILOT},
 	{"key": "gacha_ticket_trait", "label": L.TERM_CURRENCY_GACHA_TICKET_TRAIT},
 	{"key": "pilot_shard",        "label": L.LOBBY_CURRENCY_PILOT_SHARD},
+	{"key": "rank_stone",         "label": L.TERM_CURRENCY_RANK_STONE},
 ]
 
 const CURRENCY_CELL_SCENE: String = "res://features/meta/lobby/UI_Comp_LobbyCurrencyCell.tscn"

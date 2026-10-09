@@ -21,7 +21,7 @@ tx_ZQZY2WVPR2,shop.pass.info,active,PassTab,,,"런을 마치면 런 점수만큼
 tx_5NS864BVSS,shop.pass.time_dh,active,PassTab,,,{d}일 {h}시간,{d}d {h}h,draft,77c4378d
 tx_GZ735QTDWP,shop.pass.time_hm,active,PassTab,,,{h}시간 {m}분,{h}h {m}m,draft,7f5d96d4
 tx_JXF877Y58D,shop.pass.claimed,active,PassTab,,,수령 완료,Claimed,draft,09472201
-tx_Z70PR5PYNY,shop.popup.rates_note_pilot,active,ShopPopup / ShopRevealItem,,,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파, 돌파를 다 채운 뒤엔 {tx_V9830054XS}{i} 됩니다.","If a rarity with no items is rolled, the nearest rarity is used instead. Duplicate players give a breakthrough, then player shards once breakthroughs are maxed.",draft,e1e845dd
+tx_Z70PR5PYNY,shop.popup.rates_note_pilot,active,ShopPopup / ShopRevealItem,,,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파(최대 랭크 +1), 돌파를 다 채운 뒤엔 {tx_V9830054XS}과 {tx_95JG2WTYR0}이 됩니다.","If a star tier with no players is rolled, the nearest tier is used instead. Duplicate players give a breakthrough (max rank +1), then player shards and rank stones once breakthroughs are maxed.",draft,8ee6d9f9
 tx_5DHTBBFC6B,shop.popup.rates_note_trait,active,ShopPopup / ShopRevealItem,,,대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 이미 가진 특성은 {tx_HY7DQNPK90}{i} 됩니다.,"If a rarity with no items is rolled, the nearest rarity is used instead. Traits you already own become trait materials.",draft,4cbb3dd5
 tx_ZFYE3A1TJR,shop.popup.rates_title_pilot,active,ShopPopup / ShopRevealItem,,,선수 영입 확률,Player Recruit Rates,draft,4acf1a61
 tx_DZEWNGHZ0V,shop.popup.rates_title_trait,active,ShopPopup / ShopRevealItem,,,특성 연구 확률,Trait Research Rates,draft,706d0d8e
@@ -33,7 +33,7 @@ tx_J2TT6QPKEW,shop.tab.pool_pilot,active,ShopTab,,,선수 영입,Player Recruit,
 tx_7NDPFWQK3B,shop.tab.pool_trait,active,ShopTab,,,특성 연구,Trait Research,draft,abcf7cd0
 tx_PEPY8003ZH,shop.tab.result_pilot,active,ShopTab,,,{tx_J2TT6QPKEW} 결과,Recruit Results,draft,0a05dc3f
 tx_W65CM8AH9Y,shop.tab.result_trait,active,ShopTab,,,{tx_7NDPFWQK3B} 결과,Research Results,draft,0da82840
-tx_4TEB6HP1KS,shop.tab.banner_sub_pilot,active,ShopTab,,,"네임드 선수 {n}인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 {tx_V9830054XS}","One of {n} named {plural:n|{tx_3ZSF3DW62X}|{tx_3HRCFHPCM4}} · Duplicates give breakthroughs, then player shards once maxed",draft,60fa50d0
+tx_4TEB6HP1KS,shop.tab.banner_sub_pilot,active,ShopTab,,,"네임드 선수 {n}인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 {tx_V9830054XS} · {tx_95JG2WTYR0}","One of {n} named {plural:n|{tx_3ZSF3DW62X}|{tx_3HRCFHPCM4}} · Duplicates give breakthroughs, then shards and rank stones once maxed",draft,462f2859
 tx_59WEARXAX8,shop.tab.banner_sub_trait,active,ShopTab,,,감독 특성 {n}종 중 하나 · 이미 가진 특성은 {tx_HY7DQNPK90},One of {n} manager {plural:n|{tx_GW0QTR6A5N}|{tx_BCYB93VHH3}} · Traits you own become trait materials,draft,3d7e04e6
 tx_VX3QB7MM4B,shop.tab.ticket_count,active,ShopTab,,,{n}장,{n},draft,f7fda5d7
 tx_RN8BBG1945,shop.tab.owned_pilots,deprecated,ShopTab,,merged into collection.collection_tab.owned_title,보유 선수,Owned Players,draft,940d819a
@@ -46,7 +46,7 @@ tx_XKMSGF34S8,shop.tab.note,active,ShopTab,,,"{ticket}{i} 먼저 쓰이고, 모�
 tx_8VFYRT9Z7Z,shop.tab.note_discount_pilot,active,ShopTab,,,{tx_XKMSGF34S8} {n}회 영입은 {tx_X43BN649C3}로 치르는 몫이 {pct}% 할인됩니다.,{tx_XKMSGF34S8} Recruit ×{n} gets {pct}% off the coin part.,draft,0a81da5d
 tx_PWWSG8QS24,shop.tab.note_discount_trait,active,ShopTab,,,{tx_XKMSGF34S8} {n}회 연구는 {tx_X43BN649C3}로 치르는 몫이 {pct}% 할인됩니다.,{tx_XKMSGF34S8} Research ×{n} gets {pct}% off the coin part.,draft,68d0428d
 tx_73MWJV0ATK,shop.tab.holding,active,ShopTab,,,보유 {currency} {n},{currency} owned: {n},draft,4cba6d72
-tx_YB4E1VVJ83,shop.tab.shard_sub,active,ShopTab,,,원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 오릅니다.,"Buy the player you want. If you already own them, their breakthrough goes up.",draft,dee28fda
+tx_YB4E1VVJ83,shop.tab.shard_sub,active,ShopTab,,,원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 올라 최대 랭크가 +1 됩니다.,"Buy the player you want. If you already own them, their breakthrough goes up (max rank +1).",draft,10cbb479
 tx_GPSPYQ66XK,shop.tab.bt_progress,active,ShopTab,,,돌파 {n}/{max},Breakthrough {n}/{max},draft,8903fb16
 tx_3HQMAP64E2,shop.tab.buy_breakthrough,active,ShopTab,,,돌파\n파편 {n},Breakthrough\n{n} {plural:n|Shard|Shards},draft,e1f78e5d
 tx_QSJ3WK35GE,shop.tab.buy_recruit,active,ShopTab,,,영입\n파편 {n},Recruit\n{n} {plural:n|Shard|Shards},draft,340ce32c
@@ -81,3 +81,7 @@ tx_NW50K9HBCE,shop.shop_tab.seg_exchange,active,UI_View_ShopTab.tscn Segments/Pa
 tx_33WRAHQJKW,shop.shop_tab.rates_button,active,UI_View_ShopTab.tscn Body/GachaView/VBox/Banner/Pad/VBox/Head/RatesButton text,,,확률 보기,View Rates,draft,b6daf58c
 tx_G4RY3DMSCT,shop.shop_tab.dev_title,active,UI_View_ShopTab.tscn Body/ListView/Scroll/ScrollPad/VBox/DevRow/DevTitle text,,,개발용,Dev Only,draft,f0d13dc0
 tx_68ZA6FCJGY,shop.tab.toast_ticket,active,"ShopTab toast after buying gacha tickets in the exchange. currency = ticket name, n = tickets received",,,{currency} +{n},{currency} +{n},draft,f4aa341c
+tx_SDD8KRGMVC,shop.tab.ex_rank_stone_title,active,ShopTab 교환소 행 제목,,,{tx_95JG2WTYR0} 교환,{tx_95JG2WTYR0} Exchange,draft,c9d4fd98
+tx_CTQ9Z79KG5,shop.tab.ex_rank_stone_desc,active,ShopTab 교환소 행 설명,,,{tx_X43BN649C3} {cost} → {tx_95JG2WTYR0} {gain},{cost} {tx_X43BN649C3} → {gain} {tx_95JG2WTYR0},draft,3e193baa
+tx_AGWHRMH9AR,shop.tab.ex_rank_stone_have,active,ShopTab 교환소 행 보유량,,,보유 {tx_X43BN649C3} {coins} · {tx_95JG2WTYR0} {stones},Owned: {tx_X43BN649C3} {coins} · {tx_95JG2WTYR0} {stones},draft,09dcd9cd
+tx_74MNNANQ3P,shop.tab.toast_rank_stone,active,ShopTab 토스트 — 승급석을 얻었을 때 (교환 · 돌파를 다 채운 선수의 중복),,,{tx_95JG2WTYR0} +{n},{tx_95JG2WTYR0} +{n},draft,d66ed356

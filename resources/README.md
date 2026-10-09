@@ -3,7 +3,7 @@
 Shared data definitions used across features.
 
 **Display text is l10n keys** (`ui` · `term` · `keyword` domains). Shared vocabulary helpers live here —
-`GameEnums.position_label` / `role_position_label` / `phase_label` / `rarity_label` / `tags_text`,
+`GameEnums.position_label` / `role_position_label` / `phase_label` / `rarity_label` / `star_label` / `rank_label` / `tags_text`,
 `PlayerData.stat_label` / `stat_note`, `OutgameTheme.role_name` / `day_letter` / `day_name`,
 `CardData.category_label(cat)`; the label tables (`POSITION_LABELS`, `PHASE_LABELS`, `STAT_*`, `ROLE_NAMES`,
 `DAY_*`, `CATEGORY_LABELS`, …) hold `L.` keys, so **never print a table value directly** — call the helper.
@@ -93,7 +93,8 @@ Shared enum definitions:
   `pilot_card_slots.position` (they are values humans type directly into CSV, so they are not enum values)
 - **Label helpers (l10n)**: `PHASE_LABELS` + `phase_label(phase)` — the one season-phase name table
   (`term.phase.*`; "—" for unknown; `L.TERM_PHASE_INTL` = generic "국제대회"), `RARITY_LABELS` +
-  `rarity_label(tier 0..4)` (일반 · 고급 · 희귀 · 영웅 · 전설, `term.rarity.*`), `TAG_LABELS` + `tag_label(id)` /
+  `rarity_label(tier 0..4)` (일반 · 고급 · 희귀 · 영웅 · 전설, `term.rarity.*` — **traits / quirks only**),
+  `star_label(stars)` (pilot stars "★n", `term.star.n`; "" for 0) · `rank_label(rank)` ("랭크 n", `term.rank.n`), `TAG_LABELS` + `tag_label(id)` /
   `tags_text(raw)` — the `pilot_skills` / `mech_passives` `keyword` column (`|`-joined ascii tag ids →
   "교전, 전략 점수", joined with `ui.list_separator`)
 
@@ -284,9 +285,39 @@ Out-game player persona consumed by MatchFlow / BattleSim:
   "전장 명중" everywhere; `stat_short` and `term.stat.*.short` were removed / deprecated 2026-10). Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
   `static growth_mult(v)` = `v / GROWTH_STAT_BASE` (const.csv `PLAYER_GROWTH_STAT_BASE`). The old 5 stats (`laning` /
   `mechanics` / `gamesense` / `teamfight` / `mental`) were deleted
+- Run setup fields: `salary` (base salary + applied rank effects; level bonus added on read by
+  `RunRules.salary_of`), `rarity` (= **stars** ★1..★3, mobs 0), `level` (0..; stats already include the
+  level bonus), **`rank`** (0..5 — rank rows already folded into the stats / salary / pilot cards; 0 = CSV
+  base), `train_bonus_pct` (rank-row `stat_growth`). `breakthrough` is a deprecated get/set alias of `rank`
+  (old saves / readers).
 - `assigned_mech: MechData` — written by the assignment step of the ban/pick screen (`ban_pick/BanPickController._finish`). Previously this was the job of `AssignController`, which was a separate screen
 
 Loaded from the `players` table (CSV-seeded via `addons/csv_to_db`).
+
+### RunRules.gd
+`class_name RunRules extends RefCounted` (static, tables cached on first use) — run setup rules shared by the
+run setup screens and `GameManager.start_run` (so "what the screen allows" and "what start refuses" never
+split): scenarios / salary cap, team packages, **pilot rank + level**, lineup validation.
+- **Stars · rank · level** (product rules, `features/meta/collection/` shows them):
+  stars ★1..★3 = `players.rarity`, never change. Rank 1..`rank_max()` (`RANK_MAX`); acquired at rank = stars.
+  Breakthrough (profile, from dupes) only raises the max rank = stars + breakthrough (cap RANK_MAX − stars).
+  Level 0..`level_cap(rank)` (= `RANK_LEVEL_CAP_PER_RANK` × rank). At the cap, `rank_up_cost(rank + 1)` rank
+  stones (`RANK_UP_STONE_R2..R5`, currency `rank_stone` 승급석) raise the rank by one and reset level + EXP to 0.
+- `rank_rows(pid)` → `[{rank, stage (= rank), kind, value}]` (`pilot_ranks.csv`, several rows per rank
+  possible). `apply_rank(pd, rank)` raises a copy from `pd.rank` to `rank`, applying each row once
+  (`stat_flat` / `salary_down` / `stat_growth` / `card_swap`) plus `RANK_SALARY_STEP` salary per rank above the
+  stars; `apply_ranks(pool, {"<pid>": rank})`, `apply_base_ranks(pool)` (every named pilot at its stars).
+- Levels (`pilot_levels.csv`, Lv0..`max_level()` = 50): `stat_bonus_at(lv)` / `salary_bonus_at(lv)` (absolute
+  over Lv0), `levelup_cost(lv)` (levelup currency for lv−1 → lv), **`exp_required(lv)` = cumulative EXP from
+  Lv0 inside one rank** (`exp_required(0)` = 0; the profile EXP restarts at 0 on every rank-up),
+  `level_for_exp(exp)`. `apply_level(pd, lv)` (0 ok, idempotent, stat delta vs `pd.level`),
+  `apply_levels(pool, levels)`. `salary_of(pd)` = `pd.salary` + level bonus.
+- `apply_progress(pool, ranks, levels)` = `apply_base_ranks` → `apply_ranks` → `apply_levels` — the one
+  sequence the run setup pool (`RunSetupScreen`, `TeamDraftView` preview) and `GameManager.start_run` use.
+- `lineup_salary(pilots)` (copies at their level) · `validate_lineup(pilot_ids, scenario_id, pool, owned,
+  cap_bonus)` — five picks, all in `pool` and `owned` (keys), one per role, salary ≤ cap (+ trait bonus). There is
+  **no level argument**: pilots enter a run at their collection rank + level, the cap constrains the combination.
+- Deprecated aliases (old callers): `breakthrough_max` · `breakthrough_rows` · `apply_breakthrough`.
 
 ### MechData.gd
 `class_name MechData`, extends `Resource`.
@@ -1041,9 +1072,10 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `BanPickPortraitRim` | SunkPanel | `BanPickPortrait` `Rim` | side colour border (`setup`) |
 | `BanPickSheetCard` · `BanPickDragGhost` | Card · SunkPanel | `BanPickView` `Sheet` · `DragGhost` | — |
 | `ManagerDangerCard` | Card | `ManagerTab` `ResetCard` | — |
-| `CollectionCellFrame` · `CollectionCellFrameUnowned` | SelectableCardButton | `CollectionCell` root (r16, border 2 `BORDER_STRONG` / sunk + `BORDER`), switched by owned state | — |
-| `CollectionCellArtMask` · `CollectionCellUnownedPill` | SunkPanel · SurfaceChip | `CollectionCell` `ArtMask` (r12) · `Unowned` (`RAIL` pill) | — |
-| `CollectionCellPip` · `CollectionCellPipOn` | ProgressTrack · ProgressFill | `CollectionCell` `%Pips` children (r4, 1px border), switched by breakthrough | — |
+| `CollectionCellFrame` | SelectableCardButton | `CollectionCell` root (r16, border 2 `BORDER_STRONG`) | — |
+| `CollectionCellArtMask` | SunkPanel | `CollectionCell` `ArtMask` (r12 white AA mask, clips the face + corner tabs) | — |
+| `CollectionCellLevelRibbon` · `CollectionCellRankPlate` | AccentChip · SurfaceChip | `CollectionCell` `LevelRibbon` (`ACCENT`, square but r12 top-right) · `RankPlate` (`RAIL` 78 %, r12 top-left), both flush with the face bottom | — |
+| `CollectionCellStarOn` · `CollectionCellStar` | OnFillLabel | `CollectionCell` `%Stars` children: reached rank (`ACCENT`) / unlocked by breakthrough, not reached (`TEXT_ON_FILL` 38 %), switched by rank | — |
 | `ManagerPresetChip` · `ManagerPresetChipOn` | SelectableCardButton(On) | `ManagerPresetChip` root (r16, border 2 / amber 4), switched by `ManagerPresetChips.fill` | — |
 | `TraitPickerGauge` · `TraitPickerGaugeBad` | SelectableCard · ManagerDangerCard | `TraitPickerView` `%Gauge` (r16, border 1 / red 3), switched by bonus < 0 | — |
 | `TraitPickerSlot` · `TraitPickerSlotOver` · `TraitPickerSlotEmpty` | SelectableCardButton · SunkPanel | `TraitPickerSlot` `%Frame` (r14, `BORDER_STRONG` / `NEGATIVE` past the slot count) · `%Empty` | — |
@@ -1061,7 +1093,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `ShopRowPanel` | Card | `ShopCraftRow` · `ShopExchangeRow` · `ShopShardRow` roots | — |
 | `ShopBannerCard` · `ShopDevRowPanel` | Card · SunkPanel | `ShopTab` `Banner` · `DevRow` | banner fill = pool (`_fill_gacha`) |
 | `TrainingCourseCardFrame` · `TrainingCourseGradeBand` | Card · SunkPanel | `TrainingCourseCard` root · `Band` | grade colour (`fill` / `set_selected`) |
-| `TrainingCourseShapeWell` · `TrainingCourseLockChip` | SunkPanel · SurfaceChip | `TrainingCourseCard` `Well` · `LockChip` | — |
+| `TrainingCourseShapeWell` | SunkPanel | `TrainingCourseCard` `Well` | — |
 | `TrainingCoursePopoverFrame` | PopupCard | `TrainingCoursePopover` root | grade border (`fill`) |
 | `TrainingThumbFrame` · `TrainingThumbExpChip` | Card · AccentChip | `TrainingThumb` root · `ExpChip` | role border, ± fill (`TrainingView`) |
 | `WeekRail` | SunkPanel | `WeekProgressView` `Rail` (the old `WeekEveningHighlight` went with the evening slot scene) | — |

@@ -908,8 +908,14 @@ gauge + presets — separate rows), `data/l10n/src/*.csv` (own domain rows; gene
 
 ## 16. Facilities · Research — §16 contract (2026-10-09, parallel work)
 
-API, state shape, gauge formula and l10n domains: **`features/season/facility/README.md`** (frozen by the base
-commit). Decisions confirmed with the owner — do not re-litigate:
+API, state shape, gauge formula and l10n domains: **`features/season/facility/README.md`**. Decisions confirmed with
+the owner — do not re-litigate:
+
+> **UI rework (owner, 2026-10-09, after §16 shipped) overrides the items below where they differ**: the facility
+> sheet popup is now a full screen (`FacilityView`, no page scroll, occupant picker modal, upgrade lit only when
+> possible), there is no stop button, the **front has no research** (no expansion gate · budget cut · boosts),
+> the **personnel office researches on its own** (no scout selection), intel / mech keep one row each (no 정밀 분석 /
+> 심화 연구), and "이번 주 시작" warns when a facility has no research picked. Details in the facility README.
 
 1. **Seven facilities per team**, all built from the start: `train_field` (전장 훈련장, H/E courses) · `train_engage`
    (교전 훈련장, C/D) · `train_growth` (체력 단련실, A/P + basic / quirk / misc) · `intel` (전력 분석실) · `mech_lab`

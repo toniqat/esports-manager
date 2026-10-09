@@ -608,8 +608,10 @@ key without a row returns null and the panel just omits the icon.
 
 ### TeamLogos.gd · StaffImages.gd (temporary pictograms)
 `TeamLogos.texture(team_id)` → `images/team_logos/team_<id>.svg` (placeholder shield emblems for league teams
-0..7; INTL teams 100.. borrow `team_<id % 8>.svg`). `TeamLogos.color(team_id)` = the team's signature colour
-(`COLORS`, the shield fill of that logo, same `id % 8` rule — change both together; PREP card banners). `StaffImages.portrait(who)` → `images/staff/manager_bust.svg`
+0..7; INTL teams 100.. borrow `team_<id % 8>.svg`). **Team art comes from data**: `teams.csv` / `intl_teams.csv` columns
+`color_main` · `color_sub` · `logo_path` · `banner_path` (static cache over game.db `teams` + `intl_teams`). `TeamLogos.texture(id)` (logo) ·
+`banner(id)` (`images/team_banners/banner_<id>.svg`, 1000×320: main field, sub stripes / edge bands, faint logo watermark; PREP card-row banner) ·
+`color(id)` / `color_sub(id)`. Fallback: missing row / file → `team_<id % 8>.svg` / `banner_<id % 8>.svg`, colours `FALLBACK_MAIN` / `FALLBACK_SUB` (slate). `StaffImages.portrait(who)` → `images/staff/manager_bust.svg`
 for `"manager"`, else `staff_bust.svg` (one upper-body pictogram for every staff member). Facility pictograms
 live in `images/facilities/fac_<fid>.svg` (`FacilitySystem.icon_of`). All are stand-ins until real art exists —
 swap the files (or add per-id files and look them up first) without touching callers.

@@ -13,7 +13,8 @@ extends Control
 #   • 상대 팀 분석 메모 — `%IntelView_EnemyIntel` 은 `IntelView` 씬 인스턴스(리그 팀 상세와 공용)를
 #     `show_rows = false` · `show_header = false` 로 둔 것: 분석 메모(분석가 썸네일)만 보인다.
 #   • 대진 블록 — 두 팀 로고(`TeamLogos`) · 약칭(`GameManager.team_short_name`).
-#   • 카드 줄 배너 — `%OwnBanner` / `%EnemyBanner`(`TeamBanner`) 를 팀 상징색(`TeamLogos.color`)으로.
+#   • 카드 줄 배너 — `%OwnBanner` / `%EnemyBanner`(`TeamBanner`) 에 팀 배너 이미지(`TeamLogos.banner`),
+#     없으면 팀 상징색(`TeamLogos.color`) 띠.
 #   • 두 팀의 선수 — `%EnemyCards` / `%OwnCards` 의 `MatchPrepPilotCard` 다섯 장(자리 순서)을
 #     `OpponentIntel.build()` 의 행으로 채운다(공개 단계는 그 행이 이미 지킨다). 카드를 누르면
 #     상세 시트: 내 선수 = `SeasonPilotDetail`, 상대(또는 런 밖의 내 선수) = `MatchPrepPilotDetail`.
@@ -69,10 +70,13 @@ func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
 	_fill_banner(%EnemyBanner, int(enemy["team_id"]))
 
 
-## Card-row banner in the team's signature colour; no team id → the scene's colour stays.
+## Card-row banner: the team's banner image (`TeamLogos.banner`, `teams.csv` banner_path) with its
+## main colour as the fallback band; no team id → the scene's colour stays.
 func _fill_banner(banner: TeamBanner, team_id: int) -> void:
-	if team_id >= 0:
-		banner.color = TeamLogos.color(team_id)
+	if team_id < 0:
+		return
+	banner.color = TeamLogos.color(team_id)
+	banner.texture = TeamLogos.banner(team_id)
 
 
 ## One side of the versus block: the team logo and short name (`teams.csv` short_name_key);

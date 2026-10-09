@@ -1,5 +1,5 @@
-id,name_key,short_name_key
-100,tx_Z8TGYD43H2,tx_VRM2M0YD2A
-101,tx_W6EHC44Q4V,tx_K1RND3SFKX
-102,tx_CJN6DMT8BQ,tx_ZB4SQT0K00
-103,tx_YW58G2QSRE,tx_9SA3Q5K498
+id,name_key,short_name_key,color_main,color_sub,logo_path,banner_path
+100,tx_Z8TGYD43H2,tx_VRM2M0YD2A,#C9A227,#FFF1C2,res://resources/images/team_logos/team_100.svg,res://resources/images/team_banners/banner_100.svg
+101,tx_W6EHC44Q4V,tx_K1RND3SFKX,#26377A,#CFD8F5,res://resources/images/team_logos/team_101.svg,res://resources/images/team_banners/banner_101.svg
+102,tx_CJN6DMT8BQ,tx_ZB4SQT0K00,#7FA31F,#E6F3C2,res://resources/images/team_logos/team_102.svg,res://resources/images/team_banners/banner_102.svg
+103,tx_YW58G2QSRE,tx_9SA3Q5K498,#8B5A2B,#F0DDC8,res://resources/images/team_logos/team_103.svg,res://resources/images/team_banners/banner_103.svg

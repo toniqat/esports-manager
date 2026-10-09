@@ -29,8 +29,8 @@ const SCHEMAS: Dictionary = {
 	"mechs":       {"req": ["id","name_key","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name_key","p1","p2","keyword","description_key"], "pk": "id"},
 	"mech_cards":    {"req": ["id","mech_id","name_key","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description_key","upgrade_id"], "pk": "id"},
-	"teams":       {"req": ["id","name_key","short_name_key","budget","facility_level","staff_ids","manual_areas","desc_key","map_id"], "pk": "id"},
-	"intl_teams":   {"req": ["id","name_key","short_name_key"],                         "pk": "id"},
+	"teams":       {"req": ["id","name_key","short_name_key","budget","facility_level","staff_ids","manual_areas","desc_key","map_id","color_main","color_sub","logo_path","banner_path"], "pk": "id"},
+	"intl_teams":   {"req": ["id","name_key","short_name_key","color_main","color_sub","logo_path","banner_path"], "pk": "id"},
 	"intl_players": {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs","mech_pref"], "pk": "id"},
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
 	"training_tiles": {"req": ["id","name_key","grade","shape","exp","effect"], "pk": "id"},
@@ -247,11 +247,21 @@ const TABLE_DEFS: Dictionary = {
 		"desc_key":           {"data_type": "text", "not_null": true},
 		# 팀 부지 맵: `BaseMap.SCENES` 인덱스 (시간 경과 화면, features/season/week/base_map/).
 		"map_id":         {"data_type": "int",  "not_null": true},
+		# 팀 아트(`resources/TeamLogos`): 시그니처 색 main · sub (`#RRGGBB`), 로고 · 배너 이미지 `res://` 경로.
+		"color_main":     {"data_type": "text", "not_null": true},
+		"color_sub":      {"data_type": "text", "not_null": true},
+		"logo_path":      {"data_type": "text", "not_null": true},
+		"banner_path":    {"data_type": "text", "not_null": true},
 	},
 	"intl_teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
 		"name_key":       {"data_type": "text", "not_null": true},
 		"short_name_key": {"data_type": "text", "not_null": true},
+		# 팀 아트(`resources/TeamLogos`): 시그니처 색 main · sub (`#RRGGBB`), 로고 · 배너 이미지 `res://` 경로.
+		"color_main":     {"data_type": "text", "not_null": true},
+		"color_sub":      {"data_type": "text", "not_null": true},
+		"logo_path":      {"data_type": "text", "not_null": true},
+		"banner_path":    {"data_type": "text", "not_null": true},
 	},
 	"intl_players": {
 		"id":        {"data_type": "int",  "primary_key": true, "not_null": true},

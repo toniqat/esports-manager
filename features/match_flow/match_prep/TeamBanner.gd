@@ -1,11 +1,13 @@
 class_name TeamBanner
 extends Control
 
-# A team's banner behind one row of PREP pilot cards — a square, borderless band in the team's
-# signature colour (`TeamLogos.color`) with thin lighter horizontal stripes every `STRIPE_PITCH`
-# px and a slightly darker band along the top and bottom edge, so the two sides read apart at a
-# glance. A `_draw` widget placed as a node in `UI_View_MatchPrepView.tscn` (it fills its parent
-# MarginContainer, under the cards); `MatchPrepView` sets `color`.
+# A team's banner behind one row of PREP pilot cards, borderless. Draws the team's banner image
+# (`texture` = `TeamLogos.banner`: main-colour field, sub-colour stripes / edge bands, faint logo
+# watermark) scaled to cover the rect, cropping the overflow (keeps its aspect, centred). Without
+# an image it falls back to a procedural band in `color` (`TeamLogos.color`): lighter horizontal
+# stripes every `STRIPE_PITCH` px and a darker band along the top and bottom edge.
+# A `_draw` widget placed as a node in `UI_View_MatchPrepView.tscn` (it fills its parent
+# MarginContainer, under the cards); `MatchPrepView` sets `texture` and `color`.
 
 ## Distance between two stripe lines and their thickness (px).
 const STRIPE_PITCH: float = 12.0
@@ -22,6 +24,13 @@ const EDGE_H: float = 10.0
 		queue_redraw()
 
 
+## Banner image (null = the procedural fallback in `color`).
+@export var texture: Texture2D = null:
+	set(v):
+		texture = v
+		queue_redraw()
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		queue_redraw()
@@ -32,6 +41,9 @@ func _draw() -> void:
 	var h: float = size.y
 	if w <= 0.0 or h <= 0.0:
 		return
+	if texture != null:
+		_draw_cover(w, h)
+		return
 	draw_rect(Rect2(0.0, 0.0, w, h), color)
 	var edge: Color = color.darkened(EDGE_DARKEN)
 	draw_rect(Rect2(0.0, 0.0, w, EDGE_H), edge)
@@ -41,3 +53,13 @@ func _draw() -> void:
 	while y + STRIPE_W <= h - EDGE_H:
 		draw_rect(Rect2(0.0, y, w, STRIPE_W), stripe)
 		y += STRIPE_PITCH
+
+
+## The image scaled to cover `w` × `h` (aspect kept, centred, overflow cropped via the source region).
+func _draw_cover(w: float, h: float) -> void:
+	var ts: Vector2 = texture.get_size()
+	if ts.x <= 0.0 or ts.y <= 0.0:
+		return
+	var k: float = maxf(w / ts.x, h / ts.y)
+	var src := Vector2(w / k, h / k)
+	draw_texture_rect_region(texture, Rect2(0.0, 0.0, w, h), Rect2((ts - src) * 0.5, src))

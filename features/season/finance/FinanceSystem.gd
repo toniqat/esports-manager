@@ -8,12 +8,13 @@ extends RefCounted
 #
 # Week end (`settle_week`, Sunday close, before the calendar rolls):
 #   income  = sponsor_base × facility income_pct + match bonus of the week
-#   expense = staff weekly salaries + facility upkeep
+#   expense = staff weekly salaries + facility upkeep (sum over the seven facilities)
 #   net >= 0 → FINANCE_RESERVE_PCT of it stays in the balance, the rest is
 #              split across training / facility fund / welfare (allocation).
 #   net <  0 → bankruptcy rule (balance never goes negative):
 #              allocation stops → balance → facility fund → one forced cut
-#              (facility downgrade, or a training penalty at level 1).
+#              (one facility downgrade — highest-level non-front first, the
+#              front last — or a training penalty once everything is level 1).
 #
 # §14 T6: the effective finance stat scales sponsor income / upkeep
 # (`FINANCE_STAT_*`, inside `income_mult` / `upkeep_mult`), and the sheet's
@@ -24,6 +25,9 @@ extends RefCounted
 # `season_state.facilities.front.level`); `facility_level` / `upgrade_*` below read and
 # upgrade the front, and `facilities.csv` effects keep applying at that level. Other
 # facilities upgrade through `FacilitySystem.upgrade` (paid by `pay_upgrade`).
+# Upkeep is per facility: `facilities.csv upkeep(its level) × cost_pct / Σ cost_pct`
+# (equal levels = the old single upkeep), summed, minus the front's permanent budget
+# cut (`upkeep_cut_pct`, `FrontResearch` budget_cut), × `upkeep_mult`.
 #
 # All numbers are tuning values in `const.csv` (`FINANCE_*`) and
 # `facilities.csv`. Saved state goes through JSON, so every read is `int()` /
@@ -37,7 +41,7 @@ const AXIS_LABELS: Dictionary = {  # l10n-keys: finance.axis.*
 ## `cut_text(cut)` turns one into a line. Every deficit week starts with CUT_STOP.
 const CUT_STOP: String = "stop"            # {type}
 const CUT_FUND: String = "fund"            # {type, amount} — facility fund raided
-const CUT_DOWNGRADE: String = "downgrade"  # {type, from, to, amount} — amount = unpaid
+const CUT_DOWNGRADE: String = "downgrade"  # {type, fid, from, to, amount} — amount = unpaid (no fid = pre-§16 record)
 const CUT_PENALTY: String = "penalty"      # {type, weeks, pct}
 ## Manual allocation the run starts with (percent, sums to 100, step-aligned).
 const DEFAULT_ALLOC: Dictionary = {"training": 40, "facility": 30, "welfare": 30}
@@ -70,6 +74,7 @@ static func init_run(state: Dictionary, team_id: int) -> void:
 		"alloc": DEFAULT_ALLOC.duplicate(),
 		"effects": {"training_pct": 0.0, "welfare_pct": 0.0},
 		"penalty_weeks": 0,
+		"upkeep_cut_pct": 0,
 		"week_bonus": 0,
 		"week_wins": 0,
 		"week_losses": 0,
@@ -94,7 +99,7 @@ static func settle_week(state: Dictionary) -> Dictionary:
 	var bonus: int = int(f.get("week_bonus", 0))
 	var income: int = sponsor + bonus
 	var salaries: int = salary_cost(state)
-	var upkeep: int = upkeep_cost(state, lvl)
+	var upkeep: int = upkeep_cost(state)
 	var expense: int = salaries + upkeep
 	var net: int = income - expense
 
@@ -142,9 +147,13 @@ static func settle_week(state: Dictionary) -> Dictionary:
 			cuts.append({"type": CUT_FUND, "amount": from_fund})
 		if need > 0:
 			unpaid = need
-			if lvl > 1:
-				cuts.append({"type": CUT_DOWNGRADE, "from": lvl, "to": lvl - 1, "amount": need})
-				lvl -= 1
+			var victim: String = downgrade_target(state)
+			if victim != "":
+				var from_lvl: int = FacilitySystem.level(state, victim)
+				cuts.append({"type": CUT_DOWNGRADE, "fid": victim, "from": from_lvl, "to": from_lvl - 1,
+						"amount": need})
+				FacilitySystem.set_level(state, victim, from_lvl - 1)
+				lvl = facility_level(state)
 			else:
 				penalty = maxi(penalty, ConstTable.int_of("FINANCE_UNPAID_PENALTY_WEEKS"))
 				cuts.append({"type": CUT_PENALTY, "weeks": penalty,
@@ -175,6 +184,7 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		"income": income,
 		"salaries": salaries,
 		"upkeep": upkeep,
+		"upkeep_cut_pct": upkeep_cut_pct(state),
 		"expense": expense,
 		"net": net,
 		"reserve": reserve,
@@ -189,7 +199,6 @@ static func settle_week(state: Dictionary) -> Dictionary:
 
 	f["balance"] = balance_now
 	f["facility_fund"] = fund
-	FacilitySystem.set_level(state, FacilitySystem.FRONT, lvl)
 	f["penalty_weeks"] = penalty
 	f["effects"] = {
 		"training_pct": _spend_effect(int(spent["training"]),
@@ -278,10 +287,93 @@ static func sponsor_income(state: Dictionary, level: int) -> int:
 			* income_mult(state)))
 
 
-## Weekly facility upkeep at `level` × trait `upkeep_pct` (M8).
-static func upkeep_cost(state: Dictionary, level: int) -> int:
-	return int(round(float(facility_row(level).get("upkeep", 0))
-			* upkeep_mult(state)))
+## Weekly facility upkeep (§16): every facility's share at its own level
+## (`facility_upkeep_base`), summed, × (1 − budget cut) × `upkeep_mult` (traits ·
+## finance stat · specials). `settle_week` / `projection` both read it.
+static func upkeep_cost(state: Dictionary) -> int:
+	var raw: float = 0.0
+	for fid in FacilitySystem.FACILITIES:
+		raw += facility_upkeep_base(state, String(fid))
+	return int(round(raw * upkeep_cut_mult(state) * upkeep_mult(state)))
+
+
+## One facility's share of the upkeep row before any multiplier:
+## `facilities.csv upkeep(level) × cost_pct / Σ cost_pct` (so all seven facilities at
+## one level cost exactly that level's row).
+static func facility_upkeep_base(state: Dictionary, fid: String) -> float:
+	var total_pct: float = 0.0
+	for f in FacilitySystem.FACILITIES:
+		total_pct += float(FacilitySystem.def(String(f)).get("cost_pct", 100))
+	if total_pct <= 0.0:
+		return 0.0
+	var row: Dictionary = facility_row(FacilitySystem.level(state, fid))
+	return float(row.get("upkeep", 0)) * float(FacilitySystem.def(fid).get("cost_pct", 100)) / total_pct
+
+
+## Per-facility upkeep for the sheet, `FacilitySystem.FACILITIES` order:
+## `[{fid, level, upkeep}]` with the same multipliers as `upkeep_cost` (rounded per row,
+## so the rows may differ from the total by rounding).
+static func upkeep_breakdown(state: Dictionary) -> Array:
+	var m: float = upkeep_cut_mult(state) * upkeep_mult(state)
+	var out: Array = []
+	for fid in FacilitySystem.FACILITIES:
+		out.append({"fid": String(fid), "level": FacilitySystem.level(state, String(fid)),
+				"upkeep": int(round(facility_upkeep_base(state, String(fid)) * m))})
+	return out
+
+
+## Permanent upkeep cut from the front's budget_cut research (percent, stacking),
+## capped at `FINANCE_UPKEEP_CUT_MAX_PCT`.
+static func upkeep_cut_pct(state: Dictionary) -> int:
+	var raw: int = int((state.get("finance", {}) as Dictionary).get("upkeep_cut_pct", 0))
+	return clampi(raw, 0, upkeep_cut_max())
+
+
+static func upkeep_cut_max() -> int:
+	return clampi(ConstTable.int_of("FINANCE_UPKEEP_CUT_MAX_PCT"), 0, 100)
+
+
+static func upkeep_cut_mult(state: Dictionary) -> float:
+	return 1.0 - float(upkeep_cut_pct(state)) / 100.0
+
+
+## Adds `pct` to the permanent budget cut (clamped to the cap). Returns the new total.
+static func add_upkeep_cut(state: Dictionary, pct: int) -> int:
+	var f: Dictionary = _fin(state)
+	f["upkeep_cut_pct"] = clampi(upkeep_cut_pct(state) + maxi(0, pct), 0, upkeep_cut_max())
+	return int(f["upkeep_cut_pct"])
+
+
+## Bankruptcy cut target: the highest-level non-front facility above Lv1 (ties → the
+## larger upkeep share `cost_pct`, then the later one in `FACILITIES`); the front only
+## once every other facility is Lv1. "" = nothing left to downgrade (→ training penalty).
+static func downgrade_target(state: Dictionary) -> String:
+	var best: String = ""
+	var best_lvl: int = 1
+	var best_pct: int = -1
+	for raw in FacilitySystem.FACILITIES:
+		var fid: String = String(raw)
+		if fid == FacilitySystem.FRONT:
+			continue
+		var lvl: int = FacilitySystem.level(state, fid)
+		var pct: int = int(FacilitySystem.def(fid).get("cost_pct", 100))
+		if lvl > best_lvl or (lvl == best_lvl and lvl > 1 and pct >= best_pct):
+			best = fid
+			best_lvl = lvl
+			best_pct = pct
+	if best != "":
+		return best
+	if facility_level(state) > 1:
+		return FacilitySystem.FRONT
+	return ""
+
+
+## Every facility at max level (delegated allocation stops saving for upgrades).
+static func all_facilities_max(state: Dictionary) -> bool:
+	for fid in FacilitySystem.FACILITIES:
+		if FacilitySystem.level(state, String(fid)) < FacilitySystem.max_level():
+			return false
+	return true
 
 
 ## Every sponsor-income multiplier on top of the facility percent — traits ×
@@ -322,9 +414,9 @@ static func manual_profit_weeks(state: Dictionary) -> int:
 	return int((state.get("finance", {}) as Dictionary).get("manual_profit_weeks", 0))
 
 
-## Weekly fixed cost at the current level — salaries + upkeep.
+## Weekly fixed cost — salaries + upkeep (all facilities).
 static func weekly_fixed_cost(state: Dictionary) -> int:
-	return salary_cost(state) + upkeep_cost(state, facility_level(state))
+	return salary_cost(state) + upkeep_cost(state)
 
 
 ## What the coming week-end settlement looks like so far (bonus accrued to date).
@@ -383,11 +475,11 @@ static func incident_mult(state: Dictionary) -> float:
 # ── Allocation ───────────────────────────────────────────────────────────────
 ## Shares (percent, sum 100) the next settlement uses. Delegated finance =
 ## the staff's automatic split: even thirds, or half / half between training
-## and welfare once the facility is at max level (nothing left to save for).
+## and welfare once every facility is at max level (nothing left to save for).
 ## Manual = the manager's stored `alloc`.
 static func allocation_shares(state: Dictionary) -> Dictionary:
 	if StaffSystem.is_delegated(state, "finance"):
-		if facility_level(state) >= max_level():
+		if all_facilities_max(state):
 			return {"training": 50, "facility": 0, "welfare": 50}
 		return {"training": 34, "facility": 33, "welfare": 33}
 	return manual_alloc(state)
@@ -600,7 +692,7 @@ static func special_block_reason(state: Dictionary, special_id: String) -> Strin
 			if StaffSystem.weekly_salary_total(state) <= 0:
 				return Loc.t(L.FINANCE_BLOCK_NO_SALARY)
 		"upkeep_delay":
-			if int(facility_row(facility_level(state)).get("upkeep", 0)) <= 0:
+			if upkeep_cost(state) <= 0:
 				return Loc.t(L.FINANCE_BLOCK_NO_UPKEEP)
 	if balance(state) < int(row["cost"]):
 		return Loc.t(L.FINANCE_BLOCK_SHORT_BALANCE, {"amount": fmt(int(row["cost"]))})
@@ -715,6 +807,11 @@ static func cut_text(cut: Variant) -> String:
 		CUT_FUND:
 			return Loc.t(L.FINANCE_CUT_FUND, {"amount": fmt(int(c.get("amount", 0)))})
 		CUT_DOWNGRADE:
+			if String(c.get("fid", "")) != "":
+				return Loc.t(L.FINANCE_CUT_DOWNGRADE_FACILITY, {
+						"name": FacilitySystem.facility_name(String(c["fid"])),
+						"from": int(c.get("from", 0)), "to": int(c.get("to", 0)),
+						"amount": fmt(int(c.get("amount", 0)))})
 			return Loc.t(L.FINANCE_CUT_DOWNGRADE, {"from": int(c.get("from", 0)), "to": int(c.get("to", 0)),
 					"amount": fmt(int(c.get("amount", 0)))})
 		CUT_PENALTY:

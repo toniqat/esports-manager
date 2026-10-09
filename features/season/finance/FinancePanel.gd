@@ -186,7 +186,7 @@ func _fill_allocation() -> void:
 				"pct": ConstTable.int_of("FINANCE_TRAINING_MAX_PCT"),
 				"amount": FinanceSystem.fmt(ConstTable.int_of("FINANCE_TRAINING_FULL_SPEND"))}),
 		"facility": Loc.t(L.FINANCE_PANEL_HINT_FACILITY) \
-				if FinanceSystem.facility_level(state) < FinanceSystem.max_level() \
+				if not FinanceSystem.all_facilities_max(state) \
 				else Loc.t(L.FINANCE_PANEL_HINT_FACILITY_MAX),
 		"welfare": Loc.t(L.FINANCE_PANEL_HINT_WELFARE, {
 				"pct": ConstTable.int_of("FINANCE_WELFARE_MAX_PCT"),
@@ -236,8 +236,28 @@ func _fill_facility() -> void:
 	%UpgradeConfirm.visible = why == "" and _upgrade_armed
 	%UpgradeConfirm.text = Loc.t(L.FINANCE_PANEL_UPGRADE_CONFIRM, {"cost": cost})
 	%UpgradeBlocked.visible = why != ""
-	%UpgradeBlocked.text = Loc.t(L.UI_MESSAGE_MAX_LEVEL) if lvl >= top \
-			else Loc.t(L.FINANCE_PANEL_UPGRADE_SHORT, {"amount": cost})
+	var short: bool = FinanceSystem.upgrade_funds(state) < FinanceSystem.upgrade_cost(state)
+	var gated: bool = lvl < top and not FacilitySystem.front_expand_done(state, lvl + 1)
+	if lvl >= top:
+		%UpgradeBlocked.text = Loc.t(L.UI_MESSAGE_MAX_LEVEL)
+	elif short and not gated:
+		%UpgradeBlocked.text = Loc.t(L.FINANCE_PANEL_UPGRADE_SHORT, {"amount": cost})
+	else:
+		%UpgradeBlocked.text = why
+	# §16 — the front needs its `expand` research for the next level first (FrontResearch).
+	%FacGate.visible = gated
+	if gated:
+		%FacGate.text = Loc.t(L.FINANCE_PANEL_UPGRADE_GATE, {"level": lvl + 1,
+				"pct": int(round(FrontResearch.expand_progress(state, lvl + 1) * 100.0))})
+	var lines: Array = []
+	for raw in FinanceSystem.upkeep_breakdown(state):
+		var e: Dictionary = raw
+		lines.append(Loc.t(L.FINANCE_PANEL_UPKEEP_LINE, {"name": FacilitySystem.facility_name(String(e["fid"])),
+				"level": int(e["level"]), "amount": FinanceSystem.fmt(int(e["upkeep"]))}))
+	_fill_lines(%Upkeeps, lines)
+	var cut: int = FinanceSystem.upkeep_cut_pct(state)
+	%UpkeepCut.visible = cut > 0
+	%UpkeepCut.text = Loc.t(L.FINANCE_PANEL_UPKEEP_CUT, {"pct": cut})
 
 
 # 특별 지출 — running specials, then every row with its two-step buy button
@@ -371,8 +391,7 @@ static func _facility_effects(row: Dictionary) -> String:
 			"train": "%.2f" % (float(row.get("train_exp_pct", 100)) / 100.0),
 			"mastery": "%.2f" % (float(row.get("mastery_pct", 100)) / 100.0),
 			"incident": "%.2f" % (float(row.get("incident_pct", 100)) / 100.0),
-			"income": "%.2f" % (float(row.get("income_pct", 100)) / 100.0),
-			"upkeep": FinanceSystem.fmt(int(row.get("upkeep", 0)))})
+			"income": "%.2f" % (float(row.get("income_pct", 100)) / 100.0)})
 
 
 static func _amount_row(row: Node, label_text: String, amount: int) -> void:
@@ -446,6 +465,7 @@ func _fill_preview() -> void:
 	if gm == null:
 		return
 	var state: Dictionary = gm.season_state
+	FinanceSystem.add_upkeep_cut(state, 10)
 	for _w in 2:
 		FinanceSystem.settle_week(state)
 	_bind(null, state)

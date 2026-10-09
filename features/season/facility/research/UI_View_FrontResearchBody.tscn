@@ -1,0 +1,192 @@
+[gd_scene load_steps=3 format=3 uid="uid://blu4ku0io714q"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/facility/research/FrontResearchBody.gd" id="2_script"]
+
+[node name="FrontResearchBody" type="VBoxContainer"]
+editor_description = "Front facility sheet section (FrontResearch.make_body → FrontResearchBody.create). Top-wide; the facility sheet places it under the research list. Template lines (Boosts / Expands / Caps) are duplicated per entry at runtime."
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+script = ExtResource("2_script")
+
+[node name="CutSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CutSection"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "tx_1RFMKB7D8P"
+
+[node name="Divider" type="HSeparator" parent="CutSection"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="CutSection"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CutLine" type="Label" parent="."]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — FrontResearchBody.gd refresh()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "시설 유지비 −10% 적용 중 (한도 −30%)"
+
+[node name="GapBoostSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BoostSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="BoostSection"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "tx_GWEDPGNQ0G"
+
+[node name="Divider" type="HSeparator" parent="BoostSection"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="BoostSection"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Boosts" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — FrontResearchBody.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="Label" parent="Boosts"]
+auto_translate_mode = 2
+editor_description = "Template line — the script duplicates it per running boost."
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "모든 연구 +10% · 2주 남음"
+
+[node name="GapExpandSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ExpandSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="ExpandSection"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "tx_79WNYPQ90D"
+
+[node name="Divider" type="HSeparator" parent="ExpandSection"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="ExpandSection"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Expands" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — FrontResearchBody.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="Label" parent="Expands"]
+auto_translate_mode = 2
+editor_description = "Template line — the script duplicates it per front level 2..max."
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Lv3 · 연구 50%"
+
+[node name="GapCapSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CapSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CapSection"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "tx_K86Q94WNWC"
+
+[node name="Divider" type="HSeparator" parent="CapSection"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Gap" type="Control" parent="CapSection"]
+custom_minimum_size = Vector2(0, 11)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CapRule" type="Label" parent="."]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — FrontResearchBody.gd refresh()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "다른 시설은 프론트 레벨(Lv3)을 넘을 수 없습니다."
+autowrap_mode = 3
+
+[node name="Caps" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — FrontResearchBody.gd refresh()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Line" type="Label" parent="Caps"]
+auto_translate_mode = 2
+editor_description = "Template line — the script duplicates it per non-front facility."
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "전장 훈련장  Lv2"
+
+[node name="Tail" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2

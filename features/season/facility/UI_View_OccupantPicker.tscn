@@ -1,0 +1,136 @@
+[gd_scene load_steps=4 format=3 uid="uid://by8spl684776i"]
+
+[ext_resource type="Script" path="res://features/season/facility/OccupantPicker.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/season/staff/UI_Comp_StaffThumb.tscn" id="3_thumb"]
+
+[node name="OccupantPicker" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="SafeArea" type="CenterContainer" parent="Root"]
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _fit_safe_area()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/SafeArea"]
+custom_minimum_size = Vector2(1000, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCardWide"
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "tx_4SZE7HM5X3"
+
+[node name="Sub" type="Label" parent="Root/SafeArea/Card/VBox"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _fill()
+Which stat this facility reads, and the manager's seats used."
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+text = "분석 스탯이 높을수록 연구가 빨라집니다 · 감독 자리 2/3"
+autowrap_mode = 3
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _ready() · _fill()
+Grid scroll; code caps its height so the card stays inside the safe area."
+custom_minimum_size = Vector2(0, 690)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Grid" type="GridContainer" parent="Root/SafeArea/Card/VBox/Scroll"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _fill()
+Manager first, then every run staff member (StaffThumb, 3 columns). Sample cells are previews (cleared in _ready)."
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 28
+theme_override_constants/v_separation = 28
+columns = 3
+
+[node name="StaffThumb_Manager" parent="Root/SafeArea/Card/VBox/Scroll/Grid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="StaffThumb_Staff" parent="Root/SafeArea/Card/VBox/Scroll/Grid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 104)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Release" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _ready() · _fill()
+Empties the seat (hidden when nobody sits here)."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "tx_Q9RW2F7B52"
+
+[node name="Close" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+editor_description = "[필수] 지우면 오류 — OccupantPicker.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "tx_R1DMEF1S3E"

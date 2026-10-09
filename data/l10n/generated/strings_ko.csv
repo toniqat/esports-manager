@@ -606,7 +606,6 @@ tx_1NR41VEH2P,인력 개발실
 tx_YZB146N3AB,새 스태프 후보를 찾습니다.
 tx_RKQKPT7PAA,알 수 없는 시설입니다
 tx_W0B4MCSN5H,프론트 레벨(Lv{level})보다 높일 수 없습니다
-tx_68CD3GE4VG,경영 확장 연구를 먼저 마쳐야 합니다 (Lv{level})
 tx_3QK260W7GE,감독 자리가 모두 찼습니다 ({used}/{max})
 tx_WJT54F271R,배치할 수 없는 인원입니다
 tx_CVCJVWEBR6,연구는 주를 시작하기 전 허브에서만 고를 수 있습니다
@@ -619,40 +618,28 @@ tx_S4FXFA48S2,{facility}: {research} 연구 완료
 tx_2DVG79QR47,공석
 tx_7QVM7MN5FJ,대기
 tx_4EHMAGDXET,정지
-tx_MG4PJRBEHT,{stat} 스탯 {value}
 tx_SCR26J543Y,주간 연구량 {points}
-tx_XWWWJ0X5XB,주간 연구량 {points} (연구 가속 +{pct}%)
 tx_ZZJ4JEHR6S,담당자가 없어 연구가 멈춰 있습니다
-tx_YT2BFHQ575,시설 레벨  Lv {level} / {max}
-tx_Y0T8P41MJC,프론트 레벨(Lv {level})까지 올릴 수 있습니다
-tx_TSJ90DZGZC,경영 확장 연구를 마치면 다음 레벨로 올릴 수 있습니다. 다른 시설은 프론트 레벨을 넘을 수 없습니다
-tx_T1FB2QSPV3,"비용 {cost} · 시설 적립금 먼저, 모자라면 잔고 (가용 {available})"
-tx_R5BCZ03CXS,업그레이드 → Lv {level}
-tx_SSWDV60G95,한 번 더 눌러 확정 (−{cost})
-tx_V62WWZ2WYP,담당 {name} · 감독 자리 {used}/{max}
 tx_FCQB0FXWBH,시설 {used}/{max}곳 담당
 tx_4KWT3Y97ST,{job} · 배치 대기
 tx_EWYEJXNDAF,{job} · {facility} 담당
 tx_QCKTF34XFA,{stat} {value}
 tx_PHJQGAV021,주가 시작된 뒤에는 연구와 담당자를 바꿀 수 없습니다
-tx_MCBMW0QAHG,진행 중인 연구가 없습니다. 아래에서 고르세요
-tx_XZCHMTZXXT,진행 중: {research} ({pct})
-tx_SMZ5HP2BNQ,담당자가 없어 연구가 진행되지 않습니다
-tx_DQJD7J14W6,{research}: 대상을 고르세요
-tx_ZWZPJWG0QR,{label} {pct}
-tx_8R6M39S8BD,{weeks}주 분량
-tx_FS0DH25RXJ,남은 {weeks}주
-tx_0JERQ2SFZS,담당자 없음
-tx_NN26NEVRFH,완료 {n}회
-tx_SBN1CESNR1,진행 중
-tx_B60H1YTW25,대상 선택
-tx_70JYF47F2A,구단 시설 · 시설을 눌러 연구와 담당자를 정합니다
-tx_KGEH08E67V,배치
-tx_XRTZSNXKK3,해제
-tx_CRM67JX767,담당자
-tx_GTETHKQT5R,연구
-tx_8P6KV6MVBF,연구 중지
-tx_94GX7N1P3J,이 시설에서 할 수 있는 연구가 없습니다
+tx_XACM764WS1,{stat} 스탯이 높을수록 연구가 빨라집니다 · 감독 자리 {used}/{max}
+tx_SYEANH7J80,Lv {level} / {max}
+tx_SJMTRAANZT,업그레이드
+tx_P8ESMKF2SK,{facility} 업그레이드
+tx_7160MR6THY,"Lv {from} → Lv {to}
+비용 {cost} · 시설 적립금에서 먼저, 모자라면 잔고에서 냅니다 (가용 {available})"
+tx_X25510VG6B,Lv {level}
+tx_23Z9Y1KS27,Lv {level} · 상한
+tx_36JKVBS5M0,연구를 정하지 않은 시설이 있습니다
+tx_52R5AH08E4,{facilities}에서 진행할 연구가 정해지지 않았습니다. 이대로 이번 주를 시작할까요?
+tx_8NFBT2ZYEJ,그대로 시작
+tx_F1XQZ928N8,허브로 돌아가기
+tx_8YS6JRVTQW,프론트 레벨이 구단 시설 레벨의 상한입니다. 다른 시설은 프론트보다 높게 올릴 수 없습니다.
+tx_4SZE7HM5X3,담당자 선택
+tx_Q9RW2F7B52,자리 비우기
 tx_H1V09QCXSD,단기 훈련 코치
 tx_E731FZHB4R,전술 컨설턴트
 tx_8SZM4HBC56,메크 연구원 초빙
@@ -767,8 +754,6 @@ tx_5ATMNYAZ8A,시설 유지비 (보정 ×{mult})
 tx_A68YMV80H1,{name} Lv{from} → Lv{to} 강등 (미납 {amount})
 tx_9996TAPSGF,시설별 유지비 (주)
 tx_S6RZ7XDZCZ,{name}  Lv{level} · {amount}
-tx_F54VFZ1WNC,운영비 절감 −{pct}% 반영 (프론트 연구)
-tx_K6HVE7B1CA,Lv{level} 로 올리려면 프론트의 경영 확장 연구가 먼저 끝나야 합니다 · 진행 {pct}%
 tx_MGJS84V3XM,다른 시설은 프론트 레벨을 넘을 수 없습니다 — 각 시설 시트에서 업그레이드
 tx_S8GB2PQJET,"턴
 넘기기"
@@ -2018,51 +2003,8 @@ tx_N5C2E6FQ2F,자기 역할군 메크 탑승
 tx_VXEP932PHS,{role} 메크 탑승
 tx_9PKMC5PHJG,숙련도 {tier} 이상
 tx_63B5AMR6Y6,{cond} 시 {stats}
-tx_M9XAM000XY,운영비 절감 I
-tx_E124ZY8HS9,시설 유지비를 영구히 줄입니다.
-tx_GCWN9S4V5Q,연구 집중 지원
-tx_Z1QWCYFAHY,한동안 모든 연구 속도를 높입니다.
-tx_YFMN5YNFH3,경영 확장 II
-tx_S8HGTFVMRK,프론트를 다음 레벨로 올릴 수 있게 됩니다.
-tx_7BQZW5HG48,경영 확장 III
-tx_FXR2KCPM22,프론트를 다음 레벨로 올릴 수 있게 됩니다.
-tx_953AFG1NSB,경영 확장 IV
-tx_JJ4Q8NRN3P,프론트를 다음 레벨로 올릴 수 있게 됩니다.
-tx_7PGDSPA8CZ,경영 확장 V
-tx_48F9CPJCFJ,프론트를 다음 레벨로 올릴 수 있게 됩니다.
-tx_TX2N0WEN4E,운영비 절감 II
-tx_X3GKW3KM1Q,시설 유지비를 한 단계 더 영구히 줄입니다.
-tx_GZXEFF1FK6,운영비 절감 III
-tx_B8T5W1458B,시설 유지비를 한 단계 더 영구히 줄입니다.
-tx_BWB63G4T2C,운영비 절감 IV
-tx_YA3R62NTRR,시설 유지비를 한 단계 더 영구히 줄입니다.
-tx_4JCEGR487T,운영비 절감 V
-tx_AMS10YM05F,시설 유지비를 한 단계 더 영구히 줄입니다.
-tx_MJPJGNCDYE,전사적 연구 지원
-tx_M9EFHXW6RE,한동안 모든 연구 속도를 크게 높입니다.
-tx_1Z9PPD5T0M,유지비 −{pct}% · 누적 −{total}%
-tx_B6R895WBMH,모든 연구 +{pct}% · {weeks}주
-tx_JEWHRQNNWX,프론트 Lv{level} 확장 가능
-tx_2E2XRWQGSZ,이미 프론트 Lv{level}
-tx_WNHWTGEMV5,절감 한도 −{pct}% 도달
-tx_1RFMKB7D8P,운영비 절감
-tx_49N2N409R3,시설 유지비 −{pct}% 적용 중 (한도 −{max}%)
-tx_GWEDPGNQ0G,연구 집중 지원
-tx_AKSGK1BT6D,모든 연구 +{pct}% · {weeks}주 남음
-tx_VSAJWEY8VQ,진행 중인 지원 없음
-tx_79WNYPQ90D,경영 확장
-tx_RRQQ6R709K,Lv{level} · 달성
-tx_0AD8W1TCCP,Lv{level} · 연구 완료 — 재무에서 업그레이드
-tx_1W3ET87VSE,Lv{level} · 연구 {pct}%
-tx_JHCCW9GAXN,Lv{level} · 프론트 Lv{need} 필요
-tx_K86Q94WNWC,시설 레벨 상한
-tx_QJMER0J3EN,다른 시설은 프론트 레벨(Lv{level})을 넘을 수 없습니다.
-tx_79P3NR0FYB,{name}  Lv{level}
-tx_MZQH8HS2CC,{name}  Lv{level} · 상한
 tx_J3Y69RGNTH,상대 분석
 tx_F4XDP3C9Q9,고른 팀의 분석 단계를 한 단계 올립니다.
-tx_CX9KQC20YH,정밀 분석
-tx_HF10DRTSC6,고른 팀의 분석 단계를 한 단계 올립니다. 시설 레벨이 높아야 하지만 더 빨리 끝납니다.
 tx_4YKPQENSGB,{team} · 분석 {rank}/{max}
 tx_T7D9CGRHZ8,{team} · 분석 {rank}/{max} · 다음 상대
 tx_J4KMC49ABA,{team} 분석 {rank}단계
@@ -2072,8 +2014,6 @@ tx_JFWCEN193R,다음 상대
 tx_S4MP0P7FCH,분석 {rank}/{max}
 tx_1B74EM9AMW,메크 연구
 tx_KHARDPAGQ1,고른 메크의 숙련도를 내 선수 모두가 얻습니다.
-tx_NA4RC13ZTZ,메크 심화 연구
-tx_ZKVJJPQ8GS,고른 메크의 숙련도를 내 선수 모두가 크게 얻습니다.
 tx_M4GWN5P6GJ,진행 중인 런이 없다
 tx_BKPE192XXS,{mech} 숙련도 +{n}{extra}
 tx_Q9N1WHEQBZ,레벨 업 {list}
@@ -2105,8 +2045,6 @@ tx_1ZDA977HGZ,영입
 tx_FQ2QYR4GMT,영입 확정
 tx_FJHYNYQ0XK,모두 보내기
 tx_M6054BQ9PK,정말 보내기
-tx_QHRV737GJ3,광역 스카우트
-tx_ETVM4T4SYH,더 넓게 수소문해 스태프 스카우트보다 많은 후보를 찾습니다.
 tx_C3D9TTX7RM,사격 훈련 I
 tx_288T6NSM51,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_CRDZVM594S,사격 훈련 II

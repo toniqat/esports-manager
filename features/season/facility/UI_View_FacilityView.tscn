@@ -1,0 +1,279 @@
+[gd_scene load_steps=5 format=3 uid="uid://cuij3jot2e142"]
+
+[ext_resource type="Script" path="res://features/season/facility/FacilityView.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/facilities/fac_intel.svg" id="3_icon"]
+[ext_resource type="Texture2D" path="res://resources/images/staff/manager_bust.svg" id="4_bust"]
+
+[node name="FacilityView" type="Control"]
+editor_description = "Facility screen (SeasonHub Screen.FACILITY, FacilityView.gd): header = facility icon · name · status line, occupant button (portrait + the facility stat, opens OccupantPicker), level + upgrade (lit only when FacilitySystem.can_upgrade; ConfirmPopup). %BodySlot holds the kind body (ResearchSystem.make_body, full rect — the screen itself never scrolls). Bottom bar: the body's optional action (left) + back to the hub (right)."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="Background" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ScreenBackground"
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()
+The facility's pictogram (FacilitySystem.icon_of)."
+layout_mode = 0
+offset_left = 40.0
+offset_top = 44.0
+offset_right = 132.0
+offset_bottom = 136.0
+mouse_filter = 2
+texture = ExtResource("3_icon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="."]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()"
+layout_mode = 0
+offset_left = 148.0
+offset_top = 34.0
+offset_right = 600.0
+offset_bottom = 100.0
+theme_type_variation = &"HeadingLabel"
+text = "전력 분석실"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Status" type="Label" parent="."]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()
+Weekly research points, or a red line (nobody seated / week running)."
+layout_mode = 0
+offset_left = 150.0
+offset_top = 104.0
+offset_right = 600.0
+offset_bottom = 170.0
+theme_type_variation = &"AccentLabel"
+text = "주간 연구량 12"
+autowrap_mode = 3
+text_overrun_behavior = 3
+
+[node name="Occupant" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind() · _fill_header()
+Who runs this facility: portrait + name, the facility stat at the bottom. Tap → OccupantPicker."
+layout_mode = 0
+offset_left = 616.0
+offset_top = 28.0
+offset_right = 796.0
+offset_bottom = 188.0
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Box" type="VBoxContainer" parent="Occupant"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 10.0
+offset_right = -8.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Frame" type="PanelContainer" parent="Occupant/Box"]
+clip_children = 2
+custom_minimum_size = Vector2(84, 84)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="OccPortrait" type="TextureRect" parent="Occupant/Box/Frame"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()"
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("4_bust")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="OccName" type="Label" parent="Occupant/Box"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "감독"
+horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="OccStat" type="Label" parent="Occupant/Box"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()
+The occupant's value of the facility stat (red when nobody sits here)."
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 22
+text = "분석 16"
+horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Level" type="Label" parent="."]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _fill_header()"
+layout_mode = 0
+offset_left = 812.0
+offset_top = 28.0
+offset_right = 1040.0
+offset_bottom = 84.0
+theme_type_variation = &"TitleLabel"
+text = "Lv 2 / 5"
+horizontal_alignment = 1
+
+[node name="Upgrade" type="Button" parent="."]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind() · _fill_header()
+Lit (PrimaryButton) only when FacilitySystem.can_upgrade; else GhostButton — a tap then shows the block reason."
+layout_mode = 0
+offset_left = 812.0
+offset_top = 92.0
+offset_right = 1040.0
+offset_bottom = 188.0
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 30
+text = "업그레이드"
+
+[node name="Divider" type="HSeparator" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 204.0
+offset_right = -40.0
+offset_bottom = 205.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="SafeBottom" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind()
+Full rect; code lifts its bottom edge by the device bottom inset (OutgameTheme.fit_bottom_bar). The body slot, toast and bar hang from it."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BodySlot" type="Control" parent="SafeBottom"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _set_body()
+The kind body (ResearchSystem.make_body) is added here with full-rect anchors: 1000 wide, from under the header to just above the bottom bar. Bodies scroll inside themselves only."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 228.0
+offset_right = -40.0
+offset_bottom = -152.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Toast" type="Label" parent="SafeBottom"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — FacilityView.gd toast()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -196.0
+offset_right = -40.0
+offset_bottom = -140.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 26
+text = "토스트 미리보기"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BottomBar" type="HBoxContainer" parent="SafeBottom"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind()
+Bottom action bar: the body's own action (hidden when it has none, 1) · back to the hub (primary, 2)."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -128.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 0
+
+[node name="Action" type="Button" parent="SafeBottom/BottomBar"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind() · _fill_action()
+The body's bottom_action_text() (e.g. 보유 중인 훈련 코스); hidden when the body has none."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"BarGhostButton"
+theme_override_font_sizes/font_size = 30
+text = "보유 중인 훈련 코스"
+
+[node name="Sep" type="Panel" parent="SafeBottom/BottomBar/Action"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BarSeparator"
+
+[node name="Back" type="Button" parent="SafeBottom/BottomBar"]
+editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"BarPrimaryButton"
+text = "tx_F1XQZ928N8"

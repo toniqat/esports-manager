@@ -12,6 +12,7 @@ names) are also referenced as `{tx_…}` by finance specials, manager type descs
 | `StaffPanel.gd` + `UI_View_StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
 | `UI_Comp_StaffStatRow.tscn` · `UI_Comp_StaffTraitRow.tscn` · `UI_Comp_StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
 | `PersonnelBody.gd` + `UI_View_PersonnelBody.tscn` | §16 personnel section of the 인사팀 (`personnel`) facility sheet, built by `facility/research/PersonnelResearch.make_body` — see "Personnel body" below. |
+| `StaffThumb.gd` + `UI_Comp_StaffThumb.tscn` | Shared person thumbnail card (Button): portrait (`resources/StaffImages`, temporary bust pictogram) · name · sub line (red = block reason) · value line; `show_person(who, name, sub, value, on, sub_bad)` / `set_on`, `who` = `"manager"` / staff id string. Used by `facility/OccupantPicker` and the personnel body. F6 = the manager card. |
 | `UI_Comp_PersonnelStaffRow.tscn` | Item scene (no script) of the personnel body: name · salary · job · six stats · seat · two-step action button. |
 
 Rules

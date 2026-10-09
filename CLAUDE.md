@@ -67,7 +67,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `finance/` | Weekly budget, facilities, allocation, special spending | `features/season/finance/README.md` |
 | ↳ `mental/` | Trust, stress (`StressSystem`), morning talk (훈련 소감 · 합동 훈련 pair), afternoon visit (방문: `FocusTraining` 집중 훈련 · 이야기 · 외출), evening incidents, choice preview, `PilotMods` — event data authored in `narrative/` (Draft) | `features/season/mental/README.md` |
 | ↳ `awakening/` | 깨달음 gauge + event view (`AwakeningView`), run-only card presets (`PilotLoadout`, "+" upgraded cards), detail-sheet block; pre-match preset picker in `ban_pick/` | `features/season/awakening/README.md` |
-| ↳ `facility/` | §16 seven facilities per team (levels, front cap, occupants = manager · staff seats → stat cover rule), research (`ResearchSystem` weekly gauge, HUB-only selection, kind handlers `research/*Research.gd`) | `features/season/facility/README.md` |
+| ↳ `facility/` | §16 seven facilities per team (levels, front cap, occupants = manager · staff seats → stat cover rule), research (`ResearchSystem` weekly gauge, HUB-only selection, kind handlers `research/*Research.gd`), facility screen `FacilityView` (hub map tap → `Screen.FACILITY`, occupant picker, kind bodies) | `features/season/facility/README.md` |
 | `features/match_flow/` | PREP → BAN_PICK → BattleSim handoff (`match_ctx`), cheat menu | `features/match_flow/README.md` |
 | ↳ `match_prep/` | Opponent intel / analysis tiers | `features/match_flow/match_prep/README.md` |
 | ↳ `ban_pick/` | Ban / pick, mech assignment, `MechDetailPanel` | `features/match_flow/ban_pick/README.md` |

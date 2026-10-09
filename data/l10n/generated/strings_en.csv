@@ -606,7 +606,6 @@ tx_1NR41VEH2P,Personnel Office
 tx_YZB146N3AB,Looks for new staff candidates.
 tx_RKQKPT7PAA,Unknown facility
 tx_W0B4MCSN5H,Cannot exceed the front office level (Lv{level})
-tx_68CD3GE4VG,Finish the expansion research first (Lv{level})
 tx_3QK260W7GE,All manager slots are in use ({used}/{max})
 tx_WJT54F271R,This person cannot be assigned
 tx_CVCJVWEBR6,Research can only be chosen at the hub before the week starts
@@ -619,40 +618,28 @@ tx_S4FXFA48S2,{facility}: {research} research complete
 tx_2DVG79QR47,Vacant
 tx_7QVM7MN5FJ,Idle
 tx_4EHMAGDXET,Paused
-tx_MG4PJRBEHT,{stat} {value}
 tx_SCR26J543Y,Research per week: {points}
-tx_XWWWJ0X5XB,Research per week: {points} (boost +{pct}%)
 tx_ZZJ4JEHR6S,"Nobody is assigned, so research is on hold"
-tx_YT2BFHQ575,Facility level  Lv {level} / {max}
-tx_Y0T8P41MJC,Can be raised up to the front office level (Lv {level})
-tx_TSJ90DZGZC,Finish the expansion research to unlock the next level. No other facility may exceed the front office level
-tx_T1FB2QSPV3,"Cost {cost} · facility fund first, then balance (available {available})"
-tx_R5BCZ03CXS,Upgrade → Lv {level}
-tx_SSWDV60G95,Tap again to confirm (−{cost})
-tx_V62WWZ2WYP,In charge: {name} · manager slots {used}/{max}
 tx_FCQB0FXWBH,Running {used}/{max} facilities
 tx_4KWT3Y97ST,{job} · unassigned
 tx_EWYEJXNDAF,{job} · at {facility}
 tx_QCKTF34XFA,{stat} {value}
 tx_PHJQGAV021,Research and assignments cannot change once the week has started
-tx_MCBMW0QAHG,No research running. Pick one below
-tx_XZCHMTZXXT,In progress: {research} ({pct})
-tx_SMZ5HP2BNQ,Research does not progress without someone assigned
-tx_DQJD7J14W6,{research}: pick a target
-tx_ZWZPJWG0QR,{label} {pct}
-tx_8R6M39S8BD,{weeks} weeks of work
-tx_FS0DH25RXJ,{weeks} weeks left
-tx_0JERQ2SFZS,Nobody assigned
-tx_NN26NEVRFH,Done {n}x
-tx_SBN1CESNR1,In progress
-tx_B60H1YTW25,Pick target
-tx_70JYF47F2A,Club facilities · tap a facility to set its research and staff
-tx_KGEH08E67V,Assign
-tx_XRTZSNXKK3,Release
-tx_CRM67JX767,In charge
-tx_GTETHKQT5R,Research
-tx_8P6KV6MVBF,Stop research
-tx_94GX7N1P3J,This facility has nothing to research
+tx_XACM764WS1,Higher {stat} researches faster · Manager seats {used}/{max}
+tx_SYEANH7J80,Lv {level} / {max}
+tx_SJMTRAANZT,Upgrade
+tx_P8ESMKF2SK,Upgrade {facility}
+tx_7160MR6THY,"Lv {from} → Lv {to}
+Cost {cost} · paid from the facility fund first, then the balance (available {available})"
+tx_X25510VG6B,Lv {level}
+tx_23Z9Y1KS27,Lv {level} · capped
+tx_36JKVBS5M0,Some facilities have no research
+tx_52R5AH08E4,No research is set in {facilities}. Start this week anyway?
+tx_8NFBT2ZYEJ,Start anyway
+tx_F1XQZ928N8,Back to hub
+tx_8YS6JRVTQW,The front's level caps every club facility. No other facility can go above the front.
+tx_4SZE7HM5X3,Choose who runs it
+tx_Q9RW2F7B52,Leave empty
 tx_H1V09QCXSD,Short-Term Training Coach
 tx_E731FZHB4R,Tactics Consultant
 tx_8SZM4HBC56,Guest Mech Researcher
@@ -767,8 +754,6 @@ tx_5ATMNYAZ8A,Facility upkeep (modifier ×{mult})
 tx_A68YMV80H1,{name} Lv{from} → Lv{to} downgrade (unpaid {amount})
 tx_9996TAPSGF,Upkeep per facility (weekly)
 tx_S6RZ7XDZCZ,{name}  Lv{level} · {amount}
-tx_F54VFZ1WNC,Cost cutting −{pct}% applied (front research)
-tx_K6HVE7B1CA,Front office research Expansion must finish before Lv{level} · {pct}% done
 tx_MGJS84V3XM,No facility may exceed the front office level — upgrade others from their facility sheet
 tx_S8GB2PQJET,"End
 Turn"
@@ -2018,51 +2003,8 @@ tx_N5C2E6FQ2F,riding an own-role mech
 tx_VXEP932PHS,riding a {role} mech
 tx_9PKMC5PHJG,mastery {tier} or higher
 tx_63B5AMR6Y6,{stats} while {cond}
-tx_M9XAM000XY,Cost Cutting I
-tx_E124ZY8HS9,Permanently lowers facility upkeep.
-tx_GCWN9S4V5Q,Research Push
-tx_Z1QWCYFAHY,Speeds up every research for a while.
-tx_YFMN5YNFH3,Expansion II
-tx_S8HGTFVMRK,Allows the front office to be upgraded to the next level.
-tx_7BQZW5HG48,Expansion III
-tx_FXR2KCPM22,Allows the front office to be upgraded to the next level.
-tx_953AFG1NSB,Expansion IV
-tx_JJ4Q8NRN3P,Allows the front office to be upgraded to the next level.
-tx_7PGDSPA8CZ,Expansion V
-tx_48F9CPJCFJ,Allows the front office to be upgraded to the next level.
-tx_TX2N0WEN4E,Cost Cutting II
-tx_X3GKW3KM1Q,Permanently lowers facility upkeep one step further.
-tx_GZXEFF1FK6,Cost Cutting III
-tx_B8T5W1458B,Permanently lowers facility upkeep one step further.
-tx_BWB63G4T2C,Cost Cutting IV
-tx_YA3R62NTRR,Permanently lowers facility upkeep one step further.
-tx_4JCEGR487T,Cost Cutting V
-tx_AMS10YM05F,Permanently lowers facility upkeep one step further.
-tx_MJPJGNCDYE,All-Out Research Push
-tx_M9EFHXW6RE,Greatly speeds up every research for a while.
-tx_1Z9PPD5T0M,Upkeep −{pct}% · total −{total}%
-tx_B6R895WBMH,All research +{pct}% · {weeks} wk
-tx_JEWHRQNNWX,Front office Lv{level} unlocked
-tx_2E2XRWQGSZ,Front office already Lv{level}
-tx_WNHWTGEMV5,Cut limit −{pct}% reached
-tx_1RFMKB7D8P,Cost cutting
-tx_49N2N409R3,Facility upkeep −{pct}% in effect (limit −{max}%)
-tx_GWEDPGNQ0G,Research push
-tx_AKSGK1BT6D,All research +{pct}% · {weeks} wk left
-tx_VSAJWEY8VQ,No push running
-tx_79WNYPQ90D,Expansion
-tx_RRQQ6R709K,Lv{level} · reached
-tx_0AD8W1TCCP,Lv{level} · research done — upgrade in Finance
-tx_1W3ET87VSE,Lv{level} · research {pct}%
-tx_JHCCW9GAXN,Lv{level} · needs front office Lv{need}
-tx_K86Q94WNWC,Facility level cap
-tx_QJMER0J3EN,No other facility may exceed the front office level (Lv{level}).
-tx_79P3NR0FYB,{name}  Lv{level}
-tx_MZQH8HS2CC,{name}  Lv{level} · capped
 tx_J3Y69RGNTH,Opponent Analysis
 tx_F4XDP3C9Q9,Raises the analysis rank of the chosen team by one.
-tx_CX9KQC20YH,Deep Analysis
-tx_HF10DRTSC6,"Raises the analysis rank of the chosen team by one. Needs a higher facility level, but finishes sooner."
 tx_4YKPQENSGB,{team} · Analysis {rank}/{max}
 tx_T7D9CGRHZ8,{team} · Analysis {rank}/{max} · Next opponent
 tx_J4KMC49ABA,{team} analysis tier {rank}
@@ -2072,8 +2014,6 @@ tx_JFWCEN193R,Next opponent
 tx_S4MP0P7FCH,Analysis {rank}/{max}
 tx_1B74EM9AMW,Mech Study
 tx_KHARDPAGQ1,All your pilots gain mastery on the chosen mech.
-tx_NA4RC13ZTZ,Advanced Mech Study
-tx_ZKVJJPQ8GS,All your pilots gain a lot of mastery on the chosen mech.
 tx_M4GWN5P6GJ,No run in progress
 tx_BKPE192XXS,{mech} mastery +{n}{extra}
 tx_Q9N1WHEQBZ,Level up {list}
@@ -2105,8 +2045,6 @@ tx_1ZDA977HGZ,Hire
 tx_FQ2QYR4GMT,Confirm
 tx_FJHYNYQ0XK,Pass on all
 tx_M6054BQ9PK,Confirm pass
-tx_QHRV737GJ3,Wide Scouting
-tx_ETVM4T4SYH,Searches wider and finds more candidates than Staff Scouting.
 tx_C3D9TTX7RM,Shooting Drill I
 tx_288T6NSM51,"On completion, adds one copy of this training course."
 tx_CRDZVM594S,Shooting Drill II

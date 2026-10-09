@@ -1,0 +1,70 @@
+[gd_scene load_steps=4 format=3 uid="uid://c2raog7ug6sqk"]
+
+[ext_resource type="Script" path="res://features/season/facility/FrontBody.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/facilities/fac_train_field.svg" id="3_icon"]
+
+[node name="FrontBody" type="VBoxContainer"]
+editor_description = "Front facility body (FacilityView %BodySlot, FrontBody.create): the front has no research — the cap rule and every other facility's level against the front's. %Rows/Row is the template, duplicated per facility."
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 16
+script = ExtResource("1_script")
+
+[node name="Rule" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+text = "tx_8YS6JRVTQW"
+autowrap_mode = 3
+
+[node name="Rows" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — FrontBody.gd refresh()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Row" type="PanelContainer" parent="Rows"]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Card"
+
+[node name="Box" type="HBoxContainer" parent="Rows/Row"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Icon" type="TextureRect" parent="Rows/Row/Box"]
+editor_description = "[필수] 경로로 참조 — FrontBody.gd refresh() (Box/Icon)"
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("3_icon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="Rows/Row/Box"]
+auto_translate_mode = 2
+editor_description = "[필수] 경로로 참조 — FrontBody.gd refresh() (Box/Name)"
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+text = "사격장"
+vertical_alignment = 1
+
+[node name="Level" type="Label" parent="Rows/Row/Box"]
+auto_translate_mode = 2
+editor_description = "[필수] 경로로 참조 — FrontBody.gd refresh() (Box/Level)
+Lv n, accent + `· 상한` when at the front's level."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+text = "Lv 2"
+vertical_alignment = 1

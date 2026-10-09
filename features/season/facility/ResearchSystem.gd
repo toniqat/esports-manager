@@ -3,7 +3,6 @@ extends RefCounted
 
 # ── Research (§16) — rows, selection, the weekly gauge, kind-handler dispatch ─
 # Contract: `docs/outgame_dev_plan.md` §16 and `features/season/facility/README.md`.
-# **Frozen API** (base commit) — feature agents ask for changes, they do not edit it.
 #
 # Rows live in `data/csv/research.csv` (`id, facility, kind, name_key, desc_key, weeks,
 # min_level, repeatable, p1, p2, icon`). A row's cost is `weeks × RESEARCH_BASE_POINTS`.
@@ -11,22 +10,27 @@ extends RefCounted
 # week end (`tick_week`, from `SeasonHub._end_week` after the finance settlement) every
 # facility with an occupant and an active research gains
 #
-#   points = RESEARCH_BASE_POINTS × level_mult(level) × stat_mult(stat) × boost_mult
+#   points = RESEARCH_BASE_POINTS × level_mult(level) × stat_mult(stat)   (rounded to int)
 #   level_mult(l) = 1 + (l − 1) × RESEARCH_LEVEL_STEP_PCT / 100
 #   stat_mult(v)  = max(RESEARCH_STAT_MULT_MIN, 1 + (v − RESEARCH_STAT_PIVOT) × RESEARCH_STAT_STEP_PCT / 100)
-#   boost_mult    = 1 + Σ research.boosts[].pct / 100          (rounded to int at the end)
 #
 # Progress is kept **per research + target** (`"<rid>|<target>"`); switching pauses the
 # old one. Completion → the kind handler's `on_complete`, a HUB toast, then the facility
 # goes idle unless the row is repeatable and still available (handler `row_available`
 # and, for targeted rows, the target still offered by `targets`).
 #
+# **Auto facilities** (`AUTO_KINDS`, the personnel office): the player never picks — the
+# facility's first available row is kept active by `ensure_auto` (run start, load, every tick).
+# The front has no research (removed 2026-10-09); its kind stays a facility kind only.
+#
 # State `season_state.research = {"active": {fid: {"rid", "target"}}, "points": {key: int},
-# "done": {key: int}, "boosts": [{"pct", "weeks_left"}]}` — JSON round trip, `int()` reads.
+# "done": {key: int}}` — JSON round trip, `int()` reads.
 
 ## Research kind → handler script (static interface, see README): `targets`,
 ## `row_available`, `on_complete`, `make_body`.
-const KINDS: Array = ["training", "intel", "mech", "front", "personnel"]
+const KINDS: Array = ["training", "intel", "mech", "personnel"]
+## Kinds whose facility researches on its own (no selection, `ensure_auto`).
+const AUTO_KINDS: Array = ["personnel"]
 const KEY_SEP: String = "|"
 
 static var _rows: Array = []          # research rows, CSV order
@@ -70,8 +74,11 @@ static func row_desc(rid: String) -> String:
 	return Loc.t(String(r["desc_key"]))  # l10n-dynamic: research_*.**
 
 
+## A row's icon: its own `icon` cell, else its facility's icon (every row today).
 static func row_icon(rid: String) -> Texture2D:
-	return FacilitySystem.icon_texture(String(row(rid).get("icon", "")))
+	var r: Dictionary = row(rid)
+	var own: Texture2D = FacilitySystem.icon_texture(String(r.get("icon", "")))
+	return own if own != null else FacilitySystem.icon_of(String(r.get("facility", "")))
 
 
 ## Points a row costs: `weeks × RESEARCH_BASE_POINTS`.
@@ -128,8 +135,6 @@ static func targets(state: Dictionary, r: Dictionary) -> Array:
 			return IntelResearch.targets(state, r)
 		"mech":
 			return MechResearch.targets(state, r)
-		"front":
-			return FrontResearch.targets(state, r)
 		"personnel":
 			return PersonnelResearch.targets(state, r)
 	return []
@@ -184,6 +189,41 @@ static func clear(state: Dictionary, fid: String) -> String:
 	return ""
 
 
+## Does `fid` research on its own (no selection — `AUTO_KINDS`)?
+static func is_auto(fid: String) -> bool:
+	return AUTO_KINDS.has(FacilitySystem.kind_of(fid))
+
+
+## Keeps every auto facility researching: an idle one gets its first available row
+## (untargeted, or the first offered target). Ignores the HUB-only rule — nobody picks.
+static func ensure_auto(state: Dictionary) -> void:
+	if (state.get("facilities", {}) as Dictionary).is_empty():
+		return
+	for fid_raw in FacilitySystem.FACILITIES:
+		var fid: String = String(fid_raw)
+		if not is_auto(fid) or not active(state, fid).is_empty():
+			continue
+		for raw in available(state, fid):
+			var r: Dictionary = raw
+			var offered: Array = targets(state, r)
+			var target: String = String((offered[0] as Dictionary).get("id", "")) if not offered.is_empty() else ""
+			(_res(state)["active"] as Dictionary)[fid] = {"rid": String(r["id"]), "target": target}
+			break
+
+
+## Facilities the player should still pick a research for before the week starts: has research
+## rows, not auto, nothing active, and at least one row available now. `FACILITIES` order.
+static func unset_facilities(state: Dictionary) -> Array:
+	var out: Array = []
+	for fid_raw in FacilitySystem.FACILITIES:
+		var fid: String = String(fid_raw)
+		if is_auto(fid) or rows_for(fid).is_empty():
+			continue
+		if active(state, fid).is_empty() and not available(state, fid).is_empty():
+			out.append(fid)
+	return out
+
+
 ## `{rid, target}` of the facility's active research, {} when idle.
 static func active(state: Dictionary, fid: String) -> Dictionary:
 	var a: Variant = (_res(state)["active"] as Dictionary).get(fid, null)
@@ -224,29 +264,14 @@ static func stat_mult(value: int) -> float:
 			1.0 + (float(value) - ConstTable.num("RESEARCH_STAT_PIVOT")) * ConstTable.num("RESEARCH_STAT_STEP_PCT") / 100.0)
 
 
-## Summed percent of running research boosts (front `boost` research).
-static func boost_pct(state: Dictionary) -> int:
-	var total: int = 0
-	for raw in (_res(state)["boosts"] as Array):
-		total += int((raw as Dictionary).get("pct", 0))
-	return total
-
-
-static func boost_mult(state: Dictionary) -> float:
-	return maxf(0.0, 1.0 + float(boost_pct(state)) / 100.0)
-
-
-## Adds a research boost for `weeks` week ends (used by `FrontResearch.on_complete`).
-static func add_boost(state: Dictionary, pct: int, weeks: int) -> void:
-	if pct == 0 or weeks <= 0:
-		return
-	(_res(state)["boosts"] as Array).append({"pct": pct, "weeks_left": weeks})
-
-
 ## Points the facility would add at this week end (0 with nobody seated). Independent
 ## of what is selected.
 static func weekly_points(state: Dictionary, fid: String) -> int:
-	return _weekly_points_with(state, fid, boost_pct(state))
+	if FacilitySystem.occupant(state, fid) == FacilitySystem.OCC_NONE:
+		return 0
+	var v: float = float(base_points()) * level_mult(FacilitySystem.level(state, fid)) \
+			* stat_mult(FacilitySystem.stat_value(state, fid))
+	return maxi(0, int(round(v)))
 
 
 ## Week ends until `rid` + `target` completes in `fid` at the current rate (rid "" = the
@@ -270,19 +295,10 @@ static func weeks_left(state: Dictionary, fid: String, rid: String = "", target:
 
 # ── Week tick ────────────────────────────────────────────────────────────────
 ## Once per week end (`SeasonHub._end_week`, after `FinanceSystem.settle_week`).
-## Boosts running this week apply, then lose a week (a boost bought by a completion in
-## this same tick starts next week). Returns the HUB toasts (translated, never saved).
+## Returns the HUB toasts (translated, never saved).
 static func tick_week(state: Dictionary) -> Array:
 	var res: Dictionary = _res(state)
-	var bpct: int = boost_pct(state)
-	var kept: Array = []
-	for raw in (res["boosts"] as Array):
-		var b: Dictionary = (raw as Dictionary).duplicate()
-		b["weeks_left"] = int(b.get("weeks_left", 0)) - 1
-		if int(b["weeks_left"]) > 0:
-			kept.append(b)
-	res["boosts"] = kept
-
+	ensure_auto(state)
 	var toasts: Array = []
 	var acts: Dictionary = res["active"]
 	var pts: Dictionary = res["points"]
@@ -301,7 +317,7 @@ static func tick_week(state: Dictionary) -> Array:
 		if block_reason(state, fid, r) != "":
 			continue  # paused (level dropped, handler blocks) — progress kept
 		var key: String = key_of(rid, target)
-		pts[key] = int(pts.get(key, 0)) + _weekly_points_with(state, fid, bpct)
+		pts[key] = int(pts.get(key, 0)) + weekly_points(state, fid)
 		if int(pts[key]) < cost(r):
 			continue
 		pts.erase(key)
@@ -321,11 +337,13 @@ static func tick_week(state: Dictionary) -> Array:
 		toasts.append(line)
 		if not _repeats(state, fid, r, target):
 			acts.erase(fid)
+	ensure_auto(state)
 	return toasts
 
 
 # ── Kind-specific sheet section ──────────────────────────────────────────────
-## The facility kind's extra sheet body (may be null).
+## The facility screen's body (`FacilityView` %BodySlot, full rect — see the README "Body
+## contract"). By facility kind; the front has no research, only `FrontBody`.
 static func make_body(state: Dictionary, fid: String) -> Control:
 	match FacilitySystem.kind_of(fid):
 		"training":
@@ -335,21 +353,13 @@ static func make_body(state: Dictionary, fid: String) -> Control:
 		"mech":
 			return MechResearch.make_body(state, fid)
 		"front":
-			return FrontResearch.make_body(state, fid)
+			return FrontBody.create(state)
 		"personnel":
 			return PersonnelResearch.make_body(state, fid)
 	return null
 
 
 # ── Internals ────────────────────────────────────────────────────────────────
-static func _weekly_points_with(state: Dictionary, fid: String, bpct: int) -> int:
-	if FacilitySystem.occupant(state, fid) == FacilitySystem.OCC_NONE:
-		return 0
-	var v: float = float(base_points()) * level_mult(FacilitySystem.level(state, fid)) \
-			* stat_mult(FacilitySystem.stat_value(state, fid)) * maxf(0.0, 1.0 + float(bpct) / 100.0)
-	return maxi(0, int(round(v)))
-
-
 # Repeatable row still available (and its target still offered) → stays selected.
 static func _repeats(state: Dictionary, fid: String, r: Dictionary, target: String) -> bool:
 	if not bool(r.get("repeatable", false)):
@@ -373,8 +383,6 @@ static func _handler_row_available(state: Dictionary, r: Dictionary) -> String:
 			return IntelResearch.row_available(state, r)
 		"mech":
 			return MechResearch.row_available(state, r)
-		"front":
-			return FrontResearch.row_available(state, r)
 		"personnel":
 			return PersonnelResearch.row_available(state, r)
 	return Loc.t(L.FACILITY_RESEARCH_BLOCK_UNKNOWN)
@@ -388,8 +396,6 @@ static func _handler_on_complete(state: Dictionary, r: Dictionary, target: Strin
 			return IntelResearch.on_complete(state, r, target)
 		"mech":
 			return MechResearch.on_complete(state, r, target)
-		"front":
-			return FrontResearch.on_complete(state, r, target)
 		"personnel":
 			return PersonnelResearch.on_complete(state, r, target)
 	return {}
@@ -405,8 +411,6 @@ static func _res(state: Dictionary) -> Dictionary:
 	for k in ["active", "points", "done"]:
 		if not d.get(k, null) is Dictionary:
 			d[k] = {}
-	if not d.get("boosts", null) is Array:
-		d["boosts"] = []
 	return d
 
 

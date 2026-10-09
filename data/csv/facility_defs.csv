@@ -1,8 +1,8 @@
 id,kind,name_key,desc_key,stat,spot,icon,cost_pct
-train_field,training,tx_PEVX1H1CBW,tx_H3VDTFBMSH,training,Spot_Fac_TrainField,Desecrator,50
-train_engage,training,tx_382D838KHX,tx_G0KF5BMTXF,training,Spot_Fac_TrainEngage,Heavy_Hitter,50
-train_growth,training,tx_2C4KQ890GE,tx_41K54C3WY5,training,Spot_Fac_TrainGrowth,Bravest_of_the_Brave,50
-intel,intel,tx_D7AH9HVCJS,tx_RQMSXEYBE3,analysis,Spot_Fac_Intel,Quantum_Computing,50
-mech_lab,mech,tx_RCNVE21CH2,tx_VPSJW87NRZ,knowledge,Spot_Fac_MechLab,Spirit_Link,50
-front,front,tx_N14277K1J3,tx_E5DWVGPFPB,finance,Spot_Fac_Front,Courage_of_the_Colossus,100
-personnel,personnel,tx_1NR41VEH2P,tx_YZB146N3AB,mental,Spot_Fac_Personnel,Master_of_Duality,50
+train_field,training,tx_PEVX1H1CBW,tx_H3VDTFBMSH,training,Spot_Fac_TrainField,train_field,50
+train_engage,training,tx_382D838KHX,tx_G0KF5BMTXF,training,Spot_Fac_TrainEngage,train_engage,50
+train_growth,training,tx_2C4KQ890GE,tx_41K54C3WY5,training,Spot_Fac_TrainGrowth,train_growth,50
+intel,intel,tx_D7AH9HVCJS,tx_RQMSXEYBE3,analysis,Spot_Fac_Intel,intel,50
+mech_lab,mech,tx_RCNVE21CH2,tx_VPSJW87NRZ,knowledge,Spot_Fac_MechLab,mech_lab,50
+front,front,tx_N14277K1J3,tx_E5DWVGPFPB,finance,Spot_Fac_Front,front,100
+personnel,personnel,tx_1NR41VEH2P,tx_YZB146N3AB,mental,Spot_Fac_Personnel,personnel,50

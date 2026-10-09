@@ -438,17 +438,6 @@ theme_override_font_sizes/font_size = 28
 disabled = true
 text = "최고 레벨입니다"
 
-[node name="FacGate" type="Label" parent="Main"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility() — the front's expansion-research gate (shown while it blocks the upgrade)."
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-theme_type_variation = &"AccentLabel"
-theme_override_font_sizes/font_size = 22
-text = "Lv3 로 올리려면 프론트의 경영 확장 연구가 먼저 끝나야 합니다 · 진행 40%"
-autowrap_mode = 3
-
 [node name="FacRule" type="Label" parent="Main"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
@@ -484,16 +473,6 @@ layout_mode = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 22
 text = "프론트  Lv3 · 35"
-
-[node name="UpkeepCut" type="Label" parent="Main"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — FinancePanel.gd _fill_facility()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 34)
-layout_mode = 2
-theme_type_variation = &"PositiveLabel"
-theme_override_font_sizes/font_size = 22
-text = "운영비 절감 −10% 반영 (프론트 연구)"
 
 [node name="GapSpecialsSection" type="Control" parent="Main"]
 custom_minimum_size = Vector2(0, 36)

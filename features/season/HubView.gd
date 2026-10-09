@@ -9,7 +9,9 @@ extends Control
 # **Layout lives in `UI_View_HubView.tscn`** (header labels, five `SeasonPilotCard` instances, the
 # `HubManageCard` row, the team base map slot `%MapHolder`, toast, bottom bar). The map (§16) is the
 # team's `BaseMap` with one `ResearchBubble` per facility spot; tapping a bubble (or the facility
-# under its tail) opens that facility's `FacilitySheet`. This script binds `%` nodes, fills data, wires
+# under its tail) switches to that facility's screen (`SeasonHub.open_facility` → `FacilityView`).
+# "이번 주 시작" first warns (`ConfirmPopup`) when a facility still has no research picked
+# (`ResearchSystem.unset_facilities`). This script binds `%` nodes, fills data, wires
 # signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
 # the whole screen is lowered to the safe top, the background stretched back up, and the
 # bottom bar hung from the safe bottom (`OutgameTheme.fit_bottom_bar`). Create with `HubView.create()`.
@@ -29,6 +31,7 @@ var _map: BaseMap = null        # team base map in %MapHolder (built on the firs
 var _start_btn: Button
 var _standings_btn: Button
 var _built: bool = false
+var _start_confirm: ConfirmPopup = null
 
 
 ## Instantiates the scene. `HubView.new()` is an empty Control — don't use it.
@@ -147,8 +150,10 @@ func _refresh_map() -> void:
 
 
 func _on_facility_pressed(fid: String) -> void:
-	var sheet: HubSheet = FacilitySheet.open(self, fid)
-	sheet.closed.connect(refresh)
+	if _hub != null:
+		_hub.open_facility(fid)
+	else:
+		print("[UiPreview] facility %s" % fid)
 
 
 ## 허브 하단 토스트 — 다른 화면(주 마감 수지 등)이 허브로 돌아오며 띄운다.
@@ -326,6 +331,24 @@ func _on_pilot_pressed(pilot_id: int) -> void:
 
 # ── Button handlers ──────────────────────────────────────────────────────────
 func _on_start_pressed() -> void:
+	# Facilities still without a research → ask first (user decision 2026-10-09).
+	var unset: Array = ResearchSystem.unset_facilities(_gm.season_state)
+	if unset.is_empty():
+		_start_week()
+		return
+	if _start_confirm == null:
+		_start_confirm = ConfirmPopup.create()
+		add_child(_start_confirm)
+		_start_confirm.confirmed.connect(_start_week)
+	var names: Array = []
+	for fid in unset:
+		names.append(FacilitySystem.facility_name(String(fid)))
+	_start_confirm.open(Loc.t(L.FACILITY_UI_HUB_UNSET_TITLE),
+			Loc.t(L.FACILITY_UI_HUB_UNSET_BODY, {"facilities": Loc.t(L.UI_LIST_SEPARATOR).join(names)}),
+			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.FACILITY_UI_HUB_UNSET_GO))
+
+
+func _start_week() -> void:
 	if _hub != null:
 		# The week opens on the training plan — the press conference moved to Sunday
 		# afternoon, after the match (`SeasonHub.press_pending`).

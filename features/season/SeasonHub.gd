@@ -30,7 +30,7 @@ extends Control
 
 # 런 준비(시나리오 · 팀 · 5인 편성)는 시즌 밖(`features/meta/run_setup/`)으로
 # 나갔다 — 시즌은 언제나 HUB 부터 연다.
-enum Screen { HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING }
+enum Screen { HUB, PRESS, TRAINING, WEEK, LEAGUE, PLAYOFF, INTL_BRACKET, GAME_OVER, ENDING, FACILITY }
 
 var current_screen: int = Screen.HUB
 var _hub_view: HubView = null
@@ -42,6 +42,7 @@ var _bracket_view: BracketView = null
 var _intl_bracket_view: IntlBracketView = null
 var _game_over_view: GameOverView = null
 var _ending_view: EndingView = null
+var _facility_view: FacilityView = null
 # 이 런의 결론 화면(Screen.GAME_OVER / ENDING), 아직 없으면 -1.
 var _run_end_screen: int = -1
 ## 다음 HUB 표시 때 허브 하단 토스트로 띄울 줄들(주 마감 수지 등). 여러 줄이면
@@ -148,6 +149,8 @@ func _route() -> void:
 			_show_game_over()
 		Screen.ENDING:
 			_show_ending()
+		Screen.FACILITY:
+			_show_facility()
 		_:
 			_show_hub()
 
@@ -171,6 +174,8 @@ func _hide_all_screens() -> void:
 		_game_over_view.visible = false
 	if _ending_view:
 		_ending_view.visible = false
+	if _facility_view:
+		_facility_view.visible = false
 	if _placeholder:
 		_placeholder.visible = false
 
@@ -222,6 +227,28 @@ func _is_run_start() -> bool:
 		if int((m as Dictionary).get("phase", -1)) == GameEnums.SeasonPhase.PRESEASON:
 			return false
 	return true
+
+
+## Hub map → a facility's screen (§16, `facility/FacilityView`). Back returns to HUB.
+func open_facility(fid: String) -> void:
+	_ensure_facility_view()
+	_facility_view.show_facility(_gm.season_state, fid)
+	goto(Screen.FACILITY)
+
+
+func _show_facility() -> void:
+	_ensure_facility_view()
+	_hide_all_screens()
+	_facility_view.refresh()
+	_facility_view.visible = true
+
+
+func _ensure_facility_view() -> void:
+	if _facility_view != null:
+		return
+	_facility_view = FacilityView.create()
+	_facility_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_facility_view)
 
 
 func _show_training() -> void:

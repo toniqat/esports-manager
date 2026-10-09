@@ -138,7 +138,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | Node                     | Script                                       | Purpose                                                          |
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
-| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + manage cards (staff · finance) + the **team base map with the facility research bubbles** (§16, tap → `facility/FacilitySheet`) + "이번 주 시작" (Start this week) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (progress toward the next trust level, band colour `HubView.trust_color(level)`: grey < `TRUST_OUTING_LEVEL`, green from there, amber past halfway to `TRUST_LEVEL_MAX`) with the trust **level** at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
+| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + manage cards (staff · finance) + the **team base map with the facility research bubbles** (§16, tap → `SeasonHub.open_facility` → the facility screen `facility/FacilityView`) + "이번 주 시작" (Start this week; warns first with `ConfirmPopup` when `ResearchSystem.unset_facilities` is not empty) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (progress toward the next trust level, band colour `HubView.trust_color(level)`: grey < `TRUST_OUTING_LEVEL`, green from there, amber past halfway to `TRUST_LEVEL_MAX`) with the trust **level** at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
 | *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row): see "Pilot card · detail sheet" below. |
 | *(overlay)* SeasonPilotDetail | `SeasonPilotDetail.gd` + `UI_View_SeasonPilotDetail.tscn` | Pilot detail `HubSheet` body, opened by tapping a pilot portrait / card anywhere in a run (hub, week screen, training board headers). See below. |
 | PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen of the Sunday afternoon, after the match (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
@@ -153,7 +153,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | IntlBracketView          | `tournament/IntlBracketView.gd` + `.tscn`    | Phase-8 INTL bracket UI (7 `UI_Comp_IntlMatchBox.tscn` boxes: 4 QF / 2 SF / F). Built with `IntlBracketView.create()`; see "Bracket screens" below. |
 | GameOverView             | `GameOverView.gd` + `.tscn`                  | Game-over screen — playoff cut missed, playoff SF/F lost, or any INTL lost (reason line names the round) |
 | EndingView               | `EndingView.gd` + `.tscn`                    | World-champion ending screen — REGULAR_INTL win                  |
-| *(overlay)* HubSheet     | `HubSheet.gd` + `UI_View_HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `FinancePanel`), the facility sheet (`facility/FacilitySheet`) and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
+| *(overlay)* HubSheet     | `HubSheet.gd` + `UI_View_HubSheet.tscn`              | Shared detail-sheet **frame** for the hub manage cards (`StaffPanel` · `FinancePanel`), and the standings team detail (`LeagueView.open_team_detail`). See "HubSheet" below. |
 
 **F6 preview** — each of these scenes run alone fills dummy data (`resources/UiPreview.gd`, branch in
 `_ready`, `_fill_preview()` at the bottom of the script). Screens use an in-memory run (nothing saved)
@@ -189,7 +189,7 @@ HubSheet (CanvasLayer 18)
 - **Callers own the body** — children under `sheet.body`, width
   `sheet.body_w()` (= `%Card` width − `%Pad` side margins = 928), height via `set_body_height(h)`.
   Every body is one scene instance (top-wide, `resized` → `set_body_height`): `FinancePanel` ·
-  `StaffPanel` · `facility/FacilitySheet` · the standings team detail `league/LeagueTeamDetail` — see their
+  `StaffPanel` · the standings team detail `league/LeagueTeamDetail` — see their
   folder READMEs. No caller places absolute-positioned children in the body any more.
   `card()` returns `%Card` for controls outside the scroll (card-local coords).
 - `%Scroll` sits in a plain `ScrollSlot` Control and grows **right only** — when the body overflows,
@@ -211,8 +211,8 @@ HubView (Control · HubView.gd)
 │ ├ %Roster HBox (sep 12) ─ SeasonPilotCard_Pilot0..4  SeasonPilotCard instances (expand), seat order (ROLE_DISPLAY_ORDER)
 │ ├ GapManage (12)
 │ ├ %Manage HBox (sep 16, 176) ─ HubManageCard_Card0..1  HubManageCard instances, `_manage_panels()` order (StaffPanel · FinancePanel; the 메크 연구 card left in §16)
-│ ├ GapMap (16) · MapCaption (Caption 24)
-│ └ %MapHolder CenterContainer (min h 634) ─ code: BaseMap_Team (team `BaseMap`, built once) + ResearchBubble per facility spot (`ResearchBubble.populate(map, state, true)` every refresh; `pressed(fid)` → `FacilitySheet.open(self, fid)`, `closed` → `refresh`)
+│ ├ GapMap (16)
+│ └ %MapHolder CenterContainer (min h 634) ─ code: BaseMap_Team (team `BaseMap`, built once) + ResearchBubble per facility spot (`ResearchBubble.populate(map, state, true)` every refresh; `pressed(fid)` → `SeasonHub.open_facility(fid)`)
 └ %SafeBottom   full rect; code lifts its bottom by the bottom inset
   ├ %Toast      Accent label, 40 above the bar
   └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (BarGhost 32, ratio 1, + Sep BarSeparator) · %Start (BarPrimary, ratio 2)

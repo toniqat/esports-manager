@@ -19,5 +19,3 @@ tx_1ZDA977HGZ,research_personnel.body.hire,active,button,,,영입,Hire,draft,799
 tx_FQ2QYR4GMT,research_personnel.body.hire_confirm,active,"button, second press of hire",,,영입 확정,Confirm,draft,73b19faf
 tx_FJHYNYQ0XK,research_personnel.body.pass_all,active,button,,,모두 보내기,Pass on all,draft,eaf55103
 tx_M6054BQ9PK,research_personnel.body.pass_confirm,active,"button, second press of pass on all",,,정말 보내기,Confirm pass,draft,9e2f5619
-tx_QHRV737GJ3,research_personnel.scout_wide.name,active,research.csv name_key (id=scout_wide),,,광역 스카우트,Wide Scouting,draft,1978e9e8
-tx_ETVM4T4SYH,research_personnel.scout_wide.desc,active,research.csv desc_key (id=scout_wide); extra candidates = p2,,,더 넓게 수소문해 스태프 스카우트보다 많은 후보를 찾습니다.,Searches wider and finds more candidates than Staff Scouting.,draft,8e174bb3

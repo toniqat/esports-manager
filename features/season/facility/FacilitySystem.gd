@@ -14,8 +14,8 @@ extends RefCounted
 # keys, JSON round trip → every read is `int()` / `String()`-wrapped).
 #
 # Levels 1..`max_level()`. **No facility may exceed the front's level** (upgrade check,
-# and `set_level` clamps the others when the front goes down). The front itself needs
-# its `expand` research for the target level (`front_expand_done`) before an upgrade.
+# and `set_level` clamps the others when the front goes down). The front itself only needs
+# the money (its research was removed, user decision 2026-10-09).
 # Upgrades are paid like the old single facility: facility fund first, then balance
 # (`FinanceSystem.pay_upgrade`).
 
@@ -38,7 +38,7 @@ const JOB_FACILITY: Dictionary = {
 ## Run-start: the manager's slots go to facilities still empty after the staff, in this
 ## order — growth first (it owns the basic course every empty training cell uses), then the front.
 const MANAGER_AUTO_ORDER: Array = ["train_growth", "front", "train_field", "train_engage", "mech_lab", "intel", "personnel"]
-const ICON_DIR: String = "res://resources/images/quirks/"
+const ICON_DIR: String = "res://resources/images/facilities/"
 
 static var _defs: Dictionary = {}   # fid → {id, kind, name_key, desc_key, stat, spot, icon, cost_pct}
 static var _loaded: bool = false
@@ -89,14 +89,20 @@ static func facilities_for_stat(stat: String) -> Array:
 	return out
 
 
-## Icon texture for an `icon` cell (a quirk image name, `quirk_<icon>.png`). null when missing.
+## Icon texture for an `icon` cell (`facility_defs.csv` — a temporary pictogram
+## `resources/images/facilities/fac_<icon>.svg`). null when missing.
 static func icon_texture(icon: String) -> Texture2D:
 	if icon.is_empty():
 		return null
-	var path: String = ICON_DIR + "quirk_" + icon + ".png"
+	var path: String = ICON_DIR + "fac_" + icon + ".svg"
 	if not ResourceLoader.exists(path):
 		return null
 	return load(path) as Texture2D
+
+
+## The facility's own icon (`icon_texture` of its `facility_defs.csv` row).
+static func icon_of(fid: String) -> Texture2D:
+	return icon_texture(String(def(fid).get("icon", "")))
 
 
 # ── Run lifecycle ────────────────────────────────────────────────────────────
@@ -106,9 +112,10 @@ static func icon_texture(icon: String) -> Texture2D:
 static func init_run(state: Dictionary, team_id: int) -> void:
 	var lvl: int = clampi(int(_team_package(team_id).get("facility_level", 1)), 1, max_level())
 	_build(state, lvl)
-	state["research"] = {"active": {}, "points": {}, "done": {}, "boosts": []}
+	state["research"] = {"active": {}, "points": {}, "done": {}}
 	state["intel_rank"] = {}
 	state["scout"] = {"candidates": [], "week": ""}
+	ResearchSystem.ensure_auto(state)
 
 
 ## Lazy migration of a run saved before §16 (`SaveSystem.load_run` calls it; every read
@@ -118,6 +125,7 @@ static func migrate(state: Dictionary) -> void:
 	if not (state.get("facilities", {}) as Dictionary).is_empty():
 		_fill_missing_keys(state)
 		_normalize(state)
+		ResearchSystem.ensure_auto(state)
 		return
 	if not bool(state.get("active", false)):
 		return
@@ -126,6 +134,7 @@ static func migrate(state: Dictionary) -> void:
 	fin.erase("facility_level")
 	_build(state, lvl)
 	_fill_missing_keys(state)
+	ResearchSystem.ensure_auto(state)
 
 
 # ── Levels ───────────────────────────────────────────────────────────────────
@@ -168,7 +177,7 @@ static func upgrade_cost(state: Dictionary, fid: String) -> int:
 
 
 ## "" when `fid` can be upgraded now, else the reason (current locale), in order:
-## unknown · max level · front cap · front expansion research missing · funds short.
+## unknown · max level · front cap · funds short.
 static func upgrade_block_reason(state: Dictionary, fid: String) -> String:
 	if not is_facility(fid):
 		return Loc.t(L.FACILITY_BLOCK_UNKNOWN_FACILITY)
@@ -177,8 +186,6 @@ static func upgrade_block_reason(state: Dictionary, fid: String) -> String:
 		return Loc.t(L.UI_WORD_MAX_LEVEL)
 	if fid != FRONT and lvl >= level(state, FRONT):
 		return Loc.t(L.FACILITY_BLOCK_FRONT_CAP, {"level": level(state, FRONT)})
-	if fid == FRONT and not front_expand_done(state, lvl + 1):
-		return Loc.t(L.FACILITY_BLOCK_NEED_EXPAND, {"level": lvl + 1})
 	if FinanceSystem.upgrade_funds(state) < upgrade_cost(state, fid):
 		return Loc.t(L.FINANCE_BLOCK_NO_FUNDS)
 	return ""
@@ -196,17 +203,6 @@ static func upgrade(state: Dictionary, fid: String) -> String:
 	FinanceSystem.pay_upgrade(state, upgrade_cost(state, fid))
 	set_level(state, fid, level(state, fid) + 1)
 	return ""
-
-
-## Has the front's `expand` research for level `target_level` been completed?
-## (`research.csv` rows of facility `front` with `p1 = expand`, `p2 = target level`.)
-## No such row for that level → false (the front cannot pass it).
-static func front_expand_done(state: Dictionary, target_level: int) -> bool:
-	for raw in ResearchSystem.rows_for(FRONT):
-		var row: Dictionary = raw
-		if String(row.get("p1", "")) == "expand" and String(row.get("p2", "")).to_int() == target_level:
-			return ResearchSystem.done_count(state, String(row["id"]), "") > 0
-	return false
 
 
 # ── Occupants ────────────────────────────────────────────────────────────────
@@ -373,8 +369,7 @@ static func _fill_missing_keys(state: Dictionary) -> void:
 	for k in ["active", "points", "done"]:
 		if not r.has(k):
 			r[k] = {}
-	if not r.has("boosts"):
-		r["boosts"] = []
+	r.erase("boosts")  # front research boosts were removed (2026-10-09)
 	state["research"] = r
 	if not state.has("intel_rank"):
 		state["intel_rank"] = {}
@@ -394,10 +389,6 @@ static func _normalize(state: Dictionary) -> void:
 		var d: Dictionary = r.get(k, {})
 		for key in d.keys():
 			d[key] = int(d[key])
-	for raw in (r.get("boosts", []) as Array):
-		var b: Dictionary = raw
-		b["pct"] = int(b.get("pct", 0))
-		b["weeks_left"] = int(b.get("weeks_left", 0))
 	var ranks: Dictionary = state.get("intel_rank", {})
 	for key in ranks.keys():
 		ranks[key] = int(ranks[key])

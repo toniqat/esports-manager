@@ -156,18 +156,10 @@ custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="MapCaption" type="Label" parent="Body"]
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "tx_70JYF47F2A"
-clip_text = true
-text_overrun_behavior = 3
-
 [node name="MapHolder" type="CenterContainer" parent="Body"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — HubView.gd _refresh_map()
-Code adds the team's BaseMap (BaseMap.create(RunRules.team_map_id), DESIGN_SIZE 1000×634) here, centred, and one ResearchBubble per facility spot (ResearchBubble.populate). Tap a bubble / facility → FacilitySheet."
+Code adds the team's BaseMap (BaseMap.create(RunRules.team_map_id), DESIGN_SIZE 1000×634) here, centred, and one ResearchBubble per facility spot (ResearchBubble.populate). Tap a bubble / facility → SeasonHub.open_facility (FacilityView)."
 custom_minimum_size = Vector2(0, 634)
 layout_mode = 2
 mouse_filter = 2

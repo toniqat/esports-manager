@@ -113,6 +113,4 @@ tx_5ATMNYAZ8A,finance.panel.upkeep_mult,active,지난 주 정산 줄 이름 — 
 tx_A68YMV80H1,finance.cut.downgrade_facility,active,적자 정산 삭감 줄 — 시설 하나 강등 (§16),,,{name} Lv{from} → Lv{to} 강등 (미납 {amount}),{name} Lv{from} → Lv{to} downgrade (unpaid {amount}),draft,4f731717
 tx_9996TAPSGF,finance.panel.upkeep_title,active,재무 시트 시설 섹션 — 시설별 유지비 소제목,,,시설별 유지비 (주),Upkeep per facility (weekly),draft,c9f51bbf
 tx_S6RZ7XDZCZ,finance.panel.upkeep_line,active,재무 시트 — 시설 하나의 주간 유지비,,,{name}  Lv{level} · {amount},{name}  Lv{level} · {amount},draft,4746ce34
-tx_F54VFZ1WNC,finance.panel.upkeep_cut,active,재무 시트 — 누적 유지비 절감,,,운영비 절감 −{pct}% 반영 (프론트 연구),Cost cutting −{pct}% applied (front research),draft,584e6a85
-tx_K6HVE7B1CA,finance.panel.upgrade_gate,active,재무 시트 — 프론트 업그레이드 확장 연구 관문,,,Lv{level} 로 올리려면 프론트의 경영 확장 연구가 먼저 끝나야 합니다 · 진행 {pct}%,Front office research Expansion must finish before Lv{level} · {pct}% done,draft,c9d6cd37
 tx_MGJS84V3XM,finance.panel.fac_rule,active,재무 시트 시설 섹션 — 상한 규칙 안내,,,다른 시설은 프론트 레벨을 넘을 수 없습니다 — 각 시설 시트에서 업그레이드,No facility may exceed the front office level — upgrade others from their facility sheet,draft,db2d644f

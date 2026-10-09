@@ -33,7 +33,6 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | `alloc` | `{training, facility, welfare}` int % | The manager's **manual** split (sum 100). Ignored while finance is delegated. |
 | `effects` | `{training_pct, welfare_pct}` float % | Bonuses active **this week**, produced by last week's allocation. |
 | `penalty_weeks` | int | Weeks left of the unpaid-training penalty. |
-| `upkeep_cut_pct` | int % | **§16** permanent upkeep cut from the front's `budget_cut` research (stacking, `add_upkeep_cut`), read via `upkeep_cut_pct(state)` — clamped to `FINANCE_UPKEEP_CUT_MAX_PCT`. Absent in old saves = 0. |
 | `week_bonus` · `week_wins` · `week_losses` | int | Match bonus accrued since the last settlement (reset by `settle_week`). |
 | `week_no` | int | Settlements done this run (history label "N주차"). |
 | `manual_profit_weeks` | int | Settled weeks with `net ≥ 0` while `StaffSystem.owner(state, "finance") == "manager"` — trait unlock `finance_manual_profit:N` (M8). Read via `manual_profit_weeks(state)`. |
@@ -45,7 +44,7 @@ History entry (also what `settle_week` returns, plus `toast`):
 `{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, finance_stat, income_mult, upkeep_mult,
 special_income_pct, special_upkeep_pct, special_salary_pct, specials: Array[id] (running during the week),
 special_spend, special_buys: Array[id], specials_expired: Array[id], bonus, wins, losses, income, salaries, upkeep,
-upkeep_cut_pct, expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
+expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
 delegated, cuts: Array[cut record]}`.
 A cut record is `{type, …}` with `type` = `CUT_STOP` · `CUT_FUND {amount}` · `CUT_DOWNGRADE {fid, from, to, amount}` (no `fid` = a pre-§16 record → old line) ·
 `CUT_PENALTY {weeks, pct}` — never text; `FinanceSystem.cut_text(cut)` draws the line (`finance.cut.*`).
@@ -55,7 +54,7 @@ The returned `toast` is translated at settle time and never saved (`SeasonHub.hu
 1. `income = sponsor_income(state, level) + week_bonus` (bonus may be negative), where
    `sponsor_income = round(sponsor_base × income_pct / 100 × income_mult(state))`.
 2. `expense = salary_cost(state) + upkeep_cost(state)`, where (§16)
-   `upkeep_cost = round(Σ facility_upkeep_base(fid) × (1 − upkeep_cut_pct / 100) × upkeep_mult(state))`,
+   `upkeep_cost = round(Σ facility_upkeep_base(fid) × upkeep_mult(state))`,
    `facility_upkeep_base(fid) = facilities.csv upkeep(level of fid) × cost_pct(fid) / Σ cost_pct` (`facility_defs.csv`), and
    `salary_cost = round(StaffSystem.weekly_salary_total × (1 + special_pct(salary) / 100))`.
    `projection()` / `weekly_fixed_cost()` call the same helpers, so the panel and the settlement agree.
@@ -114,15 +113,14 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
 ## Facilities
 **§16 — the single facility is now the front (`프론트`)** of seven facilities (`features/season/facility/README.md`).
 `facility_level` / `upgrade_cost` / `upgrade_block_reason` / `upgrade_facility` keep their signatures and act on the
-front through `FacilitySystem`; the front upgrade additionally needs its `expand` research for the target level, and
+front through `FacilitySystem` (the front's research was removed 2026-10-09 — its upgrade only costs money), and
 the bankruptcy downgrade lowers the front (which clamps every other facility to it). Other facilities upgrade with
 `FacilitySystem.upgrade(state, fid)` (cost = `upgrade_cost × facility_defs.cost_pct / 100`), paid by
 `FinanceSystem.pay_upgrade(state, cost)` (fund first, then balance).
 - **Upkeep (§16)**: every facility pays its share of the `facilities.csv` `upkeep` row **for its own level**,
   weighted by `facility_defs.csv` `cost_pct` (`facility_upkeep_base`): with all seven at one level the total equals that
   row — the pre-§16 balance (sponsor vs upkeep) is unchanged at run start, and since no facility may exceed the
-  front, the total never exceeds the front-level row. Then the front's permanent **budget cut** (`upkeep_cut_pct`) and
-  `upkeep_mult`. `upkeep_breakdown(state)` = `[{fid, level, upkeep}]` for the sheet.
+  front, the total never exceeds the front-level row. Then `upkeep_mult`. `upkeep_breakdown(state)` = `[{fid, level, upkeep}]` for the sheet.
 - **Upgrade cost** per facility = `facilities.csv upgrade_cost(level) × cost_pct / 100` (`FacilitySystem.upgrade_cost`):
   the front pays the old full price (it carries every effect); a non-front facility pays its `cost_pct` share — an
   optional extra for research speed / higher research rows.
@@ -132,10 +130,9 @@ the bankruptcy downgrade lowers the front (which clamps every other facility to 
 - Effects per level (`facilities.csv`, percent, 100 = neutral): `train_exp_pct`, `mastery_pct`,
   `incident_pct`, `income_pct`; weekly `upkeep`; `upgrade_cost` = cost to reach the next level (0 at max).
 - **Upgrade** (the front) from the sheet (two-step button: press → 「한 번 더 눌러 확정」 → press). Paid from
-  `facility_fund` first, then `balance`; refused (button disabled with the reason) at max level, while the front's
-  `expand` research for the next level is not done (`%FacGate` explains it with the research progress), or when
-  fund + balance < cost. Takes effect immediately (multipliers, upkeep at the next settlement). Other facilities
-  upgrade from their facility sheet (`features/season/facility/`).
+  `facility_fund` first, then `balance`; refused (button disabled with the reason) at max level or when
+  fund + balance < cost. Takes effect immediately (multipliers, upkeep at the next settlement). Every facility
+  (the front too) also upgrades from its facility screen (`features/season/facility/` `FacilityView`).
 - Start level = team package `facility_level`.
 
 ## Multipliers
@@ -193,7 +190,7 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
   「한 번 더 눌러 확정」 → buy; disabled with the block reason); 최근 기록 (latest `RECENT_ROWS` weeks).
   Only one special row is armed at a time (`_special_armed`; the facility button's `_upgrade_armed`).
 - **F6 preview** — run `UI_View_FinancePanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
-  in-memory run with a budget cut and two `settle_week`s (last week + history rows), bound without a sheet.
+  in-memory run with two `settle_week`s (last week + history rows), bound without a sheet.
 - **Sheet scene** (`UI_View_FinancePanel.tscn`, root `VBoxContainer` top-wide 24 short of the body width — scroll-bar
   room; theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized` →
   `set_body_height`), so the scene's `Tail` spacer is the bottom gap.
@@ -209,7 +206,7 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
     ├ AllocSection · %AllocIntro · %AllocDelegated · %Axes (FinanceAllocRow ×3) · %Effects
     ├ FacilitySection (%FacilityTitle = the front) · %FacNow · %FacNext · %FacCost
     │                 · %Upgrade (Primary) / %UpgradeConfirm (Dark) / %UpgradeBlocked (Ghost, disabled)
-    │                 · %FacGate (expansion gate) · FacRule (static) · UpkeepTitle · %Upkeeps (template line) · %UpkeepCut
+    │                 · FacRule (static) · UpkeepTitle · %Upkeeps (template line)
     ├ SpecialsSection · %SpecIntro · %Running (template line) · %RunningGap · %Specials (FinanceSpecialRow)
     ├ HistorySection · %HistEmpty · %History (FinanceHistoryRow)
     └ Tail

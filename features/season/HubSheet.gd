@@ -13,7 +13,7 @@ extends CanvasLayer
 # close, and offsets `%SafeArea` by the device's safe-area insets.
 #
 # **The body is filled by the caller.** Every body is a scene — the hub panels (`FinancePanel` ·
-# `StaffPanel` · `facility/FacilitySheet`) and the standings team detail (`league/LeagueTeamDetail`):
+# `StaffPanel`) and the standings team detail (`league/LeagueTeamDetail`):
 # the caller adds one instance under `body` (top-wide) and it reports its own height
 # (`set_body_height(size.y)` on `resized`).
 #

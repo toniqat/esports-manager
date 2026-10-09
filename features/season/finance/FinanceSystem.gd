@@ -26,8 +26,7 @@ extends RefCounted
 # upgrade the front, and `facilities.csv` effects keep applying at that level. Other
 # facilities upgrade through `FacilitySystem.upgrade` (paid by `pay_upgrade`).
 # Upkeep is per facility: `facilities.csv upkeep(its level) × cost_pct / Σ cost_pct`
-# (equal levels = the old single upkeep), summed, minus the front's permanent budget
-# cut (`upkeep_cut_pct`, `FrontResearch` budget_cut), × `upkeep_mult`.
+# (equal levels = the old single upkeep), summed, × `upkeep_mult`.
 #
 # All numbers are tuning values in `const.csv` (`FINANCE_*`) and
 # `facilities.csv`. Saved state goes through JSON, so every read is `int()` /
@@ -74,7 +73,6 @@ static func init_run(state: Dictionary, team_id: int) -> void:
 		"alloc": DEFAULT_ALLOC.duplicate(),
 		"effects": {"training_pct": 0.0, "welfare_pct": 0.0},
 		"penalty_weeks": 0,
-		"upkeep_cut_pct": 0,
 		"week_bonus": 0,
 		"week_wins": 0,
 		"week_losses": 0,
@@ -184,7 +182,6 @@ static func settle_week(state: Dictionary) -> Dictionary:
 		"income": income,
 		"salaries": salaries,
 		"upkeep": upkeep,
-		"upkeep_cut_pct": upkeep_cut_pct(state),
 		"expense": expense,
 		"net": net,
 		"reserve": reserve,
@@ -288,13 +285,13 @@ static func sponsor_income(state: Dictionary, level: int) -> int:
 
 
 ## Weekly facility upkeep (§16): every facility's share at its own level
-## (`facility_upkeep_base`), summed, × (1 − budget cut) × `upkeep_mult` (traits ·
+## (`facility_upkeep_base`), summed, × `upkeep_mult` (traits ·
 ## finance stat · specials). `settle_week` / `projection` both read it.
 static func upkeep_cost(state: Dictionary) -> int:
 	var raw: float = 0.0
 	for fid in FacilitySystem.FACILITIES:
 		raw += facility_upkeep_base(state, String(fid))
-	return int(round(raw * upkeep_cut_mult(state) * upkeep_mult(state)))
+	return int(round(raw * upkeep_mult(state)))
 
 
 ## One facility's share of the upkeep row before any multiplier:
@@ -314,34 +311,12 @@ static func facility_upkeep_base(state: Dictionary, fid: String) -> float:
 ## `[{fid, level, upkeep}]` with the same multipliers as `upkeep_cost` (rounded per row,
 ## so the rows may differ from the total by rounding).
 static func upkeep_breakdown(state: Dictionary) -> Array:
-	var m: float = upkeep_cut_mult(state) * upkeep_mult(state)
+	var m: float = upkeep_mult(state)
 	var out: Array = []
 	for fid in FacilitySystem.FACILITIES:
 		out.append({"fid": String(fid), "level": FacilitySystem.level(state, String(fid)),
 				"upkeep": int(round(facility_upkeep_base(state, String(fid)) * m))})
 	return out
-
-
-## Permanent upkeep cut from the front's budget_cut research (percent, stacking),
-## capped at `FINANCE_UPKEEP_CUT_MAX_PCT`.
-static func upkeep_cut_pct(state: Dictionary) -> int:
-	var raw: int = int((state.get("finance", {}) as Dictionary).get("upkeep_cut_pct", 0))
-	return clampi(raw, 0, upkeep_cut_max())
-
-
-static func upkeep_cut_max() -> int:
-	return clampi(ConstTable.int_of("FINANCE_UPKEEP_CUT_MAX_PCT"), 0, 100)
-
-
-static func upkeep_cut_mult(state: Dictionary) -> float:
-	return 1.0 - float(upkeep_cut_pct(state)) / 100.0
-
-
-## Adds `pct` to the permanent budget cut (clamped to the cap). Returns the new total.
-static func add_upkeep_cut(state: Dictionary, pct: int) -> int:
-	var f: Dictionary = _fin(state)
-	f["upkeep_cut_pct"] = clampi(upkeep_cut_pct(state) + maxi(0, pct), 0, upkeep_cut_max())
-	return int(f["upkeep_cut_pct"])
 
 
 ## Bankruptcy cut target: the highest-level non-front facility above Lv1 (ties → the

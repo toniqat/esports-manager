@@ -1,0 +1,88 @@
+[gd_scene load_steps=4 format=3 uid="uid://chqr303ok24s5"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/staff/StaffThumb.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://resources/images/staff/staff_bust.svg" id="3_bust"]
+
+[node name="StaffThumb" type="Button"]
+editor_description = "One person as a thumbnail card (StaffThumb.gd): portrait (StaffImages), name, a sub line (job · where they sit, or a red block reason) and a value line (a stat, salary …). Used by the facility occupant picker and the personnel office grids. Whole card = tap target; code switches SelectableCardButton / SelectableCardButtonOn."
+custom_minimum_size = Vector2(288, 330)
+offset_right = 288.0
+offset_bottom = 330.0
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"SelectableCardButton"
+script = ExtResource("2_script")
+
+[node name="Pad" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="Box" type="VBoxContainer" parent="Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Frame" type="PanelContainer" parent="Pad/Box"]
+clip_children = 2
+custom_minimum_size = Vector2(0, 176)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="Portrait" type="TextureRect" parent="Pad/Box/Frame"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: StaffThumb.gd show_person()"
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("3_bust")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Name" type="Label" parent="Pad/Box"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: StaffThumb.gd show_person()"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "한서준"
+horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Sub" type="Label" parent="Pad/Box"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: StaffThumb.gd show_person()
+Job · where they sit now, or a block reason (red)."
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "분석관 · 전력 분석실"
+horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Value" type="Label" parent="Pad/Box"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: StaffThumb.gd show_person()
+The stat that matters on this screen (facility stat, …)."
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 24
+text = "분석 16"
+horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3

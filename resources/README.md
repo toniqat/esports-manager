@@ -606,6 +606,13 @@ to mech passives (`MECH_ICON`), one ability per skill / passive, chosen by
 effect, **never shared between the two tables**; the rest are spare. A new
 key without a row returns null and the panel just omits the icon.
 
+### TeamLogos.gd · StaffImages.gd (temporary pictograms)
+`TeamLogos.texture(team_id)` → `images/team_logos/team_<id>.svg` (placeholder shield emblems for league teams
+0..7; INTL teams 100.. borrow `team_<id % 8>.svg`). `StaffImages.portrait(who)` → `images/staff/manager_bust.svg`
+for `"manager"`, else `staff_bust.svg` (one upper-body pictogram for every staff member). Facility pictograms
+live in `images/facilities/fac_<fid>.svg` (`FacilitySystem.icon_of`). All are stand-ins until real art exists —
+swap the files (or add per-id files and look them up first) without touching callers.
+
 ### QuirkImages.gd
 `class_name QuirkImages`, extends `RefCounted`, static only. **Quirk (기벽) icon lookup** — same role as `SkillImages`.
 `icon_for(quirk_id)` → `images/quirks/quirk_<English_Name>.png` via `ICON` (`quirks.id` → file); unmapped / missing → null.

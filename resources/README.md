@@ -1115,6 +1115,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
 | `PilotGaugeMask` | DimPanel | `PilotGauge` `%Mask` (black 0.62 circle, r 21 = half the 42 ring; the gauge has no panel since 2026-10) | scene-set (mask shown by code) |
 | `SeasonPilotCardBare` | Card | `SeasonPilotCard` root — `StyleBoxEmpty`, no card background (hub roster · week row · detail head · own PREP card) | — |
+| `SeasonPilotDetailLevelFill` | ProgressFill | `SeasonPilotDetail` `%TrainFill` — the 깨달음 level bar in `LINK` (the card ring colour) while it fills; code switches back to `ProgressFill` (ACCENT) while capped (locked / max) | `theme_type_variation` (code) |
 | `WeekMapPilotMask` | DimPanel | `WeekMapPilot` `%Mask`: black 0.62 circle (r 42) over the portrait of a pilot who cannot be picked | scene-set (shown by code) |
 | `VisitMenuBubble` | PopupCard | `VisitMenu` `%Bubble`: the visit menu speech bubble (white, `BORDER_STRONG` 2px, r 28, shadow, padding 32 / 28; the scene's `%Tail` polygons use the same colours) | scene-set |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |

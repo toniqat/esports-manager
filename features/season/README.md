@@ -259,7 +259,7 @@ SeasonPilotCard (Panel · SeasonPilotCardBare = no background, min h 244, width 
 SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.gd)
 ├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust (`신뢰도 Lv.N (P%)`) · %Outings · %Mood
 ├ TrainingTitle · TrainingLine (%TrainLevel `Lv N / 10` · %TrainExp EXP in the level, hidden while capped) · %TrainTrack ─
-│   %TrainFill (ProgressTrack / ProgressFill bar, full while capped) · %TrainState (limit-break goal + progress,
+│   %TrainFill (ProgressTrack / fill = `SeasonPilotDetailLevelFill` LINK, `ProgressFill` ACCENT while capped — the card ring's colours) · %TrainState (limit-break goal + progress,
 │   "한계 도달 — 한계돌파가 필요하다" while locked, or the cap)   깨달음 level (§15 B + C merged)
 ├ StatsTitle · %Stats ─ Stat0..5 (Line: Name (Body 26) · Value (Title 30)) + Note (Caption 18, stat_note)
 ├ QuirksTitle · %QuirksEmpty · %Quirks ─ %QuirkLine template ("name · effect", grade colour)

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=170 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=171 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -1033,6 +1033,13 @@ content_margin_bottom = 0.0
 bg_color = Color(0.96, 0.96, 0.968, 1)
 
 [sub_resource type="StyleBoxEmpty" id="SeasonPilotCardBare_panel"]
+
+[sub_resource type="StyleBoxFlat" id="SeasonPilotDetailLevelFill_panel"]
+bg_color = Color(0.18, 0.4, 0.918, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
 
 [sub_resource type="StyleBoxFlat" id="SelectableCard_panel"]
 content_margin_left = 0.0
@@ -2239,6 +2246,8 @@ ScreenBackground/base_type = &"Panel"
 ScreenBackground/styles/panel = SubResource("ScreenBackground_panel")
 SeasonPilotCardBare/base_type = &"Card"
 SeasonPilotCardBare/styles/panel = SubResource("SeasonPilotCardBare_panel")
+SeasonPilotDetailLevelFill/base_type = &"ProgressFill"
+SeasonPilotDetailLevelFill/styles/panel = SubResource("SeasonPilotDetailLevelFill_panel")
 SelectableCard/base_type = &"PanelContainer"
 SelectableCard/styles/panel = SubResource("SelectableCard_panel")
 SelectableCardButton/base_type = &"Button"

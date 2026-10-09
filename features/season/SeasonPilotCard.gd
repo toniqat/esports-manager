@@ -113,7 +113,13 @@ func _show_run_level(pid: int, exp_delta: int) -> void:
 	var capped: bool = TrainingLevel.is_capped(state, pid)
 	var now: float = TrainingLevel.progress(state, pid)
 	var before: float = now
-	# Capped (locked / max): the full ring is the bar that just filled, the level below's.
+	# `exp_delta` is EXP the level actually took today (row `tlexp`, `tlexp` notes; a capped
+	# bar takes 0), so:
+	# - capped (locked at an even level / Lv max) with a delta = it filled today: the full ring is
+	#   the level below's bar (`need_for_level(lv - 1)`); a delta over that bar (an earlier bar
+	#   too) just fills from 0. Capped since an earlier day: delta 0, no segment.
+	# - filling (incl. after a limit break, `broken`): the current bar. A level-up or a break
+	#   today put the whole current EXP in today's delta, so the segment runs from 0.
 	var lv: int = TrainingLevel.level(state, pid)
 	var need: int = TrainingLevel.need_for_level(lv - 1) if capped \
 			else TrainingLevel.exp_need(state, pid)

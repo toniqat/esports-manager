@@ -1005,6 +1005,11 @@ static func _add_screen_variations(th: Theme) -> void:
 	# hub roster · week row · detail sheet head · own PREP card).
 	_add_derived(th, "SeasonPilotCardBare", &"Card", StyleBoxEmpty.new())
 
+	# --- U level merge ---
+	# season — `SeasonPilotDetail` 깨달음 level bar fill in the card ring's colour: LINK while the
+	# bar fills (this variation), the plain `ProgressFill` (ACCENT) while capped (code switches).
+	_add_derived(th, "SeasonPilotDetailLevelFill", &"ProgressFill", flat_style(LINK, BAR_RADIUS))
+
 
 ## 둥근 그림 마스크(`clip_children` 부모가 그리는 흰 판).
 static func _mask_box(radius: int) -> StyleBoxFlat:

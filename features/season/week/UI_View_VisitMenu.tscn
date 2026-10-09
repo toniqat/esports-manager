@@ -345,7 +345,7 @@ theme_override_constants/separation = 12
 [node name="EventResultPanel_Result" parent="Root/Modal/Safe/Card/VBox" instance=ExtResource("3_result")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result() · _show_page()
-Result page: what the focus training did (EventResultPanel.show_result — the pilot's stress / awakening / training EXP bars + stat chips). Its height follows the content; the bubble re-fits (reset_size) and re-places."
+Result page: what the focus training did (EventResultPanel.show_result — the pilot's stress / 깨달음 level EXP bars + stat chips). Its height follows the content; the bubble re-fits (reset_size) and re-places."
 layout_mode = 2
 
 [node name="Buttons" type="HBoxContainer" parent="Root/Modal/Safe/Card/VBox"]

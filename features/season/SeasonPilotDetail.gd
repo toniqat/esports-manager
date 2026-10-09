@@ -130,7 +130,11 @@ func _fill_training(state: Dictionary, pid: int) -> void:
 	el.visible = not TrainingLevel.is_capped(state, pid)
 	el.text = Loc.t(L.TRAINING_LEVEL_EXP,
 			{"exp": TrainingLevel.exp_of(state, pid), "need": TrainingLevel.exp_need(state, pid)})
-	(%TrainFill as Control).anchor_right = TrainingLevel.progress(state, pid)
+	var fill: Panel = %TrainFill
+	fill.anchor_right = TrainingLevel.progress(state, pid)
+	# Same colour as the card's level ring: LINK while filling, ACCENT while capped.
+	var capped: bool = TrainingLevel.is_capped(state, pid)
+	fill.theme_type_variation = &"ProgressFill" if capped else &"SeasonPilotDetailLevelFill"
 	var sl: Label = %TrainState
 	var goal: String = LimitBreak.goal_text(state, pid)
 	sl.theme_type_variation = &"AccentLabel"

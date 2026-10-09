@@ -123,7 +123,7 @@ theme_type_variation = &"ProgressTrack"
 [node name="TrainFill" type="Panel" parent="TrainTrack"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
-anchor_right = bar fill (set by code); the minimum width keeps a sliver visible."
+anchor_right = bar fill (set by code); the minimum width keeps a sliver visible. Variation = SeasonPilotDetailLevelFill (LINK) while filling, ProgressFill (ACCENT) while capped (code, matches the card ring)."
 custom_minimum_size = Vector2(14, 0)
 layout_mode = 1
 anchors_preset = -1

@@ -7,7 +7,7 @@
 
 [node name="PilotGauge" type="Control"]
 auto_translate_mode = 2
-editor_description = "One small stat gauge of a SeasonPilotCard (stress / trust / awakening), no panel: flat icon inside a radial ring at the top, optional number in the icon (trust level), the value under the ring (stress number · trust / awakening %) and the change under that ((+N) / (+N%), %Delta, week screen only). PilotGauge.gd picks the kind, icon and colours; %Mask darkens the ring when the pilot cannot be picked."
+editor_description = "One small stat gauge of a SeasonPilotCard (stress / trust), no panel: flat icon inside a radial ring at the top, optional number in the icon (trust level), the value under the ring (stress number · trust %) and the change under that ((+N) / (+N%), %Delta, week screen only). PilotGauge.gd picks the kind, icon and colours; %Mask darkens the ring when the pilot cannot be picked."
 custom_minimum_size = Vector2(48, 80)
 layout_mode = 3
 anchors_preset = 0
@@ -80,8 +80,8 @@ vertical_alignment = 1
 
 [node name="Value" type="Label" parent="VBox"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: PilotGauge.gd _fill() · show_stress() · show_trust() · show_awakening()
-Value under the ring (stress number, trust progress % inside the level, awakening %), after today's change."
+editor_description = "[필수] 지우면 오류: PilotGauge.gd _fill() · show_stress() · show_trust()
+Value under the ring (stress number, trust progress % inside the level), after today's change."
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -94,7 +94,7 @@ vertical_alignment = 1
 unique_name_in_owner = true
 visible = false
 editor_description = "[필수] 지우면 오류: PilotGauge.gd _show_delta() · _fill() · set_dimmed() · pulse_delta()
-Today's change under the value (stress (+N) red / (-N) green; trust · awakening (+N%) green / (-N%) red, code picks the variation); hidden at 0 and off the week screen."
+Today's change under the value (stress (+N) red / (-N) green; trust (+N%) green / (-N%) red, code picks the variation); hidden at 0 and off the week screen."
 custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 theme_type_variation = &"NegativeLabel"

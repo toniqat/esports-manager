@@ -10,7 +10,7 @@ tx_XVEKB2ARPN,Swap a card
 tx_MKQQ6S25FH,Trade one card of a preset for one of the new candidates
 tx_XRXCJDX7T9,Add a preset
 tx_K03F5VX51P,"Gain a new preset of three cards, chosen before each match"
-tx_VX5DQ2VWFY,Needs training level {n}
+tx_VX5DQ2VWFY,Needs awakening level {n}
 tx_C04CSM6AH9,Extra presets are full (max {n})
 tx_BBTC2K3EDB,No card left to upgrade
 tx_M26N55RWGQ,No candidate to swap in
@@ -23,7 +23,6 @@ tx_Y7542JPYWV,Option {n}
 tx_9BJC6ABYHM,Pick one new preset
 tx_6KTJD01A88,Base
 tx_4Z7Q89GAKB,Preset {n}
-tx_K1RJF50930,{n} / {max}
 tx_T07VH8HG79,Awakening pending
 tx_WDK4ZJ8X7X,Card presets
 tx_2FVH8MVSD4,Active
@@ -1610,14 +1609,12 @@ tx_0SD9XPG1BX,Outings unlock at trust Lv.{n}
 tx_5F27TFDDBC,Trust Lv.{trust} · Stress {stress}
 tx_1KK4JVKGME,{name} {stat} {delta}
 tx_T3ENXMYQ3T,{name} stat EXP {delta}
-tx_BA4R5F2VGH,{name} training EXP {delta}
-tx_KKBC17X819,{name} training EXP full
-tx_WTKYZDZ89S,{name} insight {delta}%
+tx_BA4R5F2VGH,{name} awakening level EXP {delta}
+tx_KKBC17X819,{name} awakening level bar locked
 tx_066H6FVY7G,{name} {mech} mastery {delta}
-tx_0M7GASA49J,{name} limit break · training Lv.{n}
+tx_0M7GASA49J,{name} limit break · awakening level Lv.{n}
 tx_394H0Z9JXP,Coach points {delta}
-tx_TZ7X70TQNY,Insight
-tx_1CE62HA1KP,Training EXP
+tx_1CE62HA1KP,Awakening level
 tx_CGDMGJFED0,Mastery
 tx_VE4Y341QPD,Stat EXP
 tx_7F4B0GFZD2,@The late-night practice room
@@ -1719,7 +1716,7 @@ tx_DBYRHDAACS,(Goal pick — the game replaces it with three goals)
 tx_F2XVSXXX9X,"Okay. With a goal, I think I can see the way."
 tx_GDSE4N85DZ,I'll get past this one too.
 tx_CDZXJZ9M6P,Trust Lv.{n}
-tx_E2D5A7P8Z6,Training EXP · Lv.{n}
+tx_E2D5A7P8Z6,Awakening level Lv.{n}
 tx_T6KW92G6MY,Limit break needed
 tx_HVEN1X5ECC,Stat EXP {delta}
 tx_4DB24E4HX7,Whole team
@@ -2740,10 +2737,10 @@ tx_BFBZYQPMDG,Endurance Training II
 tx_E7XM9N13SW,Endurance Training III
 tx_HBKHP46T46,Lv{n}
 tx_HWDK2ZGNYZ,Lv {n} / {max}
-tx_MQTEGWC568,Training EXP {exp} / {need}
+tx_MQTEGWC568,Awakening level EXP {exp} / {need}
 tx_5FXPMDAP4K,Plateau reached — needs a limit break
 tx_800W06DJMX,Max level
-tx_17R6TM4FN4,Training Level
+tx_17R6TM4FN4,Awakening Level
 tx_KGSV1ERB23,Limit Break
 tx_P90CMSBJP0,KDA {kda}+ over the next {n} matches
 tx_6GXZRX4SPP,"Most kills in the game, {n} matches in a row"
@@ -2752,12 +2749,12 @@ tx_6DMM2FHRF3,MVP of the next match
 tx_4C8T8AQG75,"Most growth earned in the game, {n} matches in a row"
 tx_Q8Z751P204,"Most turret damage in the game, {n} matches in a row"
 tx_YZN4NN2KCC,"Most shielding and healing in the game, {n} matches in a row"
-tx_T8XRTXGC5D,On success: Training Lv{n} · all stats +{gain}
+tx_T8XRTXGC5D,On success: all stats +{gain} · awakening level bar opens again
 tx_N55ME7YEYY,New goal: {goal}
 tx_JZQ1JZRHPM,Goal — {goal} ({progress})
 tx_0BVZ0NR212,{have}/{need}
 tx_1ZM6HE38ZP,KDA {v} / {need}
-tx_WDHZDJF3V7,{name}: limit break! Training Lv{n} · all stats +{gain}
+tx_WDHZDJF3V7,{name}: limit break! Awakening level Lv{n} · all stats +{gain}
 tx_0P8318871G,Training — {parts}
 tx_41TFBZ6P0C,{fac} {name} {value}
 tx_TTT7SGWMV6,Field

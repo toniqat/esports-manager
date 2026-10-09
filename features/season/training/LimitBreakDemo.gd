@@ -11,7 +11,8 @@ extends Control
 #   vn.closed → ask pending_event again (next due pilot), then the incident
 #
 # Run alone (F6): an in-memory run (`UiPreview.ensure_run`, nothing saved), the first
-# pilot's training bar filled on Monday, then the dialogue above in a `VnDialogueView`.
+# pilot's Lv1 bar filled on Monday (→ Lv2, bar locked), then the dialogue above in a
+# `VnDialogueView`.
 # In the game this scene is never instanced.
 
 const SCENE_PATH: String = "res://features/season/training/UI_View_LimitBreakDemo.tscn"

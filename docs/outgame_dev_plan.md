@@ -764,6 +764,23 @@ with the user (Q&A 2026-10-09); a body detail that disagrees with §15.0 loses.
 
 ### 15.0 Decisions (Q&A)
 
+**2026-10-09 decision — B + C merged into one 깨달음 레벨 (overrides the B / C split below)**
+1. One run-only level per pilot, shown as **깨달음 레벨** (Lv N). Its bar is the training EXP bar
+   (`TrainingLevel`, `TLEVEL_EXP_n`). The old 0..100 awakening gauge is **removed**; its sources (match gains
+   `AWAKEN_MATCH_*`, story / incident `awaken:+N` clauses, focus training `FOCUS_AWAKEN`) add training EXP at
+   `LEVEL_EXP_PER_AWAKEN` EXP per old gauge point. The training-day awakening gain is dropped (the day's
+   training EXP already counts).
+2. **Every level-up queues one awakening** (the 1-of-3 screen of C, unchanged). A full bar → level + 1 at
+   once; EXP past the bar carries into the next one.
+3. **Reaching an even level (2 · 4 · 6 · 8) locks the bar**: no EXP until the limit break of B succeeds
+   (same dialogue · goal offer / pick · goal judging · focus-training 한계돌파). Success = all six stats
+   + `LIMIT_BREAK_STAT_GAIN` and the bar unlocks; **the level does not change**. EXP past a locking bar is lost.
+4. Cap **Lv `TLEVEL_MAX` = 10** (`TLEVEL_EXP_1..9`): no EXP, no awakening, no limit break there.
+5. Old runs: an entry without `"v": 2` is migrated once (`TrainingLevel._migrate`) — the level number is kept,
+   an even level counts as already broken, a full bar becomes a level-up (+ one queued awakening; landing on
+   an even level keeps the old goal / offer as that level's limit break), the old gauge is dropped (not converted).
+Rules and state: `features/season/training/README.md` "깨달음 레벨 · limit break".
+
 **A. Mech mastery + mech upgrades**
 - Mastery stays **points 0..100** per `pilot × mech` (`season_state.mech_mastery`), shown as a **level 0..5**
   like trust: level = number of thresholds reached among `MASTERY_LV_1..5` = 20 / 40 / 60 / 80 / 100
@@ -852,8 +869,8 @@ with the user (Q&A 2026-10-09); a body detail that disagrees with §15.0 loses.
 | Key | Owner | Shape |
 |---|---|---|
 | `mech_mastery` | A | unchanged shape `{"<pid>": {"<mech_id>": int 0..100}}` |
-| `training_level` | B | `{"<pid>": {"level": int 1..5, "exp": int, "goal": {} \| {id, since_match: int, set_week, set_day, recs: [match record]}, "offer": [goal ids], "event_week": week key, "event_day": int, "note": {} \| result note}}` — full shape: `features/season/training/README.md` "Training level · limit break" |
-| `awakening` | C | `{"<pid>": int gauge}` + `awakening_pending: [pid…]` |
+| `training_level` | B | (since 2026-10-09: + `"v": 2`, `"broken": bool`, level 1..10) `{"<pid>": {"level": int 1..5, "exp": int, "goal": {} \| {id, since_match: int, set_week, set_day, recs: [match record]}, "offer": [goal ids], "event_week": week key, "event_day": int, "note": {} \| result note}}` — full shape: `features/season/training/README.md` "Training level · limit break" |
+| `awakening` | C | ~~`{"<pid>": int gauge}`~~ (removed 2026-10-09) + `awakening_pending: [pid…]` · `awakening_count` |
 | `loadouts` | C | `{"<pid>": {"presets": [[int ×3], …], "active": int}}` |
 | `coach_points` | D | `int` (this week) |
 | `mental.days["<d>"].evening` | D | `action` gains `"visit"` sub-actions: `{action: "focus"\|"story"\|"outing"\|"pass", …}` |

@@ -786,7 +786,9 @@ func _consume_pending_match_result() -> bool:
 	FinanceSystem.record_match(s, pm as Dictionary, winner_side == 0)
 	PilotMods.consume_match(s)
 	StressSystem.record_match(s, pm as Dictionary)
-	# §15 — limit-break goals and the awakening gauge read the match rows.
+	# §15 — limit-break goals read the match rows; the match's awakening points become
+	# 깨달음 레벨 EXP (`pending_match.level_exp_gains`). Limit break first: a goal met in this
+	# match unlocks the bar before the match EXP lands.
 	LimitBreak.record_match(s, pm as Dictionary)
 	Awakening.on_match(s, pm as Dictionary)
 	MentalSystem.record_match(s, pm as Dictionary)   # §15 D Sunday story (K/D/A, MVP)

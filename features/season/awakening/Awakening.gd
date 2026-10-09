@@ -2,22 +2,24 @@ class_name Awakening
 extends RefCounted
 
 # ── Awakening (깨달음, §15 C) ────────────────────────────────────────────────
-# Per-pilot gauge in percent points. Training, stories, incidents, focus training …
-# add to it (`add_gauge`); every time it reaches AWAKEN_THRESHOLD (100) one awakening is
-# queued and the gauge drops by the threshold (130 → 30, a pending awakening keeps its
-# place in the queue). The week screen polls `next_pending` and opens `AwakeningView`;
-# the pilot picks 1 of 3: card upgrade / card swap / add preset (`PilotLoadout`).
-# Resolving (`resolve_*`) writes the loadout, pops the queue and counts the awakening —
-# a queued awakening that was never resolved (app closed) simply reopens.
+# Since 2026-10-09 the awakening has no gauge of its own: every 깨달음 레벨 level-up
+# (`TrainingLevel`, the training EXP bar) queues one awakening (`queue`). The former gauge
+# sources are training EXP now — matches (`on_match`, AWAKEN_MATCH_* points ×
+# LEVEL_EXP_PER_AWAKEN), story / incident `awaken` clauses, focus training.
+# The week screen polls `next_pending` and opens `AwakeningView`; the pilot picks 1 of 3:
+# card upgrade / card swap / add preset (`PilotLoadout`). Resolving (`resolve_*`) writes the
+# loadout, pops the queue and counts the awakening — a queued awakening that was never
+# resolved (app closed) simply reopens.
 #
 # State (JSON-round-tripped, string keys, `int()` reads):
-#   season_state.awakening         = {"<pid>": int gauge}
 #   season_state.awakening_pending = [pid, …]           (queue, a pid may repeat)
 #   season_state.awakening_count   = {"<pid>": int}     (resolved awakenings — seeds the draws)
+# (`season_state.awakening` = the old gauge; dropped by `TrainingLevel` migration, never written.)
 # Candidate draws are deterministic per run · pid · awakening count (`_rng`), so reopening
 # the same awakening shows the same candidates.
 
-const KEY_GAUGE: String = "awakening"
+## Old gauge key (pre-2026-10-09 saves) — only read to drop it.
+const KEY_LEGACY_GAUGE: String = "awakening"
 const KEY_PENDING: String = "awakening_pending"
 const KEY_COUNT: String = "awakening_count"
 
@@ -28,42 +30,19 @@ const KIND_SKIP: String = "skip"
 
 
 static func init_run(state: Dictionary) -> void:
-	var g: Dictionary = {}
 	var n: Dictionary = {}
 	for pid in MentalSystem.my_pilot_ids(state):
-		g[str(pid)] = 0
 		n[str(pid)] = 0
-	state[KEY_GAUGE] = g
+	state.erase(KEY_LEGACY_GAUGE)
 	state[KEY_COUNT] = n
 	state[KEY_PENDING] = []
 
 
-static func gauge(state: Dictionary, pid: int) -> int:
-	return int((state.get(KEY_GAUGE, {}) as Dictionary).get(str(pid), 0))
-
-
-static func threshold() -> int:
-	return maxi(ConstTable.int_of("AWAKEN_THRESHOLD"), 1)
-
-
-## Add to the gauge (`source` = short id for logs / notes). Crossing the threshold queues an
-## event and takes the threshold off the gauge (as many times as it was crossed). Only my
-## pilots have a gauge; a negative amount lowers it, never below 0.
-static func add_gauge(state: Dictionary, pid: int, amount: int, source: String = "") -> void:
-	if amount == 0 or not MentalSystem.my_pilot_ids(state).has(pid):
+## Queue one awakening of `pid` (`TrainingLevel` level-up). My pilots only.
+static func queue(state: Dictionary, pid: int) -> void:
+	if not MentalSystem.my_pilot_ids(state).has(pid):
 		return
-	if not (state.get(KEY_GAUGE, null) is Dictionary):
-		state[KEY_GAUGE] = {}
-	var d: Dictionary = state[KEY_GAUGE]
-	var v: int = maxi(gauge(state, pid) + amount, 0)
-	var queued: int = 0
-	while v >= threshold():
-		v -= threshold()
-		_pending(state).append(pid)
-		queued += 1
-	d[str(pid)] = v
-	if queued > 0 and OS.is_debug_build():
-		print("Awakening: pilot %d queued %d (source %s, gauge now %d)" % [pid, queued, source, v])
+	_pending(state).append(pid)
 
 
 ## Pilot with a queued awakening, -1 = none. The week screen polls this after each state change.
@@ -86,29 +65,12 @@ static func count(state: Dictionary, pid: int) -> int:
 	return int((state.get(KEY_COUNT, {}) as Dictionary).get(str(pid), 0))
 
 
-## `TrainingBoard.apply_day_training` hook. Each row's day EXP (`exp` = stat → EXP earned) ×
-## AWAKEN_TRAIN_PER_EXP, clamped to AWAKEN_TRAIN_MIN..MAX (0 on a day without EXP). The gain
-## is written back on the row as `awaken` so the week screen can show it.
-static func on_training_day(state: Dictionary, rows: Array) -> void:
-	for raw in rows:
-		if not (raw is Dictionary):
-			continue
-		var row := raw as Dictionary
-		var total: int = 0
-		for v in (row.get("exp", {}) as Dictionary).values():
-			total += maxi(int(v), 0)
-		var gain: int = 0
-		if total > 0:
-			gain = clampi(roundi(float(total) * ConstTable.num("AWAKEN_TRAIN_PER_EXP")),
-					ConstTable.int_of("AWAKEN_TRAIN_MIN"), ConstTable.int_of("AWAKEN_TRAIN_MAX"))
-		row["awaken"] = gain
-		add_gauge(state, int(row.get("pilot_id", -1)), gain, "train")
-
-
 ## `SeasonHub._consume_pending_match_result` hook. Every pilot of mine gets AWAKEN_MATCH_BASE,
 ## plus AWAKEN_MATCH_RANK_BONUS scaled by the MVP-metric rank among my five (best = full,
-## worst = 0), plus AWAKEN_MATCH_MVP for the match MVP. Runs once per match
-## (`pending_match.awakening_recorded`); the gains land in `pending_match.awakening_gains`.
+## worst = 0), plus AWAKEN_MATCH_MVP for the match MVP — old gauge points, added as training
+## EXP (`TrainingLevel.exp_of_awaken`, `add_exp`). Runs once per match
+## (`pending_match.awakening_recorded`); the **applied** EXP lands in
+## `pending_match.level_exp_gains` (`{"<pid>": EXP}`, 0 while the bar is locked / at the cap).
 static func on_match(state: Dictionary, pending_match: Dictionary) -> void:
 	if bool(pending_match.get("awakening_recorded", false)):
 		return
@@ -130,16 +92,15 @@ static func on_match(state: Dictionary, pending_match: Dictionary) -> void:
 	var gains: Dictionary = {}
 	for raw in mine:
 		var pid: int = int(raw)
-		var gain: int = ConstTable.int_of("AWAKEN_MATCH_BASE")
+		var pts: int = ConstTable.int_of("AWAKEN_MATCH_BASE")
 		var i: int = ranked.find(pid)
 		if i >= 0 and ranked.size() > 1:
-			gain += roundi(float(ConstTable.int_of("AWAKEN_MATCH_RANK_BONUS")) \
+			pts += roundi(float(ConstTable.int_of("AWAKEN_MATCH_RANK_BONUS")) \
 					* float(ranked.size() - 1 - i) / float(ranked.size() - 1))
 		if pid == mvp:
-			gain += ConstTable.int_of("AWAKEN_MATCH_MVP")
-		gains[str(pid)] = gain
-		add_gauge(state, pid, gain, "match")
-	pending_match["awakening_gains"] = gains
+			pts += ConstTable.int_of("AWAKEN_MATCH_MVP")
+		gains[str(pid)] = TrainingLevel.add_exp(state, pid, TrainingLevel.exp_of_awaken(pts), "match")
+	pending_match["level_exp_gains"] = gains
 
 
 # ── Choices ──────────────────────────────────────────────────────────────────

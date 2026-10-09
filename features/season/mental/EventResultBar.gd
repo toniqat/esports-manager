@@ -8,7 +8,7 @@ extends Control
 # Values are in **bars** (`MentalEvents.result_blocks` row `from` / `to`):
 # - `stack` — 0..1 = the bar, 1..2 = overflow drawn again from the left in dark `NEGATIVE`
 #   (stress over the threshold up to `STRESS_MAX`).
-# - `wrap` — the whole part counts filled bars (trust level up, awakening gauge crossed): the
+# - `wrap` — the whole part counts filled bars (trust level up, 깨달음 레벨 up): the
 #   fill runs to the end, restarts at 0 and goes on. `end_full` = stop on a full bar (top level).
 # A gain paints the added part in the delta colour (`good` → `POSITIVE`, else `NEGATIVE`); a
 # loss leaves the removed part as a faint ghost of that colour. `play` animates from → to.

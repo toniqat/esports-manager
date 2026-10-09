@@ -8,39 +8,38 @@ Display text = l10n keys of the **`awakening` domain** (`data/l10n/src/awakening
 
 | File | Role |
 |---|---|
-| `Awakening.gd` | `class_name Awakening` (static). Gauge per pilot, queue of pending awakenings, training / match sources, the 1-of-3 options, deterministic candidate draws, `resolve_*` (writes the outcome). |
+| `Awakening.gd` | `class_name Awakening` (static). Queue of pending awakenings (`queue`, fed by 깨달음 레벨 level-ups), the match source (→ level EXP), the 1-of-3 options, deterministic candidate draws, `resolve_*` (writes the outcome). |
 | `PilotLoadout.gd` | `class_name PilotLoadout` (static). Card presets per pilot (base + extras), active preset, edits (upgrade / swap / add), roster-copy `apply_to`, card-table helpers (`upgrade_of`, `base_of`, `candidate_pool`). |
 | `UI_View_Awakening.tscn` / `AwakeningView.gd` | `class_name AwakeningView` (CanvasLayer 25). The awakening event screen: intro FX → choose 1 of 3 → sub-page → confirm. `create()` · `open(pid)` · `signal closed` · `is_open()` · static `preset_label(idx)`. |
 | `AwakeningBurst.gd` | `class_name AwakeningBurst` — `_draw` widget placed in the view scene: amber rays / glow / expanding ring; `progress` (tweened) · `spin`. |
 | `UI_Comp_AwakeningCardCell.tscn` / `AwakeningCardCell.gd` | One pilot card: the real hand card (`scenes/Card.tscn`) in a `SelectableCard` frame + tap button + caption ("강화됨" under a "+" card). `create()` · `set_card_scale(k)` · `fill(card_id)` · `set_selected` · `set_locked` · `set_caption` · `signal tapped(card_id)`. Also used by the ban/pick preset picker. |
-| `UI_Comp_AwakeningPilotBlock.tscn` / `AwakeningPilotBlock.gd` | Gauge bar + "pending" line + the pilot's presets (name, "출전" chip on the active one, card-name chips; "+" cards on the accent chip). `SeasonPilotDetail` mounts it into its `%AwakeningSlot` (`AwakeningPilotBlock.mount(holder, state, pid)`). |
+| `UI_Comp_AwakeningPilotBlock.tscn` / `AwakeningPilotBlock.gd` | "Pending" line + the pilot's presets (no gauge since the 2026-10-09 level merge — the 깨달음 level bar is the detail sheet's level block) (name, "출전" chip on the active one, card-name chips; "+" cards on the accent chip). `SeasonPilotDetail` mounts it into its `%AwakeningSlot` (`AwakeningPilotBlock.mount(holder, state, pid)`). |
 
 The pre-match preset picker lives in `features/match_flow/ban_pick/` (`BanPickLoadoutPicker`, see that README).
 
 ## State (`season_state`, JSON-round-tripped — string keys, `int()` reads)
 ```
-awakening         = {"<pid>": int gauge}            # my pilots only, 0 .. AWAKEN_THRESHOLD-1 after queueing
-awakening_pending = [pid, …]                        # queue; a pid may appear twice (gauge jumped 2 thresholds)
+awakening_pending = [pid, …]                        # queue; a pid may appear twice (two level-ups at once)
 awakening_count   = {"<pid>": int}                  # resolved awakenings this run (seeds the draws)
 loadouts          = {"<pid>": {"presets": [[card_id ×3], …], "active": int}}
 ```
-`init_run` (from `GameManager.start_run`) writes all four. Every read is lazy-safe: a run without the keys
+`init_run` (from `GameManager.start_run`) writes them (and erases the old gauge key `awakening`). Every read is lazy-safe: a run without the keys
 (old save, editor test run, `UiPreview.ensure_run`) gets the base preset / an empty queue on first use.
-Only my pilots (`MentalSystem.my_pilot_ids`) have a gauge or a loadout; anyone else reads 0 / [] and is ignored.
+Only my pilots (`MentalSystem.my_pilot_ids`) have a queue entry or a loadout; anyone else reads 0 / [] and is ignored.
 
-## Gauge rules (`Awakening`)
-- `add_gauge(state, pid, amount, source := "")` — the only way in (training, match, and agent D's
-  story / incident / focus-training clauses). Gauge + amount; **every time it reaches AWAKEN_THRESHOLD one
-  awakening is queued and the threshold is taken off** (130 → queue + 30). A negative amount lowers it (≥ 0).
-- Training day (`on_training_day(state, rows)`, `TrainingBoard.apply_day_training` hook): sum of the row's
-  `exp` values × AWAKEN_TRAIN_PER_EXP, rounded, clamped AWAKEN_TRAIN_MIN..MAX (0 on a day without EXP).
-  The gain is written back on the row as **`row["awaken"]`** (the week screen may show it).
-- Match (`on_match(state, pending_match)`, `SeasonHub._consume_pending_match_result` hook): every pilot of
-  mine AWAKEN_MATCH_BASE, + AWAKEN_MATCH_RANK_BONUS scaled by the `RunStats.mvp_score` rank among my five
-  (best = full, worst = 0, linear, rounded), + AWAKEN_MATCH_MVP for `pending_match.mvp_pilot_id`. Once per
-  match (`pending_match.awakening_recorded`); gains land in `pending_match.awakening_gains` (`{"<pid>": n}`).
-- `next_pending(state) -> int` (first queued pid, -1 none) · `pending_count(state, pid)` · `count(state, pid)` ·
-  `gauge(state, pid)` · `threshold()`.
+## Sources (`Awakening`) — no gauge since 2026-10-09
+The awakening gauge was merged into the **깨달음 레벨** (`features/season/training/README.md` "깨달음 레벨 · limit
+break", `docs/outgame_dev_plan.md` §15.0 "2026-10-09 decision"): **every level-up queues one awakening**
+(`TrainingLevel` → `queue(state, pid)`). The old gauge sources add level EXP instead (× `LEVEL_EXP_PER_AWAKEN`
+per old point); the training-day gain is gone.
+- Match (`on_match(state, pending_match)`, `SeasonHub._consume_pending_match_result` hook, after
+  `LimitBreak.record_match`): every pilot of mine AWAKEN_MATCH_BASE points, + AWAKEN_MATCH_RANK_BONUS scaled by
+  the `RunStats.mvp_score` rank among my five (best = full, worst = 0, linear, rounded), + AWAKEN_MATCH_MVP for
+  `pending_match.mvp_pilot_id` → `TrainingLevel.add_exp(points × LEVEL_EXP_PER_AWAKEN)`. Once per match
+  (`pending_match.awakening_recorded`); the applied EXP lands in `pending_match.level_exp_gains` (`{"<pid>": n}`).
+- Story / incident `awaken:+N` and focus training: `features/season/mental/README.md`.
+- `queue(state, pid)` · `next_pending(state) -> int` (first queued pid, -1 none) · `pending_count(state, pid)` ·
+  `count(state, pid)`. Old saves: the gauge (`awakening`) is dropped by `TrainingLevel._migrate`, not converted.
 
 ## The awakening (1 of 3)
 `options(state, pid) -> {upgrade, swap, preset: bool, preset_reason: "" | "level" | "max"}`:
@@ -119,12 +118,12 @@ closes before that save, the awakening is still queued in the last save and simp
 
 ## Detail sheet (`SeasonPilotDetail`)
 `UI_View_SeasonPilotDetail.tscn` has an `%AwakeningSlot` VBox before `Tail`; `_bind` calls
-`AwakeningPilotBlock.mount(%AwakeningSlot, state, pid)`. The small `SeasonPilotCard` has no gauge (no room
-under the ring / pill / stress lines at 256 tall).
+`AwakeningPilotBlock.mount(%AwakeningSlot, state, pid)`. The level itself (EXP bar, limit break) is the detail sheet's
+level block and the `SeasonPilotCard` portrait ring (`TrainingLevel`).
 
 ## F6 previews
 `AwakeningView` (in-memory run, one awakening queued for my first pilot) · `AwakeningCardCell` ([교전 개시+],
-selected) · `AwakeningPilotBlock` (gauge 70, one "+" card, one extra preset). Nothing is saved.
+selected) · `AwakeningPilotBlock` (one queued awakening, one "+" card, one extra preset). Nothing is saved.
 
 ## Verification (2026-10-09, headless + windowed harnesses, deleted)
 Logic: base presets, 130 → 30 + queue, non-my pilot ignored, training / match gains (MVP > others,

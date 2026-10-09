@@ -139,8 +139,8 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
 | HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + manage cards (staff · finance) + the **team base map with the facility research bubbles** (§16, tap → `SeasonHub.open_facility` → the facility screen `facility/FacilityView`) + "이번 주 시작" (Start this week; warns first with `ConfirmPopup` when `ResearchSystem.unset_facilities` is not empty) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (progress toward the next trust level, band colour `HubView.trust_color(level)`: grey < `TRUST_OUTING_LEVEL`, green from there, amber past halfway to `TRUST_LEVEL_MAX`) with the trust **level** at its bottom-right, the stress · trust · awakening gauges, no card background. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
-| *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row, detail sheet head, own-team PREP card): see "Pilot card · detail sheet" below. |
-| *(item)* PilotGauge | `PilotGauge.gd` + `UI_Comp_PilotGauge.tscn` · `GaugeRing.gd` | **Pilot gauge** — one 48 × 80 stat gauge, **no panel** (sits on the page, 2026-10), three side by side on every `SeasonPilotCard` (`%Gauges`, under the portrait): flat icon (`resources/images/ui/gauge/*.svg`, white, tinted by code) in a `GaugeRing` at the top (`_draw`: track, first lap, change segment, overflow lap, its change segment), `%Value` under it, `%Delta` under that. Every fill call takes an optional `delta` = the change that led to the shown value (week screen: today's change; 0 = value only, no segment, no line): the ring holds the value before it, the added part in a lighter tone (rise) / the removed part as a faint ghost (fall). `show_stress(v, delta)`: band colour ≤30 green · ≤60 yellow · ≤100 orange · >100 red, ring full at 100, second lap (dark red) up to `STRESS_MAX` (the segment runs across both laps), value `N`, `(+N)` red / `(-N)` green · `show_trust(points, delta_points)`: pink heart, level inside, ring = progress inside the level, `64%`, `(+N%)` in percent of a level (`TRUST_PER_LEVEL`; a level-up wraps: ring = the old level's rest + the new level's part, both light) · `show_awakening(gauge, threshold, delta)`: orange bulb, `45%`, `(+N%)` of the threshold (a crossed threshold = full ring, `100%`, delta still shown). Trust / awakening: rise green, fall red. `pulse_delta()` pops `%Delta`. `set_dimmed(on)` = round `%Mask` over the ring (`PilotGaugeMask`) + faded numbers. F6: stress 140 after +25 |
+| *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `ProgressRing.gd` | Shared small pilot card (hub roster, week screen bottom row, detail sheet head, own-team PREP card): see "Pilot card · detail sheet" below. |
+| *(item)* PilotGauge | `PilotGauge.gd` + `UI_Comp_PilotGauge.tscn` · `GaugeRing.gd` | **Pilot gauge** — one 48 × 80 stat gauge, **no panel** (sits on the page, 2026-10), two side by side on every `SeasonPilotCard` (`%Gauges`, under the portrait): flat icon (`resources/images/ui/gauge/*.svg`, white, tinted by code) in a `GaugeRing` at the top (`_draw`: track, first lap, change segment, overflow lap, its change segment), `%Value` under it, `%Delta` under that. Every fill call takes an optional `delta` = the change that led to the shown value (week screen: today's change; 0 = value only, no segment, no line): the ring holds the value before it, the added part in a lighter tone (rise) / the removed part as a faint ghost (fall). `show_stress(v, delta)`: band colour ≤30 green · ≤60 yellow · ≤100 orange · >100 red, ring full at 100, second lap (dark red) up to `STRESS_MAX` (the segment runs across both laps), value `N`, `(+N)` red / `(-N)` green · `show_trust(points, delta_points)`: pink heart, level inside, ring = progress inside the level, `64%`, `(+N%)` in percent of a level (`TRUST_PER_LEVEL`; a level-up wraps: ring = the old level's rest + the new level's part, both light). Trust: rise green, fall red (the awakening gauge was removed 2026-10-09 with the level merge). `pulse_delta()` pops `%Delta`. `set_dimmed(on)` = round `%Mask` over the ring (`PilotGaugeMask`) + faded numbers. F6: stress 140 after +25 |
 | *(overlay)* SeasonPilotDetail | `SeasonPilotDetail.gd` + `UI_View_SeasonPilotDetail.tscn` | Pilot detail `HubSheet` body, opened by tapping a pilot portrait / card anywhere in a run (hub, week screen, training board headers). See below. |
 | PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen of the Sunday afternoon, after the match (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **Daily training (일상 훈련) tile board (타일판)** — 5 columns (players) × 5 rows (one per day; weekdays are not written on screen). Placement checks + settlement (`cell_exp` / `compute_day_gains`) + **weekday application** (`apply_day_training(day)`) + leftover-EXP bank. `training/README.md` |
@@ -247,36 +247,40 @@ Stat names are always written in full (`PlayerData.stat_label`: "전장 명중",
 
 ```
 SeasonPilotCard (Panel · SeasonPilotCardBare = no background, min h 244, width from the row · SeasonPilotCard.gd)
-├ %Ring (TrustRing, 140², centred, y 12) ─ %Portrait slot 116² inside (code: add_round_portrait)
-├ %TrustPill (ProgressFill 56×34, portrait bottom-right, y 120) ─ %TrustText (OnFill 22)
-├ %LevelChip (ProgressFill 60×34, portrait bottom-left, y 120) ─ %LevelText (OnFill 20)   §15 training level "LvN"
-├ Gauges HBox (sep 6, centred, y 160..240) ─ %PilotGauge_Stress · %PilotGauge_Trust · %PilotGauge_Awaken
+├ %Ring (ProgressRing, 140², centred, y 12) ─ %Portrait slot 116² inside (code: add_round_portrait)
+│                                    ring = 깨달음 level EXP bar (`TrainingLevel.progress`), LINK / ACCENT while capped
+├ %LevelChip (ProgressFill 60×34, portrait bottom-left, y 120) ─ %LevelText (OnFill 20)   깨달음 level "LvN"
+├ Gauges HBox (sep 14, centred, y 160..240) ─ %PilotGauge_Stress · %PilotGauge_Trust
 │                                    (PilotGauge 48×80, ring on top, value under it: stress `N` · trust `64%` (level
-│                                    in the heart) · awakening `45%` (`Awakening.gauge` / `threshold`); week screen:
-│                                    today's change `(+N)` / `(+N%)` under the value); hidden on an empty seat
+│                                    in the heart); week screen: today's change `(+N)` / `(+N%)` under the value);
+│                                    hidden on an empty seat
 └ %Hit flat Button over the card → pressed(pilot_id)
 
 SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.gd)
 ├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust (`신뢰도 Lv.N (P%)`) · %Outings · %Mood
-├ TrainingTitle · TrainingLine (%TrainLevel `Lv N / 5` · %TrainExp EXP in the level) · %TrainTrack ─ %TrainFill
-│   (ProgressTrack / ProgressFill bar) · %TrainState (limit-break goal + progress, "한계 도달" or the cap)   §15 B
+├ TrainingTitle · TrainingLine (%TrainLevel `Lv N / 10` · %TrainExp EXP in the level, hidden while capped) · %TrainTrack ─
+│   %TrainFill (ProgressTrack / ProgressFill bar, full while capped) · %TrainState (limit-break goal + progress,
+│   "한계 도달 — 한계돌파가 필요하다" while locked, or the cap)   깨달음 level (§15 B + C merged)
 ├ StatsTitle · %Stats ─ Stat0..5 (Line: Name (Body 26) · Value (Title 30)) + Note (Caption 18, stat_note)
 ├ QuirksTitle · %QuirksEmpty · %Quirks ─ %QuirkLine template ("name · effect", grade colour)
 ├ ResearchTitle · %Research (research mech · tier (value / max), tier colour)
-└ %AwakeningSlot (§15 C: `AwakeningPilotBlock` — awakening gauge + card presets, `awakening/README.md`) · Tail
+└ %AwakeningSlot (§15 C: `AwakeningPilotBlock` — pending-awakening line + card presets, `awakening/README.md`) · Tail
 ```
 
 - No position badge (removed 2026-10 — the seat order `ROLE_DISPLAY_ORDER` says the role) and no "스트레스 N" text line
   (the stress gauge shows the value). Other screens keep their `PositionBadge`.
-- API: `SeasonPilotCard.show_pilot(pid, trust, stress)` (`trust` = points; the card shows the level on the pill and the progress on the ring; the awakening gauge is read from the run) / `show_empty()` / `set_day_deltas(stress, trust_points, awaken)` (after
-  `show_pilot`: the week's day changes on the three gauges; the old `%StressNote` line — hub mood when shaken / week "+N" — was
-  removed 2026-10) / `pulse_deltas()` / `set_gauges_visible(on)` (default true; false hides the three gauges with
+- API: `SeasonPilotCard.show_pilot(pid, trust, stress)` (`trust` = points, shown by the trust gauge; the level chip and ring are read from the run) / `show_empty()` / `set_day_deltas(stress, trust_points, level_exp := 0)` (after
+  `show_pilot`: the week's day changes on the two gauges + the day's level EXP as a light segment on the portrait ring; the old `%StressNote` line — hub mood when shaken / week "+N" — was
+  removed 2026-10) / `pulse_deltas()` / `set_gauges_visible(on)` (default true; false hides the two gauges with
   their value / change lines, the rest keeps its fixed spots — for the PREP screen) / `set_tappable(on)` / `set_training_level(level, alert)`; `SeasonPilotDetail.open(host, pilot_id) -> HubSheet` (null for an unknown id).
-- **Training level (§15 B)**: `show_pilot` reads the run itself (`TrainingLevel`, via `/root/GameManager`) — the
-  chip shows `LvN` on the dark rail, **accent** while the bar is full (limit break due or its goal open), and is
-  hidden for pilots without a training level (AI pilots, empty seat). The detail sheet's training rows
+- **깨달음 level (§15, merged 2026-10-09)**: `show_pilot` reads the run itself (`TrainingLevel`, via `/root/GameManager`) — the
+  chip shows `LvN` on the dark rail, **accent** while a limit break is due (`awaiting_break`); the portrait ring is the
+  level's EXP bar (`progress`) in LINK blue, **ACCENT** while capped (`is_capped`: locked or max); both are empty / hidden
+  for pilots without a level (AI pilots, empty seat). No trust pill any more (removed 2026-10-09 — the trust gauge shows
+  the trust level in its heart). The detail sheet's training rows
   (`_fill_training`) show level / EXP bar / `LimitBreak.goal_text`. Rules: `training/README.md` "Training level".
-- `TrustRing` (`@tool` `_draw` widget): `width` (scene), `ratio` · `color` (code). Track = `SURFACE_SUNK`, arc from 12 o'clock.
+- `ProgressRing` (`@tool` `_draw` widget, was `TrustRing`): `width` (scene), `ratio` · `color` · `seg_from` / `seg_to` / `seg_color`
+  (code; the change segment drawn on top, `GaugeRing` look). Track = `SURFACE_SUNK`, arc from 12 o'clock.
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
 | Phase           | League weeks | Playoff weeks | Total |

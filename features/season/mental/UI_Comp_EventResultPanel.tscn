@@ -52,7 +52,7 @@ text = "Evelyn"
 vertical_alignment = 1
 
 [node name="Rows" type="VBoxContainer" parent="BlockTemplate/Body"]
-editor_description = "One %RowTemplate duplicate per bar (stress, trust, awakening, training EXP)."
+editor_description = "One %RowTemplate duplicate per bar (stress, trust, 깨달음 레벨 EXP)."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 14

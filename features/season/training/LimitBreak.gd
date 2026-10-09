@@ -2,11 +2,12 @@ class_name LimitBreak
 extends RefCounted
 
 # ── Limit break (한계돌파, §15 B) ─────────────────────────────────────────────
-# A pilot whose training-level bar is full gets a forced visual-novel event at that
-# day's evening: the manager offers 1 of 3 short-term goals; the goal stays until it is
-# met on my matches (or focus training completes it). Met → level +1, all six stats
-# + LIMIT_BREAK_STAT_GAIN. Goal pool and rules: `docs/outgame_dev_plan.md` §15.0 B,
-# `features/season/training/README.md` "Limit break".
+# A pilot who reaches an even 깨달음 레벨 (2, 4, 6, 8 — `TrainingLevel.awaiting_break`, the
+# EXP bar locks) gets a forced visual-novel event at that day's evening: the manager offers
+# 1 of 3 short-term goals; the goal stays until it is met on my matches (or focus training
+# completes it). Met → all six stats + LIMIT_BREAK_STAT_GAIN and the bar unlocks; the level
+# stays (`TrainingLevel.break_done`). Goal pool and rules: `docs/outgame_dev_plan.md` §15.0 B
+# (+ the 2026-10-09 decision), `features/season/training/README.md` "Limit break".
 #
 # State lives in the pilot's `season_state.training_level` entry (`TrainingLevel`):
 #   offer  [goal id ×3]  — drawn once when the dialogue is first built (seeded)
@@ -65,8 +66,8 @@ static var OBJ_NEED: int = ConstTable.int_of("LIMIT_BREAK_OBJ_NEED")
 
 # ── Event ────────────────────────────────────────────────────────────────────
 ## Pilot whose limit-break dialogue must open on the evening of `day`, -1 = none.
-## A pilot is due when the training bar is full below the cap, no goal is set yet and the
-## bar filled on this day or earlier (an earlier week counts — "the next evening reached").
+## A pilot is due when the bar is locked at an even level, no goal is set yet and the
+## level was reached on this day or earlier (an earlier week counts — "the next evening reached").
 ## Several due pilots → the first in seat order; after `choose_goal` the next one is returned.
 static func pending_event(state: Dictionary, day: int) -> int:
 	var wk: String = MentalSystem.week_key(state)
@@ -97,8 +98,7 @@ static func session(state: Dictionary, pid: int) -> Dictionary:
 			lines.append(t)
 	var choices: Array = []
 	var previews: Array = []
-	var preview: String = Loc.t(L.TRAINING_LIMIT_BREAK_PREVIEW,
-			{"n": TrainingLevel.level(state, pid) + 1, "gain": STAT_GAIN})
+	var preview: String = Loc.t(L.TRAINING_LIMIT_BREAK_PREVIEW, {"gain": STAT_GAIN})
 	for raw in offer:
 		choices.append(goal_name(String(raw)))
 		previews.append(preview)
@@ -278,15 +278,16 @@ static func progress_text(goal: Dictionary) -> String:
 
 
 # ── Completion ───────────────────────────────────────────────────────────────
-## Finish the limit break now (goal met / focus training): level +1, stats up. Returns the
-## result note (also kept in the entry for the week screen / hub, `unseen_notes`); {} when the
-## pilot is unknown or already at the cap. `source` = SOURCE_GOAL | SOURCE_FOCUS.
+## Finish the limit break now (goal met / focus training): stats up, the bar unlocks, the level
+## stays (`TrainingLevel.break_done`). Returns the result note (also kept in the entry for the
+## week screen / hub, `unseen_notes`); {} when no limit break was due.
+## `source` = SOURCE_GOAL | SOURCE_FOCUS.
 static func complete(state: Dictionary, pid: int, source: String = SOURCE_FOCUS) -> Dictionary:
 	var e: Dictionary = TrainingLevel.entry(state, pid)
-	if e.is_empty() or TrainingLevel.is_max(state, pid):
+	if e.is_empty() or not TrainingLevel.break_done(state, pid):
 		return {}
 	var goal_id: String = String((e.get("goal", {}) as Dictionary).get("id", ""))
-	var lv: int = TrainingLevel.level_up(state, pid)
+	var lv: int = TrainingLevel.level(state, pid)
 	var pd: PlayerData = MentalEvents.pilot_of(state, pid)
 	if pd != null:
 		for sk in PlayerData.STAT_KEYS:
@@ -318,7 +319,8 @@ static func mark_note_seen(state: Dictionary, pid: int) -> void:
 		n["seen"] = true
 
 
-## "한계돌파 성공 — 훈련 Lv3 · 모든 스탯 +3" for a note from `complete`.
+## "한계돌파 성공 · 깨달음 레벨 Lv2 · 모든 스탯 +3" for a note from `complete` (`n` = the level,
+## unchanged by the limit break).
 static func note_text(state: Dictionary, note: Dictionary) -> String:
 	return Loc.t(L.TRAINING_LIMIT_BREAK_NOTE_DONE, {
 		"name": MentalEvents.pilot_name(state, int(note.get("pilot_id", -1))),

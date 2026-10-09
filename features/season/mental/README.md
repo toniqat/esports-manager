@@ -20,7 +20,7 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `EventResultPanel.gd` · `UI_Comp_EventResultPanel.tscn` | `class_name EventResultPanel extends VBoxContainer`: **event result body** — one block per pilot (round portrait top-left, progress-bar rows, compact stat chips, other notes as `MessengerNoteChip`), team block last. Reusable by any result screen. See **Event result panel** below. |
 | `EventResultBar.gd` | `class_name EventResultBar extends Control`: the `_draw` bar of one panel row (before → after fill, stress overflow layer, wrap on level up / gauge crossed), placed as the row template's `Bar` node. |
 | `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer — `%Button` (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap) + `%Preview` line under it (check chance + effect directions). Code sets both texts + `pressed`. |
-| `FocusTraining.gd` | `class_name FocusTraining` (static, §15 D). The visit option **집중 훈련**: course table (`COURSES`), `courses_view` / `refusal` / `cost_of`, `apply` (coach points → stat EXP through the training EXP bank, training EXP, awakening gauge, stress; 한계돌파 → `LimitBreak.complete`). Shared helpers the story clauses use: `add_stat_exp`, `add_training_exp`, `add_story_mastery`, `story_mech`. See "Afternoon visit (방문)". |
+| `FocusTraining.gd` | `class_name FocusTraining` (static, §15 D). The visit option **집중 훈련**: course table (`COURSES`), `courses_view` / `refusal` / `cost_of`, `apply` (coach points → stat EXP through the training EXP bank, 깨달음 레벨 EXP (+ `FOCUS_AWAKEN` points × `LEVEL_EXP_PER_AWAKEN`), stress; 한계돌파 → `LimitBreak.complete`). Shared helpers the story clauses use: `add_stat_exp`, `add_training_exp`, `add_story_mastery`, `story_mech`. See "Afternoon visit (방문)". |
 | `AfternoonAway.gd` | `class_name AfternoonAway` (static). Afternoon away states of a training day: stress self outing, else a chance of dorm rest, rolled once and recorded in `mental.days["<day>"].afternoon`; `started` · `begin` · `away_of` · `relief_of` · `can_request` · `any_request`. See "Afternoon away states". |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
@@ -121,8 +121,10 @@ folder records and applies.
   운영력 `field_hit + field_eva` · 전투력 `engage_hit + engage_eva` · 성장력 `atk_growth + hp_growth` — each stat
   gets `FOCUS_STAT_EXP` stat EXP through the training board's rule (the week's leftover bank
   `training_exp_carry[seat]`, `TRAINING_EXP_PER_POINT` EXP = 1 point), the sum counts as training EXP
-  (`TrainingLevel.add_exp`); plus `FOCUS_AWAKEN` awakening gauge (`Awakening.add_gauge`) and `FOCUS_STRESS` stress.
-  **한계돌파** (listed only while `LimitBreak.goal_active`) calls `LimitBreak.complete` instead of the stat EXP.
+  (`TrainingLevel.add_exp`, the 깨달음 레벨 bar); plus `FOCUS_AWAKEN` old awakening points as level EXP
+  (× `LEVEL_EXP_PER_AWAKEN`, a second `tlexp` note) and `FOCUS_STRESS` stress.
+  **한계돌파** (listed only while `LimitBreak.goal_active`) calls `LimitBreak.complete` instead of the stat EXP (stats up,
+  the locked bar opens, level unchanged); the `FOCUS_AWAKEN` EXP then lands on the open bar.
 - **Story pools** (`story_kinds_for(state, day)`, the first pool with a row for the pilot wins):
   Mon–Fri `story` (about that morning's training: the answer pair `train_bonus:std` + stress vs `stress_train:-2`);
   Saturday with the ban/pick stored (`pending_match.picks`) `story_sat` (`mastery:+N` on that pilot's ban/pick mech);
@@ -175,14 +177,15 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
 ```
 `outcome` = `{checked, ok, chance, pilot_id, partner_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
 (D7): note dicts are `{type: trust|trust_all|trust_level|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`;
-§15 D adds `stat_up {pid, stat, delta}` · `stat_exp {pid, delta}` · `tlexp {pid, delta}` (0 = bar full) ·
-`awaken {pid, delta}` · `mastery {pid, mech, delta}` · `limit_break {pid, level}` · `coach {delta}` (keys `mental.ui.note.*`).
-Since the result panel (2026-10) `trust` · `stress` · `awaken` · `tlexp` notes also carry **`after`** = the value right
-after that note (trust points · stress · gauge · EXP in the level; built by `MentalEvents.stress_note` / `awaken_note`,
+§15 D adds `stat_up {pid, stat, delta}` · `stat_exp {pid, delta}` · `tlexp {pid, delta, after, level, from_level, from_exp}` (0 = bar locked / max) ·
+`mastery {pid, mech, delta}` · `limit_break {pid, level}` · `coach {delta}` (keys `mental.ui.note.*`). Old saved `awaken {pid, delta}` notes (the gauge, before the 2026-10-09 level merge)
+are no longer shown (`note_text` = "", skipped by `note_texts` / `result_blocks`).
+Since the result panel (2026-10) `trust` · `stress` · `tlexp` notes also carry **`after`** = the value right
+after that note (trust points · stress · EXP in the level; built by `MentalEvents.stress_note`,
 `FocusTraining.add_training_exp`) — old saved notes without it fall back to the current value.
 **Merge** (`MentalEvents.merge_notes(notes)`, display only, stored notes untouched): summed by type + pid (+ stat / mech /
-weeks): `trust` `stress` `awaken` `tlexp` `stat_exp` `stat_up` `mastery` `coach` `trust_all` `stress_all` `pmod*` `smod`
-(later `after` wins; a 0 is dropped only when **every** source note was 0 — sources that cancel out, e.g. stress
+weeks): `trust` `stress` `tlexp` `stat_exp` `stat_up` `mastery` `coach` `trust_all` `stress_all` `pmod*` `smod`
+(later `after` / `level` win, `tlexp` keeps the first note's `from_*`; a 0 is dropped only when **every** source note was 0 — sources that cancel out, e.g. stress
 +5 and −5, stay as one `±0` line / row; `tlexp` 0 always stays); last one wins: `trust_level` `limit_break` `outing`.
 A focus training outcome has the same shape (`checked: false`) plus `course`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String], pilot_id, partner_id,
@@ -226,8 +229,8 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `pmod:<stat\|all>:<delta>:<weeks>` | target pilot temporary stat mod (`PilotMods.add`); `weeks = -1` = until next own match |
 | `pmod_all:<stat\|all>:<delta>:<weeks>` | same for all my pilots |
 | `smod:<stat>:<delta>:<weeks>` | temporary manager-stat mod (`StaffSystem.add_mod`, `stat` ∈ `StaffSystem.STATS`, weeks > 0) |
-| `awaken:+N` | target pilot awakening gauge + N (`Awakening.add_gauge`, §15 C) — stories, incidents |
-| `tlexp:+N` | target pilot training EXP + N (`TrainingLevel.add_exp`; a full bar adds nothing, note says so) |
+| `awaken:+N` | target pilot 깨달음 레벨 EXP + N × `LEVEL_EXP_PER_AWAKEN` (old awakening points; `FocusTraining.add_training_exp`, a `tlexp` note) — stories, incidents. N ≤ 0 does nothing |
+| `tlexp:+N` | target pilot 깨달음 레벨 EXP + N (`TrainingLevel.add_exp`; a locked bar / the cap adds nothing, note says so) |
 | `mastery:+N` | mastery + N on the target's story mech (`FocusTraining.story_mech`: Saturday ban/pick mech, else research mech, else the coach's pick; `MechMastery.gain`) |
 | `train_bonus:std` / `train_bonus:N` | today's stat EXP of the target again × `STORY_TRAIN_BONUS_PCT` % (`std`) or N %, through the leftover bank (`FocusTraining.add_stat_exp`, also training EXP). No training row today = nothing |
 | `stress_train:<±N>` | target stress + N × the stress today's training gave it (`-2` = relieve it twice over). No training row = nothing |
@@ -390,9 +393,10 @@ Rows (`MentalEvents.result_blocks`, data only — the panel only draws):
   again from the left in dark red and the value turns `NegativeLabel`.
 - **trust** — label `mental.ui.result.trust` (level after), value = progress in the level (`ui.word.max_level` at the
   top), delta = `trust_delta_text`; a level up wraps the bar (the `trust_level` note is folded into this row).
-- **awakening** — `gauge / Awakening.threshold()`; a crossed threshold wraps and adds `awakening.detail.pending`.
-- **training EXP** — `mental.ui.result.tlexp` (training level): EXP in the level / `TrainingLevel.exp_need` (the limit
-  break); `tlexp` 0 with a full bar → `mental.ui.result.tlexp_full`; top level → `ui.word.max_level`.
+- **깨달음 레벨 EXP** (`tlexp`, one row per pilot — focus stat EXP + `FOCUS_AWAKEN` + clause EXP merged) — label
+  `mental.ui.result.tlexp` (level after), value = EXP in the level / `TrainingLevel.need_for_level`; `wrap` mode over the
+  level-ups between `from_level` and `level` (row `ups`; any level-up adds the line `awakening.detail.pending`); bar
+  locked at an even level → full bar + `mental.ui.result.tlexp_full`; the cap → full bar + `ui.word.max_level`.
 - `stat_up` → chip `<stat> +N`, `stat_exp` → chip `mental.ui.result.stat_exp`; every other note → `note_text` line.
 - A delta of 0 (merged sources that cancelled out) reads `±0` / `±0%` (`MentalEvents._signed`, `trust_delta_text`) and
   the row carries `neutral: true` → the delta label is grey (`CaptionLabel`), the bar does not move.
@@ -400,5 +404,5 @@ Rows (`MentalEvents.result_blocks`, data only — the panel only draws):
 Layout: `%Blocks` + hidden templates `%BlockTemplate` (Portrait · Body/Name · Body/Rows · Body/Chips · Body/Lines),
 `%RowTemplate` (Head/Label · Head/Value · Head/Delta · Bar), `%ChipTemplate` (`EventResultChip`). Bars start
 (`EventResultBar.play`, deferred into the tree) when the panel is filled, so fill it when it is shown.
-F6: an in-memory run, two pilots with real effects (two stress sources, trust, awakening, stat EXP, overflow stress,
+F6: an in-memory run, two pilots with real effects (two stress sources, trust, level EXP, stat EXP, overflow stress,
 team trust, outing). Keys `mental.ui.result.*`: `trust`, `tlexp`, `tlexp_full`, `stat_exp`, `team`.

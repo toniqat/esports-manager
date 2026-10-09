@@ -277,7 +277,7 @@ theme_override_constants/separation = 0
 [node name="EventResultPanel_Result" parent="Overlay/ResultPanel/Column" instance=ExtResource("3_result")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: VnDialogueView.gd _result_body
-What the answer did: one block per pilot (portrait + stress / trust / awakening / training EXP bars + chips), EventResultPanel.show_blocks / show_texts."
+What the answer did: one block per pilot (portrait + stress / trust / 깨달음 레벨 EXP bars + chips), EventResultPanel.show_blocks / show_texts."
 layout_mode = 2
 
 [node name="Hint" type="Label" parent="Overlay"]

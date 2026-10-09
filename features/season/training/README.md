@@ -22,8 +22,8 @@ not shown on this screen.
 | `TrainingCourses.gd` | `class_name TrainingCourses` — static, **the run's owned courses** (`season_state["training_courses"]`): `new_inventory` · `inventory` · `owned_count` · `owned_tile_ids` · `filler_tile_id` · `grant` (upgrade rule — called by the training facilities' research, `TrainingResearch.on_complete`) · `grant_all` (previews). See "Owned courses" below. |
 | `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Per-facility training stat (`facility_stat` / `facility_exp_mult` / `cell_facilities` / `shared_exp_mult` / `cell_team_mult`), ownership (`owned_tiles` / `owned_count` / `placed_count` / `can_take_more` / `filler_tile_id`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map) and training names (`day_tile_names`, empty cell = basic course; the week screen's morning speech bubbles), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
 | `TrainingView.gd` · `UI_View_TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
-| `TrainingLevel.gd` | `class_name TrainingLevel` — static, **run-only training level** 1..`TLEVEL_MAX` + training EXP (`season_state.training_level`). See "Training level · limit break" below. |
-| `LimitBreak.gd` | `class_name LimitBreak` — static, **limit break (한계돌파)**: due-event check, VN session dict, goal pool / offer / pick, goal judging on my matches, `complete` (level +1, stats up), result notes. See below. |
+| `TrainingLevel.gd` | `class_name TrainingLevel` — static, **run-only 깨달음 레벨** 1..`TLEVEL_MAX` + its EXP bar (`season_state.training_level`): level-ups queue awakenings, even levels lock the bar, old-save migration. See "깨달음 레벨 · limit break" below. |
+| `LimitBreak.gd` | `class_name LimitBreak` — static, **limit break (한계돌파)**: due-event check, VN session dict, goal pool / offer / pick, goal judging on my matches, `complete` (stats up, bar unlocked, level unchanged), result notes. See below. |
 | `LimitBreakDemo.gd` · `UI_View_LimitBreakDemo.tscn` | `class_name LimitBreakDemo` — **dev harness, F6 only** (never instanced by the game): plays the limit-break dialogue in a `VnDialogueView` on an in-memory run with exactly the calls the week screen uses (`play(state, day)`). |
 | `UI_Comp_TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip · §15 `LvN` training-level chip (`%LevelChip`, top-left) · `%Hit` tap target). No script — `TrainingView._bind_thumbs` sets the role border colour and wires `%Hit` → `SeasonPilotDetail.open` (pilot detail sheet, `features/season/README.md`); five instances sit in `UI_View_TrainingView.tscn`. |
 | `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · placed/owned · shape well · name). `fill(tile, cap, locked)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
@@ -35,45 +35,71 @@ not shown on this screen.
 selected with its popover; `TrainingCourseCard` / `TrainingCoursePopover` = hand-written grade-3 tiles
 (card selected; popover).
 
-## Training level · limit break (§15 B — `TrainingLevel` · `LimitBreak`)
-Contract: `docs/outgame_dev_plan.md` §15.0 B / §15.1. Numbers are the `TLEVEL_*` / `LIMIT_BREAK_*` keys of
-`data/csv/const.csv` — this README names keys only. Run-only: nothing reaches the profile.
+## 깨달음 레벨 · limit break (§15 B + C merged — `TrainingLevel` · `LimitBreak`)
+Contract: `docs/outgame_dev_plan.md` §15.0 "2026-10-09 decision" (overrides §15.0 B / C) / §15.1. Numbers are
+the `TLEVEL_*` / `LIMIT_BREAK_*` / `LEVEL_EXP_PER_AWAKEN` keys of `data/csv/const.csv` — this README names keys
+only. Run-only: nothing reaches the profile. The code name stays `TrainingLevel`; the screen calls it 깨달음 레벨.
+
+**Rules** — one level per pilot, Lv1 at run start, bar = `TLEVEL_EXP_<level>`:
+- A full bar = **level + 1 at once** and **one awakening queued** (`Awakening.queue` → the week screen opens
+  `AwakeningView`, `features/season/awakening/README.md`). EXP past the bar carries into the next one.
+- **Reaching an even level below the cap locks the bar** (`awaiting_break`): EXP stops (the rest of that add is
+  lost) until the limit break succeeds — then all six stats + `LIMIT_BREAK_STAT_GAIN` and the bar opens; the
+  level stays (`break_done`). The bar after it is the same level's `TLEVEL_EXP_<level>`.
+- Lv `TLEVEL_MAX` = no EXP, no awakening, no limit break.
+
+API (UI reads these): `level` · `has_level` · `exp_of` (0 while locked) · `exp_need` · `need_for_level` ·
+`progress` (0..1, 1 when locked / max) · `is_max` · `is_capped` (locked or max) · `awaiting_break` (locked, limit
+break due) · `is_lock_level(lv)` · `add_exp(state, pid, amount, source := "")` → applied EXP · `exp_of_awaken(points)`
+(old gauge points → EXP) · `break_done` (LimitBreak only) · `chip_text`.
 
 **State** — `season_state.training_level = {"<pid>": entry}` for my five pilots (string keys, JSON round trip via
 `SaveSystem`; a run saved before §15 gets Lv1 entries on first read, `TrainingLevel.ensure`):
 ```
-entry = {"level": 1..TLEVEL_MAX, "exp": int (inside the level),
+entry = {"v": 2, "level": 1..TLEVEL_MAX, "exp": int (inside the level),
+         "broken": bool,                                 # limit break of this even level done (bar open)
          "offer": [goal id ×LIMIT_BREAK_OFFER],          # drawn once per limit break, kept until a pick
          "goal":  {} | {"id", "since_match", "set_week", "set_day", "recs": [match record…]},
-         "event_week": MentalSystem.week_key, "event_day": 0..6 (-1 = none),   # when the bar filled
+         "event_week": MentalSystem.week_key, "event_day": 0..6 (-1 = none),   # when the even level was reached
          "event": "" | Draft dialogue row id (mental_events, kind limit_break),
          "note":  {} | {"pilot_id", "level", "goal", "source": "goal"|"focus", "gain", "week", "day", "seen"}}
 match record = {"k", "d", "a", "obj" (objectives within LIMIT_BREAK_OBJ_TURN), "mvp",
                 "top_kills", "top_score", "top_turret", "top_care"}   # last LIMIT_BREAK_WINDOW kept
 ```
 
-**Training EXP** — `apply_day_training` calls `TrainingLevel.on_training_day(state, rows)`: a pilot's EXP for the
-day = the sum of its row's `exp` (stat EXP earned that day; stat growth itself is unchanged). `add_exp` is
-also the entry point for other sources (visit focus training / stories, agent D). The bar of level `n` is
-`TLEVEL_EXP_n`; EXP never overflows — the amount is clamped to the bar and **stops when the bar is full**
-(`is_capped`). Filling it stamps `event_week` / `event_day` = this week, `season_state.week_day`.
+**Old saves** (`TrainingLevel._migrate`, once per entry without `"v": 2`, on the first `ensure`): the level number
+is kept; an even level counts as already broken (`broken = true`); a **full bar** (the old "limit break due")
+becomes a level-up — level + 1, empty bar, one awakening queued — and landing on an even level locks it and keeps
+the old `goal` / `offer` / `event` / event stamp as that level's limit break (landing on an odd level clears them).
+The old awakening gauge `season_state.awakening` is dropped (points not converted; queued awakenings stay).
+
+**EXP sources** — `add_exp` is the single entry point:
+- training: `apply_day_training` → `TrainingLevel.on_training_day(state, rows)`: the sum of the row's `exp` (stat
+  EXP earned that day; stat growth itself unchanged); writes the applied EXP back as `row.tlexp` and the levels
+  gained as `row.level_up` (week screen day deltas);
+- visit focus training / story `tlexp:N` / `train_bonus` clauses (`FocusTraining.add_training_exp`, `tlexp` note);
+- old awakening sources, × `LEVEL_EXP_PER_AWAKEN` per point: matches (`Awakening.on_match`, `AWAKEN_MATCH_*`,
+  applied EXP in `pending_match.level_exp_gains`), story / incident `awaken:+N` clauses, focus training
+  `FOCUS_AWAKEN`.
+Reaching an even level stamps `event_week` / `event_day` = this week, `season_state.week_day`.
 
 **Limit-break event** — `LimitBreak.pending_event(state, day)` returns the first pilot (seat order) whose bar is
-full below the cap, who has no goal yet, and whose bar filled on `day` or earlier (an earlier week counts:
+locked at an even level, who has no goal yet, and who reached that level on `day` or earlier (an earlier week counts:
 "the next evening the week screen reaches"); -1 = none. It keeps returning that pilot until the dialogue is
 answered (`choose_goal`), then the next due pilot. Lv `TLEVEL_MAX` = no EXP, no event.
 
 **Dialogue** — `session(state, pid)` → `{kind: "limit_break", event, pilot_id, partner_id: -1, tag, sub, title,
 lines, choices, previews}` (the `MentalSystem.session_view` shape + `sub` / `title` for `VnDialogueView.open`).
 - **Lines** are authored in **Draft** (`narrative/`, kind `limit_break`, flows `LB01` (cond `tlevel=1`) and
-  `LB02` (`tlevel>=2`); convention in `narrative/README.md`) and imported like every mental event.
+  `LB02` (`tlevel>=2`); convention in `narrative/README.md`; **TODO**: since the merge the first limit break is at
+  Lv2, so `LB01`'s `tlevel=1` never matches — retarget it to `tlevel=2` / `LB02` to `tlevel>=4` in Draft) and imported like every mental event.
   `event_row(state, pid)` draws one row among those whose cond holds (`MentalEvents.cond_ok`, new cond token
   `tlevel`), weighted and seeded, and keeps its id in `entry.event` until the limit break completes. Lines =
   that row's `line` texts (`MentalEvents.text`, markers `*` / `>` kept). The flow's Select has **one
   placeholder option** (never shown); its replies are the pilot's **closing reply** after the pick.
 - **Choices** are UI text, not Draft: the 3 offered goal names with live numbers (`training.limit_break.goal.*`,
   placeholders `{n}` window · `{kda}` `LIMIT_BREAK_KDA` · `{turn}` `LIMIT_BREAK_OBJ_TURN` · `{need}`
-  `LIMIT_BREAK_OBJ_NEED`); previews = "달성 시 훈련 Lv{n+1} · 모든 스탯 +gain".
+  `LIMIT_BREAK_OBJ_NEED`); previews = "달성 시 모든 스탯 +gain · 깨달음 레벨 막대 다시 열림".
 - `choose_goal(state, pid, idx)` stores the goal and returns the `show_result` view (`{checked: false, ok: true,
   say: [closing reply lines], notes: ["새 목표: …"]}`); idempotent. No Draft row imported → no lines / reply,
   the choices still work.
@@ -114,12 +140,14 @@ not play is skipped (no reset). Progress text: `goal_text` = "목표 — {goal} 
 rank-1 streak `n/2`, objective sum `n/3`, MVP `0/1`, or the window KDA `KDA 2.5 / 4`.
 
 **Completion** — `complete(state, pid, source := "focus")` (goal met, or the visit's 한계돌파 focus training, D):
-level +1, EXP 0, goal / offer cleared, every one of the six stats of the run pilot (`season_state.all_pilots`)
-`+ LIMIT_BREAK_STAT_GAIN`. Returns the **result note** and keeps it in `entry.note` (`seen: false`);
-`unseen_notes(state)` / `mark_note_seen(state, pid)` / `note_text(state, note)` ("{name} 한계돌파 성공 — 훈련 Lv3 ·
-모든 스탯 +3") let the week screen / hub announce it once. No-op ({}) at the cap.
+`TrainingLevel.break_done` (bar unlocked, EXP 0, **level unchanged**), goal / offer cleared, every one of the six
+stats of the run pilot (`season_state.all_pilots`) `+ LIMIT_BREAK_STAT_GAIN`. Returns the **result note** (`level` =
+the unchanged level) and keeps it in `entry.note` (`seen: false`); `unseen_notes(state)` / `mark_note_seen(state,
+pid)` / `note_text(state, note)` ("{name} 한계돌파 성공 · 깨달음 레벨 Lv2 · 모든 스탯 +3") let the week screen / hub
+announce it once. No-op ({}) when no limit break is due. SeasonHub judges goals **before** the match's level EXP
+lands, so a goal met in that match unlocks the bar first.
 
-**Display** — training-board portraits: `LvN` chip (dark rail, **accent** while a limit break is due / its goal
+**Display** — training-board portraits: `LvN` chip (dark rail, **accent** while the bar is locked / its goal
 open, `TrainingView._refresh_level_chips`); hub / week card: the same chip on `SeasonPilotCard`; detail sheet:
 level, EXP bar, goal line (`features/season/README.md` "Pilot card · detail sheet").
 

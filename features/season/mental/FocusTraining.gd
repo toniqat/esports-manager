@@ -6,9 +6,10 @@ extends RefCounted
 # A course feeds two stats with `FOCUS_STAT_EXP` stat EXP each, through the same
 # EXP → point rule as the training board (`season_state.training_exp_carry`, the
 # week's leftover bank, `TRAINING_EXP_PER_POINT` EXP = 1 point), and that EXP also
-# counts as training EXP (`TrainingLevel.add_exp`). It also raises the awakening gauge
-# (`FOCUS_AWAKEN`) and stress (`FOCUS_STRESS`). 한계돌파 (only while a limit-break goal
-# is active) finishes the goal at once (`LimitBreak.complete`).
+# counts as training EXP (`TrainingLevel.add_exp`, the 깨달음 레벨 bar). Every course also adds
+# `FOCUS_AWAKEN` old awakening points as training EXP (× LEVEL_EXP_PER_AWAKEN) and stress
+# (`FOCUS_STRESS`). 한계돌파 (only while a limit-break goal is active) finishes the goal at once
+# (`LimitBreak.complete`: stats up, the locked bar opens) — its EXP then lands on the open bar.
 #
 # The shared helpers below are used by the story clauses too (`MentalEvents`
 # `train_bonus` / `tlexp` / `mastery`). Every result is a list of **note dicts**
@@ -96,10 +97,9 @@ static func apply(state: Dictionary, pid: int, id: String) -> Dictionary:
 		for st in (course(id)["stats"] as Array):
 			add[String(st)] = ConstTable.int_of("FOCUS_STAT_EXP")
 		notes.append_array(add_stat_exp(state, pid, add))
-	var gauge: int = ConstTable.int_of("FOCUS_AWAKEN")
-	if gauge != 0:
-		Awakening.add_gauge(state, pid, gauge, "focus")
-		notes.append(MentalEvents.awaken_note(state, pid, gauge))
+	var lv_exp: int = TrainingLevel.exp_of_awaken(ConstTable.int_of("FOCUS_AWAKEN"))
+	if lv_exp > 0 and TrainingLevel.has_level(state, pid):
+		notes.append(add_training_exp(state, pid, lv_exp, "focus"))
 	var sd: int = StressSystem.add(state, pid, ConstTable.int_of("FOCUS_STRESS"))
 	if sd != 0:
 		notes.append(MentalEvents.stress_note(state, pid, sd))
@@ -144,11 +144,15 @@ static func add_stat_exp(state: Dictionary, pid: int, add: Dictionary) -> Array:
 	return notes
 
 
-## Training EXP (`TrainingLevel.add_exp`) → a `tlexp` note with the amount applied
-## (0 = the bar is full, the note says a limit break is needed) and `after` = EXP in the level.
-static func add_training_exp(state: Dictionary, pid: int, amount: int) -> Dictionary:
-	var applied: int = TrainingLevel.add_exp(state, pid, maxi(0, amount))
-	return {"type": "tlexp", "pid": pid, "delta": applied, "after": TrainingLevel.exp_of(state, pid)}
+## Training EXP (`TrainingLevel.add_exp`) → a `tlexp` note: `delta` = the amount applied (0 =
+## the bar is locked / at the cap), `after` = EXP in the level after it, `level` = the level after
+## it, `from_level` / `from_exp` = before it (the result bar runs over the level-ups between).
+static func add_training_exp(state: Dictionary, pid: int, amount: int, source: String = "") -> Dictionary:
+	var lv0: int = TrainingLevel.level(state, pid)
+	var exp0: int = TrainingLevel.exp_of(state, pid)
+	var applied: int = TrainingLevel.add_exp(state, pid, maxi(0, amount), source)
+	return {"type": "tlexp", "pid": pid, "delta": applied, "after": TrainingLevel.exp_of(state, pid),
+			"level": TrainingLevel.level(state, pid), "from_level": lv0, "from_exp": exp0}
 
 
 ## Mastery gain on the story mech (`story_mech`) → a `mastery` note with the points the bar

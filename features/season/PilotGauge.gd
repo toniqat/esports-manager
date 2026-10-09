@@ -4,7 +4,7 @@ extends Control
 # One small stat gauge of a `SeasonPilotCard` (`UI_Comp_PilotGauge.tscn`, no panel — it sits
 # straight on the page): a flat icon inside a radial ring (`GaugeRing`), an optional number in
 # the icon (`%Center`), the value under the ring (`%Value`) and the change under that
-# (`%Delta`). Three kinds, chosen by the fill call; each takes an optional `delta` = the change
+# (`%Delta`). Two kinds, chosen by the fill call; each takes an optional `delta` = the change
 # that led to the shown value (week screen: today's change; 0 = just the value, no segment,
 # no change line):
 #   stress     `show_stress(value, delta)` — icon + ring in the stress band colour (≤30 green ·
@@ -14,18 +14,14 @@ extends Control
 #              ring = progress inside the level (`MentalSystem.level_of_trust` /
 #              `progress_of_trust`), `64%` under it, `(+N%)` in percent of a level (a level-up
 #              wraps: the ring shows the new level's part and the old level's rest as added)
-#   awakening  `show_awakening(gauge, threshold, delta)` — orange bulb, ring = gauge /
-#              threshold, `45%`, `(+N%)`; a crossed threshold (the gauge already dropped) shows
-#              a full ring at 100% with the delta
 # Change segment (`GaugeRing.seg_*`): the ring holds the value before the change, the added
 # part in a lighter tone (rise) or the removed part as a faint ghost (fall). `(+N)` is red for
-# stress, green for trust / awakening (and the reverse for a fall).
+# stress, green for trust (and the reverse for a fall).
 # `set_dimmed(true)` lays the round black mask (`%Mask`) over the ring and fades the numbers.
 # Colours are data (code).
 
 const ICON_STRESS: Texture2D = preload("res://resources/images/ui/gauge/stress.svg")
 const ICON_HEART: Texture2D = preload("res://resources/images/ui/gauge/heart.svg")
-const ICON_BULB: Texture2D = preload("res://resources/images/ui/gauge/bulb.svg")
 
 ## One full ring of stress; the second lap runs from here to `STRESS_MAX` (200).
 const STRESS_LAP: int = 100
@@ -38,7 +34,6 @@ const C_ORANGE: Color = Color(0.957, 0.502, 0.137, 1.0)
 const C_RED: Color = Color(0.878, 0.235, 0.235, 1.0)
 const C_DARK_RED: Color = Color(0.478, 0.051, 0.090, 1.0)
 const C_PINK: Color = Color(0.937, 0.400, 0.600, 1.0)
-const C_BULB: Color = Color(0.976, 0.588, 0.118, 1.0)
 ## Change segment: a rise is the band colour mixed toward white by this much; a fall is the
 ## removed part's colour at this alpha.
 const RISE_LIGHTEN: float = 0.5
@@ -106,26 +101,6 @@ func show_trust(points: int, delta_points: int = 0) -> void:
 		_segment(p_before, p_after, delta_points, C_PINK, C_PINK, C_PINK)
 	var d_pct: int = roundi(float(delta_points) * 100.0 / float(per))
 	_show_delta("(%+d%%)" % d_pct, d_pct if delta_points != 0 else 0, false)
-
-
-## `gauge` = the gauge now (0 .. threshold − 1); `delta` = the change that led to it. A rise
-## that crossed the threshold (the gauge dropped by it) shows a full ring at 100%.
-func show_awakening(gauge: int, threshold: int, delta: int = 0) -> void:
-	var thr: int = maxi(1, threshold)
-	var before: int = gauge - delta
-	var after: int = gauge
-	if delta > 0 and before < 0:
-		while before < 0:
-			before += thr
-		after = thr
-	before = clampi(before, 0, thr)
-	var r_before: float = float(before) / float(thr)
-	var r_after: float = clampf(float(after) / float(thr), 0.0, 1.0)
-	_fill(ICON_BULB, C_BULB, minf(r_before, r_after), 0.0, "", _pct(r_after))
-	_value.theme_type_variation = &"BodyLabel"
-	_segment(r_before, r_after, delta, C_BULB, C_BULB, C_BULB)
-	var d_pct: int = roundi(float(delta) * 100.0 / float(thr))
-	_show_delta("(%+d%%)" % d_pct, d_pct if delta != 0 else 0, false)
 
 
 func set_dimmed(on: bool) -> void:

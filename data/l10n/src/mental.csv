@@ -389,14 +389,12 @@ tx_0SD9XPG1BX,mental.ui.visit.outing_locked,active,VisitMenu line under the disa
 tx_5F27TFDDBC,mental.ui.visit.pilot_line,active,VisitMenu header / picker row: the pilot's trust level and stress,,,신뢰 Lv.{trust} · 스트레스 {stress},Trust Lv.{trust} · Stress {stress},draft,5ac7c639
 tx_1KK4JVKGME,mental.ui.note.stat_up,active,"Mental result chip: a stat point gained (focus training, story train_bonus)",,,{name} {stat} {delta},{name} {stat} {delta},draft,9ce4db7d
 tx_T3ENXMYQ3T,mental.ui.note.stat_exp,active,Mental result chip: stat EXP banked without a whole point,,,{name} 능력치 EXP {delta},{name} stat EXP {delta},draft,f7f3b556
-tx_BA4R5F2VGH,mental.ui.note.tlexp,active,Mental result chip: training-level EXP,,,{name} 훈련 EXP {delta},{name} training EXP {delta},draft,c2ef1173
-tx_KKBC17X819,mental.ui.note.tlexp_capped,active,"Mental result chip: training EXP not added, the bar is full",,,{name} 훈련 EXP 가득 참,{name} training EXP full,draft,a1d60c73
-tx_WTKYZDZ89S,mental.ui.note.awaken,active,Mental result chip: awakening gauge,,,{name} 깨달음 {delta}%,{name} insight {delta}%,draft,c3b82d88
+tx_BA4R5F2VGH,mental.ui.note.tlexp,active,Mental result chip: 깨달음 레벨 (awakening level) EXP,,,{name} 깨달음 레벨 EXP {delta},{name} awakening level EXP {delta},draft,3694b38c
+tx_KKBC17X819,mental.ui.note.tlexp_capped,active,"Mental result chip: EXP not added, the bar is locked (limit break due) or at the cap",,,{name} 깨달음 레벨 막대 잠김,{name} awakening level bar locked,draft,aeb3abd7
 tx_066H6FVY7G,mental.ui.note.mastery,active,Mental result chip: mech mastery from a story,,,{name} {mech} 숙련 {delta},{name} {mech} mastery {delta},draft,7c82760c
-tx_0M7GASA49J,mental.ui.note.limit_break,active,Mental result chip: focus training finished the limit-break goal,,,{name} 한계돌파 · 훈련 Lv.{n},{name} limit break · training Lv.{n},draft,30b92413
+tx_0M7GASA49J,mental.ui.note.limit_break,active,Mental result chip: focus training finished the limit-break goal,,,{name} 한계돌파 · 깨달음 레벨 Lv.{n},{name} limit break · awakening level Lv.{n},draft,7d5777b9
 tx_394H0Z9JXP,mental.ui.note.coach,active,Mental result chip: coach points spent on focus training,,,코치 포인트 {delta},Coach points {delta},draft,666545ca
-tx_TZ7X70TQNY,mental.ui.preview.awaken,active,Choice preview effect label: awakening gauge,,,깨달음,Insight,draft,7b74ed49
-tx_1CE62HA1KP,mental.ui.preview.tlexp,active,Choice preview effect label: training-level EXP,,,훈련 EXP,Training EXP,draft,b2b1f2f7
+tx_1CE62HA1KP,mental.ui.preview.tlexp,active,Choice preview effect label: 깨달음 레벨 EXP (also the old awaken clauses),,,깨달음 레벨,Awakening level,draft,8fe373e8
 tx_CGDMGJFED0,mental.ui.preview.mastery,active,Choice preview effect label: mech mastery,,,숙련,Mastery,draft,33a4be47
 tx_VE4Y341QPD,mental.ui.preview.stat_exp,active,Choice preview effect label: today's stat EXP again,,,능력치 EXP,Stat EXP,draft,d2745058
 tx_7F4B0GFZD2,mental.x08.x08_l0,active,mental_texts.csv text (id=X08_L0),,,@늦은 밤의 연습실,@The late-night practice room,draft,b0a517f5
@@ -498,7 +496,7 @@ tx_DBYRHDAACS,mental.lb02.lb02_c0,active,mental_texts.csv text (id=LB02_C0),,,(�
 tx_F2XVSXXX9X,mental.lb02.lb02_c0_s0,active,mental_texts.csv text (id=LB02_C0_S0),,,좋아요. 목표가 생기니 좀 보이는 것 같아요.,"Okay. With a goal, I think I can see the way.",draft,0e93019d
 tx_GDSE4N85DZ,mental.lb02.lb02_c0_s1,active,mental_texts.csv text (id=LB02_C0_S1),,,이번에도 넘어 보일게요.,I'll get past this one too.,draft,135c91d7
 tx_CDZXJZ9M6P,mental.ui.result.trust,active,"EventResultPanel row label: trust bar, {n} = trust level after the change",,,신뢰도 Lv.{n},Trust Lv.{n},draft,aa557285
-tx_E2D5A7P8Z6,mental.ui.result.tlexp,active,"EventResultPanel row label: training-level EXP bar, {n} = training level",,,훈련 EXP · Lv.{n},Training EXP · Lv.{n},draft,1c4d173b
-tx_T6KW92G6MY,mental.ui.result.tlexp_full,active,"EventResultPanel row value: training EXP bar is full, no EXP was added",,,한계돌파 필요,Limit break needed,draft,ab23561a
+tx_E2D5A7P8Z6,mental.ui.result.tlexp,active,"EventResultPanel row label: 깨달음 레벨 EXP bar, {n} = level after the result",,,깨달음 레벨 Lv.{n},Awakening level Lv.{n},draft,4a2693e1
+tx_T6KW92G6MY,mental.ui.result.tlexp_full,active,"EventResultPanel row value: the bar is locked at an even level, limit break needed",,,한계돌파 필요,Limit break needed,draft,ab23561a
 tx_HVEN1X5ECC,mental.ui.result.stat_exp,active,EventResultPanel compact chip: stat EXP banked without a whole point,,,능력치 EXP {delta},Stat EXP {delta},draft,4a3ffae3
 tx_4DB24E4HX7,mental.ui.result.team,active,"EventResultPanel block title for effects without a single pilot (team trust, manager mods, coach points)",,,팀 전체,Whole team,draft,6d5a77a4

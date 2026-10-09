@@ -91,7 +91,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
-Training level (TrainingLevel.level / TLEVEL_MAX)."
+깨달음 level (TrainingLevel.level / TLEVEL_MAX)."
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
@@ -103,7 +103,7 @@ vertical_alignment = 1
 unique_name_in_owner = true
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
-Training EXP inside the level (hidden at the cap)."
+Level EXP inside the level (hidden while capped = locked for a limit break / max)."
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 22
@@ -114,7 +114,7 @@ vertical_alignment = 1
 [node name="TrainTrack" type="Panel" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
-Training EXP bar track."
+깨달음 level EXP bar track (full while capped)."
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
 mouse_filter = 2
@@ -462,7 +462,7 @@ autowrap_mode = 3
 [node name="AwakeningSlot" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()
-§15 C: AwakeningPilotBlock (awakening gauge + card presets) is mounted here by code (features/season/awakening/)."
+§15 C: AwakeningPilotBlock (pending-awakening line + card presets) is mounted here by code (features/season/awakening/)."
 layout_mode = 2
 mouse_filter = 2
 

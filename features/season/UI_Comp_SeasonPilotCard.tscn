@@ -3,11 +3,11 @@
 [ext_resource type="Script" path="res://features/season/SeasonPilotCard.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://d2s4svsy5u316" path="res://features/season/UI_Comp_PilotGauge.tscn" id="3_gauge"]
-[ext_resource type="Script" path="res://features/season/TrustRing.gd" id="4_ring"]
+[ext_resource type="Script" path="res://features/season/ProgressRing.gd" id="4_ring"]
 
 [node name="SeasonPilotCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the trust ring (level progress) on top with the trust level pill at its bottom-right, then three gauges (%Gauges: stress · trust · awakening, PilotGauge; each gauge shows its value under the ring (stress number, trust / awakening %) and, on the week screen, today's change on the ring + (+N) / (+N%) under the value). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
+editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the progress ring (깨달음 level EXP bar, TrainingLevel.progress) on top with the level chip at its bottom-left, then two gauges (%Gauges: stress · trust, PilotGauge; each gauge shows its value under the ring (stress number, trust %) and, on the week screen, today's change on the ring + (+N) / (+N%) under the value; the portrait ring shows the day's level EXP as a light segment). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
 custom_minimum_size = Vector2(0, 244)
 offset_right = 190.0
 offset_bottom = 244.0
@@ -18,8 +18,8 @@ script = ExtResource("1_script")
 
 [node name="Ring" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-TrustRing: track + arc of progress toward the next trust level (colour = trust band, code)."
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_day_deltas()
+ProgressRing: track + arc of the 깨달음 level EXP bar (TrainingLevel.progress; code paints LINK, ACCENT while capped = limit break due / max) + the day's EXP as a light segment (week screen)."
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -43,41 +43,10 @@ offset_right = 128.0
 offset_bottom = 128.0
 mouse_filter = 2
 
-[node name="TrustPill" type="Panel" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Trust level pill at the portrait's bottom-right; code paints it in the trust band colour (radius = half the height)."
-custom_minimum_size = Vector2(56, 34)
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = 22.0
-offset_top = 120.0
-offset_right = 78.0
-offset_bottom = 154.0
-mouse_filter = 2
-theme_type_variation = &"ProgressFill"
-
-[node name="TrustText" type="Label" parent="TrustPill"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot()"
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"OnFillLabel"
-theme_override_font_sizes/font_size = 22
-text = "42"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="LevelChip" type="Panel" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_training_level() · show_empty()
-§15 B training level chip at the portrait's bottom-left (mirror of the trust pill); code paints RAIL, ACCENT while the bar is full / a limit-break goal is open. Hidden for pilots without a training level."
+깨달음 level chip (Lv N, TrainingLevel.level) at the portrait's bottom-left; code paints RAIL, ACCENT while a limit break is due (TrainingLevel.awaiting_break). Hidden for pilots without a level."
 custom_minimum_size = Vector2(60, 34)
 layout_mode = 1
 anchors_preset = 5
@@ -106,7 +75,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Gauges" type="HBoxContainer" parent="."]
-editor_description = "Three PilotGauge panels side by side (stress · trust · awakening), centred under the portrait."
+editor_description = "Two PilotGauge panels side by side (stress · trust), centred under the portrait."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -114,7 +83,7 @@ offset_top = 160.0
 offset_bottom = 240.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 14
 alignment = 1
 
 [node name="PilotGauge_Stress" parent="Gauges" instance=ExtResource("3_gauge")]
@@ -127,12 +96,6 @@ layout_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
 Trust: pink heart with the level inside, ring = progress inside the level, the progress % under it; week screen: today's change (+N%, set_day_deltas)."
-layout_mode = 2
-
-[node name="PilotGauge_Awaken" parent="Gauges" instance=ExtResource("3_gauge")]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Awakening: orange bulb, ring = gauge / threshold (Awakening.gauge / threshold), the % under it; week screen: today's change (+N%, set_day_deltas)."
 layout_mode = 2
 
 [node name="Hit" type="Button" parent="."]

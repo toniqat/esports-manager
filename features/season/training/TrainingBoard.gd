@@ -583,9 +583,9 @@ func apply_day_training(day: int) -> Array:
 			"group": int((groups.get(seat, {}) as Dictionary).get("group", -1)),
 			"facility": String((groups.get(seat, {}) as Dictionary).get("facility", "")),
 		})
-	# §15 — the run-only training level and the awakening gauge read the day's rows.
+	# §15 — the run-only 깨달음 레벨 reads the day's rows (training EXP; writes `tlexp` /
+	# `level_up` back on each row, a level-up queues an awakening).
 	TrainingLevel.on_training_day(_gm.season_state, rows)
-	Awakening.on_training_day(_gm.season_state, rows)
 	return rows
 
 

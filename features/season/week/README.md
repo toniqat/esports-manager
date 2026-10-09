@@ -13,7 +13,7 @@ The weekend carries the week's one player match: **Saturday morning** = stadium 
 | `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
 | `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers) + the weekend `UI_Comp_BaseMap_Stadium.tscn`. See `base_map/README.md` |
 | `UI_Comp_WeekMapSection.tscn` | The map slot (fills `%MapPin`, full screen width): `%MapHolder` (plain Control) that receives the team's `BaseMap` / the stadium via `BaseMap.mount` (1200 × 761, centred, 60 px cropped each side). No caption and no facility research bubbles on this screen (both removed 2026-10; the hub keeps the bubbles) |
-| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 92 × 92, **portrait only** (`%Portrait` slot 84 · `%Mask` black circle over the portrait; the stress / trust / awakening gauges moved to the pilot cards under the map 2026-10) · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token). No name, no role badge |
+| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 92 × 92, **portrait only** (`%Portrait` slot 84 · `%Mask` black circle over the portrait; the stress / trust gauges moved to the pilot cards under the map 2026-10) · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token). No name, no role badge |
 | `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
@@ -147,12 +147,12 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   pinned in `%MapPin` above the pilot cards and the scrolling list. Spots per colour group, the 1.2× scale / crop
   and the fan-out of tokens sharing a spot: `base_map/README.md`. There is no caption over the map (the old `%Hint`
   "what Next does now" line was removed 2026-10) and no facility research bubbles (hub only).
-* **Pilot cards under the map** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order (portrait + trust ring, the three stress · trust · awakening gauges, no role badge, no card background); each gauge shows
-  **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `(+N)` stress / `(+N%)` trust ·
-  awakening under the value, nothing at 0; they pop when the result FX starts). `_day_delta(pid, kind)` (kind `stress` ·
-  `trust` · `awaken`) = training row `stress` / `awaken` + self-outing relief (stress) + `kind` / `<kind>_all` notes of the
+* **Pilot cards under the map** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order (portrait in the 깨달음 level ring, the two stress · trust gauges, no role badge, no card background); each gauge shows
+  **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `(+N)` stress / `(+N%)` trust
+  under the value, nothing at 0; they pop when the result FX starts), and the portrait ring shows the day's level EXP as a
+  light segment. `_day_delta(pid, kind)` (kind `stress` · `trust` · `tlexp`) = training row `stress` / `tlexp` + self-outing relief (stress) + `kind` / `<kind>_all` notes of the
   day's talk / incident / afternoon (visit · evening) outcomes. Not counted (not in the day record): the Sunday press answer,
-  the match's awakening gains; `<kind>_all` notes are nominal (unclamped). Tap = `SeasonPilotDetail` sheet.
+  the match's level EXP; `<kind>_all` notes are nominal (unclamped). Tap = `SeasonPilotDetail` sheet.
 * A reload between the settlement and the afternoon lands on `RESULT`: the FX plays again, then the afternoon starts.
 * **Autosave** (`_save` → `SeasonHub.autosave`): after the settlement, the talk opening, the afternoon, the incident roll,
   opening a talk, the visit (`visit`), a story / outing, a focus course (`focus`), an awakening / limit break and

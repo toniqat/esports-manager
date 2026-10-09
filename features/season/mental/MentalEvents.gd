@@ -186,7 +186,8 @@ static func parse_clause(text: String) -> Dictionary:
 			return {"gate": gate, "type": "smod", "stat": sstat,
 					"delta": _to_int(args[1]), "weeks": _to_int(args[2])}
 		"awaken", "tlexp", "mastery", "stress_train":
-			# §15 D: awakening gauge · training EXP · mastery of the story mech ·
+			# §15 D: awakening points (= training EXP × LEVEL_EXP_PER_AWAKEN since the
+			# 2026-10-09 level merge) · training EXP · mastery of the story mech ·
 			# today's training stress × N (all on the target pilot).
 			if args.size() != 1 or not _is_int(args[0]):
 				return bad
@@ -447,9 +448,11 @@ static func check_chance(judge: int, adjust: int) -> int:
 ## `{type: stress, pid, delta}` · `{type: stress_all, delta}` ·
 ## `{type: pmod, pid, stat, delta, weeks}` · `{type: pmod_all, stat, delta, weeks}` ·
 ## `{type: smod, stat, delta, weeks}` · `{type: outing, count}` (added by MentalSystem).
-## Since the result panel (2026-10) `trust` / `stress` / `awaken` / `tlexp` notes also carry
-## `after` = the value right after that note was applied (trust points, stress, gauge, EXP in
-## the level); older saved notes lack it and the panel falls back to the current value.
+## Since the result panel (2026-10) `trust` / `stress` / `tlexp` notes also carry
+## `after` = the value right after that note was applied (trust points, stress, EXP in the
+## level; `tlexp` also `level` / `from_level` / `from_exp`, `FocusTraining.add_training_exp`);
+## older saved notes lack it and the panel falls back to the current value. Saved `awaken`
+## notes (the old gauge, before 2026-10-09) are no longer shown.
 ## Several sources may note the same pilot's stress (clause + activity relief …): display
 ## goes through `merge_notes`, the stored list keeps one note per source.
 static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: int,
@@ -558,9 +561,7 @@ static func preview_label(c: Dictionary) -> String:
 			return Loc.t(L.MENTAL_UI_PREVIEW_SMOD, {"stat": StaffSystem.stat_label(String(c.get("stat", "")))})
 		"stress_train":
 			return Loc.t(L.MENTAL_UI_PREVIEW_STRESS)
-		"awaken":
-			return Loc.t(L.MENTAL_UI_PREVIEW_AWAKEN)
-		"tlexp":
+		"awaken", "tlexp":
 			return Loc.t(L.MENTAL_UI_PREVIEW_TLEXP)
 		"mastery":
 			return Loc.t(L.MENTAL_UI_PREVIEW_MASTERY)
@@ -651,9 +652,10 @@ static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 			notes.append({"type": "smod", "stat": String(c["stat"]),
 					"delta": int(c["delta"]), "weeks": int(c["weeks"])})
 		"awaken":
-			if pilot_id >= 0 and int(c["delta"]) != 0:
-				Awakening.add_gauge(state, pilot_id, int(c["delta"]), String(r["id"]))
-				notes.append(awaken_note(state, pilot_id, int(c["delta"])))
+			# Old awakening points → 깨달음 레벨 EXP (a negative amount does nothing).
+			if pilot_id >= 0 and int(c["delta"]) > 0:
+				notes.append(FocusTraining.add_training_exp(state, pilot_id,
+						TrainingLevel.exp_of_awaken(int(c["delta"])), String(r["id"])))
 		"tlexp":
 			if pilot_id >= 0:
 				notes.append(FocusTraining.add_training_exp(state, pilot_id, int(c["delta"])))
@@ -713,7 +715,9 @@ static func note_texts(state: Dictionary, notes: Array) -> Array:
 	var out: Array = []
 	for n in merge_notes(notes):
 		if n is Dictionary:
-			out.append(note_text(state, n))
+			var t: String = note_text(state, n)
+			if not t.is_empty():         # retired note types (old `awaken`) say nothing
+				out.append(t)
 	return out
 
 
@@ -758,9 +762,6 @@ static func note_text(state: Dictionary, n: Dictionary) -> String:
 				return Loc.t(L.MENTAL_UI_NOTE_TLEXP_CAPPED, {"name": pilot_name(state, int(n.get("pid", -1)))})
 			return Loc.t(L.MENTAL_UI_NOTE_TLEXP,
 					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
-		"awaken":
-			return Loc.t(L.MENTAL_UI_NOTE_AWAKEN,
-					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
 		"mastery":
 			return Loc.t(L.MENTAL_UI_NOTE_MASTERY, {"name": pilot_name(state, int(n.get("pid", -1))),
 					"mech": MechMastery.mech_name(int(n.get("mech", -1))), "delta": _signed(delta)})
@@ -775,7 +776,7 @@ static func note_text(state: Dictionary, n: Dictionary) -> String:
 # ── Note merge · result panel data ───────────────────────────────────────────
 ## Note types whose `delta` adds up, and the fields that tell two notes apart.
 const MERGE_SUM_KEYS: Dictionary = {
-	"trust": ["pid"], "stress": ["pid"], "awaken": ["pid"], "tlexp": ["pid"], "stat_exp": ["pid"],
+	"trust": ["pid"], "stress": ["pid"], "tlexp": ["pid"], "stat_exp": ["pid"],
 	"stat_up": ["pid", "stat"], "mastery": ["pid", "mech"], "coach": [],
 	"trust_all": [], "stress_all": [],
 	"pmod": ["pid", "stat", "weeks"], "pmod_all": ["stat", "weeks"], "smod": ["stat", "weeks"],
@@ -784,18 +785,13 @@ const MERGE_SUM_KEYS: Dictionary = {
 const MERGE_LAST_KEYS: Dictionary = {"trust_level": ["pid"], "limit_break": ["pid"], "outing": []}
 ## Summed types whose notes of 0 say nothing (`tlexp` 0 = "bar full" stays). Only dropped when
 ## **every** source note was 0 — sources that cancel out (stress +5 and -5) stay as one `±0` line.
-const MERGE_DROP_ZERO: Array = ["trust", "stress", "awaken", "stat_exp", "stat_up", "mastery", "coach",
+const MERGE_DROP_ZERO: Array = ["trust", "stress", "stat_exp", "stat_up", "mastery", "coach",
 		"trust_all", "stress_all", "pmod", "pmod_all", "smod"]
 
 
 ## Stress note with the value after it (`after`, for the result panel).
 static func stress_note(state: Dictionary, pid: int, delta: int) -> Dictionary:
 	return {"type": "stress", "pid": pid, "delta": delta, "after": StressSystem.value(state, pid)}
-
-
-## Awakening note with the gauge after it (`after`; a crossed threshold already left the gauge).
-static func awaken_note(state: Dictionary, pid: int, delta: int) -> Dictionary:
-	return {"type": "awaken", "pid": pid, "delta": delta, "after": Awakening.gauge(state, pid)}
 
 
 ## Display copy of `notes` with one note per pilot and kind: same-type notes of the same pilot
@@ -829,8 +825,9 @@ static func merge_notes(notes: Array) -> Array:
 			moved[int(at[key])] = true
 		if MERGE_SUM_KEYS.has(t):
 			cur["delta"] = int(cur.get("delta", 0)) + int(n.get("delta", 0))
-			if n.has("after"):
-				cur["after"] = n["after"]
+			for k in ["after", "level"]:   # the later note's state wins; `from_*` stay the first's
+				if n.has(k):
+					cur[k] = n[k]
 		else:
 			out[int(at[key])] = n.duplicate()
 	var kept: Array = []
@@ -846,7 +843,7 @@ static func merge_notes(notes: Array) -> Array:
 ## Result panel data (`EventResultPanel`) for notes applied just now: one block per pilot —
 ## `main_pid` first, then in note order — and a team block (pid -1) for notes without a pilot.
 ## Block `{pid, name, rows: [row], chips: [String], lines: [String]}`:
-## - row `{kind: stress|trust|awaken|tlexp, label, value, delta, good, mode: "stack"|"wrap",
+## - row `{kind: stress|trust|tlexp, label, value, delta, good, mode: "stack"|"wrap",
 ##   from, to, end_full}` — a progress bar. `from` / `to` in bars (stack: 0..2, the part over 1
 ##   is stress over the threshold; wrap: whole part = levels / gauges filled, the bar restarts);
 ##   `good` = the change is welcome (green), else red; `neutral` = delta 0 (sources that cancelled
@@ -878,11 +875,11 @@ static func result_blocks(state: Dictionary, notes: Array, main_pid: int = -1) -
 			"trust":
 				row = _trust_row(state, n)
 			"awaken":
-				row = _awaken_row(state, n)
-				if not row.is_empty() and bool(row.get("crossed", false)):
-					(b["lines"] as Array).append(Loc.t(L.AWAKENING_DETAIL_PENDING))
+				continue          # old gauge note (saved before the level merge): not shown
 			"tlexp":
 				row = _tlexp_row(state, n)
+				if int(row.get("ups", 0)) > 0:
+					(b["lines"] as Array).append(Loc.t(L.AWAKENING_DETAIL_PENDING))
 			"trust_level":
 				if has_trust.has(pid):
 					continue          # the trust row shows the level
@@ -961,45 +958,36 @@ static func _trust_row(state: Dictionary, n: Dictionary) -> Dictionary:
 			"to": float(lv - 1) + prog, "end_full": top}
 
 
-## Awakening bar: gauge / `Awakening.threshold()`; a crossed threshold wraps (`crossed`).
-static func _awaken_row(state: Dictionary, n: Dictionary) -> Dictionary:
-	var pid: int = int(n.get("pid", -1))
-	var d: int = int(n.get("delta", 0))
-	var thr: int = Awakening.threshold()
-	var after: int = _after_of(n, Awakening.gauge(state, pid))
-	var before: int = after - d
-	var laps: int = 0
-	while before < 0 and d > 0:
-		before += thr
-		laps += 1
-	before = maxi(0, before)
-	return {"kind": "awaken", "label": Loc.t(L.MENTAL_UI_PREVIEW_AWAKEN),
-			"value": "%d / %d" % [after, thr], "delta": _signed(d), "good": d >= 0, "neutral": d == 0,
-			"mode": "wrap",
-			"from": float(before) / float(thr), "to": float(laps) + float(after) / float(thr),
-			"end_full": false, "crossed": laps > 0}
-
-
-## Training-level EXP bar: EXP in the level / EXP to fill it (the limit break). 0 = bar full.
+## 깨달음 레벨 EXP bar (`TrainingLevel`): EXP in the level / EXP to fill it, one bar per level —
+## `wrap` runs over the level-ups between `from_level` and `level` (`ups`, each one queued an
+## awakening). Locked (limit break due) → full bar + "한계돌파 필요"; the cap → full bar + max.
 static func _tlexp_row(state: Dictionary, n: Dictionary) -> Dictionary:
 	var pid: int = int(n.get("pid", -1))
 	if not TrainingLevel.has_level(state, pid):
 		return {}
 	var d: int = int(n.get("delta", 0))
-	var lv: int = TrainingLevel.level(state, pid)
-	var need: int = TrainingLevel.exp_need(state, pid)
-	var label: String = Loc.t(L.MENTAL_UI_RESULT_TLEXP, {"n": lv})
-	if need <= 0:
-		return {"kind": "tlexp", "label": label, "value": Loc.t(L.UI_WORD_MAX_LEVEL), "delta": "",
-				"good": true, "mode": "stack", "from": 1.0, "to": 1.0, "end_full": true}
+	var lv: int = int(n.get("level", TrainingLevel.level(state, pid)))
 	var after: int = _after_of(n, TrainingLevel.exp_of(state, pid))
-	var before: int = maxi(0, after - d)
-	var value: String = "%d / %d" % [after, need]
-	if d <= 0 and after >= need:
-		value = Loc.t(L.MENTAL_UI_RESULT_TLEXP_FULL)
-	return {"kind": "tlexp", "label": label, "value": value, "delta": _signed(d) if d > 0 else "",
-			"good": true, "mode": "stack", "from": float(before) / float(need),
-			"to": float(after) / float(need), "end_full": after >= need}
+	var lv0: int = mini(int(n.get("from_level", lv)), lv)
+	var exp0: int = int(n.get("from_exp", maxi(0, after - d)))
+	var ups: int = lv - lv0
+	var label: String = Loc.t(L.MENTAL_UI_RESULT_TLEXP, {"n": lv})
+	var need0: int = TrainingLevel.need_for_level(lv0)
+	var from: float = clampf(float(exp0) / float(need0), 0.0, 1.0) if need0 > 0 else 1.0
+	if TrainingLevel.is_lock_level(lv0) and ups == 0 and TrainingLevel.awaiting_break(state, pid):
+		from = 1.0
+	var row: Dictionary = {"kind": "tlexp", "label": label, "delta": _signed(d) if d > 0 else "",
+			"good": true, "neutral": false, "mode": "wrap", "from": from, "ups": ups}
+	if TrainingLevel.is_max(state, pid) or TrainingLevel.awaiting_break(state, pid):
+		row["value"] = Loc.t(L.UI_WORD_MAX_LEVEL) if TrainingLevel.is_max(state, pid) 				else Loc.t(L.MENTAL_UI_RESULT_TLEXP_FULL)
+		row["to"] = float(ups) if ups > 0 else 1.0
+		row["end_full"] = true
+		return row
+	var need: int = TrainingLevel.need_for_level(lv)
+	row["value"] = "%d / %d" % [after, need]
+	row["to"] = float(ups) + clampf(float(after) / float(maxi(need, 1)), 0.0, 1.0)
+	row["end_full"] = false
+	return row
 
 
 ## Display text of a `mental:<event id>` mod source — the event kind's label

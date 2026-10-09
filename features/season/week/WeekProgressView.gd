@@ -687,8 +687,8 @@ func _result_lines(row: Dictionary) -> Array:
 
 # ── 하단 선수 카드 줄 ─────────────────────────────────────────────────────────
 ## The five cards under the map (every day). The gauges show the day's changes
-## (`_day_delta`: stress · trust points · awakening gauge): ring segment + `(+N)` / `(+N%)`
-## under the value, none at 0.
+## (`_day_delta`: stress · trust points): ring segment + `(+N)` / `(+N%)` under the value,
+## none at 0; the portrait ring shows the day's 깨달음 level EXP (`tlexp`) as a light segment.
 func _refresh_pilot_row() -> void:
 	var s: Dictionary = _gm.season_state
 	var by_seat: Dictionary = {}
@@ -704,15 +704,16 @@ func _refresh_pilot_row() -> void:
 		var pd2: PlayerData = by_seat[seat]
 		card.show_pilot(pd2.id, MentalSystem.trust(s, pd2.id), StressSystem.value(s, pd2.id))
 		card.set_day_deltas(_day_delta(pd2.id, "stress"), _day_delta(pd2.id, "trust"),
-				_day_delta(pd2.id, "awaken"))
+				_day_delta(pd2.id, "tlexp"))
 
 
-## Change of `pid`'s `kind` ("stress" · "trust" (points) · "awaken" (gauge points)) on the shown
-## weekday so far: the morning training row (`stress` / `awaken` keys), a self outing (stress:
+## Change of `pid`'s `kind` ("stress" · "trust" (points) · "tlexp" (깨달음 level EXP)) on the
+## shown weekday so far: the morning training row (`stress` / `tlexp` keys — `tlexp` = the EXP
+## the level actually took, `TrainingLevel.on_training_day`), a self outing (stress:
 ## `AfternoonAway.relief_of`) and the `kind` / `<kind>_all` notes of the day's talk, incident
 ## and afternoon (visit / evening) outcomes. `<kind>_all` notes carry the clause's nominal
 ## delta (a clamped pilot reads it unclamped). Not recorded per day, so not counted: the
-## Sunday press answer and the match's awakening gains (`pending_match.awakening_gains`).
+## Sunday press answer and the match's level EXP.
 func _day_delta(pid: int, kind: String) -> int:
 	if not CalendarSystem.is_week_day(_day):
 		return 0

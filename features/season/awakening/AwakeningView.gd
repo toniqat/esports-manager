@@ -452,10 +452,10 @@ func _fill_preview() -> void:
 	if gm == null:
 		return
 	var s: Dictionary = gm.season_state
-	if not s.has(Awakening.KEY_GAUGE):
+	if not s.has(Awakening.KEY_PENDING):
 		Awakening.init_run(s)
 		PilotLoadout.init_run(s)
 	var pid: int = int(MentalSystem.my_pilot_ids(s)[0])
 	if Awakening.pending_count(s, pid) == 0:
-		Awakening.add_gauge(s, pid, Awakening.threshold(), "preview")
+		(s[Awakening.KEY_PENDING] as Array).append(pid)   # one queued awakening (preview only)
 	open(pid)

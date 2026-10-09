@@ -321,7 +321,7 @@ func start_run(run_setup: Dictionary) -> String:
 	# §16 — facility levels (team package), staff seated by job, research / intel / scout reset.
 	FacilitySystem.init_run(season_state, team_id)
 	MentalSystem.init_run(season_state)
-	# §15 — training level, awakening gauge, card loadouts (after the rank / card setup above).
+	# §15 — 깨달음 레벨 (training EXP bar), awakening queue, card loadouts (after the rank / card setup above).
 	TrainingLevel.init_run(season_state)
 	Awakening.init_run(season_state)
 	PilotLoadout.init_run(season_state)

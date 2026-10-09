@@ -10,7 +10,7 @@ tx_XVEKB2ARPN,awakening.option.swap.name,active,AwakeningView option button titl
 tx_MKQQ6S25FH,awakening.option.swap.desc,active,AwakeningView option button description,,,새 카드 후보 하나와 프리셋의 카드 한 장을 맞바꿉니다,Trade one card of a preset for one of the new candidates,draft,8b7a91d5
 tx_XRXCJDX7T9,awakening.option.preset.name,active,AwakeningView option button title,,,프리셋 추가,Add a preset,draft,094b4b98
 tx_K03F5VX51P,awakening.option.preset.desc,active,AwakeningView option button description,,,카드 세 장으로 된 새 프리셋을 얻습니다. 경기 전에 골라 쓸 수 있습니다,"Gain a new preset of three cards, chosen before each match",draft,cf986c8b
-tx_VX5DQ2VWFY,awakening.option.locked_level,active,AwakeningView: why add preset is locked,,,훈련 레벨 {n} 이상 필요,Needs training level {n},draft,0596762b
+tx_VX5DQ2VWFY,awakening.option.locked_level,active,AwakeningView: why add preset is locked,,,깨달음 레벨 {n} 이상 필요,Needs awakening level {n},draft,a4e62a99
 tx_C04CSM6AH9,awakening.option.locked_max,active,AwakeningView: why add preset is locked,,,추가 프리셋이 가득 찼습니다 (최대 {n}),Extra presets are full (max {n}),draft,916b91e8
 tx_BBTC2K3EDB,awakening.option.none_upgrade,active,AwakeningView: why card upgrade is locked,,,강화할 수 있는 카드가 없습니다,No card left to upgrade,draft,0de65da7
 tx_M26N55RWGQ,awakening.option.none_swap,active,AwakeningView: why card swap is locked,,,교체할 후보가 없습니다,No candidate to swap in,draft,209e49d6
@@ -23,7 +23,6 @@ tx_Y7542JPYWV,awakening.preset.cand,active,AwakeningView add-preset page: label 
 tx_9BJC6ABYHM,awakening.preset.hint,active,AwakeningView add-preset page: preview area before a preset is picked,,,새 프리셋을 하나 고르세요,Pick one new preset,draft,8b164e32
 tx_6KTJD01A88,awakening.preset_tab.base,active,Preset tab / label: the base preset (the pilot's own cards),,,기본,Base,draft,7f1d8c41
 tx_4Z7Q89GAKB,awakening.preset_tab.extra,active,"Preset tab / label: extra preset n (n = 2, 3)",,,프리셋 {n},Preset {n},draft,8a3adb6e
-tx_K1RJF50930,awakening.detail.gauge,active,SeasonPilotDetail awakening gauge value,,,{n} / {max},{n} / {max},draft,b8e86fba
 tx_T07VH8HG79,awakening.detail.pending,active,SeasonPilotDetail: an awakening is queued for this pilot,,,깨달음 대기 중,Awakening pending,draft,d9f450fa
 tx_WDK4ZJ8X7X,awakening.detail.presets,active,SeasonPilotDetail section title: the pilot's card presets,,,카드 프리셋,Card presets,draft,b4c2ad1e
 tx_2FVH8MVSD4,awakening.detail.active,active,Chip on the preset used in the next match,,,출전,Active,draft,52cc285a

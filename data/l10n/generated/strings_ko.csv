@@ -10,7 +10,7 @@ tx_XVEKB2ARPN,카드 교체
 tx_MKQQ6S25FH,새 카드 후보 하나와 프리셋의 카드 한 장을 맞바꿉니다
 tx_XRXCJDX7T9,프리셋 추가
 tx_K03F5VX51P,카드 세 장으로 된 새 프리셋을 얻습니다. 경기 전에 골라 쓸 수 있습니다
-tx_VX5DQ2VWFY,훈련 레벨 {n} 이상 필요
+tx_VX5DQ2VWFY,깨달음 레벨 {n} 이상 필요
 tx_C04CSM6AH9,추가 프리셋이 가득 찼습니다 (최대 {n})
 tx_BBTC2K3EDB,강화할 수 있는 카드가 없습니다
 tx_M26N55RWGQ,교체할 후보가 없습니다
@@ -23,7 +23,6 @@ tx_Y7542JPYWV,후보 {n}
 tx_9BJC6ABYHM,새 프리셋을 하나 고르세요
 tx_6KTJD01A88,기본
 tx_4Z7Q89GAKB,프리셋 {n}
-tx_K1RJF50930,{n} / {max}
 tx_T07VH8HG79,깨달음 대기 중
 tx_WDK4ZJ8X7X,카드 프리셋
 tx_2FVH8MVSD4,출전
@@ -1610,14 +1609,12 @@ tx_0SD9XPG1BX,신뢰 Lv.{n}부터 외출할 수 있습니다
 tx_5F27TFDDBC,신뢰 Lv.{trust} · 스트레스 {stress}
 tx_1KK4JVKGME,{name} {stat} {delta}
 tx_T3ENXMYQ3T,{name} 능력치 EXP {delta}
-tx_BA4R5F2VGH,{name} 훈련 EXP {delta}
-tx_KKBC17X819,{name} 훈련 EXP 가득 참
-tx_WTKYZDZ89S,{name} 깨달음 {delta}%
+tx_BA4R5F2VGH,{name} 깨달음 레벨 EXP {delta}
+tx_KKBC17X819,{name} 깨달음 레벨 막대 잠김
 tx_066H6FVY7G,{name} {mech} 숙련 {delta}
-tx_0M7GASA49J,{name} 한계돌파 · 훈련 Lv.{n}
+tx_0M7GASA49J,{name} 한계돌파 · 깨달음 레벨 Lv.{n}
 tx_394H0Z9JXP,코치 포인트 {delta}
-tx_TZ7X70TQNY,깨달음
-tx_1CE62HA1KP,훈련 EXP
+tx_1CE62HA1KP,깨달음 레벨
 tx_CGDMGJFED0,숙련
 tx_VE4Y341QPD,능력치 EXP
 tx_7F4B0GFZD2,@늦은 밤의 연습실
@@ -1719,7 +1716,7 @@ tx_DBYRHDAACS,(목표 고르기 — 게임이 목표 셋으로 바꾼다)
 tx_F2XVSXXX9X,좋아요. 목표가 생기니 좀 보이는 것 같아요.
 tx_GDSE4N85DZ,이번에도 넘어 보일게요.
 tx_CDZXJZ9M6P,신뢰도 Lv.{n}
-tx_E2D5A7P8Z6,훈련 EXP · Lv.{n}
+tx_E2D5A7P8Z6,깨달음 레벨 Lv.{n}
 tx_T6KW92G6MY,한계돌파 필요
 tx_HVEN1X5ECC,능력치 EXP {delta}
 tx_4DB24E4HX7,팀 전체
@@ -2740,10 +2737,10 @@ tx_BFBZYQPMDG,내구 단련 II
 tx_E7XM9N13SW,내구 단련 III
 tx_HBKHP46T46,Lv{n}
 tx_HWDK2ZGNYZ,Lv {n} / {max}
-tx_MQTEGWC568,훈련 EXP {exp} / {need}
+tx_MQTEGWC568,깨달음 레벨 EXP {exp} / {need}
 tx_5FXPMDAP4K,한계 도달 — 한계돌파가 필요하다
 tx_800W06DJMX,최고 레벨
-tx_17R6TM4FN4,훈련 레벨
+tx_17R6TM4FN4,깨달음 레벨
 tx_KGSV1ERB23,한계돌파
 tx_P90CMSBJP0,다음 {n}경기 합산 KDA {kda} 이상
 tx_6GXZRX4SPP,{n}경기 연속 경기 내 처치 1위
@@ -2752,12 +2749,12 @@ tx_6DMM2FHRF3,다음 경기 MVP
 tx_4C8T8AQG75,{n}경기 연속 경기 내 성장치 획득 1위
 tx_Q8Z751P204,{n}경기 연속 경기 내 포탑 피해 1위
 tx_YZN4NN2KCC,{n}경기 연속 경기 내 보호막·회복량 1위
-tx_T8XRTXGC5D,달성 시 훈련 Lv{n} · 모든 스탯 +{gain}
+tx_T8XRTXGC5D,달성 시 모든 스탯 +{gain} · 깨달음 레벨 막대 다시 열림
 tx_N55ME7YEYY,새 목표: {goal}
 tx_JZQ1JZRHPM,목표 — {goal} ({progress})
 tx_0BVZ0NR212,{have}/{need}
 tx_1ZM6HE38ZP,KDA {v} / {need}
-tx_WDHZDJF3V7,{name} 한계돌파 성공 — 훈련 Lv{n} · 모든 스탯 +{gain}
+tx_WDHZDJF3V7,{name} 한계돌파 성공 · 깨달음 레벨 Lv{n} · 모든 스탯 +{gain}
 tx_0P8318871G,훈련장 — {parts}
 tx_41TFBZ6P0C,{fac} {name} {value}
 tx_TTT7SGWMV6,전장

@@ -4,7 +4,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 
 [node name="AwakeningPilotBlock" type="VBoxContainer"]
-editor_description = "Awakening gauge + card presets of one pilot, mounted by SeasonPilotDetail into %AwakeningSlot (AwakeningPilotBlock.mount). Top-wide; height = content."
+editor_description = "Card presets of one pilot with the pending-awakening line under their title (the gauge is gone: the 깨달음 level bar is the detail sheet's level block), mounted by SeasonPilotDetail into %AwakeningSlot (AwakeningPilotBlock.mount). Top-wide; height = content."
 anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
@@ -12,64 +12,6 @@ mouse_filter = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 0
 script = ExtResource("1_block")
-
-[node name="GapGauge" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="GaugeHead" type="HBoxContainer" parent="."]
-custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Title" type="Label" parent="GaugeHead"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 28
-text = "tx_P2MTN9VDF2"
-vertical_alignment = 1
-
-[node name="GaugeText" type="Label" parent="GaugeHead"]
-unique_name_in_owner = true
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — AwakeningPilotBlock.gd show_pilot()
-Gauge value \"n / max\"."
-layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 26
-text = "42 / 100"
-vertical_alignment = 1
-
-[node name="GaugeTrack" type="Panel" parent="."]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-mouse_filter = 2
-theme_type_variation = &"ProgressTrack"
-
-[node name="GaugeFill" type="Panel" parent="GaugeTrack"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — AwakeningPilotBlock.gd show_pilot()
-Fill; code sets anchor_right = gauge / threshold."
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.42
-anchor_bottom = 1.0
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"ProgressFill"
-
-[node name="Pending" type="Label" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — AwakeningPilotBlock.gd show_pilot()
-Shown while an awakening of this pilot is queued."
-custom_minimum_size = Vector2(0, 36)
-layout_mode = 2
-theme_type_variation = &"AccentLabel"
-theme_override_font_sizes/font_size = 22
-text = "tx_T07VH8HG79"
-vertical_alignment = 1
 
 [node name="GapPresets" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 24)
@@ -83,6 +25,18 @@ theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
 text = "tx_WDK4ZJ8X7X"
 vertical_alignment = 1
+
+[node name="Pending" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningPilotBlock.gd show_pilot()
+Shown while an awakening of this pilot is queued (every 깨달음 level-up queues one)."
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 22
+text = "tx_T07VH8HG79"
+vertical_alignment = 1
+
 
 [node name="Presets" type="VBoxContainer" parent="."]
 unique_name_in_owner = true

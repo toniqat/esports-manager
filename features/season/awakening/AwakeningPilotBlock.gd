@@ -1,9 +1,10 @@
 class_name AwakeningPilotBlock
 extends VBoxContainer
 
-# Awakening gauge + card presets of one of my pilots — the section `SeasonPilotDetail` mounts
-# into its `%AwakeningSlot` (`mount`). Gauge = `Awakening.gauge` / AWAKEN_THRESHOLD as a
-# track + fill bar with the value, plus a "pending" line while an awakening is queued.
+# Pending-awakening line + card presets of one of my pilots — the section `SeasonPilotDetail`
+# mounts into its `%AwakeningSlot` (`mount`). The "pending" line shows while an awakening is
+# queued (`Awakening.pending_count`; every 깨달음 level-up queues one). No gauge here — the
+# level's EXP bar is the detail sheet's own level block (`TrainingLevel`).
 # Presets = one line per preset (`PilotLoadout.presets`): its name ("기본" / "프리셋 n"), the
 # "출전" chip on the active one, and its three cards as name chips — an upgraded "+" card
 # uses the accent chip.
@@ -37,12 +38,6 @@ func _ready() -> void:
 
 
 func show_pilot(state: Dictionary, pid: int) -> void:
-	var g: int = Awakening.gauge(state, pid)
-	var cap: int = Awakening.threshold()
-	(%GaugeText as Label).text = Loc.t(L.AWAKENING_DETAIL_GAUGE, {"n": g, "max": cap})
-	var fill: Control = %GaugeFill
-	fill.anchor_right = clampf(float(g) / float(cap), 0.0, 1.0)
-	fill.offset_right = 0.0
 	(%Pending as Control).visible = Awakening.pending_count(state, pid) > 0
 	_fill_presets(state, pid)
 
@@ -80,18 +75,18 @@ func _chip(text: String, upgraded: bool) -> Control:
 	return chip
 
 
-## F6 단독 실행 미리보기 — 메모리 런의 내 첫 선수: 게이지 70, 강화 카드 한 장, 추가 프리셋 하나.
+## F6 단독 실행 미리보기 — 메모리 런의 내 첫 선수: 깨달음 대기 하나, 강화 카드 한 장, 추가 프리셋 하나.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
 	if gm == null:
 		return
 	var s: Dictionary = gm.season_state
-	if not s.has(Awakening.KEY_GAUGE):
+	if not s.has(Awakening.KEY_PENDING):
 		Awakening.init_run(s)
 		PilotLoadout.init_run(s)
 	var pid: int = int(MentalSystem.my_pilot_ids(s)[0])
-	Awakening.add_gauge(s, pid, 70, "preview")
+	(s[Awakening.KEY_PENDING] as Array).append(pid)   # one queued awakening (preview only)
 	var base: Array = PilotLoadout.preset(s, pid, 0)
 	PilotLoadout.upgrade_card(s, pid, 0, int(base[0]))
 	var cands: Array = Awakening.preset_candidates(s, pid)

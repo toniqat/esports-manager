@@ -12,8 +12,8 @@ extends VBoxContainer
 #               ( 외출 2회째 · … )                    ← lines: other notes (MessengerNoteChip)
 #
 # Rows: stress (bar = `STRESS_THRESHOLD`, overflow up to `STRESS_MAX` drawn red), trust (level +
-# progress in the level), awakening (gauge / threshold) and training-level EXP (EXP in the level /
-# EXP to the limit break). Notes without a pilot (team trust, manager mods, coach points) go to a
+# progress in the level) and 깨달음 레벨 EXP (EXP in the level / the bar, over level-ups; locked =
+# "한계돌파 필요"). Notes without a pilot (team trust, manager mods, coach points) go to a
 # last block without portrait. The data comes from `MentalEvents.result_blocks` (merged notes —
 # several stress sources of one result are one row with the sum).
 #
@@ -130,7 +130,7 @@ func _row(r: Dictionary, animate: bool) -> Control:
 
 
 ## F6 단독 실행 미리보기 — 메모리 런의 내 첫 두 선수에게 실제 효과를 넣고(스트레스 두 출처 · 신뢰 ·
-## 깨달음 · 능력치 EXP) 그 노트로 판을 채운다.
+## 깨달음 레벨 EXP · 능력치 EXP) 그 노트로 판을 채운다.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
@@ -149,8 +149,7 @@ func _fill_preview() -> void:
 	notes.append(MentalEvents.stress_note(s, a, StressSystem.add(s, a, -10)))
 	var d: int = MentalSystem.add_trust(s, a, 30)
 	notes.append({"type": "trust", "pid": a, "delta": d, "after": MentalSystem.trust(s, a)})
-	Awakening.add_gauge(s, a, 15, "preview")
-	notes.append(MentalEvents.awaken_note(s, a, 15))
+	notes.append(FocusTraining.add_training_exp(s, a, 450, "preview"))
 	notes.append_array(FocusTraining.add_stat_exp(s, a, {"field_hit": 260, "engage_hit": 260}))
 	notes.append(MentalEvents.stress_note(s, b, StressSystem.add(s, b, 12)))
 	notes.append({"type": "trust_all", "delta": 3})

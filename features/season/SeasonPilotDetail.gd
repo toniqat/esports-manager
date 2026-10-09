@@ -65,7 +65,7 @@ func _bind(sheet: HubSheet, state: Dictionary, pd: PlayerData) -> void:
 	_fill_stats(pd)
 	_fill_quirks(state, pid)
 	_fill_research(state, pid)
-	# §15 C — awakening gauge + card presets (`features/season/awakening/`).
+	# §15 C — pending-awakening line + card presets (`features/season/awakening/`).
 	AwakeningPilotBlock.mount(%AwakeningSlot, state, pid)
 	_fit_sheet()
 
@@ -119,14 +119,15 @@ func _fill_research(state: Dictionary, pid: int) -> void:
 	rl.add_theme_color_override("font_color", MechMastery.level_color(lv))
 
 
-## §15 B — run training level, EXP bar and the limit-break line (`TrainingLevel` / `LimitBreak`).
+## §15 — the run-only 깨달음 level: level, EXP bar (full while locked / at the cap; the EXP
+## line hides then) and the limit-break line (`TrainingLevel` / `LimitBreak`).
 func _fill_training(state: Dictionary, pid: int) -> void:
 	var lv: int = TrainingLevel.level(state, pid)
 	(%TrainLevel as Label).text = Loc.t(L.TRAINING_LEVEL_DETAIL_LEVEL,
 			{"n": lv, "max": TrainingLevel.MAX_LEVEL})
 	var at_max: bool = TrainingLevel.is_max(state, pid)
 	var el: Label = %TrainExp
-	el.visible = not at_max
+	el.visible = not TrainingLevel.is_capped(state, pid)
 	el.text = Loc.t(L.TRAINING_LEVEL_EXP,
 			{"exp": TrainingLevel.exp_of(state, pid), "need": TrainingLevel.exp_need(state, pid)})
 	(%TrainFill as Control).anchor_right = TrainingLevel.progress(state, pid)
@@ -161,7 +162,7 @@ func _fill_preview() -> void:
 	var ids: Array = MentalSystem.my_pilot_ids(state)
 	if ids.is_empty():
 		return
-	# §15 B — a full training bar with a picked limit-break goal, so the training rows show.
+	# §15 — a filled bar (Lv2 = locked) with a picked limit-break goal, so the level rows show.
 	var pid: int = int(ids[0])
 	TrainingLevel.add_exp(state, pid, TrainingLevel.exp_need(state, pid))
 	LimitBreak.choose_goal(state, pid, 0)

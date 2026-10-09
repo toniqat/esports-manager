@@ -60,5 +60,5 @@ U02,story_sun,-1,0,last=win,trust:+2;stress:-5|ok>awaken:+10;ok>trust:+2;ng>stre
 U03,story_sun,-1,0,last=loss;deaths>=4,trust:+3;stress:-8|awaken:+10;stress:+5;ok>trust:+2;ng>trust:-2,2
 U04,story_sun,-1,0,last=loss,trust:+2;stress:-6|awaken:+8;tlexp:+15;stress:+4,1
 U05,story_sun,-1,0,kda>=3,awaken:+10;stress:+3|trust:+2;stress:-6,1
-LB01,limit_break,-1,0,tlevel=1,,1
-LB02,limit_break,-1,0,tlevel>=2,,1
+LB01,limit_break,-1,0,tlevel=2,,1
+LB02,limit_break,-1,0,tlevel>=4,,1

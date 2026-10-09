@@ -179,7 +179,7 @@
             "kind": "limit_break",
             "manager_type": -1,
             "stage": 0,
-            "cond": "tlevel>=2",
+            "cond": "tlevel>=4",
             "weight": 1
           },
           "type": "Comment",

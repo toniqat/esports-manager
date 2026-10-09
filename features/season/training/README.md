@@ -90,9 +90,8 @@ answered (`choose_goal`), then the next due pilot. Lv `TLEVEL_MAX` = no EXP, no 
 
 **Dialogue** — `session(state, pid)` → `{kind: "limit_break", event, pilot_id, partner_id: -1, tag, sub, title,
 lines, choices, previews}` (the `MentalSystem.session_view` shape + `sub` / `title` for `VnDialogueView.open`).
-- **Lines** are authored in **Draft** (`narrative/`, kind `limit_break`, flows `LB01` (cond `tlevel=1`) and
-  `LB02` (`tlevel>=2`); convention in `narrative/README.md`; **TODO**: since the merge the first limit break is at
-  Lv2, so `LB01`'s `tlevel=1` never matches — retarget it to `tlevel=2` / `LB02` to `tlevel>=4` in Draft) and imported like every mental event.
+- **Lines** are authored in **Draft** (`narrative/`, kind `limit_break`, flows `LB01` (cond `tlevel=2`, the first
+  lock) and `LB02` (`tlevel>=4`, "stuck again" — covers the locks at 4 · 6 · 8); convention in `narrative/README.md`) and imported like every mental event.
   `event_row(state, pid)` draws one row among those whose cond holds (`MentalEvents.cond_ok`, new cond token
   `tlevel`), weighted and seeded, and keeps its id in `entry.event` until the limit break completes. Lines =
   that row's `line` texts (`MentalEvents.text`, markers `*` / `>` kept). The flow's Select has **one

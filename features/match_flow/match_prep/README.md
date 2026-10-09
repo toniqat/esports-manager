@@ -29,16 +29,16 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
 ├ Paper (ColorRect BG, full viewport — also covers the notch strip)
 └ %Safe (full rect; code: offset_top = top inset, offset_bottom = −bottom inset)
   ├ Title "경기 준비" (HeadingLabel 48)
-  ├ %Scroll (40 side margin, top 104, bottom = bar + 12) → Body (VBox, expand = fills the scroll height)
+  ├ %Scroll (full screen width — no side margin, top 104, bottom = bar + 12) → Body (VBox, expand = fills the scroll height)
+  │   (page gutter per row: EnemyIntelPad / VersusPad / *BandPad = left 40 · right 48 (40 + scroll bar 8))
   │   EnemyIntelPad/%IntelView_EnemyIntel (show_rows = false, show_header = false: analyst note only) ·
   │   TopSpace (expand) · EnemyCardsGap 20 (room for the `경계 대상` chip sticking 16 above a card) ·
-  │   EnemyCardsPad [%EnemyBanner (TeamBanner, fills the pad) + EnemyBandPad (18 sides · 22 top/bottom) /
+  │   EnemyCardsPad (no margin) [%EnemyBanner (TeamBanner, full screen width x 0..1080) + EnemyBandPad (40 · 48 sides, 22 top/bottom) /
   │     %EnemyCards (HBox sep 10: MatchPrepPilotCard_Enemy0..4, expand)] · VersusGap 28 ·
   │   VersusPad/Versus (HBox centred, sep 40): OwnSide (240: %OwnLogo 128² · %OwnAbbr HeadingLabel 40) ·
   │     VsText `VS` (AccentLabel 64) · EnemySide (%EnemyLogo · %EnemyAbbr) · VersusGap2 28 ·
   │   OwnCardsPad [%OwnBanner + OwnBandPad / %OwnCards (MatchPrepPilotCard_Own0..4)] · BottomSpace (expand) · BottomPad 16
-  │   (*Pad right 8 → with the scroll bar the rows end 16 short of the scroll's right edge;
-  │    five cards inside the banner = (992 − 36 − 4 × 10) / 5 ≈ 183 wide on the 1080 design width)
+  │   (five cards = (1080 − 88 − 4 × 10) / 5 ≈ 190 wide on the 1080 design width; the banners run edge to edge)
   └ %Start (bottom-anchored, 128 high, BarPrimaryButton)
 ```
 - The two expand spacers centre the enemy cards · versus · own cards block in the space under the
@@ -52,8 +52,8 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
   = `teams.csv` `short_name_key`, team ids = the two `build()` results' `team_id`; no team id → no logo and
   the team name `fill` got). The two banners get `TeamLogos.banner(team_id)` + `TeamLogos.color(team_id)` (`_fill_banner`; no team id → the scene's colour band). Own cards get `MentalSystem.trust`; the enemy card whose
   `pilot_id == threat_pilot_id` gets the warn chip.
-- The scroll bar now sits at the scroll's own right edge (inside the 40px margin); the old code-built
-  body was 1000 wide, which pushed the bar ~8px further right.
+- The scroll spans the full screen width, so its bar sits at the screen's right edge (over the banners);
+  every other row keeps the 40 / 48 page gutter itself.
 
 ## Pilot card (`UI_Comp_MatchPrepPilotCard.tscn`)
 ```

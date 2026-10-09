@@ -53,15 +53,16 @@ text = "tx_VGK1FJEFJY"
 horizontal_alignment = 1
 
 [node name="Scroll" type="ScrollContainer" parent="Safe"]
-editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _ready()"
+editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _ready()
+화면 폭 그대로(좌우 여백 0) — 팀 배너가 화면 끝까지 닿는다. 페이지 여백 40 은 줄마다의 Pad 가 갖는다."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 40.0
+offset_left = 0.0
 offset_top = 104.0
-offset_right = -40.0
+offset_right = 0.0
 offset_bottom = -140.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -79,7 +80,8 @@ theme_override_constants/separation = 0
 editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 끝이 스크롤 오른쪽 끝에서 16 떨어진다."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_right = 8
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 48
 
 [node name="IntelView_EnemyIntel" parent="Safe/Scroll/Body/EnemyIntelPad" instance=ExtResource("3_intel")]
 unique_name_in_owner = true
@@ -101,10 +103,9 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="EnemyCardsPad" type="MarginContainer" parent="Safe/Scroll/Body"]
-editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 카드 줄 끝이 스크롤 오른쪽 끝에서 16 떨어진다. 배너 안 카드 다섯 장 = (992 − 36 − 4 × 10) / 5 ≈ 183 폭."
+editor_description = "좌우 여백 0 — 배너가 화면 왼쪽 끝 ~ 오른쪽 끝(스크롤 막대 밑까지)."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_right = 8
 
 [node name="EnemyBanner" type="Control" parent="Safe/Scroll/Body/EnemyCardsPad"]
 unique_name_in_owner = true
@@ -116,12 +117,12 @@ script = ExtResource("6_banner")
 color = Color(0.3059, 0.3451, 0.4078, 1)
 
 [node name="EnemyBandPad" type="MarginContainer" parent="Safe/Scroll/Body/EnemyCardsPad"]
-editor_description = "배너 안쪽 여백 18 · 위아래 22 — 카드가 띠 위에 올라앉고 띠가 카드 둘레로 보인다."
+editor_description = "카드 = 보통 페이지 여백(왼쪽 40 · 오른쪽 48 = 40 + 스크롤 막대 8), 위아래 22. 카드 다섯 장 = (1080 − 88 − 4 × 10) / 5 ≈ 190 폭."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 18
+theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 22
-theme_override_constants/margin_right = 18
+theme_override_constants/margin_right = 48
 theme_override_constants/margin_bottom = 22
 
 [node name="EnemyCards" type="HBoxContainer" parent="Safe/Scroll/Body/EnemyCardsPad/EnemyBandPad"]
@@ -161,7 +162,8 @@ mouse_filter = 2
 editor_description = "오른쪽 8 = 카드 줄과 같은 끝 — 가운데가 카드 줄 가운데와 맞는다."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_right = 8
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 48
 
 [node name="Versus" type="HBoxContainer" parent="Safe/Scroll/Body/VersusPad"]
 editor_description = "Versus block: own team (left: logo + short name) · VS · opponent (right). Logos = TeamLogos.texture, names = GameManager.team_short_name (teams.csv short_name_key)."
@@ -240,10 +242,9 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="OwnCardsPad" type="MarginContainer" parent="Safe/Scroll/Body"]
-editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 카드 줄 끝이 스크롤 오른쪽 끝에서 16 떨어진다. 배너 안 카드 다섯 장 = (992 − 36 − 4 × 10) / 5 ≈ 183 폭."
+editor_description = "좌우 여백 0 — 배너가 화면 왼쪽 끝 ~ 오른쪽 끝(스크롤 막대 밑까지)."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_right = 8
 
 [node name="OwnBanner" type="Control" parent="Safe/Scroll/Body/OwnCardsPad"]
 unique_name_in_owner = true
@@ -255,12 +256,12 @@ script = ExtResource("6_banner")
 color = Color(0.1843, 0.4353, 0.8392, 1)
 
 [node name="OwnBandPad" type="MarginContainer" parent="Safe/Scroll/Body/OwnCardsPad"]
-editor_description = "배너 안쪽 여백 18 · 위아래 22 — 카드가 띠 위에 올라앉고 띠가 카드 둘레로 보인다."
+editor_description = "카드 = 보통 페이지 여백(왼쪽 40 · 오른쪽 48 = 40 + 스크롤 막대 8), 위아래 22. 카드 다섯 장 = (1080 − 88 − 4 × 10) / 5 ≈ 190 폭."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 18
+theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 22
-theme_override_constants/margin_right = 18
+theme_override_constants/margin_right = 48
 theme_override_constants/margin_bottom = 22
 
 [node name="OwnCards" type="HBoxContainer" parent="Safe/Scroll/Body/OwnCardsPad/OwnBandPad"]

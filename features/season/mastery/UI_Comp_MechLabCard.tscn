@@ -1,0 +1,140 @@
+[gd_scene load_steps=4 format=3 uid="uid://dl1qel4ueqtvi"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="2_badge"]
+[ext_resource type="PackedScene" path="res://features/season/mastery/UI_Comp_MechLabPilot.tscn" id="3_pilot"]
+
+[node name="MechLabCard" type="Button"]
+editor_description = "One research target of the mech lab (MechLabBody %Grid, 3 columns): tap = research this mech (HUB only, disabled otherwise). Variation SelectableCardButton / SelectableCardButtonOn (= the lab's active mech) is switched by code. Mech art · name · role badge · progress % + bar, then up to 3 suggested pilots (MechResearch.fit_pilots). Height fixed here: 4.5 rows (+ gaps) fill the ~1440 px body slot on 1080x1920."
+custom_minimum_size = Vector2(0, 300)
+offset_right = 320.0
+offset_bottom = 300.0
+size_flags_horizontal = 3
+focus_mode = 0
+mouse_filter = 1
+theme = ExtResource("1_theme")
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Pad" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Content" type="VBoxContainer" parent="Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Head" type="HBoxContainer" parent="Pad/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="ArtMask" type="Panel" parent="Pad/Content/Head"]
+clip_children = 1
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="Art" type="TextureRect" parent="Pad/Content/Head/ArtMask"]
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_card()
+Mech portrait (MechImages.portrait_for)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Info" type="VBoxContainer" parent="Pad/Content/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Name" type="Label" parent="Pad/Content/Head/Info"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_card()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 25
+text = "Bastion"
+clip_text = true
+
+[node name="PositionBadge_Role" parent="Pad/Content/Head/Info" instance=ExtResource("2_badge")]
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_card()
+The mech's role (mechs.role)."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+text_size = 16
+
+[node name="Spacer" type="Control" parent="Pad/Content/Head/Info"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Pct" type="Label" parent="Pad/Content/Head/Info"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_card()
+Research progress of this mech (ResearchSystem.progress), kept while paused."
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 26
+text = "40%"
+horizontal_alignment = 2
+
+[node name="Track" type="Panel" parent="Pad/Content"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Pad/Content/Track"]
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_card()
+anchor_right = research progress 0..1 (code); hidden at 0."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.4
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Divider" type="HSeparator" parent="Pad/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"Divider"
+
+[node name="Pilots" type="HBoxContainer" parent="Pad/Content"]
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_card()
+Exactly 3 MechLabPilot slots (the samples are the slots; unused ones go transparent)."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="MechLabPilot_1" parent="Pad/Content/Pilots" instance=ExtResource("3_pilot")]
+layout_mode = 2
+
+[node name="MechLabPilot_2" parent="Pad/Content/Pilots" instance=ExtResource("3_pilot")]
+layout_mode = 2
+
+[node name="MechLabPilot_3" parent="Pad/Content/Pilots" instance=ExtResource("3_pilot")]
+layout_mode = 2

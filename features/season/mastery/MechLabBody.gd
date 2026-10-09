@@ -1,26 +1,28 @@
 class_name MechLabBody
-extends VBoxContainer
+extends Control
 
-# Mech-lab section of the facility sheet (§16, `MechResearch.make_body`) — read-only
-# mastery overview of my five pilots (role display order) against the lab's research mech
-# (`MechResearch.lab_mech`): what each pilot gains on completion, the level / bar of that
-# mech plus their own-role mechs, top-3 mastery, the next mech upgrade, and their quirks
-# (§14 — the research quirk roll happens on lab completion). Choosing the research and
-# its target mech is the facility sheet's research list, not this body.
+# Mech-lab facility body (§16, `MechResearch.make_body`, full rect in `FacilityView` `%BodySlot`).
+# A 3-column grid of the mechs the lab can research (`MechResearch.targets`, in that order),
+# about 4.5 rows visible, only the grid scrolls (`DragScroll`). Each card: mech art · name ·
+# role badge · its research progress (`ResearchSystem.progress`, paused points included) and up
+# to three suggested pilots (`MechResearch.fit_pilots`: highest mastery first, then own-role
+# pilots). Tap a card = research that mech (`ResearchSystem.select`, HUB only — cards are
+# disabled once the week runs); the lab's active mech is the highlighted card.
 #
-# **Layout lives in `UI_View_MechLabBody.tscn`** (+ item scenes `UI_Comp_MasteryPilotRow` ·
-# `UI_Comp_MasteryMechChip` · `UI_Comp_MasteryQuirkLine`). This script fills `%` nodes,
-# instances rows and applies data colours (level bar / grade colours, chip variation =
-# `PrimaryButton` for the lab mech), the round portrait (`_draw` widget into `%Portrait`)
-# and each card's height. Built with `create(state)`; it fills itself once in the tree,
-# `refresh()` refills in place (rows / chips reused).
+# **Layout lives in `UI_View_MechLabBody.tscn`** (+ items `UI_Comp_MechLabCard` ·
+# `UI_Comp_MechLabPilot`). This script fills `%` nodes, instances cards and applies data looks
+# (card variation = active or not, progress fill, level colour, the round pilot portraits).
+# Built with `create(state)`; it fills itself once in the tree, `refresh()` refills in place.
+
+## The body changed the lab's research → `FacilityView` refreshes its header.
+signal changed
+## A refusal to show as the screen's toast.
+signal message(text: String)
 
 const SCENE_PATH: String = "res://features/season/mastery/UI_View_MechLabBody.tscn"
-const PILOT_ROW_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MasteryPilotRow.tscn")
-const CHIP_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MasteryMechChip.tscn")
-const QUIRK_LINE_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MasteryQuirkLine.tscn")
-## Chips per pilot card: the lab mech first, then own-role mechs.
-const CHIP_COUNT: int = 3
+const CARD_SCENE: PackedScene = preload("res://features/season/mastery/UI_Comp_MechLabCard.tscn")
+## Suggested pilots per mech card (= the card scene's `MechLabPilot_*` slots).
+const PILOTS_PER_CARD: int = 3
 
 var _state: Dictionary = {}
 var _bound: bool = false
@@ -35,198 +37,135 @@ static func create(state: Dictionary) -> MechLabBody:
 
 
 func _ready() -> void:
+	DragScroll.attach(%Scroll)
 	if _bound:
 		refresh()
 	elif UiPreview.is_standalone(self):
 		_fill_preview()
 
 
-## Refills the whole body from the bound state.
+## The lab's research row (`mech_study`): the first mech-lab row, {} when none.
+static func _lab_row() -> Dictionary:
+	var rows: Array = ResearchSystem.rows_for(MechResearch.FID)
+	return rows[0] if not rows.is_empty() else {}
+
+
+## Refills the grid from the bound state.
 func refresh() -> void:
 	var state: Dictionary = _state
-	var enabled: bool = MechMastery.is_enabled(state)
-	%Empty.visible = not enabled
-	%Main.visible = enabled
-	if not enabled:
+	var r: Dictionary = _lab_row()
+	var offered: Array = []
+	if not r.is_empty() and MechMastery.is_enabled(state):
+		offered = MechResearch.targets(state, r)
+	%Empty.visible = offered.is_empty()
+	%Scroll.visible = not offered.is_empty()
+	var cards: Array = _ensure(%Grid, offered.size())
+	if offered.is_empty():
 		return
-	%Head.text = Loc.t(L.MASTERY_PANEL_HEAD, {"name": StaffSystem.owner_name(state, "knowledge"),
-			"value": StaffSystem.effective(state, "knowledge")})
-	var pilots: Array = MechMastery.my_pilots(state)
-	var any_pid: int = (pilots[0] as PlayerData).id if not pilots.is_empty() else -1
-	%Gain.text = Loc.t(L.MASTERY_PANEL_GAIN, {"mult": "%.2f" % MechMastery.gain_mult(state, any_pid)})
-
-	var mech: int = MechResearch.lab_mech(state)
-	var raw: int = 0
-	var target: Label = %Target
-	if mech >= 0:
-		raw = MechResearch.raw_gain(ResearchSystem.row(String(ResearchSystem.active(state, MechResearch.FID)["rid"])))
-		target.text = Loc.t(L.RESEARCH_MECH_BODY_TARGET, {"mech": MechMastery.mech_name(mech),
-				"n": MechMastery.gain_preview(state, any_pid, raw)})
-		target.theme_type_variation = &"AccentLabel"
-	else:
-		target.text = Loc.t(L.RESEARCH_MECH_BODY_NO_TARGET)
-		target.theme_type_variation = &"FaintLabel"
-
-	var legend: Array = []
-	for lv in MechMastery.LEVEL_MAX + 1:
-		legend.append("%s %s" % [MechMastery.level_name(lv), MechMastery.pct_text(lv)])
-	%Legend.text = Loc.t(L.MASTERY_PANEL_LEGEND, {"tiers": "  ".join(legend)})
-
-	var quirks_on: bool = QuirkSystem.is_enabled(state)
-	%QuirkOdds.visible = quirks_on
-	if quirks_on:
-		var odds: Array = QuirkSystem.grade_odds(state)
-		var parts: Array = []
-		for g in QuirkSystem.GRADE_COUNT:
-			parts.append("%s %d%%" % [QuirkSystem.grade_name(g), roundi(float(odds[g]))])
-		%QuirkOdds.text = Loc.t(L.RESEARCH_MECH_BODY_QUIRK_ODDS, {
-				"pct": ConstTable.int_of("QUIRK_RESEARCH_CHANCE"), "odds": "  ".join(parts)})
-
-	var rows: Array = _ensure(%Pilots, PILOT_ROW_SCENE, pilots.size())
-	for i in rows.size():
-		_fill_pilot_row(rows[i], pilots[i] as PlayerData, mech, raw, quirks_on)
+	var rid: String = String(r["id"])
+	var act: Dictionary = ResearchSystem.active(state, MechResearch.FID)
+	var active_target: String = String(act.get("target", "")) if String(act.get("rid", "")) == rid else ""
+	var pickable: bool = ResearchSystem.can_select(state)
+	for i in cards.size():
+		var t: String = String((offered[i] as Dictionary)["id"])
+		_fill_card(cards[i], rid, t, t == active_target, pickable)
 
 
-func _fill_pilot_row(row: Panel, pd: PlayerData, mech: int, raw: int, quirks_on: bool) -> void:
+func _fill_card(card: Button, rid: String, target: String, is_active: bool, pickable: bool) -> void:
 	var state: Dictionary = _state
-	var portrait: Control = row.get_node("%Portrait")
-	if row.get_meta(&"pilot_id", -1) != pd.id:
-		row.set_meta(&"pilot_id", pd.id)
+	var mech: int = int(target)
+	card.set_meta(&"target", target)
+	card.theme_type_variation = &"SelectableCardButtonOn" if is_active else &"SelectableCardButton"
+	card.disabled = not pickable
+	(card.get_node("%Art") as TextureRect).texture = MechImages.portrait_for(mech)
+	card.get_node("%Name").text = MechMastery.mech_name(mech)
+	(card.get_node("%PositionBadge_Role") as PositionBadge).set_role(MechResearch.mech_role(mech))
+	var p: float = ResearchSystem.progress(state, MechResearch.FID, rid, target)
+	var pct: Label = card.get_node("%Pct")
+	pct.text = "%d%%" % roundi(p * 100.0)
+	pct.theme_type_variation = &"AccentLabel" if is_active or p > 0.0 else &"FaintLabel"
+	var fill: Control = card.get_node("%Fill")
+	fill.visible = p > 0.0
+	fill.anchor_right = clampf(p, 0.0, 1.0)
+	var fit: Array = MechResearch.fit_pilots(state, mech, PILOTS_PER_CARD)
+	var slots: Array = card.get_node("%Pilots").get_children()
+	for i in slots.size():
+		_fill_pilot(slots[i], fit[i] as PlayerData if i < fit.size() else null, mech)
+
+
+## One pilot slot: round portrait (role ring) · name · `Lv3 · 65` on `mech`. null = transparent.
+func _fill_pilot(slot: Control, pd: PlayerData, mech: int) -> void:
+	slot.modulate.a = 0.0 if pd == null else 1.0
+	if pd == null:
+		return
+	var portrait: Control = slot.get_node("%Portrait")
+	if portrait.get_meta(&"pilot_id", -1) != pd.id:
+		portrait.set_meta(&"pilot_id", pd.id)
 		for c in portrait.get_children():
 			c.queue_free()
 		OutgameTheme.add_round_portrait(portrait, PilotImages.circle_for(pd.id), Vector2.ZERO,
-				portrait.size.x, OutgameTheme.ROLE_COLORS[clampi(pd.role, 0, 4)])
-	row.get_node("%Name").text = pd.name
-	(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(pd.role))
-
-	# What this pilot gets from the lab's research (or that there is none).
-	var res_l: Label = row.get_node("%Research")
-	if mech >= 0:
-		var lv: int = MechMastery.level_of(state, pd.id, mech)
-		var at_max: bool = MechMastery.value(state, pd.id, mech) >= MechMastery.max_value()
-		res_l.text = Loc.t(L.RESEARCH_MECH_BODY_PILOT_MAX if at_max else L.RESEARCH_MECH_BODY_PILOT_TARGET,
-				{"mech": MechMastery.mech_name(mech), "level": MechMastery.level_name(lv),
-				"n": MechMastery.gain_preview(state, pd.id, raw)})
-		res_l.add_theme_color_override("font_color", OutgameTheme.TEXT_SUB if at_max else OutgameTheme.ACCENT_TEXT)
-	else:
-		res_l.text = Loc.t(L.RESEARCH_MECH_BODY_PILOT_NONE)
-		res_l.add_theme_color_override("font_color", OutgameTheme.TEXT_SUB)
-
-	var tops: Array = []
-	for e in MechMastery.top_mechs(state, pd.id, 3):
-		tops.append("%s %s" % [MechMastery.mech_name(int(e["mech_id"])),
-				MechMastery.level_name(MechMastery.level_for_value(int(e["value"])))])
-	row.get_node("%TopMechs").text = Loc.t(L.MASTERY_PANEL_TOP_MECHS, {"list": "  ·  ".join(tops)})
-
-	# Chips: the lab mech first, then own-role mechs (read-only).
-	var ids: Array = []
-	if mech >= 0:
-		ids.append(mech)
-	for e in MechMastery.mechs_of_role(pd.role):
-		if ids.size() >= CHIP_COUNT:
-			break
-		if not ids.has(int(e["id"])):
-			ids.append(int(e["id"]))
-	var chips: Array = _ensure(row.get_node("%Chips"), CHIP_SCENE, ids.size())
-	for i in chips.size():
-		var chip: Button = chips[i]
-		var mid: int = int(ids[i])
-		var v: int = MechMastery.value(state, pd.id, mid)
-		var lv: int = MechMastery.level_for_value(v)
-		chip.text = "%s\n%s · %s" % [MechMastery.mech_name(mid), MechMastery.level_name(lv),
-				MechMastery.pct_text(lv)]
-		chip.theme_type_variation = &"PrimaryButton" if mid == mech else &"GhostButton"
-		var bar: ColorRect = chip.get_node("%LevelBar")
-		bar.color = MechMastery.level_color(lv)
-		bar.anchor_right = MechMastery.value_progress(v)
-
-	# §15 A — the next mech upgrade of the lab mech (or the pilot's growth mech).
-	var up_mech: int = mech if mech >= 0 else MechMastery.growth_mech(state, pd)
-	row.get_node("%NextUpgrade").text = _next_upgrade_text(state, pd.id, up_mech)
-
-	(row.get_node("%Quirks") as Control).visible = quirks_on
-	if quirks_on:
-		_fill_quirks(row, pd)
-	# Card height = content + its top / bottom pads (the scene's `%Content` offsets).
-	var content: Control = row.get_node("%Content")
-	row.custom_minimum_size.y = content.offset_top + content.get_combined_minimum_size().y \
-			+ _card_pad_bottom(row, content)
+				portrait.custom_minimum_size.x, OutgameTheme.ROLE_COLORS[clampi(pd.role, 0, 4)])
+	slot.get_node("%Name").text = pd.name
+	var v: int = MechMastery.value(_state, pd.id, mech)
+	var lv: int = MechMastery.level_for_value(v)
+	var lvl: Label = slot.get_node("%Level")
+	lvl.text = "%s · %d" % [MechMastery.level_name(lv), v]
+	lvl.add_theme_color_override("font_color", MechMastery.level_color(lv))
 
 
-## "다음 강화 Lv4 · Bastion: …" — the first mech upgrade step (`MechUpgrades`) still
-## locked for that pilot on `mech_id`; "" for no mech.
-static func _next_upgrade_text(state: Dictionary, pilot_id: int, mech_id: int) -> String:
-	if mech_id < 0:
-		return ""
-	var step: Dictionary = MechUpgrades.next_step(mech_id, MechMastery.level_of(state, pilot_id, mech_id))
-	if step.is_empty():
-		return Loc.t(L.MASTERY_PANEL_UPGRADES_DONE, {"mech": MechMastery.mech_name(mech_id)})
-	return Loc.t(L.MASTERY_PANEL_NEXT_UPGRADE, {"level": MechMastery.level_name(int(step["level"])),
-			"mech": MechMastery.mech_name(mech_id), "text": MechUpgrades.step_text(step)})
+func _on_card_pressed(card: Button) -> void:
+	var r: Dictionary = _lab_row()
+	if r.is_empty():
+		return
+	var err: String = ResearchSystem.select(_state, MechResearch.FID, String(r["id"]),
+			String(card.get_meta(&"target", "")))
+	if err != "":
+		message.emit(err)
+		return
+	refresh()
+	changed.emit()
 
 
-## Bottom pad of a pilot card = the scene's card height minus `%Content`'s bottom edge, read
-## once from the unfilled instance (saved in meta so later refills reuse it).
-static func _card_pad_bottom(row: Control, content: Control) -> float:
-	if not row.has_meta(&"pad_bottom"):
-		row.set_meta(&"pad_bottom", row.custom_minimum_size.y - content.offset_bottom)
-	return float(row.get_meta(&"pad_bottom"))
-
-
-## "기벽 n/slots" head, then one line per quirk: grade pill · name · effect.
-func _fill_quirks(row: Control, pd: PlayerData) -> void:
-	var state: Dictionary = _state
-	var ids: Array = []
-	for id in QuirkSystem.quirks_of(state, pd.id):
-		if not QuirkSystem.row(int(id)).is_empty():
-			ids.append(int(id))
-	row.get_node("%Count").text = Loc.t(L.MASTERY_PANEL_QUIRK_COUNT, {
-			"n": QuirkSystem.quirks_of(state, pd.id).size(), "slots": QuirkSystem.slots_of(state, pd.id)})
-	row.get_node("%Max").text = Loc.t(L.MASTERY_PANEL_QUIRK_MAX, {"n": QuirkSystem.max_slots()})
-	(row.get_node("%QuirkEmpty") as Control).visible = QuirkSystem.quirks_of(state, pd.id).is_empty()
-	var lines: Array = _ensure(row.get_node("%Lines"), QUIRK_LINE_SCENE, ids.size())
-	for i in lines.size():
-		var line: Control = lines[i]
-		var r: Dictionary = QuirkSystem.row(ids[i])
-		var g: int = int(r["grade"])
-		var col: Color = QuirkSystem.grade_color(g)
-		var pill: Panel = line.get_node("%Grade")
-		pill.add_theme_stylebox_override(&"panel", OutgameTheme.flat_style(col, int(pill.size.y * 0.5)))
-		(pill.get_child(0) as Label).text = QuirkSystem.grade_name(g)
-		var nm: Label = line.get_node("%Name")
-		nm.text = QuirkSystem.name_of(ids[i])
-		nm.add_theme_color_override("font_color", col)
-		line.get_node("%Effect").text = QuirkSystem.effect_text(ids[i])
-
-
-## Keeps exactly `n` children in `list` (instancing missing ones) and returns them. The
-## scene's sample children count as reusable rows.
-static func _ensure(list: Node, scene: PackedScene, n: int) -> Array:
-	while list.get_child_count() > n:
-		var last: Node = list.get_child(list.get_child_count() - 1)
-		list.remove_child(last)
+## Keeps exactly `n` cards in `grid` (the scene sample counts as one) and returns them.
+func _ensure(grid: Node, n: int) -> Array:
+	while grid.get_child_count() > n:
+		var last: Node = grid.get_child(grid.get_child_count() - 1)
+		grid.remove_child(last)
 		last.queue_free()
-	while list.get_child_count() < n:
-		list.add_child(scene.instantiate())
-	return list.get_children()
+	while grid.get_child_count() < n:
+		grid.add_child(CARD_SCENE.instantiate())
+	for c in grid.get_children():
+		var card := c as Button
+		if not card.has_meta(&"wired"):
+			card.set_meta(&"wired", true)
+			card.pressed.connect(_on_card_pressed.bind(card))
+	return grid.get_children()
 
 
-## F6 단독 실행 미리보기 — 메모리 런에서 메크 연구소에 첫 대상 메크 연구를 걸고 한 번
-## 완료시켜(숙련 · 기벽 굴림) 채운 본문(`resources/UiPreview.gd`).
+## F6 단독 실행 미리보기 — 메모리 런(허브 상태)에서 첫 대상 메크를 연구 중(40%)으로, 둘째 메크에
+## 멈춘 진행(20%)을 넣고 채운다. 본문 슬롯 크기를 흉내 내 좌우 · 위아래 여백을 둔다(`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
+	offset_left = 40.0
+	offset_right = -40.0
+	offset_top = 224.0
+	offset_bottom = -256.0
 	var gm: Node = UiPreview.ensure_run()
 	if gm == null:
 		return
 	var state: Dictionary = gm.season_state
-	var rows: Array = ResearchSystem.available(state, MechResearch.FID)
-	if not rows.is_empty():
-		var r: Dictionary = rows[0]
-		var offered: Array = ResearchSystem.targets(state, r)
-		if not offered.is_empty():
-			var mid: String = String((offered[0] as Dictionary)["id"])
-			MechResearch.on_complete(state, r, mid)
-			ResearchSystem.select(state, MechResearch.FID, String(r["id"]), mid)
+	state["week_day"] = -1
+	var r: Dictionary = _lab_row()
+	var offered: Array = ResearchSystem.targets(state, r) if not r.is_empty() else []
+	if offered.size() >= 2:
+		var rid: String = String(r["id"])
+		ResearchSystem.points(state, rid, "")  # makes sure `research.points` exists
+		var pts: Dictionary = (state.get("research", {}) as Dictionary).get("points", {})
+		var first: String = String((offered[0] as Dictionary)["id"])
+		var second: String = String((offered[1] as Dictionary)["id"])
+		pts[ResearchSystem.key_of(rid, first)] = roundi(ResearchSystem.cost(r) * 0.4)
+		pts[ResearchSystem.key_of(rid, second)] = roundi(ResearchSystem.cost(r) * 0.2)
+		ResearchSystem.select(state, MechResearch.FID, rid, first)
 	_state = state
 	_bound = true
 	refresh()

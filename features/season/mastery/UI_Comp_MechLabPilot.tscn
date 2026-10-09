@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://dbqtiaweuysku"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="MechLabPilot" type="VBoxContainer"]
+editor_description = "One suggested pilot under a mech card (MechLabCard %Pilots, MechLabBody): round portrait (role ring, added by code into %Portrait) · name · mastery level + points on that mech (level colour = data). An unused slot is made transparent by code so the other two keep their place."
+custom_minimum_size = Vector2(90, 0)
+offset_right = 96.0
+offset_bottom = 112.0
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 2
+
+[node name="Portrait" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_pilot()
+Round portrait (OutgameTheme.add_round_portrait, a _draw widget) is added here at runtime, diameter = this node's minimum width."
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="."]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_pilot()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "Evelyn"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="Level" type="Label" parent="."]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_pilot()
+Mastery level + points on the card's mech; colour = MechMastery.level_color (code)."
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 18
+text = "Lv3 · 65"
+horizontal_alignment = 1
+clip_text = true

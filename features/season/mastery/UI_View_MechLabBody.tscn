@@ -2,122 +2,58 @@
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 [ext_resource type="Script" uid="uid://cnai8ifr4tyi6" path="res://features/season/mastery/MechLabBody.gd" id="2_script"]
-[ext_resource type="PackedScene" uid="uid://c35ppxplceolt" path="res://features/season/mastery/UI_Comp_MasteryPilotRow.tscn" id="3_pilot"]
+[ext_resource type="PackedScene" path="res://features/season/mastery/UI_Comp_MechLabCard.tscn" id="3_card"]
 
-[node name="MechLabBody" type="VBoxContainer"]
-editor_description = "메크 연구소 facility-sheet body (MechResearch.make_body → MechLabBody.create). Top-wide; read-only mastery overview of my five pilots against the lab's research mech. The pilot-row sample is reused at runtime."
-anchors_preset = 10
+[node name="MechLabBody" type="Control"]
+editor_description = "메크 연구소 facility body (MechResearch.make_body → MechLabBody.create), full rect in FacilityView %BodySlot. A 3-column grid of the mechs the lab can research (MechResearch.targets); tap = pick it (HUB only). Only the grid scrolls. The card sample is reused at runtime."
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("1_theme")
-theme_override_constants/separation = 0
 script = ExtResource("2_script")
 
 [node name="Empty" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()"
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()
+Shown when no mech can be researched (no run, or every mech maxed for all my pilots)."
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(0, 60)
-layout_mode = 2
-theme_type_variation = &"SubLabel"
-theme_override_font_sizes/font_size = 28
-text = "tx_WZDGTR97KE"
-
-[node name="Main" type="VBoxContainer" parent="."]
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()"
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
-
-[node name="HeadRow" type="Control" parent="Main"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Head" type="Label" parent="Main/HeadRow"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()
-Lab occupant · effective knowledge."
-unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.62
-offset_bottom = 36.0
-theme_type_variation = &"AccentLabel"
-theme_override_font_sizes/font_size = 26
-text = "담당: 윤재혁   ·   지식 16"
-clip_text = true
-
-[node name="Gain" type="Label" parent="Main/HeadRow"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()
-Gain multiplier of my pilots (knowledge × facility × trait)."
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.62
+anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 36.0
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 24
-text = "획득 배율 ×1.00"
-horizontal_alignment = 2
+offset_top = 40.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_82EVYEXTWG"
+horizontal_alignment = 1
 
-[node name="Target" type="Label" parent="Main"]
-auto_translate_mode = 2
+[node name="Scroll" type="ScrollContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _ready() (DragScroll)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="Grid" type="GridContainer" parent="Scroll"]
 editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()
-Lab research mech + per-pilot gain on completion; FaintLabel when the lab has no mech research."
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-theme_type_variation = &"AccentLabel"
-theme_override_font_sizes/font_size = 24
-text = "연구 대상: Bastion  ·  완료 시 선수 전원 +10"
-clip_text = true
-
-[node name="Legend" type="Label" parent="Main"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 32)
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 21
-text = "숙련 레벨 보정 (명중 · 회피 4종)   Lv0 -20%  Lv1 ±0%  Lv2 +5%"
-clip_text = true
-
-[node name="Rules" type="Label" parent="Main"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 21
-text = "tx_Q56Z57M5X6"
-clip_text = true
-
-[node name="QuirkOdds" type="Label" parent="Main"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 21
-text = "기벽: 메크 연구가 끝날 때 선수마다 15% 확률로 획득  ·  일반 54%  희귀 34%  영웅 13%"
-clip_text = true
-
-[node name="Pilots" type="VBoxContainer" parent="Main"]
-editor_description = "[필수] 지우면 오류 — MechLabBody.gd refresh()"
+3 columns of MechLabCard (card 300 + gap 20 → 4.5 rows on the ~1440 px slot of 1080x1920)."
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 16
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 20
+columns = 3
 
-[node name="MasteryPilotRow" parent="Main/Pilots" instance=ExtResource("3_pilot")]
+[node name="MechLabCard" parent="Scroll/Grid" instance=ExtResource("3_card")]
 layout_mode = 2
-
-[node name="Tail" type="Control" parent="Main"]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-mouse_filter = 2

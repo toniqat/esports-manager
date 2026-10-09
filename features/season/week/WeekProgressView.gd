@@ -590,7 +590,7 @@ func _in_talk(pid: int) -> bool:
 
 # ── 훈련 결과 연출 (RESULT) ──────────────────────────────────────────────────
 ## The day's results rise out of each portrait's top and fade, one line after another
-## (stat ups by full name, else the EXP earned · stress change · mech mastery · quirk events).
+## (stat ups by full name, else the EXP earned · stress change · quirk events).
 ## When the last line is gone the afternoon starts by itself (`_finish_result_fx`).
 func _play_result_fx() -> void:
 	_fx_day = _day
@@ -667,9 +667,6 @@ func _result_lines(row: Dictionary) -> Array:
 	if stress != 0:
 		out.append([Loc.t(L.SEASON_WEEK_MAP_STRESS, {"delta": "%+d" % stress}),
 				OutgameTheme.NEGATIVE if stress > 0 else OutgameTheme.POSITIVE])
-	var mastery: String = _mastery_text(int(row["pilot_id"]), int(row.get("mastery", 0)))
-	if mastery != "":
-		out.append([mastery, OutgameTheme.LINK])
 	out.append_array(_quirk_lines(row.get("quirk", [])))
 	return out
 
@@ -880,16 +877,6 @@ static func _team_name(namer: Node, team_id: int) -> String:
 	if namer != null and namer.has_method("team_name"):
 		return String(namer.call("team_name", team_id))
 	return "Team %d" % team_id
-
-
-## "숙련 +12" — a day's mastery (after `gain_preview`'s multipliers). §16: the training
-## board's mastery tiles and the per-pilot research mech are gone (mastery comes from the
-## mech lab), so a day card normally carries 0 here. Empty when nothing / mastery is off.
-func _mastery_text(pilot_id: int, raw: int) -> String:
-	var state: Dictionary = _gm.season_state
-	if raw <= 0 or not MechMastery.is_enabled(state):
-		return ""
-	return Loc.t(L.SEASON_WEEK_MASTERY, {"n": MechMastery.gain_preview(state, pilot_id, raw)})
 
 
 ## Quirk events → `[[text, colour]]`. Row shape (§14.1):

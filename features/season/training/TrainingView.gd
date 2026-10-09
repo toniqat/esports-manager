@@ -293,11 +293,11 @@ func _refresh_staff() -> void:
 		return
 	var state: Dictionary = _board.season_state()
 	if _staff_lbl != null:
-		# Tactics no longer gates course grades (courses are owned items), so
-		# only the training owner is named here.
-		_staff_lbl.text = _owner_text(state, "training")
+		# §16: each training facility's occupant + training stat (a cell's EXP uses the
+		# stat of the facility that owns its course line).
+		_staff_lbl.text = _owner_text(state)
 	if _effect_lbl != null:
-		_effect_lbl.text = _effect_text(_shared_parts(state))
+		_effect_lbl.text = _effect_text(_facility_parts(), _shared_parts(state))
 	_refresh_exp_chips(state)
 	if _bar_buttons.size() == 3:
 		var auto_btn: Button = _bar_buttons[1]
@@ -306,13 +306,29 @@ func _refresh_staff() -> void:
 		auto_btn.visible = show_auto
 
 
-## Team-wide EXP multiplier parts — the same calls `TrainingBoard.exp_mult_table`
-## multiplies for every cell (training stat × finance × trait `train_exp_pct`).
+## Short facility labels of the staff / effect lines, `TrainingResearch.FACILITIES` order.
+const FAC_SHORT: Dictionary = {  # l10n-keys: training.view.fac_short.*
+	"train_field": L.TRAINING_VIEW_FAC_SHORT_TRAIN_FIELD,
+	"train_engage": L.TRAINING_VIEW_FAC_SHORT_TRAIN_ENGAGE,
+	"train_growth": L.TRAINING_VIEW_FAC_SHORT_TRAIN_GROWTH,
+}
+
+
+## Per-facility EXP multiplier parts `[[fid, mult]]` — the facility part of
+## `TrainingBoard.exp_mult_table` (`facility_exp_mult`), one per training facility.
+func _facility_parts() -> Array:
+	var out: Array = []
+	for fid in TrainingResearch.FACILITIES:
+		out.append([String(fid), _board.facility_exp_mult(String(fid))])
+	return out
+
+
+## Team-wide EXP multiplier parts besides the facility stat — the same calls
+## `TrainingBoard.shared_exp_mult` multiplies (finance × trait `train_exp_pct`).
 ## Part labels are l10n keys, translated in `_effect_text`.
 ## Per-pilot parts (rank-row growth bonus, outing fatigue) are not here; see `_refresh_exp_chips`.
 func _shared_parts(state: Dictionary) -> Array:
 	return [
-		[L.TERM_PERSON_STAFF, TrainingTile.training_exp_mult(_board.training_stat())],
 		[L.TRAINING_VIEW_PART_FINANCE, FinanceSystem.training_exp_mult(state)],
 		[L.TRAINING_VIEW_PART_TRAIT, TraitSystem.run_pct_mult(state, "train_exp_pct")],
 	]
@@ -325,42 +341,49 @@ static func _parts_product(parts: Array) -> float:
 	return m
 
 
-## "훈련 효과 ×1.21" — plus "(스태프 ×1.10 · 특성 ×1.10)" when anything besides the
-## staff stat moves it. Parts at ×1.00 are left out of the breakdown.
-static func _effect_text(parts: Array) -> String:
-	var mult: String = "%.2f" % _parts_product(parts)
-	var shown: Array = []
-	var others_move: bool = false
-	for i in parts.size():
-		var part: Array = parts[i]
-		var v: float = float(part[1])
-		var moves: bool = absf(v - 1.0) >= 0.005
-		if i > 0 and moves:
-			others_move = true
-		if moves or i == 0:
-			shown.append("%s ×%.2f" % [Loc.t(String(part[0])), v])  # l10n-dynamic: training.view.part_*
-	if others_move:
-		return Loc.t(L.TRAINING_VIEW_EFFECT_BREAKDOWN, {"mult": mult, "parts": " · ".join(shown)})
-	return Loc.t(L.TRAINING_VIEW_EFFECT, {"mult": mult})
+## "훈련 효과 전장 ×1.10 · 교전 ×0.96 · 성장 ×0.82" — each facility's multiplier already
+## includes the shared parts; "(재무 ×1.05 · 특성 ×1.10)" follows when a shared part
+## moves it. Parts at ×1.00 are left out of the breakdown.
+static func _effect_text(fac_parts: Array, shared_parts: Array) -> String:
+	var shared: float = _parts_product(shared_parts)
+	var facs: Array = []
+	for part in fac_parts:
+		facs.append(Loc.t(L.TRAINING_VIEW_FAC_MULT, {
+			"fac": Loc.t(String(FAC_SHORT.get(String(part[0]), ""))),  # l10n-dynamic: training.view.fac_short.*
+			"mult": "%.2f" % (float(part[1]) * shared)}))
+	var extra: Array = []
+	for part2 in shared_parts:
+		var v: float = float(part2[1])
+		if absf(v - 1.0) >= 0.005:
+			extra.append("%s ×%.2f" % [Loc.t(String(part2[0])), v])  # l10n-dynamic: training.view.part_*
+	var parts_txt: String = " · ".join(facs)
+	if extra.is_empty():
+		return Loc.t(L.TRAINING_VIEW_EFFECT_FAC, {"parts": parts_txt})
+	return Loc.t(L.TRAINING_VIEW_EFFECT_FAC_BREAKDOWN, {"parts": parts_txt, "extra": " · ".join(extra)})
 
 
-## Thumbnail chips: each pilot's own multiplier relative to the team-wide one, read
-## from `TrainingBoard.exp_mult_table` (what settlement multiplies). A pilot's best
-## day is used, so a single outing-fatigue day does not hide the rank-row growth bonus.
-func _refresh_exp_chips(state: Dictionary) -> void:
+## Thumbnail chips: each pilot's own multiplier relative to the team-wide one of the
+## same cell, read from `TrainingBoard.exp_mult_table` ÷ `cell_team_mult` (what
+## settlement multiplies; the team-wide part differs per cell with the facility that
+## owns its course). A pilot's best day is used, so a single outing-fatigue day does
+## not hide the rank-row growth bonus.
+func _refresh_exp_chips(_state: Dictionary) -> void:
 	if _thumb_exp_chips.size() != COLS:
 		return
-	var shared: float = _parts_product(_shared_parts(state))
+	var team: Dictionary = _board.cell_team_mult()
 	var table: Dictionary = _board.exp_mult_table()
 	var pilots: Array = _pilots()
 	for seat in COLS:
 		var chip: Panel = _thumb_exp_chips[seat]
 		var ratio: float = 1.0
-		if pilots[seat] != null and shared > 0.0:
+		if pilots[seat] != null:
 			var best: float = 0.0
 			for day in TrainingBoard.ROWS:
-				best = maxf(best, float(table.get(Vector2i(seat, day), 0.0)))
-			ratio = best / shared
+				var c := Vector2i(seat, day)
+				var base: float = float(team.get(c, 0.0))
+				if base > 0.0:
+					best = maxf(best, float(table.get(c, 0.0)) / base)
+			ratio = best if best > 0.0 else 1.0
 		chip.visible = absf(ratio - 1.0) >= 0.005
 		if chip.visible:
 			(_thumb_exp_texts[seat] as Label).text = "EXP ×%.2f" % ratio
@@ -369,19 +392,18 @@ func _refresh_exp_chips(state: Dictionary) -> void:
 			chip.add_theme_stylebox_override(&"panel", sty)
 
 
-## "훈련: 강민호 코치 17" / "전술: 감독 6" — who covers this stat and its value.
-static func _owner_text(state: Dictionary, stat: String) -> String:
-	var params: Dictionary = {
-		"stat": StaffSystem.stat_label(stat),
-		"name": StaffSystem.owner_name(state, stat),
-		"value": StaffSystem.effective(state, stat),
-	}
-	match StaffSystem.owner(state, stat):
-		StaffSystem.OWNER_STAFF:
-			return Loc.t(L.TRAINING_VIEW_OWNER_STAFF, params)
-		StaffSystem.OWNER_ASSISTANT:
-			return Loc.t(L.TRAINING_VIEW_OWNER_ASSISTANT, params)
-	return "%s: %s %d" % [params["stat"], params["name"], params["value"]]
+## "훈련장 — 전장 강민호 17 · 교전 감독 6 · 성장 없음 1" — each training facility's
+## occupant and training stat (`FacilitySystem.occupant_name` / `stat_value`).
+static func _owner_text(state: Dictionary) -> String:
+	var parts: Array = []
+	for fid_raw in TrainingResearch.FACILITIES:
+		var fid: String = String(fid_raw)
+		parts.append(Loc.t(L.TRAINING_VIEW_FAC_OWNER, {
+			"fac": Loc.t(String(FAC_SHORT.get(fid, ""))),  # l10n-dynamic: training.view.fac_short.*
+			"name": FacilitySystem.occupant_name(state, fid),
+			"value": FacilitySystem.stat_value(state, fid),
+		}))
+	return Loc.t(L.TRAINING_VIEW_STAFF_LINE, {"parts": " · ".join(parts)})
 
 
 func _refresh_thumbs() -> void:

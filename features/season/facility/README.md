@@ -208,3 +208,34 @@ Rows (`research.csv`, facility `personnel`, both repeatable): `scout` (Lv1+) and
   `FocusTraining.story_mech`), `raw_gain(row)`, `quirk_roll(state, pid) -> quirk id | -1`.
 - **`make_body`** → `MechLabBody.create(state)` (`features/season/mastery/`, read-only overview of my pilots on
   the lab mech; `mastery/README.md` "Mech-lab body"). It fills on entering the tree; `refresh()` refills.
+
+## TrainingResearch (agent C — `research/TrainingResearch.gd`, kind `training`)
+Files: `research/TrainingResearch.gd` (handler + course→facility map), `research/TrainingResearchBody.gd` +
+`UI_Comp_TrainingResearchBody.tscn` (sheet section, F6 preview = in-memory run, field facility Lv2, a few courses
+owned), `UI_Comp_TrainingResearchLine.tscn` (one course line, script-less, bound by the body).
+
+- **Rows** (`research.csv`, `facility` = `train_*`): one row per training tile except Basic Training I (`T01`,
+  owned from the start) — every other tile in `training_tiles.csv` is granted by exactly one row. `p1` = tile id.
+  Ladder: grade C / B / A / S → `min_level` 1 / 2 / 3 / 4 and more `weeks` (stat lines 2 / 3 / 4); basic II / III /
+  IV = `min_level` 1 / 3 / 5, `weeks` 3 / 5 / 7 (they raise every empty cell). Basic rows `repeatable = 0`, the rest 1.
+
+  | Facility | Rows |
+  |---|---|
+  | `train_field` | `tr_h1..3` 사격 I~III (H) · `tr_e1..3` 회피 기동 I~III (E) |
+  | `train_engage` | `tr_c1..3` 근접 교전 (C) · `tr_d1..3` 반응 (D) · `tr_scrim` 합숙 스크림 (CC/DD, Lv4) |
+  | `train_growth` | `tr_a1..3` 화력 증강 (A) · `tr_p1..3` 내구 단련 (P) · `tr_b2..4` 기초 훈련 II~IV · `tr_q1..4` quirk tiles · `tr_joint` · `tr_focus` · `tr_meeting` · `tr_mentor` · `tr_camp` (amplifier / misc) |
+- **`row_available`**: blocked (`research_training.block.owned_higher`) when the tile's line is owned at a **higher**
+  grade — a lower row would only add a copy the owned-level row also adds; for the basic line (unlimited copies)
+  at this grade **or higher**. Same grade = one more copy (repeatable rows stay selected and keep adding copies).
+- **`on_complete`**: `TrainingCourses.grant(state, p1, 1)`; note `research_training.note.basic` (basic upgraded) ·
+  `.upgrade` (`{from} → {tile}`, board copies retargeted) · `.gain` (`{tile} +1 (보유 n)`).
+- **`make_body`** (training facilities only, else null): occupant + training stat → this facility's course EXP
+  multiplier, then each line it researches: name (owned level, else the first step), owned (`×n` / basic "every
+  empty cell" / not owned), ladder `<grade> Lv<min_level>` (owned grade accent, above the facility level faint).
+- **Per-facility training stat** (decision 3): `TrainingResearch.facility_of_tile(tile_id)` / `facility_of_line`
+  = the training facility whose rows grant that line (map built once from `research.csv`); no row (Basic Training
+  I) → `DEFAULT_FACILITY` = `train_growth`. `exp_mult(state, fid)` =
+  `TrainingTile.training_exp_mult(FacilitySystem.stat_value(state, fid))`. `TrainingBoard.exp_mult_table` uses it
+  per cell — details in `features/season/training/README.md` "Training stat — per facility". Other helpers:
+  `FACILITIES`, `ladder(fid)`.
+- l10n: rows `research_training.<rid>.name/desc`; code keys `research_training.block.*` · `.note.*` · `.body.*`.

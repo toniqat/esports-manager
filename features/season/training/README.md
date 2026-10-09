@@ -18,9 +18,9 @@ not shown on this screen.
 ## Files
 | File | Role |
 |---|---|
-| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the training-stat EXP multiplier (`training_exp_mult`, see "Manager / staff stats" below). `line` = the tile's upgrade line. |
-| `TrainingCourses.gd` | `class_name TrainingCourses` — static, **the run's owned courses** (`season_state["training_courses"]`): `new_inventory` · `inventory` · `owned_count` · `owned_tile_ids` · `filler_tile_id` · `grant` (upgrade rule) · `grant_all` (previews). See "Owned courses" below. |
-| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stat (`training_stat`), ownership (`owned_tiles` / `owned_count` / `placed_count` / `can_take_more` / `filler_tile_id`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map) and training names (`day_tile_names`, empty cell = basic course; the week screen's morning speech bubbles), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
+| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · effect clauses · quirk ops). Also owns the colour table · grade table and the training-stat EXP multiplier (`training_exp_mult`, see "Training stat — per facility" below). `line` = the tile's upgrade line. |
+| `TrainingCourses.gd` | `class_name TrainingCourses` — static, **the run's owned courses** (`season_state["training_courses"]`): `new_inventory` · `inventory` · `owned_count` · `owned_tile_ids` · `filler_tile_id` · `grant` (upgrade rule — called by the training facilities' research, `TrainingResearch.on_complete`) · `grant_all` (previews). See "Owned courses" below. |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Per-facility training stat (`facility_stat` / `facility_exp_mult` / `cell_facilities` / `shared_exp_mult` / `cell_team_mult`), ownership (`owned_tiles` / `owned_count` / `placed_count` / `can_take_more` / `filler_tile_id`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map) and training names (`day_tile_names`, empty cell = basic course; the week screen's morning speech bubbles), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
 | `TrainingView.gd` · `UI_View_TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
 | `TrainingLevel.gd` | `class_name TrainingLevel` — static, **run-only training level** 1..`TLEVEL_MAX` + training EXP (`season_state.training_level`). See "Training level · limit break" below. |
 | `LimitBreak.gd` | `class_name LimitBreak` — static, **limit break (한계돌파)**: due-event check, VN session dict, goal pool / offer / pick, goal judging on my matches, `complete` (level +1, stats up), result notes. See below. |
@@ -151,7 +151,7 @@ every clause would become a lie each time the board is rotated.
 | `grade` | 0=D 1=C 2=B 3=A 4=S |
 | `line` | Optional upgrade line (`basic`, `field_hit`, `field_eva`, `engage_hit`, `engage_eva`, `atk_growth`, `hp_growth`). Empty = the tile is its own line. Levels of one line differ by `grade` and **must keep the same shape** (an upgrade rewrites placed tiles in place). Names carry the level as a Roman numeral (`기초 훈련 I` … `IV`, `사격 훈련 I` … `III`) |
 | `shape` | Colour string with rows separated by `/`. **One row = one day, one character = one player.** `W`=1 cell, `WW`=two on the same weekday, `W/W`=one player for two days, `CC/DD`=two × two days, `WWWWW`=one day for all five |
-| `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times. `mastery:N` = mech-mastery EXP per mastery (`M`) cell (see "Mastery tiles") |
+| `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times |
 | `effect` | Clauses joined by `;` |
 | `facility` | Optional base-map spot where the course is held (`H E C D G M Q W`, `features/season/week/base_map/README.md`). Empty = the colour of the course's first cell on that day. Every pilot in one placed tile on a day stands there (joint training) |
 
@@ -162,8 +162,8 @@ data — `TrainingTile.exp_summary()` (EXP) and `effect_summary()` (effect).
 
 **l10n (design §6.1).** The tile name is a key: `training_tiles.name_key` (`training.tile.{id}.name`) →
 `TrainingTile.name_key`; `tile_name` is a read-only computed property (`Loc.t(name_key)`). Both summaries are
-built from **template keys**, never `+` concatenation: `training.exp.none` · `.quirk_day` · `.mastery {n}` ·
-`.all {n}` · `.stat {stat} {n}` (items joined by `training.list_sep`, EXP + mastery lines by a newline), and
+built from **template keys**, never `+` concatenation: `training.exp.none` · `.quirk_day` ·
+`.all {n}` · `.stat {stat} {n}` (items joined by `training.list_sep`), and
 `training.effect.mult {scope} {pct}` · `.flat {scope} {stat} {amount}` · `.quirk {op}` (one line each) with
 `training.stat.all`, `SCOPE_LABELS` (`training.scope.*`) and `QUIRK_OP_LABELS` (`training.quirk_op.*`) as
 key-constant tables. Stat names still come from `PlayerData.STAT_LABELS`.
@@ -180,7 +180,6 @@ Same order as `PlayerData.STAT_KEYS`.
 | `A` | Orange | Attack growth `atk_growth` |
 | `P` | Green | HP growth `hp_growth` |
 | `K` | Black | **0 EXP** — the self cell of an amplifier tile |
-| `M` | Teal | **Mastery** — 0 stat EXP; yields `mastery:N` mech-mastery EXP instead |
 | `Q` | Pink | **Quirk** — 0 stat EXP; the tile's `quirk:*` clauses act on this cell's pilot (see "Quirk tiles") |
 | `W` | Grey | Neutral — all six stats evenly |
 
@@ -252,10 +251,10 @@ week-progress screen (`features/season/week/`) started asking "what happened tha
 weekday, settlement was split per day too.
 
 It returns the row list that screen reads — in seat order,
-`Array[{pilot_id, role, seat, before, after, ups, exp, carry, mastery, quirk, stress, color, group, facility}]`
+`Array[{pilot_id, role, seat, before, after, ups, exp, carry, quirk, stress, color, group, facility}]`
 (`group` = board entry index of the cell's tile, -1 = basic course — pilots sharing it **trained together**
 that day, the morning talk's `talk_pair`; `facility` = `day_groups(day)`, the week map's spot) (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
-(`mastery` = mech-mastery EXP handed to `MechMastery.add_training_exp` that day, M3;
+(no `mastery` any more — the `M` tiles were removed in §16, readers default it to 0;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
 array when none — see "Quirk tiles";
 `stress` = stress that pilot gained that day, `StressSystem.on_training_day` (every pilot, an empty cell is the
@@ -275,17 +274,17 @@ after playing a match.
 
 Four vertical blocks — **five portraits → 5×5 board → one row of course cards → bottom action bar (하단 액션 바)**.
 
-**Staff line (M3).** Right under the title one centred line says who covers the two stats this
-screen depends on and their effective value — `훈련: 강민호 코치 17 · 전술: 감독 6`
-(`TrainingView._owner_text`: `StaffSystem.owner_name` + `코치` / `어시스턴트` suffix + `effective`).
-The right end of the "훈련 코스" label row says what that means for the courses —
-`훈련 효과 ×N · 사용 가능 X 등급까지` (`_refresh_staff`). The board area (`BoardArea`) starts below the staff line.
-`×N` is the **team-wide** EXP multiplier — training stat × `FinanceSystem.training_exp_mult` × trait
-`train_exp_pct` (`_shared_parts`, the same calls `TrainingBoard.exp_mult_table` multiplies). When
-finance or traits move it, the breakdown follows in parentheses (`(스태프 ×a · 재무 ×b · 특성 ×c)`,
-parts at ×1.00 left out). Per-pilot parts (breakthrough `train_bonus_pct`) show as a green
-`EXP ×r` chip on that pilot's portrait — `r` = the pilot's best day in `exp_mult_table` ÷ the
-team-wide value, so it reads straight from what settlement multiplies (`_refresh_exp_chips`).
+**Staff line (§16).** Right under the title one centred line names each training facility's occupant
+and training stat — `훈련장 — 전장 강민호 17 · 교전 감독 6 · 성장 없음 1`
+(`TrainingView._owner_text`: `FacilitySystem.occupant_name` / `stat_value`, short facility labels
+`training.view.fac_short.*`). The right end of the "훈련 코스" label row says what that means for the
+courses — `훈련 효과 전장 ×a · 교전 ×b · 성장 ×c` (`_refresh_staff` → `_effect_text`): each value is that
+facility's multiplier (`TrainingBoard.facility_exp_mult`) × the shared parts (`FinanceSystem.training_exp_mult`
+× trait `train_exp_pct`, `_shared_parts` = `TrainingBoard.shared_exp_mult`); when a shared part moves it,
+`(재무 ×b · 특성 ×c)` follows (parts at ×1.00 left out). The board area (`BoardArea`) starts below the staff
+line. Per-pilot parts (breakthrough `train_bonus_pct`) show as a green `EXP ×r` chip on that pilot's
+portrait — `r` = the pilot's best day of `exp_mult_table` ÷ `cell_team_mult` (the same cell's team-wide
+value), so it reads straight from what settlement multiplies (`_refresh_exp_chips`).
 
 **There is one horizontal baseline — the board is centred.** `Block` is centre-anchored and 880 wide
 (100..980 on 1080): a **60px weekday label column** (`DayLabels`, 100..160) + the **760px board**
@@ -455,20 +454,42 @@ unlock any more. Inventory cards show `놓임/보유`, and a card whose copies a
   place); a lower level adds a copy at the owned level — own 사격 훈련 II ×1, gain 사격 훈련 I →
   사격 훈련 II ×2. Stat lines (사격 · 회피 기동 · 근접 교전 · 반응 · 화력 증강 · 내구 단련) are
   I / II / III = C / B / A, single-stat +44 / +52 / +58 per cell.
-- **Acquisition is not designed yet** — nothing in the game calls `grant` (only the F6 preview's
-  `grant_all`). 한계 돌파 (old T13) was removed.
+- **Acquisition = research (§16).** The three training facilities research courses
+  (`features/season/facility/research/TrainingResearch.gd`, rows in `data/csv/research.csv`, rules in
+  `features/season/facility/README.md` "TrainingResearch"): each completion is `grant(state, p1, 1)`.
+  Higher grades need a higher facility level (`min_level`); a row is blocked once its line is owned at a
+  higher grade (basic: this grade or higher). Every non-basic-I tile is granted by exactly one row.
+  The F6 preview still uses `grant_all`. 한계 돌파 (old T13) was removed.
 
-## Manager / staff stats (M3)
-Contract: `docs/outgame_dev_plan.md` §11. The training stat is read only through
-`StaffSystem.effective(state, stat)` (manager + temporary mods, assistant, or the dedicated coach —
-whichever is highest), via `TrainingBoard.training_stat()`. The lookup that
-turns it into a rule lives in `TrainingTile` (static, takes the stat as an argument). Numbers are in
-`data/csv/const.csv` — this README names keys only. **Tactics no longer touches training** (it used to
-unlock grades; courses are owned items now), so the staff line names only the training owner.
+## Training stat — per facility (§16)
+Contract: `docs/outgame_dev_plan.md` §16 (decision 3). There is no single team training stat any more:
+**a cell's EXP is multiplied by the training stat of the facility that owns the course line trained in that
+cell** — `FacilitySystem.stat_value(state, fid)` (the occupant's training stat; nobody seated → `STAT_MIN`).
+Which facility owns a line is data: the training facility whose research rows grant it
+(`TrainingResearch.facility_of_tile` / `facility_of_line`, built from `research.csv`):
+
+| Facility | Lines (colours) |
+|---|---|
+| `train_field` 전장 훈련장 | 사격 (`H`) · 회피 기동 (`E`) |
+| `train_engage` 교전 훈련장 | 근접 교전 (`C`) · 반응 (`D`) · 합숙 스크림 (`CC/DD`) |
+| `train_growth` 성장 훈련장 | 화력 증강 (`A`) · 내구 단련 (`P`) · **the basic course** (every empty cell) · quirk tiles · amplifier / misc tiles |
+
+**Decision**: the basic course (Basic Training I is granted by no row) and any tile no research row grants
+fall back to `TrainingResearch.DEFAULT_FACILITY` = `train_growth` — the facility that researches Basic
+Training II~IV, so the whole basic line is consistently its. Note the growth facility has no auto-seat at run
+start (`FacilitySystem.JOB_FACILITY`), so empty cells train at `STAT_MIN` until someone is seated there.
+
+`TrainingBoard.cell_facilities()` maps each cell to its facility (placed tile, else the basic course);
+`cell_team_mult()` = that facility's `facility_exp_mult` × `shared_exp_mult()` (finance × trait);
+`exp_mult_table()` multiplies the per-pilot parts on top. Numbers are in `data/csv/const.csv` — this README
+names keys only.
 
 | Stat | Rule | Keys |
 |---|---|---|
-| **Training** | Tile EXP multiplier `1 + (stat − pivot) × step` (`TrainingTile.training_exp_mult`). | `TRAINING_STAT_EXP_PIVOT`, `TRAINING_STAT_EXP_STEP` |
+| **Training** (per facility) | Tile EXP multiplier `1 + (stat − pivot) × step` (`TrainingTile.training_exp_mult`, via `TrainingResearch.exp_mult(state, fid)`). | `TRAINING_STAT_EXP_PIVOT`, `TRAINING_STAT_EXP_STEP` |
+
+The `코치 추천` slot still follows `StaffSystem.is_delegated(state, "training")` (the best occupant of the
+training facilities is staff).
 
 Cards whose owned copies are all placed fade; they can be selected but not picked up
 (`TrainingView._card_locked` = `not TrainingBoard.can_take_more(t)`).
@@ -479,7 +500,7 @@ once per cell in `TrainingBoard.cell_exp()` step 3. The outside multiplier per c
 `exp_mult_table()`:
 
 ```
-training-stat mult × FinanceSystem.training_exp_mult(state) × MentalSystem.training_exp_mult(state, pilot_id, day)
+facility training-stat mult (that cell's course) × FinanceSystem.training_exp_mult(state) × MentalSystem.training_exp_mult(state, pilot_id, day)
   × TraitSystem.run_pct_mult(state, "train_exp_pct")        (M8 manager traits, whole board)
   × (1 + PlayerData.train_bonus_pct / 100)                    (M10 breakthrough, that pilot's column only)
 ```
@@ -489,22 +510,14 @@ This is the single place they are multiplied (plan §11.3). Preview (`compute_ga
 `cell_exp()`, so they cannot disagree (verified headless: the sum of the five settled days equals
 the week preview, and stats after five days equal `projected_stats`).
 
-## Mastery tiles (colour `M`, M3)
-An `M` cell gives **no stat EXP** (like `K`) — instead each `M` cell yields `mastery:N` mech-mastery
-EXP (`TrainingTile.per_cell_mastery` / `mastery_of_cell`). Rows in `training_tiles.csv` are ordinary
-tiles with an `M` shape, e.g. `M` (one day) and `M/M` (one pilot, two days).
-
-- **Raw amounts.** Clauses (`mult` / `flat`) and the outside multipliers above do **not** touch
-  mastery EXP; `MechMastery` applies its own knowledge / facility multipliers (plan §11.3).
-- `TrainingBoard.cell_mastery()` → `Vector2i(seat, day) → int`; `compute_mastery(day)` folds per seat.
-- **Settlement**: `apply_day_training(day)` calls
-  `MechMastery.add_training_exp(state, pilot_id, amount)` for each seat with mastery that day (the
-  research mech is M4's business) and adds `mastery` to that seat's row.
-- Display: the popover's EXP line is `TrainingTile.exp_summary()`, which appends
-  `메크 숙련도 +N (연구 메크)` for mastery tiles.
+## Mastery tiles — removed (§16)
+The `M` (mech-mastery) tiles T16 / T17, colour `M`, the `mastery:N` EXP clause, `cell_mastery` /
+`compute_mastery` and the `MechMastery.add_training_exp` call in `apply_day_training` were removed: mech
+mastery now comes from the mech lab's research (`features/season/facility/`, agent D). The base map's `M`
+spot stays (other content may stand there).
 
 ## Quirk tiles (colour `Q`, §14 T1)
-A `Q` cell gives **no stat EXP** (like `K` / `M`); the tile's quirk clauses act on the pilot of that
+A `Q` cell gives **no stat EXP** (like `K`); the tile's quirk clauses act on the pilot of that
 cell on that cell's day — so a tile costs those training days. Parsing lives in `TrainingTile`
 (`quirk_ops`, kept out of `clauses` so EXP settlement never sees them; `is_quirk_cell(i)`,
 `has_quirk()`); `effect_summary()` adds one `훈련한 선수: …` line per op.
@@ -552,9 +565,9 @@ old all-stat `W/W` C tile.
 3. One more broad sweep over all grades (an amplifier placed before what it amplifies gets a
    second chance).
 
-**Never auto-placed** (`coach_may_use`): the basic course (an empty cell already is it), mastery tiles (`M` cells / `mastery:N`) and any tile whose
-raw `effect` has a clause kind other than `mult` / `flat` (e.g. T1's `quirk:*`) — what to research and
-which quirk to chase are separate decisions. Only owned copies are placed (`can_place`), so with
+**Never auto-placed** (`coach_may_use`): the basic course (an empty cell already is it) and any tile whose
+raw `effect` has a clause kind other than `mult` / `flat` (e.g. T1's `quirk:*`) — which quirk to chase is
+a separate decision. Only owned copies are placed (`can_place`), so with
 just Basic Training I the coach places nothing. Key: `COACH_WEAK_RANK`.
 
 ## Drag & drop (`TrainingView`)
@@ -678,4 +691,5 @@ captions, `training.level.*` training-level chip / detail rows, `training.pilot_
 section title, a scene literal in `features/season/UI_View_SeasonPilotDetail.tscn`), `training.limit_break.*` the
 limit-break header · goal choices · previews · progress · notes). The limit-break **dialogue lines** are Draft
 events (kind `limit_break`, domain `mental`, see "Training level · limit break"). The effect-line part labels in `TrainingView._shared_parts` are keys translated in `_effect_text`;
-the staff line translates `StaffSystem.STAT_LABELS` through `Loc.t` (staff module's table).
+the staff / effect lines use `training.view.staff_line` · `.fac_owner` · `.fac_short.<fid>` · `.fac_mult` ·
+`.effect_fac` · `.effect_fac_breakdown` (`TrainingView.FAC_SHORT`).

@@ -139,23 +139,65 @@ func owned_count(t: TrainingTile) -> int:
 	return TrainingCourses.owned_count(_gm.season_state, t.id)
 
 
-# ── Staff stats (M3) ─────────────────────────────────────────────────────────
-# Every staff-stat read on this board goes through these, which in turn
-# go through `StaffSystem.effective` — the view, placement checks, settlement
-# and auto-arrange all see the same numbers.
+# ── Training facilities (§16) ────────────────────────────────────────────────
+# The training stat is **per facility**: a cell's EXP is multiplied by the
+# training stat of the facility that owns the line of the course trained in that
+# cell (`TrainingResearch.facility_of_tile` — the facility whose research grants
+# the line; the basic course and anything no research grants → the growth
+# facility). Every read goes through these, so the view, settlement and
+# auto-arrange all see the same numbers.
 
-## The run state the board reads (the view uses it for `StaffSystem` labels).
+## The run state the board reads (the view uses it for facility / staff labels).
 func season_state() -> Dictionary:
 	return _gm.season_state
 
 
-## Effective manager/staff stat for this run (1..20).
-func staff_stat(stat: String) -> int:
-	return StaffSystem.effective(_gm.season_state, stat)
+## Training stat of a training facility's occupant (1..20, nobody seated → 1).
+func facility_stat(fid: String) -> int:
+	return FacilitySystem.stat_value(_gm.season_state, fid)
 
 
-func training_stat() -> int:
-	return staff_stat("training")
+## Training-stat EXP multiplier of a training facility (`TrainingTile.training_exp_mult`).
+func facility_exp_mult(fid: String) -> float:
+	return TrainingResearch.exp_mult(_gm.season_state, fid)
+
+
+## Training facility of each cell, `Vector2i(seat, day) → fid`: the facility of the
+## placed tile covering it, else that of the basic course (`filler_tile_id`).
+func cell_facilities() -> Dictionary:
+	var filler_fid: String = TrainingResearch.facility_of_tile(filler_tile_id())
+	var out: Dictionary = {}
+	for x in COLS:
+		for y in ROWS:
+			out[Vector2i(x, y)] = filler_fid
+	for e_raw in board():
+		var fid: String = TrainingResearch.facility_of_tile(String((e_raw as Dictionary).get("tile", "")))
+		for c in cells_of(e_raw):
+			if out.has(c):
+				out[c] = fid
+	return out
+
+
+## Team-wide EXP multiplier parts that are not the facility stat:
+## `FinanceSystem.training_exp_mult` × trait `train_exp_pct`.
+func shared_exp_mult() -> float:
+	var state: Dictionary = _gm.season_state
+	return FinanceSystem.training_exp_mult(state) * TraitSystem.run_pct_mult(state, "train_exp_pct")
+
+
+## Team-wide multiplier per cell, `Vector2i(seat, day) → float` = the cell's facility
+## mult × `shared_exp_mult()` — `exp_mult_table` without the per-pilot parts.
+func cell_team_mult() -> Dictionary:
+	var shared: float = shared_exp_mult()
+	var fac_mult: Dictionary = {}
+	var out: Dictionary = {}
+	var facs: Dictionary = cell_facilities()
+	for c in facs.keys():
+		var fid: String = String(facs[c])
+		if not fac_mult.has(fid):
+			fac_mult[fid] = facility_exp_mult(fid)
+		out[c] = float(fac_mult[fid]) * shared
+	return out
 
 
 ## Can one more copy of this tile go on the board (owned copies left)?
@@ -316,7 +358,7 @@ func cell_exp() -> Dictionary:
 
 	# (3) 칸마다 배율 · 가산을 적용해 굳힌다. **반올림은 칸 단위로 한 번만**
 	# 한다 — 여기서 굳혀 두어야 "요일 다섯의 합"과 "한 주 한 번"이 같은 수가 된다.
-	# The outside multipliers (training stat × finance × mental, `exp_mult_table`)
+	# The outside multipliers (facility training stat × finance × mental, `exp_mult_table`)
 	# are applied here too, before that single rounding — this is the **only**
 	# place they meet, so preview (`compute_gains` → `projected_stats`) and day
 	# settlement (`compute_day_gains` → `apply_day_training`) cannot disagree.
@@ -340,17 +382,16 @@ func cell_exp() -> Dictionary:
 
 
 ## Outside EXP multiplier per cell, `Vector2i(seat, day) → float`:
-## training-stat mult (`TrainingTile.training_exp_mult`) ×
-## `FinanceSystem.training_exp_mult(state)` ×
+## the training-stat mult of the facility owning that cell's course
+## (`cell_team_mult` → `facility_exp_mult`, §16) ×
+## `FinanceSystem.training_exp_mult(state)` × trait `train_exp_pct`
+## (`TraitSystem.run_pct_mult`, M8) (`shared_exp_mult`) ×
 ## `MentalSystem.training_exp_mult(state, pilot_id, day)` (plan §11.3) ×
-## trait `train_exp_pct` (`TraitSystem.run_pct_mult`, M8) ×
 ## the pilot's rank-row `PlayerData.train_bonus_pct` (`stat_growth`, `RunRules.apply_rank`).
-## Seats without a pilot get the shared part only.
+## Seats without a pilot get the team-wide part only.
 func exp_mult_table() -> Dictionary:
 	var state: Dictionary = _gm.season_state
-	var shared: float = TrainingTile.training_exp_mult(training_stat()) \
-			* FinanceSystem.training_exp_mult(state) \
-			* TraitSystem.run_pct_mult(state, "train_exp_pct")
+	var team: Dictionary = cell_team_mult()
 	var pilots: Array = player_pilots_by_seat()
 	var out: Dictionary = {}
 	for seat in COLS:
@@ -359,47 +400,11 @@ func exp_mult_table() -> Dictionary:
 		if p != null:
 			pilot_mult = maxf(0.0, 1.0 + float(p.train_bonus_pct) / 100.0)
 		for day in ROWS:
-			var m: float = shared
+			var c := Vector2i(seat, day)
+			var m: float = float(team.get(c, 1.0))
 			if p != null:
 				m *= pilot_mult * MentalSystem.training_exp_mult(state, int(p.id), day)
-			out[Vector2i(seat, day)] = m
-	return out
-
-
-## Mech-mastery EXP per cell, `Vector2i(seat, day) → int` — only cells covered by
-## a mastery (`M`) cell of a placed tile. Raw amounts: clauses and the stat-EXP
-## multipliers do not touch them (`MechMastery` applies its own multipliers).
-func cell_mastery() -> Dictionary:
-	var out: Dictionary = {}
-	for e_raw in board():
-		var e: Dictionary = e_raw
-		var t: TrainingTile = tile(String(e.get("tile", "")))
-		if t == null or not t.has_mastery():
-			continue
-		var ox: int = int(e.get("x", 0))
-		var oy: int = int(e.get("y", 0))
-		for i in t.cells.size():
-			var amount: int = t.mastery_of_cell(i)
-			if amount <= 0:
-				continue
-			var at := Vector2i(ox + (t.cells[i] as Vector2i).x, oy + (t.cells[i] as Vector2i).y)
-			if at.x < 0 or at.x >= COLS or at.y < 0 or at.y >= ROWS:
-				continue
-			out[at] = int(out.get(at, 0)) + amount
-	return out
-
-
-## Mastery EXP folded per seat, `{seat: int}`. `day < 0` = the whole week.
-func compute_mastery(day: int = -1) -> Dictionary:
-	var cells: Dictionary = cell_mastery()
-	var out: Dictionary = {}
-	for seat in COLS:
-		var total: int = 0
-		for d in ROWS:
-			if day >= 0 and d != day:
-				continue
-			total += int(cells.get(Vector2i(seat, d), 0))
-		out[seat] = total
+			out[c] = m
 	return out
 
 
@@ -520,9 +525,9 @@ func exp_carry() -> Dictionary:
 ## 원딜 · 서폿)대로 늘어선 `Array[{pilot_id, name, role, seat, before, after,
 ## ups, exp, carry}]`. `ups` 는 이번 날 실제로 오른 포인트, `exp` 는 그날 번
 ## EXP, `carry` 는 정산 **뒤에** 통장에 남은 나머지다.
-## Also `mastery` (mastery EXP sent to the research mech) and `quirk` — the
-## quirk ops run on that pilot today, `[{kind, result, id?, from?, to?, slots?}]`
-## (empty array when none; `_apply_quirk_ops`).
+## Also `quirk` — the quirk ops run on that pilot today,
+## `[{kind, result, id?, from?, to?, slots?}]` (empty array when none; `_apply_quirk_ops`).
+## (The `mastery` field went with the `M` tiles in §16 — readers default it to 0.)
 ##
 ## `carry` 를 줄에 실어 보내는 것은 화면 때문이다 — 기초 코스만 깔린 판에서는
 ## 하루 EXP 가 `EXP_PER_POINT` 에 못 미쳐 월~목이 전부 `+0` 으로 보이고 금요일에
@@ -535,7 +540,6 @@ func exp_carry() -> Dictionary:
 ## 계산이 무너지지 않는다.
 func apply_day_training(day: int) -> Array:
 	var gains: Dictionary = compute_day_gains(day)
-	var mastery: Dictionary = compute_mastery(day)
 	var quirk_ops: Dictionary = day_quirk_ops(day)
 	var pilots: Array = player_pilots_by_seat()
 	var carry: Dictionary = exp_carry()
@@ -563,12 +567,10 @@ func apply_day_training(day: int) -> Array:
 			if up != 0:
 				p.set(key, maxi(PlayerData.STAT_MIN, int(p.get(key)) + up))
 		carry[seat] = pocket
-		var mastery_exp: int = int(mastery.get(seat, 0))
 		rows.append({
 			"pilot_id": int(p.id), "role": int(p.role),
 			"seat": seat, "before": before, "after": snapshot(p),
 			"ups": ups, "exp": exp, "carry": pocket.duplicate(),
-			"mastery": mastery_exp,
 			"quirk": _apply_quirk_ops(int(p.id), quirk_ops.get(seat, [])),
 			# Training result is fixed; every pilot trains (an empty cell = the basic
 			# course), so every pilot gains stress.
@@ -768,8 +770,8 @@ func player_pilots_by_seat() -> Array:
 #   3. one more broad sweep over all grades — amplifiers placed before the
 #      tiles they amplify get a second chance.
 # Only owned copies are placed (`can_place` → `can_take_more`). Never
-# auto-placed: the basic course (it is what an empty cell already is), mastery
-# (`M`) tiles and any tile whose effect has a clause other than `mult` / `flat`
+# auto-placed: the basic course (it is what an empty cell already is) and
+# any tile whose effect has a clause other than `mult` / `flat`
 # (quirk tiles, T1) — those are separate decisions.
 
 ## Rebuilds the board with the coach's arrangement. Returns the tiles placed.
@@ -858,11 +860,11 @@ func _coach_pool(g: int) -> Array:
 	return pool
 
 
-## The basic course, mastery tiles and tiles carrying any effect clause other
+## The basic course and tiles carrying any effect clause other
 ## than `mult` / `flat` (e.g. T1's `quirk:*`) are never auto-placed. Reads the raw CSV effect so a
 ## clause kind `TrainingTile` does not parse still counts.
 func coach_may_use(t: TrainingTile) -> bool:
-	if t == null or t.has_mastery() or t.cell_colors.has(TrainingTile.COLOR_MASTERY):
+	if t == null:
 		return false
 	if TrainingCourses.is_basic(t.id):
 		return false

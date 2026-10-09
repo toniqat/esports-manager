@@ -28,9 +28,8 @@ extends RefCounted
 # `|` 로 이은 `스탯:값` 목록. `all:N` 은 여섯 스탯 전부 +N. **한 칸이 주는 값**
 # 이므로 n칸 타일은 n배가 들어온다. 단 검정(`K`) 칸은 언제나 0 이다 — 그 칸을
 # 차지한 선수는 그날 아무것도 얻지 않는 대신 타일이 주변에 배율을 뿌린다.
-# `mastery:N` (M3) is the mech-mastery EXP of each mastery (`M`) cell — an `M`
-# cell gives no stat EXP and is not touched by clauses or training multipliers
-# (MechMastery applies its own knowledge / facility multipliers).
+# (Mastery `M` cells and `mastery:N` were removed in §16 — mech mastery now comes
+# from the mech lab's research, `features/season/facility/`.)
 #
 # ── effect ───────────────────────────────────────────────────────────────────
 # `;` 로 이은 절 목록. 지금 있는 절은 둘이다.
@@ -59,10 +58,6 @@ const COLOR_STATS: Dictionary = {
 
 const COLOR_BLACK: String = "K"   # 경험치 0 — 증폭형 타일의 자기 칸
 const COLOR_GRAY:  String = "W"   # 무속성 — 여섯 스탯을 고루 준다
-## Mastery cell (M3). Gives **no stat EXP**; instead it yields `per_cell_mastery`
-## mech-mastery EXP that day settlement hands to `MechMastery.add_training_exp`
-## (the pilot's weekly research mech). Written in `exp` as `mastery:N`.
-const COLOR_MASTERY: String = "M"
 ## Quirk cell (§14, T1). Gives **no stat EXP**; the tile's `quirk:*` clauses act
 ## on the pilot of this cell on its day (`TrainingBoard.apply_day_training`).
 const COLOR_QUIRK: String = "Q"
@@ -87,7 +82,6 @@ const COLOR_RGB: Dictionary = {
 	"P": Color(0.53, 0.87, 0.65),
 	"K": Color(0.34, 0.34, 0.38),
 	"W": Color(0.80, 0.80, 0.84),
-	"M": Color(0.30, 0.78, 0.74),
 	"Q": Color(0.93, 0.55, 0.80),
 }
 
@@ -102,8 +96,10 @@ const GRADE_COLORS: Array = [
 ]
 
 ## ── Training stat → EXP multiplier (M3) ──────────────────────────────────────
-## Tile EXP multiplier `1 + (stat − PIVOT) × STEP` from the effective training
-## stat (`StaffSystem.effective`), numbers in const.csv (`TRAINING_STAT_EXP_*`).
+## Tile EXP multiplier `1 + (stat − PIVOT) × STEP` from a training stat — §16: the
+## training stat of the facility that owns the cell's course line
+## (`TrainingResearch.exp_mult` → `FacilitySystem.stat_value`), numbers in const.csv
+## (`TRAINING_STAT_EXP_*`).
 ## There is no per-grade placement limit or tactics unlock any more: tiles are
 ## owned items and the board takes as many copies as the run owns
 ## (`TrainingCourses`).
@@ -159,8 +155,6 @@ var cells: Array = []                 # Array[Vector2i]
 var cell_colors: Array = []           # Array[String]
 ## 칸 하나가 주는 EXP. `{stat_key: int}` — 검정 칸에는 안 들어간다.
 var per_cell_exp: Dictionary = {}
-## Mastery EXP per `M` cell (`exp` clause `mastery:N`). Other colours ignore it.
-var per_cell_mastery: int = 0
 ## 효과 절. `{kind, scope, pct}` 또는 `{kind, scope, stat, amount}`.
 var clauses: Array = []
 ## Quirk ops of the `quirk:<op>` clauses (`QUIRK_OPS` order, no duplicates).
@@ -204,16 +198,13 @@ func _parse_shape(shape: String) -> void:
 
 func _parse_exp(raw: String) -> void:
 	per_cell_exp.clear()
-	per_cell_mastery = 0
 	for part in raw.split("|", false):
 		var kv: PackedStringArray = String(part).strip_edges().split(":", false)
 		if kv.size() != 2:
 			continue
 		var key: String = String(kv[0]).strip_edges()
 		var amount: int = int(String(kv[1]))
-		if key == "mastery":
-			per_cell_mastery = amount
-		elif key == "all":
+		if key == "all":
 			for stat_key in PlayerData.STAT_KEYS:
 				per_cell_exp[String(stat_key)] = amount
 		elif key in PlayerData.STAT_KEYS:
@@ -283,22 +274,9 @@ func exp_of_cell(cell_idx: int) -> Dictionary:
 	if cell_idx < 0 or cell_idx >= cell_colors.size():
 		return {}
 	var sym: String = String(cell_colors[cell_idx])
-	if sym == COLOR_BLACK or sym == COLOR_MASTERY or sym == COLOR_QUIRK:
+	if sym == COLOR_BLACK or sym == COLOR_QUIRK:
 		return {}
 	return per_cell_exp
-
-
-## Mastery EXP one cell yields — only `M` cells, otherwise 0.
-func mastery_of_cell(cell_idx: int) -> int:
-	if cell_idx < 0 or cell_idx >= cell_colors.size():
-		return 0
-	if String(cell_colors[cell_idx]) != COLOR_MASTERY:
-		return 0
-	return per_cell_mastery
-
-
-func has_mastery() -> bool:
-	return per_cell_mastery > 0 and cell_colors.has(COLOR_MASTERY)
 
 
 ## Does this cell carry the tile's quirk ops (a `Q` cell of a tile with ops)?
@@ -309,7 +287,7 @@ func is_quirk_cell(cell_idx: int) -> bool:
 
 
 ## A quirk tile (`Q` cells + `quirk:*` clauses). The coach's auto-arrange can
-## use this to leave such tiles to the player, like mastery tiles.
+## use this to leave such tiles to the player.
 func has_quirk() -> bool:
 	return not quirk_ops.is_empty() and cell_colors.has(COLOR_QUIRK)
 
@@ -319,17 +297,10 @@ func has_quirk() -> bool:
 ## 여는 팝오버라 폭이 348px 이고, 여기서 답해야 하는 질문이 "이 코스가 무엇을
 ## 올리는가" 하나뿐이라 `전회` 를 다시 풀어 읽을 이유가 없다.
 func exp_summary() -> String:
-	var stat_part: String = _stat_exp_summary()
-	if has_quirk() and per_cell_exp.is_empty() and not has_mastery():
+	if has_quirk() and per_cell_exp.is_empty():
 		# Quirk cells give no EXP — say what the day is spent on instead.
 		return Loc.t(L.TRAINING_EXP_QUIRK_DAY)
-	if not has_mastery():
-		return stat_part
-	# Mastery cells name what they feed — the pilot's weekly research mech.
-	var mastery_part: String = Loc.t(L.TRAINING_EXP_MASTERY, {"n": per_cell_mastery})
-	if per_cell_exp.is_empty():
-		return mastery_part
-	return "\n".join(PackedStringArray([stat_part, mastery_part]))
+	return _stat_exp_summary()
 
 
 func _stat_exp_summary() -> String:

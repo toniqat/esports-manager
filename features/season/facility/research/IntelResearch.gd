@@ -47,7 +47,7 @@ static func on_complete(state: Dictionary, _row: Dictionary, target: String) -> 
 	return {"text_key": L.RESEARCH_INTEL_NOTE_RANK_UP, "args": {"team": team_short(tid), "rank": r}}
 
 
-## Facility sheet section: every team of the field with its rank, the next opponent marked.
+## Facility screen body: one card per field team (rank, progress, `분석` button), next opponent first.
 static func make_body(state: Dictionary, _fid: String) -> Control:
 	var body := IntelResearchBody.create()
 	body.fill(state)

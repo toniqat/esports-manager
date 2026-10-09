@@ -1,17 +1,22 @@
 class_name IntelResearchBody
-extends VBoxContainer
+extends ScrollContainer
 
-# Intel facility sheet section (`IntelResearch.make_body`): every team of the competition I play
-# in now (`IntelResearch.field`, next opponent first) with its analysis rank and the reveal it buys
-# (`OpponentIntel.TIER_LABELS`); the next opponent's row carries the `다음 상대` chip.
+# Intel facility body (`IntelResearch.make_body` → `FacilityView` %BodySlot, Body contract in
+# `features/season/facility/README.md`): one `IntelTeamRow` card per team of the competition I play
+# in now (`IntelResearch.field`, next opponent first). No row picking: the card's `분석` button makes
+# that team the target of the single row `in_scout` (`ResearchSystem.select`, HUB only).
 #
-# **Layout lives in `UI_Comp_IntelResearchBody.tscn`**: caption · `%Rows` with one sample `Row`
-# (Card panel: team name · next chip · tier label · rank). The sample is taken out on first use
-# and duplicated per team; the script only fills texts and shows the chip.
+# **Layout lives in `UI_View_IntelResearchBody.tscn`** (scroll + `%Rows`) and `UI_Comp_IntelTeamRow.tscn`;
+# the list scrolls inside the body (`DragScroll`), the facility screen itself never scrolls.
 
-const SCENE_PATH: String = "res://features/season/facility/research/UI_Comp_IntelResearchBody.tscn"
+signal changed
+signal message(text: String)
 
-var _sample: Control = null   # scene sample row, duplicated per team
+const SCENE_PATH: String = "res://features/season/facility/research/UI_View_IntelResearchBody.tscn"
+const FID: String = "intel"
+const ROW_ID: String = "in_scout"
+
+var _state: Dictionary = {}
 
 
 static func create() -> IntelResearchBody:
@@ -19,50 +24,67 @@ static func create() -> IntelResearchBody:
 
 
 func _ready() -> void:
-	_take_sample()
+	DragScroll.attach(self)
+	for c in %Rows.get_children():   # editor preview row
+		%Rows.remove_child(c)
+		c.queue_free()
 	if UiPreview.is_standalone(self):
 		_fill_preview()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE and is_instance_valid(_sample):
-		_sample.free()
-
-
-## Fills the list from the run state. Can be called before `_ready` and again later.
-func fill(state: Dictionary) -> void:
-	_take_sample()
-	%Caption.text = Loc.t(L.RESEARCH_INTEL_BODY_CAPTION)
-	var rows: Node = %Rows
-	for c in rows.get_children():
-		rows.remove_child(c)
-		c.queue_free()
-	var next_id: int = IntelResearch.next_opponent(state)
-	for raw in IntelResearch.field(state):
-		var tid: int = int(raw)
-		var r: int = IntelResearch.rank(state, tid)
-		var row := _sample.duplicate() as Control
-		rows.add_child(row)
-		(row.get_node("Pad/Line/Team") as Label).text = "%s  (%s)" % [
-				IntelResearch.team_full(tid), IntelResearch.team_short(tid)]
-		(row.get_node("Pad/Line/NextChip") as Control).visible = tid == next_id
-		(row.get_node("Pad/Line/NextChip/NextText") as Label).text = Loc.t(L.RESEARCH_INTEL_BODY_NEXT)
-		(row.get_node("Pad/Line/Tier") as Label).text = \
-				Loc.t(String(OpponentIntel.TIER_LABELS[OpponentIntel.tier_for(state, tid)]))  # l10n-dynamic: match.intel.tier.*
-		var rank_label := row.get_node("Pad/Line/Rank") as Label
-		rank_label.text = Loc.t(L.RESEARCH_INTEL_BODY_RANK, {"rank": r, "max": IntelResearch.MAX_RANK})
-		rank_label.theme_type_variation = &"AccentLabel" if r >= IntelResearch.MAX_RANK else &"BodyLabel"
-
-
-func _take_sample() -> void:
-	if _sample != null:
 		return
+	if not _state.is_empty():
+		refresh()
+
+
+## Shows the run `state`. Callable before `_ready` (applied there).
+func fill(state: Dictionary) -> void:
+	_state = state
+	if is_node_ready():
+		refresh()
+
+
+## Rebuilds the cards in place (rows reused): rank, progress, button state per team.
+func refresh() -> void:
+	var state: Dictionary = _state
+	var ids: Array = IntelResearch.field(state)
 	var rows: Node = %Rows
-	_sample = rows.get_child(0) as Control
-	rows.remove_child(_sample)
+	while rows.get_child_count() > ids.size():
+		var extra: Node = rows.get_child(rows.get_child_count() - 1)
+		rows.remove_child(extra)
+		extra.queue_free()
+	while rows.get_child_count() < ids.size():
+		var r := IntelTeamRow.create()
+		rows.add_child(r)
+		r.analyse_pressed.connect(_on_analyse)
+	var next_id: int = IntelResearch.next_opponent(state)
+	var act: Dictionary = ResearchSystem.active(state, FID)
+	var active_tid: int = int(act["target"]) if String(act.get("rid", "")) == ROW_ID \
+			and String(act.get("target", "")).is_valid_int() else -1
+	var can: bool = ResearchSystem.can_select(state)
+	for i in ids.size():
+		var tid: int = int(ids[i])
+		var rank: int = IntelResearch.rank(state, tid)
+		var mode: IntelTeamRow.Mode = IntelTeamRow.Mode.IDLE
+		if rank >= IntelResearch.MAX_RANK:
+			mode = IntelTeamRow.Mode.DONE
+		elif tid == active_tid:
+			mode = IntelTeamRow.Mode.ACTIVE
+		elif not can:
+			mode = IntelTeamRow.Mode.LOCKED
+		(rows.get_child(i) as IntelTeamRow).fill(tid, rank,
+				ResearchSystem.progress(state, FID, ROW_ID, str(tid)), tid == next_id, mode)
 
 
-## F6 단독 실행 미리보기 — 메모리 런 + 미리보기 리그 일정(다음 상대 표시), 몇 팀에 분석 단계를 줘 본다.
+func _on_analyse(team_id: int) -> void:
+	var why: String = ResearchSystem.select(_state, FID, ROW_ID, str(team_id))
+	if why != "":
+		message.emit(why)
+		return
+	refresh()
+	changed.emit()
+
+
+## F6 단독 실행 미리보기 — 메모리 런 + 미리보기 리그(다음 상대), 세 팀에 분석 1~3단계,
+## 한 팀은 분석 중(포인트 일부).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
@@ -75,4 +97,9 @@ func _fill_preview() -> void:
 	for i in 3:
 		ranks[str((pid + 2 + i) % 8)] = i + 1
 	s["intel_rank"] = ranks
+	var target: String = str((pid + 3) % 8)   # rank 2 → analysing toward 3
+	ResearchSystem.select(s, FID, ROW_ID, target)
+	var res: Dictionary = s["research"]
+	(res["points"] as Dictionary)[ResearchSystem.key_of(ROW_ID, target)] = \
+			int(ResearchSystem.cost(ResearchSystem.row(ROW_ID)) * 0.6)
 	fill(s)

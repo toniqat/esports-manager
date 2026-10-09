@@ -5,6 +5,9 @@ tx_4YKPQENSGB,research_intel.target,active,"intel research target label (team sh
 tx_T7D9CGRHZ8,research_intel.target_next,active,intel research target label of my next opponent,,,{team} · 분석 {rank}/{max} · 다음 상대,{team} · Analysis {rank}/{max} · Next opponent,draft,5abbc06e
 tx_J4KMC49ABA,research_intel.note.rank_up,active,toast note when an intel research completes,,,{team} 분석 {rank}단계,{team} analysis tier {rank},draft,518a66ee
 tx_W59SNZ97CJ,research_intel.block.no_target,active,intel research row block reason (every team at max rank),,,더 분석할 팀이 없습니다,No team left to analyse,draft,0a6c8fac
-tx_NNENFKVN7T,research_intel.body.caption,active,intel facility sheet body caption,,,팀별 분석 단계: 연구가 끝날 때마다 한 단계씩 오릅니다.,Analysis tier per team: each finished research raises it by one.,draft,8a5d7ed7
 tx_JFWCEN193R,research_intel.body.next,active,intel facility sheet body chip on the next opponent row,,,다음 상대,Next opponent,draft,77a3a50b
 tx_S4MP0P7FCH,research_intel.body.rank,active,intel facility sheet body team rank,,,분석 {rank}/{max},Analysis {rank}/{max},draft,325582d8
+tx_GKADDT6VK8,research_intel.body.analyse,active,intel facility body team card button: start analysing this team,,,분석,Analyse,draft,d5ce088d
+tx_RCS8QGHPPF,research_intel.body.analysing,active,intel facility body team card button of the team being analysed (not pressable),,,분석 중,Analysing,draft,dbd274e0
+tx_8EPYQF11Z2,research_intel.body.done,active,intel facility body team card button of a team at max analysis rank (disabled),,,분석 완료,Fully analysed,draft,41890a42
+tx_N5KMGQJ8D2,research_intel.body.complete,active,intel facility body progress percent slot of a team at max analysis rank,,,완료,Done,draft,8d868037

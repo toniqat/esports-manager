@@ -1,0 +1,179 @@
+[gd_scene load_steps=4 format=3 uid="uid://srwnotkd0tlr"]
+
+[ext_resource type="Script" path="res://features/season/facility/research/IntelTeamRow.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/team_logos/team_3.svg" id="3_logo"]
+
+[node name="IntelTeamRow" type="PanelContainer"]
+editor_description = "Intel body team card (IntelResearchBody adds one per field team): logo · short name + rank pips + next chip · full name · 분석 button; progress to the next rank below. Card look switched by IntelTeamRow.fill (SelectableCard / SelectableCardOn while analysed)."
+offset_right = 1000.0
+offset_bottom = 196.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCard"
+script = ExtResource("1_script")
+
+[node name="Pad" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 22
+
+[node name="Box" type="VBoxContainer" parent="Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Top" type="HBoxContainer" parent="Pad/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 22
+
+[node name="Logo" type="TextureRect" parent="Pad/Box/Top"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill() (TeamLogos.texture)"
+custom_minimum_size = Vector2(104, 104)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("3_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Names" type="VBoxContainer" parent="Pad/Box/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="NameLine" type="HBoxContainer" parent="Pad/Box/Top/Names"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Short" type="Label" parent="Pad/Box/Top/Names/NameLine"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill() (team short name)"
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 44
+text = "CNH"
+vertical_alignment = 1
+
+[node name="Pips" type="HBoxContainer" parent="Pad/Box/Top/Names/NameLine"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill(): one pip per analysis rank (IntelResearch.MAX_RANK = 3), ProgressFill = reached / ProgressTrack = not yet."
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Pip0" type="Panel" parent="Pad/Box/Top/Names/NameLine/Pips"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Pip1" type="Panel" parent="Pad/Box/Top/Names/NameLine/Pips"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Pip2" type="Panel" parent="Pad/Box/Top/Names/NameLine/Pips"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="RankText" type="Label" parent="Pad/Box/Top/Names/NameLine"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill() (분석 r/3)"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "분석 1/3"
+vertical_alignment = 1
+
+[node name="NextChip" type="PanelContainer" parent="Pad/Box/Top/Names/NameLine"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill(): shown on my next opponent only."
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
+
+[node name="NextText" type="Label" parent="Pad/Box/Top/Names/NameLine/NextChip"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill()"
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 20
+text = "다음 상대"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Full" type="Label" parent="Pad/Box/Top/Names"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill() (team full name)"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "Cunning Hares"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Analyse" type="Button" parent="Pad/Box/Top"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd _ready() · fill(): 분석 (PrimaryButton) / 분석 중 (SelectableTileOn, not pressable) / 분석 완료 (disabled)."
+custom_minimum_size = Vector2(200, 92)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 28
+text = "분석"
+
+[node name="Bar" type="HBoxContainer" parent="Pad/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Track" type="Panel" parent="Pad/Box/Bar"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Pad/Box/Bar/Track"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill(): anchor_right = progress to the next rank (full at rank 3)."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.4
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Percent" type="Label" parent="Pad/Box/Bar"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — IntelTeamRow.gd fill(): n% to the next rank, 완료 at rank 3."
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "40%"
+horizontal_alignment = 2
+vertical_alignment = 1

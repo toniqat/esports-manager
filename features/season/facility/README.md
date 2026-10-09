@@ -15,7 +15,7 @@ Tuning numbers live only in `data/csv/const.csv` (keys below) and the data CSVs 
 | `ResearchBubble.gd` + `UI_Comp_ResearchBubble.tscn` | Map speech bubble per facility (hub: tappable, week screen: read-only) |
 | `research_ring.gdshader` | Icon masked to a circle as a radial progress bar (bubble) |
 | `research/TrainingResearch*` · `research/UI_Comp_TrainingResearch*` | Kind `training` handler + body |
-| `research/IntelResearch*` · `research/UI_Comp_IntelResearchBody.tscn` | Kind `intel` handler + body (+ `rank(state, team_id)`) |
+| `research/IntelResearch*` · `research/IntelTeamRow.gd` · `research/UI_View_IntelResearchBody.tscn` · `research/UI_Comp_IntelTeamRow.tscn` | Kind `intel` handler + body (+ `rank(state, team_id)`) |
 | `research/MechResearch.gd` | Kind `mech` handler; body = `mastery/MechLabBody` |
 | `research/PersonnelResearch.gd` | Kind `personnel` handler (auto); body = `staff/PersonnelBody` |
 
@@ -212,7 +212,7 @@ The facility is in `ResearchSystem.AUTO_KINDS` — `ensure_auto` keeps `scout` a
   `hire_candidate(state, id)` (`StaffSystem.hire`, then the list is consumed) · `pass_all(state)`.
 - `make_body` → `staff/PersonnelBody` — `features/season/staff/README.md` "Personnel body".
 
-## IntelResearch (`research/IntelResearch.gd` · `research/IntelResearchBody.gd` · `research/UI_Comp_IntelResearchBody.tscn`)
+## IntelResearch (`research/IntelResearch.gd` · `research/IntelResearchBody.gd` + `UI_View_IntelResearchBody.tscn` · `research/IntelTeamRow.gd` + `UI_Comp_IntelTeamRow.tscn`)
 - **Field** (`field(state)`): the teams of the competition I play in now, without my team — the INTL bracket
   teams while I am in that bracket (`current_tournament.type == "INTL"`), else every league team
   (`GameManager.TEAM_COUNT`; playoffs use the league too). My next opponent (`next_opponent`: first unplayed
@@ -225,7 +225,17 @@ The facility is in `ResearchSystem.AUTO_KINDS` — `ensure_auto` keeps `scout` a
 - `rank(state, team_id)`: 0..3 from `intel_rank`, own team 3. Read by `OpponentIntel.tier_for` (PREP · ban/pick ·
   league team detail; + the `analysis_tier` traits) — `features/match_flow/match_prep/README.md` "Reveal tiers".
 - Row (`research.csv`, facility `intel`): `in_scout` only (2 weeks, Lv1+, repeatable) — `in_deep` was removed.
-- `make_body` → `IntelResearchBody` — *being reworked (2026-10-09 UI rework).*
+- **Body** (`make_body` → `IntelResearchBody`, a full-rect `ScrollContainer` + `DragScroll`; user spec 2026-10-09):
+  no row picker (one row) — one `IntelTeamRow` card per `field` team, next opponent first. Card: team logo
+  (`TeamLogos.texture`) · short name (big) · rank pips (3, `ProgressFill` / `ProgressTrack`) + `분석 r/3` ·
+  `다음 상대` chip · full name (small) · right: the button; below: bar + percent = progress to the **next** rank
+  (`ResearchSystem.progress(state, "intel", "in_scout", "<team>")`), rank 3 → full bar + `완료`.
+  Button: `분석` (`PrimaryButton`) → `ResearchSystem.select(state, "intel", "in_scout", "<team>")`, then
+  `refresh` + `changed` (refusal → `message`); the analysed team = `분석 중` (`SelectableTileOn`, not pressable)
+  on a `SelectableCardOn` card; rank 3 = `분석 완료` (disabled); outside HUB (`can_select` false) every `분석`
+  is disabled. No caption, stop button or progress line. Rows are reused on `refresh` (count follows `field`).
+  F6: body (preview league, ranks 1..3, one team analysed at 60 %) · row (hand values).
+  l10n `research_intel.body.{next, rank, analyse, analysing, done, complete}`.
 
 ## MechResearch (`research/MechResearch.gd`, `mech_lab`)
 - **Row** (`research.csv`, l10n `research_mech`): `mech_study` (2 weeks, Lv1, repeatable) — `mech_deep` was

@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://bxg8jfdv8t27n"]
+
+[ext_resource type="Script" uid="uid://ctwlvlk5nsltp" path="res://features/season/facility/research/IntelResearchBody.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/season/facility/research/UI_Comp_IntelTeamRow.tscn" id="3_row"]
+
+[node name="IntelResearchBody" type="ScrollContainer"]
+editor_description = "Intel facility body (IntelResearch.make_body → FacilityView %BodySlot, full rect): one IntelTeamRow card per team of the current competition (IntelResearch.field, next opponent first). The list scrolls inside the body (DragScroll). Rows are rebuilt by IntelResearchBody.refresh; the instanced row is an editor preview, removed at runtime."
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+horizontal_scroll_mode = 0
+script = ExtResource("1_script")
+
+[node name="Rows" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — IntelResearchBody.gd refresh(): one UI_Comp_IntelTeamRow per field team (children replaced at runtime)."
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="IntelTeamRow_Preview" parent="Rows" instance=ExtResource("3_row")]
+layout_mode = 2

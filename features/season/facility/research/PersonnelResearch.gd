@@ -8,8 +8,10 @@ extends RefCounted
 # stores their ids in `season_state.scout = {candidates: [int], week: String}` — a new list
 # replaces an unanswered one. The draw is seeded per run · week · row · completion count,
 # so a reload gives the same list.
-# The player answers in the facility sheet body (`staff/PersonnelBody`): hire one
-# (`hire_candidate` → `StaffSystem.hire`, the list is consumed) or pass on all (`pass_all`).
+# The facility is auto (`ResearchSystem.AUTO_KINDS`): the scout row is always active, nobody picks.
+# The player answers in the facility screen body (`staff/PersonnelBody`): hire one
+# (`hire_candidate` → `StaffSystem.hire`, the list is consumed); an unanswered list is simply
+# replaced by the next scout.
 # Contract: `features/season/facility/README.md` "Kind handlers" + "PersonnelResearch".
 
 const P1_SCOUT: String = "scout"
@@ -44,8 +46,8 @@ static func on_complete(state: Dictionary, row: Dictionary, _target: String) -> 
 	return {"text_key": L.RESEARCH_PERSONNEL_NOTE_CANDIDATES, "args": {"n": ids.size()}}
 
 
-## Personnel section of the facility sheet: staff list (dismiss) + candidates (hire / pass).
-## The body emits `changed` after any of them — the host refreshes its occupant picker.
+## Personnel office body: staff grid (dismiss) + candidate grid (hire) + the scouting gauge.
+## The body emits `changed` after a hire / dismiss — the host refreshes its header.
 static func make_body(state: Dictionary, _fid: String) -> Control:
 	var body := PersonnelBody.create()
 	body.bind(state)
@@ -103,7 +105,7 @@ static func hire_candidate(state: Dictionary, staff_id: int) -> String:
 	return why
 
 
-## Passes on every candidate (the list is emptied; the next scout draws again).
+## Empties the candidate list (after a hire; the next scout draws again).
 static func pass_all(state: Dictionary) -> void:
 	_scout(state)["candidates"] = []
 

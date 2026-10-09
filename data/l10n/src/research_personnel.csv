@@ -8,14 +8,13 @@ tx_W0X6SW7323,research_personnel.body.staff_title,active,personnel sheet section
 tx_D6VFEA8FS2,research_personnel.body.staff_sub,active,personnel sheet staff caption,,,{n}명 · 주급 합계 {amount},{n} staff · weekly salary {amount},draft,62ab06b4
 tx_CZ4VNDDER3,research_personnel.body.staff_empty,active,personnel sheet empty staff list,,,고용된 스태프가 없습니다,No staff hired,draft,d6f67276
 tx_XVA01HKA07,research_personnel.body.cand_title,active,personnel sheet section title,,,영입 후보,Candidates,draft,27e9707f
-tx_A8KAFWVEB1,research_personnel.body.cand_sub,active,personnel sheet candidates caption,,,{n}명 — 한 명을 영입하거나 모두 보냅니다,{n} — hire one or pass on all,draft,fa2a77c8
-tx_FG29WZFWYV,research_personnel.body.cand_empty,active,personnel sheet empty candidate list,,,스태프 스카우트를 마치면 후보가 여기에 나옵니다,Candidates appear here after Staff Scouting,draft,dba80909
-tx_ZER9Z0CY1W,research_personnel.body.seat,active,staff row — facility the staffer sits in,,,배치 · {facility},Seat · {facility},draft,bbedec08
-tx_DWJ2YS43HN,research_personnel.body.seat_none,active,staff row — not seated,,,배치 없음,Unseated,draft,9ff58fa9
 tx_BNEQQWKNPV,research_personnel.body.dismiss,active,button,,,해고,Dismiss,draft,e25486b9
-tx_T5J3D3WBYB,research_personnel.body.dismiss_confirm,active,"button, second press of dismiss",,,해고 확정,Confirm,draft,34fffd02
-tx_PAZY3K1HKC,research_personnel.body.dismiss_seated_confirm,active,"button, second press of dismiss for a seated staffer",,,자리 비우고 해고,Unseat & dismiss,draft,a6322cf1
 tx_1ZDA977HGZ,research_personnel.body.hire,active,button,,,영입,Hire,draft,7994e59f
-tx_FQ2QYR4GMT,research_personnel.body.hire_confirm,active,"button, second press of hire",,,영입 확정,Confirm,draft,73b19faf
-tx_FJHYNYQ0XK,research_personnel.body.pass_all,active,button,,,모두 보내기,Pass on all,draft,eaf55103
-tx_M6054BQ9PK,research_personnel.body.pass_confirm,active,"button, second press of pass on all",,,정말 보내기,Confirm pass,draft,9e2f5619
+tx_YAF7YXS3BF,research_personnel.body.scout_progress,active,personnel body candidate header: scouting gauge percent (e.g. 40%),,,스카우트 {percent},Scouting {percent},draft,b4a0985e
+tx_FH7332P9JX,research_personnel.body.sub_seated,active,staff thumbnail sub line: job and the facility they sit in,,,{job} · {facility},{job} · {facility},draft,bd10bd35
+tx_WB2J502BG7,research_personnel.body.sub_free,active,"staff thumbnail sub line: job, not seated",,,{job} · 배치 없음,{job} · Unseated,draft,61513118
+tx_93W9A6R32X,research_personnel.body.dismiss_title,active,dismiss confirm popup title,,,{name} 해고,Dismiss {name},draft,277d76be
+tx_ZXK676KV1N,research_personnel.body.hire_title,active,hire confirm popup title,,,{name} 영입,Hire {name},draft,56ab7892
+tx_HQYAA3A4GP,research_personnel.body.info,active,"confirm popup body, first line: job and weekly salary (the six stats follow on their own lines)",,,{job} · 주급 {salary},{job} · Weekly pay {salary},draft,41d3d05c
+tx_Q87CAKXEMP,research_personnel.body.dismiss_seated,active,dismiss confirm popup: extra line for a seated staffer,,,지금 {facility}에 배치되어 있어 해고하면 그 자리가 빕니다.,Seated in {facility}: dismissing leaves that seat empty.,draft,c4c178aa
+tx_Y8V52C12XE,research_personnel.body.hire_rest,active,hire confirm popup: extra line when other candidates remain,,,영입하면 남은 후보 {n}명은 돌아갑니다.,Hiring sends the other {n} candidates away.,draft,7c67bf22

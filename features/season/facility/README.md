@@ -209,8 +209,11 @@ The facility is in `ResearchSystem.AUTO_KINDS` — `ensure_auto` keeps `scout` a
   `StaffSystem.free_agent_ids()` (staff.csv rows on no team) minus the run team; seed =
   `hash("run_seed|week_key|rid|done_count")` (the drawn list itself is saved).
 - Helpers: `candidate_count` · `pool` · `draw(state, n, seed)` · `candidates(state)` (ints, hired ones skipped) ·
-  `hire_candidate(state, id)` (`StaffSystem.hire`, then the list is consumed) · `pass_all(state)`.
-- `make_body` → `staff/PersonnelBody` — `features/season/staff/README.md` "Personnel body".
+  `hire_candidate(state, id)` (`StaffSystem.hire`, then the list is consumed) · `pass_all(state)` (empties the list;
+  no button any more, the next scout replaces an unanswered list anyway).
+- `make_body` → `staff/PersonnelBody` (rework 2026-10-09: no research picker, no description): staff grid
+  (dismiss) on top, candidate grid (hire) below with the scouting gauge on its header line —
+  `features/season/staff/README.md` "Personnel body".
 
 ## IntelResearch (`research/IntelResearch.gd` · `research/IntelResearchBody.gd` · `research/UI_Comp_IntelResearchBody.tscn`)
 - **Field** (`field(state)`): the teams of the competition I play in now, without my team — the INTL bracket

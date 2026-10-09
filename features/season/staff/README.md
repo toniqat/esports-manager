@@ -11,9 +11,8 @@ names) are also referenced as `{tx_…}` by finance specials, manager type descs
 | `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule **§16: facility occupants** — `effective(state, stat)` = max over the stat's facilities (`FacilitySystem.facilities_for_stat`) of the occupant's value (manager + staff_mods / staff stat / `STAT_MIN` when empty; `tactics` = manager); `owner` (`manager` / `assistant` / `staff` / `none`) / `owner_name` / `is_delegated` (staff or assistant seated); `staff_for` = the staff whose seat supplies the stat; **hire / dismiss (§16)** — `free_agent_ids()` (staff on no team's `staff_ids` = the scouting pool), `is_hired`, `hire_block_reason` / `hire(state, id)` (appends a copy of `staff_row` to `run_setup.staff`, the `snapshot_for_run` shape, unseated), `dismiss_block_reason` / `dismiss(state, id)` (a seated staffer is `FacilitySystem.unassign`ed first, then removed); salary totals follow from `run_setup.staff`; `staff_name(e)` — staff rows (`staff_row`, `run_setup.staff[]`) hold the l10n key `name_key` (`name.staff.*`) only, never the text (D7); `effective_for_incident`; temporary mods `add_mod` / `decay_mods` (week end); coach points `coach_points_grant` / `grant_coach_points` / `coach_points` / `spend_coach_points` (§15 D). |
 | `StaffPanel.gd` + `UI_View_StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
 | `UI_Comp_StaffStatRow.tscn` · `UI_Comp_StaffTraitRow.tscn` · `UI_Comp_StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
-| `PersonnelBody.gd` + `UI_View_PersonnelBody.tscn` | §16 personnel section of the 인사팀 (`personnel`) facility sheet, built by `facility/research/PersonnelResearch.make_body` — see "Personnel body" below. |
+| `PersonnelBody.gd` + `UI_View_PersonnelBody.tscn` | §16 body of the 인력 개발실 (`personnel`) facility screen, built by `facility/research/PersonnelResearch.make_body` — see "Personnel body" below. |
 | `StaffThumb.gd` + `UI_Comp_StaffThumb.tscn` | Shared person thumbnail card (Button): portrait (`resources/StaffImages`, temporary bust pictogram) · name · sub line (red = block reason) · value line; `show_person(who, name, sub, value, on, sub_bad)` / `set_on`, `who` = `"manager"` / staff id string. Used by `facility/OccupantPicker` and the personnel body. F6 = the manager card. |
-| `UI_Comp_PersonnelStaffRow.tscn` | Item scene (no script) of the personnel body: name · salary · job · six stats · seat · two-step action button. |
 
 Rules
 - Stats are 1..20 (`STAT_MIN` / `STAT_MAX`), six keys `StaffSystem.STATS`.
@@ -39,18 +38,20 @@ rows personnel scouting can draw (`free_agent_ids`). Names are data aliases `nam
 `data/l10n/src/name.csv` (domain `name`, issued with `new_keys`). Jobs are specialty labels only (§16).
 
 ## Personnel body (`PersonnelBody.gd`)
-The kind-specific section of the `personnel` facility sheet (`PersonnelResearch.make_body(state, fid)` →
-`PersonnelBody.create()` + `bind(state)`; the host adds it under its research list). Text keys:
-`research_personnel.body.*` (domain file `data/l10n/src/research_personnel.csv`).
+Body of the `personnel` facility screen (`FacilityView` %BodySlot, full rect; `PersonnelResearch.make_body(state, fid)`
+→ `PersonnelBody.create()` + `bind(state)`). The office researches on its own (`ResearchSystem.AUTO_KINDS`), so there
+is no picker, no description, no "in progress" line (user, 2026-10-09). Text keys: `research_personnel.body.*`
+(`data/l10n/src/research_personnel.csv`) + `staff.panel.salary`. Cards = `StaffThumb` (`who` = staff id string).
 
 | Section | Shows / does |
 |---|---|
-| 스태프 목록 | Every `run_setup.staff` entry: name, weekly salary, job label, six stats (`STATS` order), seat (`배치 · <facility>` / `배치 없음`). `해고` is two-step: the first press arms the row (button → `PrimaryButton`, `해고 확정` / `자리 비우고 해고` when seated), the second calls `StaffSystem.dismiss`. |
-| 영입 후보 | `PersonnelResearch.candidates(state)` (the last scout's unanswered list): same row, no seat line. `영입` two-step → `PersonnelResearch.hire_candidate` (hires, list consumed). `모두 보내기` two-step → `pass_all`. Empty → hint to run 스태프 스카우트. |
+| 스태프 목록 | Title line: title left, `n명 · 주급 합계 x` (`%StaffSub`) at the right end. Every `run_setup.staff` entry as a card (sub = `<job> · <facility>` / `<job> · 배치 없음`, value = weekly salary), 3-column grid; `%StaffScroll` is fixed at 2.5 card rows (881 px) and scrolls inside. Nobody hired → `%StaffEmpty` instead. Tap → `ConfirmPopup` (`<name> 해고`: job · salary, the six stats on two lines, a seated staffer adds "the seat empties"; danger button) → `StaffSystem.dismiss`. |
+| 영입 후보 | Header line: title · scouting gauge (`ProgressTrack` / `%ScoutFill`, `anchor_right` = `ResearchSystem.progress(state, "personnel")`) · `스카우트 n%` (`ResearchBubble.percent_text`). `PersonnelResearch.candidates(state)` as cards (sub = job, value = salary), 3 columns; `%CandScroll` takes the rest of the body and scrolls inside. No empty-state text, no pass-all button. Tap → `ConfirmPopup` (`<name> 영입`, same info, "the other n go back" when others remain) → `PersonnelResearch.hire_candidate` (the list is consumed). |
 
-Arming another button disarms the previous one. After any change the body refills itself and emits
-**`changed`** — the host (facility sheet) connects it to refresh what reads staff (occupant picker, stats,
-salary). F6: `UI_View_PersonnelBody.tscn` alone fills the in-memory run + three drawn candidates.
+Refusals (`hire_block_reason` / `dismiss_block_reason` / the action's result) go out as `message` (screen toast).
+After a hire / dismiss the body refills and emits **`changed`** (the facility header and the occupant picker read
+staff). Hire / dismiss are not week-locked. F6: `UI_View_PersonnelBody.tscn` alone fills the in-memory run, four
+drawn candidates and the gauge at 40 %.
 
 ## Hub card + sheet (`StaffPanel.gd`)
 Contract §11.2 — static `hub_summary(state)` / `open(host)`; fills only, every value comes from `StaffSystem`.

@@ -3065,16 +3065,16 @@ func card_has_valid_targets(cd: CardData) -> bool:
 		"preview":
 			# engage — require at least one alive participant from each
 			# side so start_engage doesn't no-op. Same roster rule as
-			# `_effect_engage` (`engage_sides`: 탈진 excluded, 결속 · 추적 pulled
-			# in) — a looser area count let a card through that then folded as
-			# "대상 부족". Symmetric in teams, so the AI reads it too.
-			if caster == null or _bs.engage_phase == null:
-				return false
-			var exclude_lane: bool = has_clause_flag(cd.effect, "engage", "exclude_lane")
-			var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane,
-					Vector2i(-999, -999), engage_radius(cd))
-			return not (sides[0] as Array).is_empty() and not (sides[1] as Array).is_empty()
+			# `_effect_engage` (`engage_would_open`: 탈진 excluded, 결속 · 추적
+			# pulled in) — a looser area count let a card through that then
+			# folded as "대상 부족". Symmetric in teams, so the AI reads it too.
+			var engage: Dictionary = main_engage_clause(cd)
+			return engage_would_open(engage.get("flags", []) as Array, caster, null)
 		_:
+			# 대상을 고르지 않는 교전 카드([단계 B] `engage|at_marked`) — 같은 판정.
+			var marked_engage: Dictionary = main_engage_clause(cd)
+			if not marked_engage.is_empty():
+				return engage_would_open(marked_engage["flags"] as Array, caster, null)
 			return true
 
 
@@ -3120,6 +3120,12 @@ func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 	var unbounded: bool = caster == null
 	var max_r: int = max(0, cd.cast_range)
 	var min_r: int = _clause_int_flag(cd.effect, "min_range", 0)
+	# `engage|at_target` 가 본 효과인 카드 — 찍은 적 주변에 교전이 **실제로 서는**
+	# 대상만 유효하다(탈진한 적 하나뿐이면 무대가 비어 "대상 부족"으로 접힌다).
+	var engage_flags: Array = []
+	var main_engage: Dictionary = main_engage_clause(cd)
+	if not unbounded and "at_target" in (main_engage.get("flags", []) as Array):
+		engage_flags = main_engage["flags"]
 	for raw in _bs.pilots:
 		var p := raw as PilotData
 		if not p.alive or p.team != team:
@@ -3130,6 +3136,8 @@ func compute_valid_pilot_targets(cd: CardData, caster: PilotData,
 				continue
 			if d < min_r:
 				continue
+		if not engage_flags.is_empty() and not engage_would_open(engage_flags, caster, p):
+			continue
 		out.append(p)
 	return out
 
@@ -4655,6 +4663,70 @@ func _effect_advance(steps: int, caster: PilotData) -> String:
 	return "전진 %d%s" % [steps, tag]  # l10n-ignore
 
 
+## 교전 절이 무대를 **어디에 · 얼마나** 세우는가. `_effect_engage` 와 그 사전
+## 판정 `engage_would_open` 이 같은 함수를 읽는다 — 둘이 갈리면 손패 / AI 가 내도
+## 된다고 본 카드가 효과 단계에서 "대상 부족"으로 접힌다.
+##
+##   |at_target   지정한 적 주변에서 연다        (돌격 · 강습 · 간보기)
+##   |at_marked   목표가 찍힌 적 주변에서 연다   (단계 B)
+##   |self_range:N 시전자 중심 반경 N            (우세한 전장 · 개시 …)
+##   |drop_in     시전자가 **지정한 대상의 칸으로 이동해** 교전에 참가하고,
+##                무대에서는 적 진형 한가운데에 낙하한다 (강습)
+##   |move_in     전장 이동은 `drop_in` 과 같고 무대 낙하만 없다 — 시전자는
+##                무대에서도 옮겨 간 칸의 자기 자리에 선다 (돌격)
+## (`|charge_rounds` 는 라운드 수만 바꾸므로 여기 없다 — `_effect_engage`.)
+## 뛰어들기 둘은 `at_target` 과 짝이다 — 대상 칸이 정해져야 뛰어들 자리가 있다.
+func _engage_layout(flags: Array, caster: PilotData, target: Variant) -> Dictionary:
+	var drop_in: bool = "drop_in" in flags
+	var move_in: bool = drop_in or "move_in" in flags
+	var center: Vector2i = Vector2i(-999, -999)
+	var radius: int = maxi(1, flag_int(flags, "self_range", 1))
+	if "at_target" in flags:
+		if target is PilotData:
+			center = (target as PilotData).grid_pos
+	elif "at_marked" in flags:
+		for raw in _bs.pilots:
+			var p := raw as PilotData
+			if p.alive and p.marked_by == caster:
+				center = p.grid_pos
+				break
+	var leap: bool = move_in and center != Vector2i(-999, -999) \
+			and center != caster.grid_pos \
+			and not (_bs.skill != null and _bs.skill.blocks_move(caster))
+	return {"center": center, "radius": radius, "drop_in": drop_in,
+			"move_in": move_in, "leap": leap}
+
+
+## 이 교전 절을 지금 `target` 으로 내면 **양 팀이 다 무대에 서는가.** 명단은
+## `_effect_engage` 와 똑같이 모은다(뛰어드는 카드는 옮긴 자리에서 — 잠깐 옮겼다
+## 그대로 되돌린다, `_effect_engage` 가 개시 확인 화면 전에 하는 것과 같은 수다).
+func engage_would_open(flags: Array, caster: PilotData, target: Variant) -> bool:
+	if caster == null or _bs.engage_phase == null:
+		return false
+	var lay: Dictionary = _engage_layout(flags, caster, target)
+	var from: Vector2i = caster.grid_pos
+	if bool(lay["leap"]):
+		caster.grid_pos = lay["center"]
+	var sides: Array = _bs.engage_phase.engage_sides(caster, "exclude_lane" in flags,
+			lay["center"], int(lay["radius"]))
+	caster.grid_pos = from
+	return not (sides[0] as Array).is_empty() and not (sides[1] as Array).is_empty()
+
+
+## 카드의 **본 효과인** 교전 절(`on_hit` / `on_miss` 갈래 앞에 있는 것). 없으면 `{}`.
+## 갈래 뒤의 교전([간보기]의 명중 보너스)은 접혀도 앞의 공격은 나가므로 판정에서 뺀다.
+func main_engage_clause(cd: CardData) -> Dictionary:
+	if cd == null:
+		return {}
+	for clause in _parse_effect_chain(cd.effect):
+		var cname: String = String(clause.get("name", ""))
+		if cname == "on_hit" or cname == "on_miss":
+			return {}
+		if cname == "engage":
+			return clause
+	return {}
+
+
 ## 전투 개시 — **카드를 제출한 이 시점**에 참가자 명단(VS 화면)이 뜨고, 확인을
 ## 받은 뒤에야 아레나가 열린다.
 ##
@@ -4672,38 +4744,22 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 		is_player: bool) -> String:
 	# 시전자 없는 카드(레거시 fallback)는 전투 자체가 의미가 없음. 이 경우는
 	# 효과 체인 줄에 안내만 남기고 통과.
-	if caster == null or rounds <= 0:
+	if caster == null:
 		return "교전 (시전자 없음)"  # l10n-ignore
-	var exclude_lane: bool = "exclude_lane" in flags
-	# 메크 카드가 무대의 **중심**과 **반경**을 바꾼다.
-	#   |at_target   지정한 적 주변에서 연다        (돌격 · 강습 · 간보기)
-	#   |at_marked   목표가 찍힌 적 주변에서 연다   (단계 B)
-	#   |self_range:N 시전자 중심 반경 N            (우세한 전장 · 개시 …)
-	#   |charge_rounds 라운드 수를 영혼 포식 충전으로 갈음한다 (전쟁의 사슬)
-	#   |drop_in     시전자가 **지정한 대상의 칸으로 이동해** 교전에 참가하고,
-	#                무대에서는 적 진형 한가운데에 낙하한다 (강습)
-	#   |move_in     전장 이동은 `drop_in` 과 같고 무대 낙하만 없다 — 시전자는
-	#                무대에서도 옮겨 간 칸의 자기 자리에 선다 (돌격)
-	#
-	# 둘 다 `at_target` 과 짝이다 — 대상 칸이 정해져야 뛰어들 자리가 있다.
-	# 시전자가 명단에 들어가므로 선공(시전자 팀 · 시전자가 맨 앞)이 그대로 걸린다.
-	var drop_in: bool = "drop_in" in flags
-	var move_in: bool = drop_in or "move_in" in flags
-	var center: Vector2i = Vector2i(-999, -999)
-	var radius: int = maxi(1, flag_int(flags, "self_range", 1))
-	if "at_target" in flags:
-		if _current_target is PilotData:
-			center = (_current_target as PilotData).grid_pos
-	elif "at_marked" in flags:
-		for raw in _bs.pilots:
-			var p := raw as PilotData
-			if p.alive and p.marked_by == caster:
-				center = p.grid_pos
-				break
+	# `charge_rounds` 는 카드의 N(0)을 충전으로 갈음하므로 0 검사는 **그 뒤**다 —
+	# 앞에 두면 [전쟁의 사슬](`engage:0|charge_rounds`)이 언제나 그 자리에서 접힌다.
 	if "charge_rounds" in flags and _bs.mech_skill != null:
 		rounds = maxi(1, _bs.mech_skill.chain_rounds(caster))
 	if rounds <= 0:
 		return "교전 (0턴)"  # l10n-ignore
+	var exclude_lane: bool = "exclude_lane" in flags
+	# 무대의 중심 · 반경 · 뛰어들기 — 플래그 표는 `_engage_layout`. 대상 판정
+	# (`engage_would_open`)이 같은 함수를 읽으므로 내도 되는 카드가 여기서 접힐 수 없다.
+	var lay: Dictionary = _engage_layout(flags, caster, _current_target)
+	var drop_in: bool = bool(lay["drop_in"])
+	var move_in: bool = bool(lay["move_in"])
+	var center: Vector2i = lay["center"]
+	var radius: int = int(lay["radius"])
 	# [강습] — 시전자가 **지정한 대상의 칸으로 뛰어들어** 그 교전에 참가한다.
 	# 대상 주변 반경만 보면 멀리서 건 시전자는 명단에서 빠지고, 그러면 "시전자
 	# 팀 선공 + 시전자가 자기 팀 맨 앞"(`TurnEngageSim._build_order`)이라는 선제
@@ -4711,7 +4767,7 @@ func _effect_engage(rounds: int, flags: Array, caster: PilotData,
 	# 세우되 전장 위 실제 이동은 확인을 누른 뒤에 한다 — 취소가 아무 일도 없던
 	# 것이 되려면 개시 확인 화면이 떠 있는 동안 시전자가 원래 칸에 있어야 한다.
 	var leap_from: Vector2i = caster.grid_pos
-	var leap: bool = move_in and center != Vector2i(-999, -999) 			and center != caster.grid_pos 			and not (_bs.skill != null and _bs.skill.blocks_move(caster))
+	var leap: bool = bool(lay["leap"])
 	if leap:
 		caster.grid_pos = center
 	var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane,

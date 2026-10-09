@@ -186,10 +186,11 @@ func _score_card(cd: CardData) -> float:
 		return -INF
 	if cp.card_needs_target(cd) and cp.ai_target_for(cd, cd.owner_pilot) == null:
 		return -INF
-	# 전투 개시류(preview)는 고를 대상이 없어 위 검사를 비껴간다 — 시전자 주변에
-	# 양 팀이 다 서 있지 않으면 `_effect_engage` 가 "대상 부족"으로 접고 비용과
-	# 카드만 사라진다. 플레이어 손패를 잠그는 것과 같은 게이트를 읽는다.
-	if cp.targeting_kind(cd) == "preview" and not cp.card_has_valid_targets(cd):
+	# 대상을 고르지 않는 교전 카드(전투 개시류 · [단계 B])는 위 검사를 비껴간다 —
+	# 무대에 양 팀이 다 서지 않으면 `_effect_engage` 가 "대상 부족"으로 접고 비용과
+	# 카드만 사라진다. 플레이어 손패를 잠그는 것과 같은 게이트를 읽는다(그 갈래는
+	# 팀에 대칭이다 — 대상을 고르는 갈래만 플레이어 시점이라 여기서 안 읽는다).
+	if not cp.card_needs_target(cd) and not cp.card_has_valid_targets(cd):
 		return -INF
 	var score: float = -INF
 	for raw in cp.card_clause_names(cd):

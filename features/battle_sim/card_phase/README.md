@@ -690,9 +690,14 @@ must be bigger than the hand — still true).
   **at least 1** while they are down (never 0 for a dead pilot, so the card
   can't flicker back to playable on the tick the timer hits 0).
   `card_is_playable` = caster alive **and** affordable **and**
-  `card_has_valid_targets`. Its `preview` (engage) branch asks
-  `EngagePhaseManager.engage_sides` — the exact roster `_effect_engage` gathers (탈진 out,
-  결속 · 추적 pulled in) — so a card that passes never folds as "대상 부족".
+  `card_has_valid_targets`. Engage cards are judged by `engage_would_open(flags, caster,
+  target)` — the exact roster `_effect_engage` gathers (`_engage_layout` → centre / radius /
+  leap, then `EngagePhaseManager.engage_sides`: 탈진 out, 결속 · 추적 pulled in), so a card that
+  passes never folds as "대상 부족". Only the **main** engage clause counts
+  (`main_engage_clause` — the one before any `on_hit` / `on_miss`; 간보기's hit bonus doesn't):
+  `preview` cards and target-less ones (단계 B `at_marked`) in `card_has_valid_targets`,
+  `|at_target` cards per target in `compute_valid_pilot_targets` (an enemy whose stage would be
+  empty, e.g. 탈진 alone, is not a valid target).
 
 ### Card interaction (hover → drag → drop)
 - Hand row: cards span ~y=1370..1590 at-rest (was 1440 until the pilot strip doubled in height) (CARD_H=220), centred on the
@@ -1912,11 +1917,13 @@ Deleted names: `BattleSim.anim_pilot_lunge` / `anim_pilot_lunge_return` /
     function too (if only one side passes, you get a turn where only the banner shows and no card
     goes out).
   - **Exclude if there is no target to pick** — if `card_needs_target` is true but
-    `ai_target_for` is null, the card drops out of the candidates. Engage cards (`preview`,
-    전투 개시 · 완벽한 기회) pick no target, so they read the player's gate instead —
-    `targeting_kind == "preview"` and not `card_has_valid_targets` → excluded. Without it the AI
-    played them with no enemy beside the caster and `_effect_engage` folded as "대상 부족":
-    cost and card gone, no arena (the "enemy engage sometimes does nothing" bug).
+    `ai_target_for` is null, the card drops out of the candidates. Cards that pick no target
+    read the player's gate instead — not `card_needs_target` and not `card_has_valid_targets` →
+    excluded (that branch is team-symmetric; the pilot branch is player-perspective, so the AI
+    skips it). Without it the AI played 전투 개시 · 완벽한 기회 with no enemy beside the caster and
+    `_effect_engage` folded as "대상 부족": cost and card gone, no arena (the "enemy engage
+    sometimes does nothing" bug). `|at_target` engage cards are covered by `ai_target_for`
+    (targets already filtered by `engage_would_open`).
   - **Clause names set the score** (`CLAUSE_WEIGHT`). If one card carries several clauses,
     **the highest clause** is that card's character — 간보기 (Probe) is
     `attack;on_hit;engage;on_miss;strategy`, but what that card does is attack, not

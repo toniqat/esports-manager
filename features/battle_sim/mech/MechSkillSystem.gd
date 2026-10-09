@@ -165,7 +165,8 @@ func chain_rounds(p: PilotData) -> int:
 
 # ─── 개시 ────────────────────────────────────────────────────────────────────
 ## 스폰과 덱 배분이 끝난 뒤 한 번. 파일럿마다 배정된 기체의 패시브 행을 붙이고,
-## 게임 시작 충전(오버클럭의 `p1`)을 심는다.
+## 게임 시작 충전(오버클럭의 `p1`)을 심는다. The row already carries the pilot's
+## unlocked mech upgrades (§15 A), so `_param` / `passive_def` read upgraded values.
 func init_for_match() -> void:
 	_state.clear()
 	damaged_this_phase.clear()
@@ -177,7 +178,9 @@ func init_for_match() -> void:
 		if gm != null:
 			var pd: PlayerData = _bs.player_data_for(p)
 			if pd != null and pd.assigned_mech != null:
-				def = gm.mech_passive_def(pd.assigned_mech.id)
+				# §15 A — unlocked mech upgrade steps raise p1 / p2 (`MechUpgrades`).
+				def = MechUpgrades.passive_def(gm.mech_passive_def(pd.assigned_mech.id),
+						pd.assigned_mech.id, _bs.mech_level_for(p))
 		var entry: Dictionary = {
 			"def": def,
 			"key": String(def.get("key", "")),

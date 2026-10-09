@@ -333,19 +333,24 @@ func _resume_at_launch(resume: Dictionary) -> void:
 
 
 ## After mech assignment (fresh or resumed): add the run's temporary pilot mods
-## (`PilotMods.apply_to`), the mech mastery bonus (`MechMastery.apply_to`), quirks and
+## (`PilotMods.apply_to`), the mech mastery level % (`MechMastery.apply_to`), quirks and
 ## the shaken stress drop (`StressSystem.apply_to`) to the roster **copies**, put the
-## stress snapshot in `match_ctx.stress`, then write `pending_match.assigned_mechs`
-## (`{"<pilot_id>": mech_id}`, both teams) for `MechMastery.record_match`.
-## Standalone MatchFlow (no active season) leaves the rosters as they are.
+## stress snapshot in `match_ctx.stress` and each pilot's mastery level on its mech in
+## `match_ctx.mech_levels` (`{"<pilot_id>": level}`, both teams — BattleSim's mech
+## upgrades, §15 A), then write `pending_match.assigned_mechs` (`{"<pilot_id>": mech_id}`,
+## both teams). Standalone MatchFlow (no active season) leaves the rosters as they are
+## and `mech_levels` empty (no upgrades).
 ## Runs once — the resume path and the fresh path never both reach here.
 func _finalize_rosters(p_roster: Array, e_roster: Array) -> void:
 	if _rosters_finalized:
 		return
 	_rosters_finalized = true
+	gm.match_ctx["mech_levels"] = {}
 	var s: Dictionary = gm.season_state
 	if not bool(s.get("active", false)):
 		return
+	# Levels from the run table (mastery never changes inside a match).
+	gm.match_ctx["mech_levels"] = MechMastery.mech_levels_ctx(s, [p_roster, e_roster])
 	var assigned: Dictionary = {}
 	for roster in [p_roster, e_roster]:
 		for raw in roster:

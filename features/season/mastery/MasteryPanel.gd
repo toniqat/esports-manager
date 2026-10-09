@@ -14,7 +14,7 @@ extends VBoxContainer
 # **The sheet body's layout lives in `UI_View_MasteryPanel.tscn`** (+ item scenes
 # `MasteryPilotRow` · `MasteryMechChip` · `MasteryQuirkLine`). `open` puts one instance
 # into the sheet's `body`; this script fills `%` nodes, instances the rows and applies
-# data: research colour, chip variation (research mech = `PrimaryButton`), tier / grade
+# data: research colour, chip variation (research mech = `PrimaryButton`), level bar / grade
 # colours, the round portrait (`_draw` widget, added into `%Portrait`). A tap refills the
 # same instance in place; rows and chips are reused, so a chip is never freed while it
 # is emitting `pressed`. The sheet's scroll height follows this node's height.
@@ -105,11 +105,10 @@ func _fill() -> void:
 	var any_pid: int = (pilots[0] as PlayerData).id if not pilots.is_empty() else -1
 	%Gain.text = Loc.t(L.MASTERY_PANEL_GAIN, {"mult": "%.2f" % MechMastery.gain_mult(state, any_pid)})
 	var legend: Array = []
-	for t in MechMastery.TIER_COUNT:
-		legend.append("%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)])
-	%Legend.text = Loc.t(L.MASTERY_PANEL_LEGEND, {"tiers": "  ·  ".join(legend)})
-	%Rules.text = Loc.t(L.MASTERY_PANEL_RULES, {"research": ConstTable.int_of("MASTERY_GAIN_RESEARCH"),
-			"match": ConstTable.int_of("MASTERY_GAIN_MATCH")})
+	for lv in MechMastery.LEVEL_MAX + 1:
+		legend.append("%s %s" % [MechMastery.level_name(lv), MechMastery.pct_text(lv)])
+	%Legend.text = Loc.t(L.MASTERY_PANEL_LEGEND, {"tiers": "  ".join(legend)})
+	%Rules.text = Loc.t(L.MASTERY_PANEL_RULES, {"research": ConstTable.int_of("MASTERY_GAIN_RESEARCH")})
 	%Auto.visible = delegated
 	%AutoGap.visible = delegated
 	%NoCoach.visible = not delegated
@@ -151,8 +150,8 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 	var tops: Array = []
 	for e in MechMastery.top_mechs(state, pd.id, 3):
 		var v: int = int(e["value"])
-		tops.append("%s %s %d" % [MechMastery.mech_name(int(e["mech_id"])),
-				MechMastery.tier_name(MechMastery.tier_of(v)), v])
+		tops.append("%s %s" % [MechMastery.mech_name(int(e["mech_id"])),
+				MechMastery.level_name(MechMastery.level_for_value(v))])
 	(row.get_node("%PositionBadge_Position") as PositionBadge).set_role(int(pd.role))
 	row.get_node("%TopMechs").text = Loc.t(L.MASTERY_PANEL_TOP_MECHS, {"list": "  ·  ".join(tops)})
 
@@ -163,12 +162,19 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 		var chip: Button = chips[i]
 		var mid: int = int((mechs[i] as Dictionary)["id"])
 		var v: int = MechMastery.value(state, pd.id, mid)
-		var t: int = MechMastery.tier_of(v)
+		var lv: int = MechMastery.level_for_value(v)
 		chip.set_meta(&"pilot_id", pd.id)
 		chip.set_meta(&"mech_id", mid)
-		chip.text = "%s\n%s %d" % [MechMastery.mech_name(mid), MechMastery.tier_name(t), v]
+		chip.text = "%s\n%s · %s" % [MechMastery.mech_name(mid), MechMastery.level_name(lv),
+				MechMastery.pct_text(lv)]
 		chip.theme_type_variation = &"PrimaryButton" if mid == research else &"GhostButton"
-		(chip.get_node("%TierBar") as ColorRect).color = MechMastery.tier_color(t)
+		var bar: ColorRect = chip.get_node("%LevelBar")
+		bar.color = MechMastery.level_color(lv)
+		bar.anchor_right = MechMastery.value_progress(v)
+
+	# §15 A — the next mech upgrade of the research mech (or the coach's pick).
+	var up_mech: int = research if research >= 0 else MechMastery.auto_research_mech(state, pd)
+	row.get_node("%NextUpgrade").text = _next_upgrade_text(state, pd.id, up_mech)
 
 	(row.get_node("%Quirks") as Control).visible = quirks_on
 	if quirks_on:
@@ -177,6 +183,18 @@ func _fill_pilot_row(row: Panel, pd: PlayerData, delegated: bool, quirks_on: boo
 	var content: Control = row.get_node("%Content")
 	var pad_bottom: float = _card_pad_bottom(row, content)
 	row.custom_minimum_size.y = content.offset_top + content.get_combined_minimum_size().y + pad_bottom
+
+
+## "다음 강화 Lv4 · Bastion: …" — the first mech upgrade step (`MechUpgrades`) still
+## locked for that pilot on `mech_id`; "" for no mech.
+static func _next_upgrade_text(state: Dictionary, pilot_id: int, mech_id: int) -> String:
+	if mech_id < 0:
+		return ""
+	var step: Dictionary = MechUpgrades.next_step(mech_id, MechMastery.level_of(state, pilot_id, mech_id))
+	if step.is_empty():
+		return Loc.t(L.MASTERY_PANEL_UPGRADES_DONE, {"mech": MechMastery.mech_name(mech_id)})
+	return Loc.t(L.MASTERY_PANEL_NEXT_UPGRADE, {"level": MechMastery.level_name(int(step["level"])),
+			"mech": MechMastery.mech_name(mech_id), "text": MechUpgrades.step_text(step)})
 
 
 ## Bottom pad of a pilot card = the scene's card height minus `%Content`'s bottom edge, read

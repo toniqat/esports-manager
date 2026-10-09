@@ -1,11 +1,11 @@
 # Match Flow — Ban/Pick
 
-**표시 텍스트는 l10n key (`match` 도메인, `match.ban_pick.*` · `match.mech_detail.*` · scene keys `match.ban_pick_view.*` · `match.mech_detail_panel.*`; both BAN row labels use `match.ban_pick_view.ban_label`, the sheet's no-cards line uses `match.mech_detail_panel.no_cards`).** Mech passive descriptions (sheet and `MechDetailPanel`) go through `MechSkillSystem.passive_description(pas)`, which fills `{p1}` / `{p2}`. Item scenes whose text is all code-filled (`BanPickMechCell` · `MechSlot` · `Portrait` · `MechMasteryRow` · `MechQuirkRow`) carry `auto_translate_mode = 2` on the root. Role tab / sheet / mech detail role tags are keys `match.ban_pick.role.*` whose text is English caps (TANK …) **in every locale, ko included** — read via `MechDetailPanel.role_tag(r)` (`ROLE_TAGS`); the two-letter badge `BanPickController.ROLE_INITIALS` (Tk · Fi …) is an untranslated glyph like `GameEnums.POSITION_ABBREVS`. **텍스트는 l10n key — `Loc.t`** (mech passive / cards): passive name · description = `Loc.t(pas["name_key"] / ["description_key"])`; mech card rows build via `CardData.from_mech_def` (`BanPickController`, `BanPickSheetCard`, `MechCardCell`, `MechDetailPanel`).
+**표시 텍스트는 l10n key (`match` 도메인, `match.ban_pick.*` · `match.mech_detail.*` · scene keys `match.ban_pick_view.*` · `match.mech_detail_panel.*`; both BAN row labels use `match.ban_pick_view.ban_label`, the sheet's no-cards line uses `match.mech_detail_panel.no_cards`).** Mech passive descriptions (sheet and `MechDetailPanel`) go through `MechSkillSystem.passive_description(pas)`, which fills `{p1}` / `{p2}`. Item scenes whose text is all code-filled (`BanPickMechCell` · `MechSlot` · `Portrait` · `MechMasteryRow` · `MechQuirkRow` · `MechUpgradeRow`) carry `auto_translate_mode = 2` on the root. Role tab / sheet / mech detail role tags are keys `match.ban_pick.role.*` whose text is English caps (TANK …) **in every locale, ko included** — read via `MechDetailPanel.role_tag(r)` (`ROLE_TAGS`); the two-letter badge `BanPickController.ROLE_INITIALS` (Tk · Fi …) is an untranslated glyph like `GameEnums.POSITION_ABBREVS`. **텍스트는 l10n key — `Loc.t`** (mech passive / cards): passive name · description = `Loc.t(pas["name_key"] / ["description_key"])`; mech card rows build via `CardData.from_mech_def` (`BanPickController`, `BanPickSheetCard`, `MechCardCell`, `MechDetailPanel`).
 
 ## Files
 | File | Role |
 |---|---|
-| `BanPickController.gd` | `extends Node`, child of MatchFlow. **Rules + state**: sequence, legality, AI, seat table, assignment, result. Fills / refreshes the screen scene, data colours (side · role · tier), drag handling, sheet content |
+| `BanPickController.gd` | `extends Node`, child of MatchFlow. **Rules + state**: sequence, legality, AI, seat table, assignment, result. Fills / refreshes the screen scene, data colours (side · role · mastery level), drag handling, sheet content |
 | `UI_View_BanPickView.tscn` / `.gd` | `class_name BanPickView` — **the screen** (one per `enter`, `BanPickView.create()` under `MatchFlow.canvas`). Binds nodes for the controller, `fit_safe_area()`, `fit_pane(cell_h)`, turn banner (`play_banner` / `clear_banner`) |
 | `BanPickTeamBlock.gd` | Script on `%EnemyBlock` / `%PlayerBlock` (inline in the view scene): finds ban chips / mech slots / portraits / hint by name; `set_assign_layout(portrait_h)` |
 | `UI_Comp_BanPickOrderRow.tscn` / `.gd` | The order strip, instanced as `%BanPickOrderRow_OrderRow` in `UI_View_BanPickView.tscn` (`create()` for other hosts). Scene: 64 tall, `%Pips` holder (full rect) · `%PipIcon` · `%TurnArrow`. Script: one `BanPickOrderPip` per move into `%Pips` (count = sequence), tween / pulse / triangle bob (`build`, `refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
@@ -325,17 +325,17 @@ numbers live in `features/season/mastery/README.md` / `MASTERY_*` in const.csv.
 
 | Where | What |
 |---|---|
-| Mech slots (`_refresh_slot_mastery`) | Top-left tag `<tier> <bonus>` (e.g. `능숙 +2`) filled with the tier colour — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (`StaffSystem.analysis_tier >= 2`) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
+| Mech slots (`_refresh_slot_mastery`) | Top-left tag `<level> <pct>` (e.g. `Lv3 +10%`, §15 A) filled with the level colour (`MechMastery.level_color`) — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (`StaffSystem.analysis_tier >= 2`) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
 | Grid cells (`_refresh_cell_marks`) | Pilot badges (`BanPickPilotDot`) — see "Grid pilot badges" below. Taken cells show none. |
-| Bottom sheet (`_fill_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name tier value (스탯 bonus)`, and the analysis line `상대 예상 픽 — pilot` (an enemy pilot's top-mastery machine, `_enemy_likely`, analysis tier ≥ 2). |
-| `MechDetailPanel` | A `숙련도` block — that team's five pilots with this machine (tier · value · bonus), the tapped seat's pilot marked ▶ (`_mastery_rows`; enemy only with analysis tier ≥ 2). |
+| Bottom sheet (`_fill_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name LvN points (명중 · 회피 ±%)`, and the analysis line `상대 예상 픽 — pilot` (an enemy pilot's top-mastery machine, `_enemy_likely`, analysis tier ≥ 2). |
+| `MechDetailPanel` | A `숙련도` block — that team's five pilots with this machine (level · points · %), the tapped seat's pilot marked ▶ (`_mastery_rows`; enemy only with analysis tier ≥ 2). Under the cards a **메크 강화** block (§15 A): the mech's 3 upgrade steps (Lv3 / Lv4 / Lv5, `MechUpgrades.steps` + `step_text`), each `해금` / `잠김` for the tapped seat's pilot (`_upgrade_info` → `{pilot, level}`; level −1 = unknown → no lock state: enemy without analysis, standalone). |
 
 ### Grid pilot badges
 Computed once per `enter` (`_setup_adept`, mastery does not change during the draft) into
 `_my_adept` / `_enemy_adept` (mech_id → pilot ids), drawn by `_refresh_cell_marks` on every refresh:
 - **Mine** — under the art (where the name used to be): every one of my five pilots whose mastery
-  with that mech is tier ≥ `ADEPT_TIER` (2 = 능숙), not only the natural rider; seat order, max 5.
-- **Enemy** — over the art's top-right: the enemy's 능숙+ pilots, highest mastery first (ties by
+  with that mech is level ≥ `ADEPT_LEVEL` (3 = first mech upgrade, the old 능숙 threshold 60), not only the natural rider; seat order, max 5.
+- **Enemy** — over the art's top-right: the enemy's Lv3+ pilots, highest mastery first (ties by
   seat), max `ENEMY_DOTS_MAX` (2); only while analysis reveals mastery (`_show_enemy_likely`,
   `StaffSystem.analysis_tier >= 2`).
 - **Highlight** — my pick turn → my badges (accent ring, full opacity), my ban turn → the enemy
@@ -367,7 +367,7 @@ quirks yet.
 The assignment step's mech detail popup. **Layout is owned by `UI_View_MechDetailPanel.tscn`**
 (`docs/ui_scene_migration.md` §3); the script only binds `%` nodes, fills them and adds the
 per-mech repeated rows. Created once with `MechDetailPanel.create()` (never `.new()` — that is an
-empty layer); `open(m, mastery_rows, quirk_info)` refills and shows it, `close()` hides it (nodes are
+empty layer); `open(m, mastery_rows, quirk_info, upgrade_info)` refills and shows it, `close()` hides it (nodes are
 reused). Scene root saved visible, `create()` hides it.
 
 ```
@@ -384,13 +384,15 @@ MechDetailPanel (CanvasLayer 20)
     │   %QuirkBlock (%QuirkTitle · %QuirkEmpty · %QuirkRows ← UI_Comp_MechQuirkRow.tscn)
     │   PassiveTitle · %NoPassive | %PassiveBox (PassiveRow 80: %PassiveTile 64² at (14, 4) ← `SkillImages.make_mech_icon_tile` · %PassiveName `AccentLabel` 30 · %PassiveKw `CaptionLabel` 19 at x 94 — same row as DraftDetailPanel's skill row; then %PassiveDesc `BodyLabel` 21)
     │   CardsTitle · %NoCards | %CardsBox (note `CaptionLabel` 18 · %CardGrid 3 cols ← UI_Comp_MechCardCell.tscn)
+    │   %UpgradeBlock (UpgradeTitle `SubLabel` 24 · %UpgradePilot `CaptionLabel` 19 · %UpgradeRows ← UI_Comp_MechUpgradeRow.tscn)
     └ %Close (`GhostButton`, 84 tall, bottom anchored to the safe bottom −80)
 ```
 
 | File | Role |
 |---|---|
 | `MechDetailPanel.gd/.tscn` | The popup. Code-owned colour: role colour (`%Sub`, `OutgameTheme.ROLE_COLORS`) only; code-owned position: the `%SafeArea` insets |
-| `MechMasteryRow.gd/.tscn` | One mastery row (name 46% · tier 32% · bonus 22%, `BodyLabel` 21); tier colour (`MechMastery.tier_color`, white palette) and ▶ row `TEXT` vs others `TEXT_SUB` from data |
+| `MechMasteryRow.gd/.tscn` | One mastery row (name 46% · `LvN (points)` 32% · `±%` 22%, `BodyLabel` 21); level colour (`MechMastery.level_color`, white palette) and ▶ row `TEXT` vs others `TEXT_SUB` from data |
+| `MechUpgradeRow.gd/.tscn` | One mech upgrade step (HBox: `%Level` 54 · `%Text` autowrap · `%State` 62 right): unlocked = level `ACCENT_TEXT`, text `TEXT`, state `POSITIVE` 해금; locked = all `TEXT_FAINT` 잠김; unknown (no `unlocked` key) = plain, no state |
 | `MechQuirkRow.gd/.tscn` | One quirk: grade-coloured name (`QuirkSystem.grade_color`) + autowrapped effect (`CaptionLabel` 18, indent 14); inactive = name faded halfway to white, effect `TEXT_FAINT` |
 | `MechCardCell.gd/.tscn` | One card cell: `Card.tscn` instance at 0.8, transparent `%Hit` (PASS — keeps drag scroll), count badge (`CaptionLabel` 17; `×n` `TEXT_SUB`, `생성 전용` `LINK`). `tapped(card)` → panel shows the white `CardDescBox` (`light`) above the card |
 

@@ -16,4 +16,4 @@ id,name_key,grade,stats,cond,cond_stats,weight,desc_key
 15,tx_9EBPK4CZKY,2,engage_eva:3,mech_role:0,hp_growth:5|engage_eva:3,6,tx_BJP0GG5N68
 16,tx_QWZBQFGYDS,2,field_eva:3,mech_role:2,engage_hit:5|atk_growth:3,6,tx_423T378EFS
 17,tx_41ZA0ATDFP,2,field_hit:3,mech_role:4,field_hit:4|atk_growth:4,6,tx_HCTF0FH7HK
-18,tx_KEMWNM8WAB,2,engage_hit:3,tier:2,field_hit:3|field_eva:3,6,tx_X44QXQ1EJK
+18,tx_KEMWNM8WAB,2,engage_hit:3,tier:3,field_hit:3|field_eva:3,6,tx_X44QXQ1EJK

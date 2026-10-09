@@ -441,7 +441,9 @@ static func from_mech_def(def: Dictionary) -> CardData:
 	cd.card_type    = TYPE_MECH
 	cd.card_cat     = CAT_NONE
 	cd.card_id      = -1
-	cd.mech_card_id = int(def.get("id", -1))
+	# An upgraded "+" row (§15 A) keeps its base card's id (`base_id`, set by GameManager):
+	# same art, and `search_card` / `gen_*` / trigger lookups still find it.
+	cd.mech_card_id = int(def.get("base_id", def.get("id", -1)))
 	cd.mech_id      = int(def.get("mech_id", -1))
 	return cd
 

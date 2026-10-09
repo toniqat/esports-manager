@@ -46,6 +46,7 @@ const SCHEMAS: Dictionary = {
 	"traits":        {"req": ["id","key","name_key","rarity","polarity","bonus_cost","layer","p1","p2","unlock","default_owned","craft_cost","desc_key"], "pk": "id"},
 	"manager_levels": {"req": ["level","exp_required"], "pk": "level"},
 	"pilot_ranks":   {"req": ["id","pilot_id","rank","kind","value"], "pk": "id"},
+	"mech_upgrades": {"req": ["id","mech_id","level","target","param","card_id","value","desc_key"], "pk": "id"},
 	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
 	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
 	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
@@ -416,6 +417,21 @@ const TABLE_DEFS: Dictionary = {
 		"level":    {"data_type": "int",  "primary_key": true, "not_null": true},
 		"currency": {"data_type": "text", "not_null": true},
 		"amount":   {"data_type": "int",  "not_null": true},
+	},
+	# §15 A — mech upgrades (돌파형): reaching mastery `level` (3 / 4 / 5) on `mech_id`
+	# unlocks this step (cumulative). `target` passive → `param` (p1 | p2) of the mech's
+	# passive += `value`; `target` card → mech card `card_id` is swapped for its
+	# `mech_cards.upgrade_id` row ("+"). `desc_key` = l10n `mastery.upgrade.{id}.desc`
+	# ({from} / {to} = the passive param or the card cost before / after).
+	"mech_upgrades": {
+		"id":       {"data_type": "int",  "primary_key": true, "not_null": true},
+		"mech_id":  {"data_type": "int",  "not_null": true},
+		"level":    {"data_type": "int",  "not_null": true},
+		"target":   {"data_type": "text", "not_null": true},
+		"param":    {"data_type": "text", "not_null": true},
+		"card_id":  {"data_type": "int",  "not_null": true},
+		"value":    {"data_type": "int",  "not_null": true},
+		"desc_key": {"data_type": "text", "not_null": true},
 	},
 	# ── §14 ───────────────────────────────────────────────────────────────
 	# 기벽(런 한정 선수 패시브, 긍정 스탯 보정만) — `grade` 0 일반 / 1 희귀 / 2 영웅,

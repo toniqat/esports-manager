@@ -30,6 +30,7 @@
     { "csv": "cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.pilot.{id}.desc" },
     { "csv": "mech_cards.csv", "id": "id", "column": "name_key", "domain": "card", "alias": "card.mech.{id}.name" },
     { "csv": "mech_cards.csv", "id": "id", "column": "description_key", "domain": "card", "alias": "card.mech.{id}.desc" },
+    { "csv": "mech_upgrades.csv", "id": "id", "column": "desc_key", "domain": "mastery", "alias": "mastery.upgrade.{id}.desc" },
     { "csv": "pilot_skills.csv", "id": "id", "column": "name_key", "domain": "pilot_skill", "alias": "pilot_skill.{id}.name" },
     { "csv": "pilot_skills.csv", "id": "id", "column": "description_key", "domain": "pilot_skill", "alias": "pilot_skill.{id}.desc" },
     { "csv": "mech_passives.csv", "id": "id", "column": "name_key", "domain": "mech_passive", "alias": "mech_passive.{id}.name" },

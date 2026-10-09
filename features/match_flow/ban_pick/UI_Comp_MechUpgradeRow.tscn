@@ -1,0 +1,46 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0qk1hk0mcft2"]
+
+[ext_resource type="Script" uid="uid://dnqny3vtl0n1g" path="res://features/match_flow/ban_pick/MechUpgradeRow.gd" id="1_row"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="MechUpgradeRow" type="HBoxContainer"]
+auto_translate_mode = 2
+editor_description = "One mech upgrade step of MechDetailPanel (§15 A): level · description (wraps) · unlocked / locked. Colours are data (MechUpgradeRow.gd)."
+offset_right = 416.0
+offset_bottom = 34.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 8
+script = ExtResource("1_row")
+
+[node name="Level" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MechUpgradeRow.gd fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(54, 32)
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 21
+text = "Lv3"
+
+[node name="Text" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MechUpgradeRow.gd fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 20
+text = "과적재: 공격력 +1 기준 최대 체력 10 → 8"
+autowrap_mode = 3
+
+[node name="State" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — MechUpgradeRow.gd fill()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(62, 32)
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 19
+text = "해금"
+horizontal_alignment = 2

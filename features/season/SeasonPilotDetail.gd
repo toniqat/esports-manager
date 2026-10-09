@@ -109,10 +109,10 @@ func _fill_research(state: Dictionary, pid: int) -> void:
 		rl.theme_type_variation = &"FaintLabel"
 		return
 	var v: int = MechMastery.value(state, pid, mech)
-	var tier: int = MechMastery.tier_of(v)
+	var lv: int = MechMastery.level_for_value(v)   # §15 A — level 0..5 (key param stays `tier`)
 	rl.text = Loc.t(L.SEASON_PILOT_DETAIL_RESEARCH, {"mech": MechMastery.mech_name(mech),
-			"tier": MechMastery.tier_name(tier), "value": v, "max": MechMastery.max_value()})
-	rl.add_theme_color_override("font_color", MechMastery.tier_color(tier))
+			"tier": MechMastery.level_name(lv), "value": v, "max": MechMastery.max_value()})
+	rl.add_theme_color_override("font_color", MechMastery.level_color(lv))
 
 
 ## The sheet scrolls exactly this node's height (the scene's `Tail` is the bottom gap).

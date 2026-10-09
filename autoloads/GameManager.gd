@@ -1078,11 +1078,31 @@ func _load_mech_skills() -> void:
 				"effect":      String(row["effect"]),
 				"trigger":     String(row.get("trigger", "")),
 				"description_key": String(row["description_key"]),
+				"upgrade_id":  int(row.get("upgrade_id", -1)),
 			}
 			mech_card_defs[int(row["id"])] = def
-			if not mech_cards.has(int(row["mech_id"])):
-				mech_cards[int(row["mech_id"])] = []
-			(mech_cards[int(row["mech_id"])] as Array).append(def)
+		# §15 A — upgraded "+" rows (some row's `upgrade_id`) are not part of the mech's
+		# own card list: they only replace their base card (`MechUpgrades.card_def_for`).
+		# `base_id` = the root card, so the "+" copy keeps the base's identity
+		# (`CardData.mech_card_id` → art, `search_card` / `gen_*` matches).
+		var base_of: Dictionary = {}
+		for cid in mech_card_defs.keys():
+			var up: int = int((mech_card_defs[cid] as Dictionary)["upgrade_id"])
+			if up >= 0:
+				base_of[up] = int(cid)
+		for cid in mech_card_defs.keys():
+			var def: Dictionary = mech_card_defs[cid]
+			if base_of.has(int(cid)):
+				var root_id: int = int(cid)
+				while base_of.has(root_id):
+					root_id = int(base_of[root_id])
+				def["base_id"] = root_id
+				continue
+			if not mech_cards.has(int(def["mech_id"])):
+				mech_cards[int(def["mech_id"])] = []
+			(mech_cards[int(def["mech_id"])] as Array).append(def)
+		for mid in mech_cards.keys():
+			(mech_cards[mid] as Array).sort_custom(func(a, b): return int(a["id"]) < int(b["id"]))
 	db.close_db()
 	print("GameManager: mech skills loaded — %d passives, %d cards" % [
 			mech_passives.size(), mech_card_defs.size()])

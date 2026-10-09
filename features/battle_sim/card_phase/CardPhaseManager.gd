@@ -363,7 +363,20 @@ func _mech_card_defs_for(p: PilotData) -> Array:
 	var pd: PlayerData = _bs.player_data_for(p)
 	if pd == null or pd.assigned_mech == null:
 		return []
-	return gm.mech_cards_for(pd.assigned_mech.id)
+	# §15 A — mech upgrades: each base card unlocked at this pilot's mastery level is
+	# swapped for its "+" row (same `count`; the "+" row's own count is 0).
+	var level: int = _bs.mech_level_for(p)
+	var out: Array = []
+	for raw in gm.mech_cards_for(pd.assigned_mech.id):
+		var base: Dictionary = raw as Dictionary
+		var def: Dictionary = MechUpgrades.card_def_for(int(base["id"]), pd.assigned_mech.id, level)
+		if def.is_empty() or def == base:
+			out.append(base)
+			continue
+		var swapped: Dictionary = def.duplicate()
+		swapped["count"] = int(base.get("count", 1))
+		out.append(swapped)
+	return out
 
 
 ## 풀의 원본 한 장을 시전자 사본으로 떠 덱에 넣고, 그 사본을 돌려준다.
@@ -526,6 +539,12 @@ func make_mech_card_by_id(card_id: int, owner: PilotData) -> CardData:
 	if def.is_empty():
 		push_warning("CardPhaseManager: 메크 카드 id=%d 를 mech_cards 에서 찾지 못했다" % card_id)
 		return null
+	# §15 A — a generated card follows the owner's unlocked mech upgrades too.
+	var pd: PlayerData = _bs.player_data_for(owner)
+	if pd != null and pd.assigned_mech != null:
+		var up: Dictionary = MechUpgrades.card_def_for(card_id, pd.assigned_mech.id, _bs.mech_level_for(owner))
+		if not up.is_empty():
+			def = up
 	var cd := make_mech_card(def)
 	cd.owner_pilot = owner
 	return cd

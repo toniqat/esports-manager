@@ -1834,6 +1834,16 @@ func player_data_for(p: PilotData) -> PlayerData:
 	return roster[slot] as PlayerData
 
 
+## §15 A — this pilot's mech mastery level (0..5) on its assigned mech, from
+## `match_ctx.mech_levels` (`{"<pilot_id>": level}`, MatchFlow, both teams). 0 when
+## absent (standalone run) — no mech upgrades (`MechUpgrades`).
+func mech_level_for(p: PilotData) -> int:
+	var pd: PlayerData = player_data_for(p)
+	if pd == null:
+		return 0
+	return int((gm.match_ctx.get("mech_levels", {}) as Dictionary).get(str(pd.id), 0))
+
+
 func role_stats_str(role: int) -> String:
 	var s: Dictionary = ROLE_STATS[role]
 	return "HP:%d ATK:%d" % [s["hp"], s["atk"]]

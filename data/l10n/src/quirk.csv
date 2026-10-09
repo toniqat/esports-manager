@@ -34,7 +34,7 @@ tx_5234BFCRX4,quirk.14.desc,active,quirks.csv desc (id=14),,,제 역할군 메�
 tx_BJP0GG5N68,quirk.15.desc,active,quirks.csv desc (id=15),,,탱커 메크에 타면 무너지지 않는다,Never crumbles when riding a tank mech,draft,2ed6861b
 tx_423T378EFS,quirk.16.desc,active,quirks.csv desc (id=16),,,암살 메크에 타면 급소를 노린다,Goes for the weak spot when riding an assassin mech,draft,df99f6d9
 tx_HCTF0FH7HK,quirk.17.desc,active,quirks.csv desc (id=17),,,원딜 메크에 타면 한 발도 허투루 쏘지 않는다,Never wastes a shot when riding a marksman mech,draft,49b28e05
-tx_X44QXQ1EJK,quirk.18.desc,active,quirks.csv desc (id=18),,,능숙 이상으로 다루는 메크에서 한층 날카로워진다,Grows sharper in mechs handled at Skilled or above,draft,ce1af55c
+tx_X44QXQ1EJK,quirk.18.desc,active,quirks.csv desc (id=18),,,숙련 Lv3 이상인 메크에서 한층 날카로워진다,Grows sharper in mechs at mastery Lv3 or higher,draft,fb1c5388
 tx_PT2W70YDR1,quirk.cond.main,active,기벽 조건 — 효과 문장 안 조각 (quirk.effect.cond 의 {cond}),,,주력 메크 탑승,riding a main mech,draft,d39ee51d
 tx_N5C2E6FQ2F,quirk.cond.own_role,active,기벽 조건 조각,,,자기 역할군 메크 탑승,riding an own-role mech,draft,a4df07cd
 tx_VXEP932PHS,quirk.cond.mech_role,active,기벽 조건 조각 — {role} = 메크 역할군,,,{role} 메크 탑승,riding a {role} mech,draft,610fca08

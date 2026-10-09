@@ -7,9 +7,9 @@
 
 [node name="MasteryPilotRow" type="Panel"]
 editor_description = "One pilot card of the 메크 연구 sheet (MasteryPanel): portrait · name · research mech · top mastery · own-role mech chips, then the quirk block. The card height follows %Content (+ CARD_PAD_V in MasteryPanel); research colour, chip variation, tier / grade colours are data."
-custom_minimum_size = Vector2(0, 274)
+custom_minimum_size = Vector2(0, 310)
 offset_right = 928.0
-offset_bottom = 274.0
+offset_bottom = 310.0
 mouse_filter = 2
 theme = ExtResource("1_theme")
 theme_type_variation = &"Card"
@@ -23,13 +23,13 @@ anchor_right = 1.0
 offset_left = 18.0
 offset_top = 18.0
 offset_right = -18.0
-offset_bottom = 268.0
+offset_bottom = 304.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Top" type="Control" parent="Content"]
-custom_minimum_size = Vector2(0, 208)
+custom_minimum_size = Vector2(0, 244)
 layout_mode = 2
 mouse_filter = 2
 
@@ -116,6 +116,21 @@ layout_mode = 2
 
 [node name="MasteryMechChip3" parent="Content/Top/Chips" instance=ExtResource("3_chip")]
 layout_mode = 2
+
+[node name="NextUpgrade" type="Label" parent="Content/Top"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_pilot_row()
+Next locked mech upgrade of the research mech (or the coach's pick) — §15 A."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_top = 202.0
+offset_bottom = 234.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "다음 강화 Lv4 · Bastion: [개시] 비용 8 → 7"
+auto_translate_mode = 2
+clip_text = true
 
 [node name="Quirks" type="VBoxContainer" parent="Content"]
 editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_pilot_row()"

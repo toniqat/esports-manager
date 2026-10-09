@@ -247,17 +247,22 @@ menu all see the same five objects. Ban/pick writes `assigned_mech` onto these c
 Once mechs are assigned — `_on_ban_pick_finished` (before the post-ban-pick autosave) or
 `_resume_at_launch` — `_finalize_rosters(p_roster, e_roster)` runs once (`_rosters_finalized`):
 1. `PilotMods.apply_to(state, copy)` — the run's temporary pilot mods (M7 incidents / outings).
-2. `MechMastery.apply_to(state, copy)` — the mech mastery tier bonus on all six stats
+0. `match_ctx.mech_levels = MechMastery.mech_levels_ctx(state, [p_roster, e_roster])` — §15 A: each
+   pilot's mastery **level** (0..5) on its assigned mech, both teams (`{"<pilot_id>": level}`); BattleSim's
+   mech upgrades read it (`BattleSim.mech_level_for`, `features/battle_sim/mech/README.md`). Reset to `{}`
+   first, so a standalone match has no upgrades.
+2. `MechMastery.apply_to(state, copy)` — the mech mastery level % on the four hit / evasion stats
    (`features/season/mastery/README.md`).
 3. `QuirkSystem.apply_to(state, copy)` — my pilots' quirk stat bonuses with the assigned mech
    (opponents have none; `features/season/quirk/README.md`).
 4. `StressSystem.apply_to(state, copy)` — **last**: my shaken pilots (stress ≥ threshold) lose a share of all six
    stats (`features/season/mental/README.md` "Stress"); then `match_ctx.stress = StressSystem.snapshot(state)`
    for BattleSim's stress module (`features/battle_sim/stress/README.md`).
-5. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) —
-   `SeasonHub` hands it to `MechMastery.record_match` when the result is consumed.
+5. `pending_match.assigned_mechs = {"<pilot_id>": mech_id}` for both teams (10 entries) — kept for
+   readers of the match's mechs (matches no longer give mastery, §15 A).
 
-Standalone MatchFlow (no active season) skips all of them; BattleSim never knows mastery or quirks exist.
+Standalone MatchFlow (no active season) skips all of them; BattleSim never knows mastery points or quirks
+exist — only the level map `match_ctx.mech_levels`.
 
 ### Side (`player_side`) — currently always BLUE
 `player_side` is one value that decides ban/pick order and in-game priority **at the same time**:

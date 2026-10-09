@@ -738,9 +738,8 @@ func _consume_pending_match_result() -> bool:
 	# 있는데(정산이 지금 페이즈의 POM 을 닫는다), 그보다 늦으면 마지막 경기가
 	# 집계에서 빠진다. 두 번 불려도 `stats_recorded` 표시로 한 번만 센다.
 	RunStats.record_match(s, pm as Dictionary)
-	# M4 · M6 · M7 — 숙련도(출전 메크) · 성적 보너스 · "다음 경기까지" 보정 소비.
-	# RunStats 와 같은 이유로 결과 반영(→ 정산이 될 수 있다) **전에**.
-	MechMastery.record_match(s, pm as Dictionary)
+	# M6 · M7 — 성적 보너스 · "다음 경기까지" 보정 소비 (§15: matches no longer give
+	# mech mastery). RunStats 와 같은 이유로 결과 반영(→ 정산이 될 수 있다) **전에**.
 	FinanceSystem.record_match(s, pm as Dictionary, winner_side == 0)
 	PilotMods.consume_match(s)
 	StressSystem.record_match(s, pm as Dictionary)

@@ -1,9 +1,11 @@
-# mastery/ — mech mastery (M4)
+# mastery/ — mech mastery (M4, reworked §15 A)
 
-Display text is l10n keys (`mastery` domain); `TIER_NAMES` holds keys — `tier_name(t)` translates.
+Display text is l10n keys (`mastery` domain); the level label is `mastery.level` ("Lv{n}") via
+`MechMastery.level_name(l)`; mech upgrade lines are `mastery.upgrade.<id>.desc` (data column of
+`mech_upgrades.csv`, see `features/battle_sim/mech/README.md` "Mech upgrades").
 
-Contract: `docs/outgame_dev_plan.md` §11. Run-scoped state, string keys only (JSON round-trips them;
-numbers come back as floats, so every read goes through `int()`):
+Contract: `docs/outgame_dev_plan.md` §11 + **§15 A**. Run-scoped state, string keys only (JSON round-trips
+them; numbers come back as floats, so every read goes through `int()`):
 
 | Key | Shape |
 |---|---|
@@ -12,26 +14,38 @@ numbers come back as floats, so every read goes through `int()`):
 
 | File | Role |
 |---|---|
-| `MechMastery.gd` | `class_name MechMastery` (static). Init, read, tiers, bonus, gains, research, week close. Reads the mech table (`mechs`) from game.db itself — `all_mechs` rows are `{id, name_key, role}`; `mech_name(id)` = `Loc.t(name_key)`. |
-| `MasteryPanel.gd` + `UI_View_MasteryPanel.tscn` | Hub manage card 「메크 연구」 + its `HubSheet` body (research picker). |
+| `MechMastery.gd` | `class_name MechMastery` (static). Init (rank deal), points → level / progress, level %, apply, `mech_levels_ctx`, gains, research, week close. Reads the mech table (`mechs`) and `players` / `intl_players` `mech_pref` from game.db itself — `all_mechs` rows are `{id, name_key, role}`; `mech_name(id)` = `Loc.t(name_key)`. |
+| `MasteryPanel.gd` + `UI_View_MasteryPanel.tscn` | Hub manage card 「메크 연구」 + its `HubSheet` body (research picker, next mech upgrade per pilot). |
 | `UI_Comp_MasteryPilotRow.tscn` · `UI_Comp_MasteryMechChip.tscn` · `UI_Comp_MasteryQuirkLine.tscn` | Item scenes of the sheet (no script): one pilot card · one own-role mech chip · one quirk line. |
 
 All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are written here.
 
 ## Rules
-- **Initial value** (`init_run`, called by `GameManager.start_run`): `players.main_mechs` /
-  `intl_players.main_mechs` → `MASTERY_INIT_MAIN`; other mechs of the pilot's own role class →
-  `MASTERY_INIT_ROLE`; everything else → `MASTERY_INIT_OTHER`. Named pilots have 2 mains, mobs 1,
-  spread across each role's mechs so no single ban hurts every team.
-- **Tier** (`tier_of`): 0 미숙 / 1 보통 / 2 능숙 / 3 마스터 at thresholds `MASTERY_TIER_1..3`.
-- **Effect** (`stat_bonus` / `apply_to`): flat `MASTERY_BONUS_<tier>` added to **each** of the six
-  pilot stats while riding that mech (미숙 is negative; floor `PlayerData.STAT_MIN`). Applied only by
-  `MatchFlow._finalize_rosters` on roster **copies** — `all_pilots` is never touched, BattleSim never
-  reads mastery. `is_enabled(state)` is false outside a run → bonus 0, UI hidden.
-- **Gains** — all through `gain(state, pid, mech, amount)`:
-  - match: `record_match(state, pending_match)` — `MASTERY_GAIN_MATCH` for every pilot in
-    `pending_match.assigned_mechs` (both teams of **my** match; AI-vs-AI matches give nothing).
-    Guarded by `pending_match.mastery_recorded`.
+- **Points → level** (like trust, `MentalSystem.trust_level`): `level_for_value(v)` / `level_of(state, pid, mech)`
+  = how many of `MASTERY_LV_1..5` (20 / 40 / 60 / 80 / 100) the points reached, 0..5 (`LEVEL_MAX`).
+  `value_progress(v)` / `level_progress(...)` = 0..1 inside the current level (1.0 at Lv5) — the chip bar.
+  The old tiers (미숙 / 보통 / 능숙 / 마스터, `MASTERY_TIER_*` / `MASTERY_BONUS_*`) are gone.
+- **Initial value** (`init_run`, called by `GameManager.start_run` after ranks are applied): the pilot's
+  `run_rank(pd, intl)` — my five = collection rank, named AI = stars (both are `PlayerData.rank` after
+  `RunRules.apply_progress`), mobs = 1, INTL pilots (no stars) = `MASTERY_INTL_RANK` — picks the counts
+  `MASTERY_RANK<r>_L3` / `_L2` / `_L1`, dealt from the front of `mech_pref(pd)` (players.csv /
+  intl_players.csv `mech_pref`, best first: Lv3s, then Lv2s, then Lv1s). A dealt mech starts at its level's
+  threshold (Lv1 20, Lv2 40, Lv3 60); every other mech is 0 (Lv0). Defaults: rank 1 = Lv1 ×2 · rank 2 = Lv2 ×1
+  + Lv1 ×2 · rank 3 = Lv3 ×1 + Lv2 ×2 + Lv1 ×2 · rank 4 = Lv3 ×2 + Lv2 ×2 + Lv1 ×5 · rank 5 = Lv3 ×3 + Lv2 ×3 + Lv1 ×5.
+  Empty `mech_pref` falls back to main mechs → own-role mechs.
+- **`mech_pref`** was generated once (§15 A) by a script: `main_mechs` → the other own-role mechs → other
+  roles, shuffled deterministically per pilot id, 11 ids. Designers edit the column directly afterwards.
+- **Effect** (`stat_pct` / `apply_to`): while riding that mech the four stats `PCT_STAT_KEYS`
+  (field_hit · field_eva · engage_hit · engage_eva — not the growth stats) × (1 + `MASTERY_PCT_<level>` %):
+  Lv0 −20 · Lv1 0 · Lv2 +5 · Lv3 +10 · Lv4 +15 · Lv5 +20 (rounded, floor `PlayerData.STAT_MIN`). Applied only by
+  `MatchFlow._finalize_rosters` on roster **copies** — `all_pilots` is never touched. `is_enabled(state)` is
+  false outside a run → 0 %, UI hidden. Labels: `pct_text(l)` ("+10%" / "±0%" / "-20%"), `level_color(l)`
+  (Lv0 `NEGATIVE`, Lv1–2 `TEXT_SUB`, Lv3–4 `POSITIVE`, Lv5 `ACCENT_TEXT`).
+- **Mech upgrades** (돌파형): Lv3 / Lv4 / Lv5 on a mech unlock one step each (`MechUpgrades`,
+  `features/battle_sim/mech/`). `mech_levels_ctx(state, [p_roster, e_roster])` → `match_ctx.mech_levels`
+  (`{"<pilot_id>": level}` on the assigned mech, both teams; written by `MatchFlow._finalize_rosters`).
+- **Gains** — all through `gain(state, pid, mech, amount)` (also the §15 D Saturday story):
+  - **matches give nothing** (§15 — `MASTERY_GAIN_MATCH` / `record_match` were removed).
   - research: `settle_week` — `MASTERY_GAIN_RESEARCH` to each of my pilots' research mech.
     The same pass rolls `QUIRK_RESEARCH_CHANCE`% per pilot with a research mech →
     `QuirkSystem.gain_random` (`_research_quirk_roll`, seeded per run · week · pilot; §14 T1,
@@ -47,15 +61,18 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
     research slots itself before the gain. No card alert.
   - manual → the player picks per pilot; the hub card `alert`s while any pilot has none.
   - Coach rule (`auto_research_mech`, plain, not optimal): own-role mech with the highest mastery
-    still below the master threshold (else the highest below the cap).
+    still below the cap (ties: lower id).
 
 ## Hub card / sheet (`MasteryPanel`)
 - Card: `value` = `N / 5 지정`, `sub` = weekly research gain after multipliers (or what is missing),
   `owner` = `StaffSystem.owner_name(state, "knowledge")`.
-- Sheet: owner + effective knowledge + gain multiplier, tier-bonus legend, gain amounts, the auto
-  button (delegated) or a manual hint, then one card per pilot in `GameEnums.ROLE_DISPLAY_ORDER`:
-  portrait, name, current research mech, top-3 mastery line, and a chip per own-role mech
-  (`name / tier value`, tier-coloured bar). Tap a chip = set research, tap the selected chip = clear.
+- Sheet: owner + effective knowledge + gain multiplier, level-% legend (Lv0..Lv5), gain rule + "upgrades at
+  Lv3 · 4 · 5", the auto button (delegated) or a manual hint, then one card per pilot in
+  `GameEnums.ROLE_DISPLAY_ORDER`: portrait, name, current research mech, top-3 mastery line (`mech LvN`), a chip
+  per own-role mech (`name / LvN · ±%`, a level bar = `%LevelBar` fill `anchor_right` = progress inside the
+  level, colour = level) and **`%NextUpgrade`** — the next locked mech upgrade of the research mech (or the
+  coach's pick): `다음 강화 Lv4 · <mech>: <step text>` (`MechUpgrades.next_step` / `step_text`), or "all
+  unlocked". Tap a chip = set research, tap the selected chip = clear.
 - **F6 preview** — run `UI_View_MasteryPanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
   in-memory run, `auto_assign_all` + four `settle_week`s, bound without a sheet.
   A tap refills the same body in place (`_fill`); rows and chips are reused (`_ensure`), so the tapped
@@ -75,13 +92,19 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
     ├ %Pilots (MasteryPilotRow, sep 16)
     └ Tail
   MasteryPilotRow (Panel · Card) → %Content (VBox, inset 18)
-    ├ Top (208)  %Portrait (round portrait added by code) · %Name · %Research · %PositionBadge_Position (PositionBadge) · %TopMechs · %Chips (MasteryMechChip)
+    ├ Top (244)  %Portrait (round portrait added by code) · %Name · %Research · %PositionBadge_Position (PositionBadge) · %TopMechs · %Chips (MasteryMechChip) · %NextUpgrade
     └ %Quirks    Divider · Head (%Count · %Max) · %QuirkEmpty · %Lines (MasteryQuirkLine) · Tail
+  MasteryMechChip (Button) → LevelTrack (grey ColorRect) → %LevelBar (fill)
   ```
   Code owns: texts, delegated / quirk switching, research colour, chip variation (`PrimaryButton` = research
-  mech, else `GhostButton`), tier bar / grade colours, the round portrait (`OutgameTheme.add_round_portrait`
-  into `%Portrait`), and the pilot card height.
+  mech, else `GhostButton`), level bar fill / colour, grade colours, the round portrait
+  (`OutgameTheme.add_round_portrait` into `%Portrait`), and the pilot card height.
 
 ## Where mastery shows outside this folder
-Ban/pick (`features/match_flow/ban_pick/README.md` "Mech mastery"): slot tags, grid tags, sheet line,
-`MechDetailPanel` block, AI ban/pick scoring and enemy assignment, analysis markers.
+- Ban/pick (`features/match_flow/ban_pick/README.md` "Mech mastery"): slot tags (`Lv3 +10%`), grid badges
+  (Lv3+), sheet line, `MechDetailPanel` mastery block + **mech upgrade block**, AI ban/pick scoring and enemy
+  assignment (points), analysis markers.
+- `OpponentIntel` (match prep) top-mastery lines (`mech LvN`), `SeasonPilotDetail` research line (level name /
+  colour), `WeekProgressView._mastery_text` (day card: `숙련 +n · <mech> LvN`), `QuirkSystem` condition
+  `tier:<n>` = mastery **level** ≥ n.
+- BattleSim: only `match_ctx.mech_levels` (mech upgrades — passive params, "+" mech cards).

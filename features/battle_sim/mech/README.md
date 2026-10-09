@@ -10,6 +10,7 @@ distribution are both finished**.
 | File | Role |
 |---|---|
 | `MechSkillSystem.gd` | `class_name MechSkillSystem` — passive state · Charge · event hooks · query functions |
+| `MechUpgrades.gd` | `class_name MechUpgrades` (static) — mech upgrade steps (§15 A, `mech_upgrades.csv`): unlocked steps per mastery level, upgraded passive row, upgraded card row, step text. Shared by BattleSim and the outgame (ban/pick `MechDetailPanel`, `MasteryPanel`) |
 
 **If a pilot skill is a move attached to the player, a mech skill is what the machine does.**
 The moment a machine is picked in ban/pick (밴픽), half of that pilot's deck and one permanent
@@ -23,13 +24,49 @@ grammar also live in this doc (moved from the former `docs/mech_skills_design.md
 | Table | Rows | Key |
 |---|---|---|
 | `data/csv/mech_passives.csv` | 15 | `mech_id` → one passive (6 of the 21 machines have none) |
-| `data/csv/mech_cards.csv` | 64 | `mech_id` → card array, `id` → one card |
+| `data/csv/mech_cards.csv` | 64 + 54 "+" | `mech_id` → card array, `id` → one card ("+" rows: see "Mech upgrades") |
+| `data/csv/mech_upgrades.csv` | 63 | 3 upgrade steps per mech (§15 A) |
 
 `GameManager` holds them as three — `mech_passives` (mech_id → row),
 `mech_cards` (mech_id → array), `mech_card_defs` (card id → row). The last one exists separately
 because more than ten clauses create cards **by pointing at them**
 (`gen_hand:13` / `gen_deck:39` / `search_card:7`) — searching the array each time would rerun the
 same linear search for every card.
+
+## Mech upgrades (돌파형, §15 A)
+
+A pilot's **mech mastery level** (0..5, `features/season/mastery/`) on the mech it rides unlocks upgrade
+steps: Lv3 → step 1, Lv4 → step 2, Lv5 → step 3, **cumulative**. Every mech has exactly three steps.
+
+| Table | Columns |
+|---|---|
+| `data/csv/mech_upgrades.csv` | `id, mech_id, level (3/4/5), target (passive \| card), param (p1 \| p2, passive only), card_id (card only, else -1), value (passive delta, else 0), desc_key` |
+| `data/csv/mech_cards.csv` | upgraded **"+" rows**: `id` = 100 + base id ("++" = 200 + base id), `count = 0`, name "<base>+"; the base row's `upgrade_id` points at it (`-1` = none). A "+" row may carry its own `upgrade_id` ("++") |
+
+- **Passive step** — `MechUpgrades.passive_def(base_def, mech_id, level)` returns a copy of the passive row
+  with `param += value` for each unlocked step. `init_for_match` stores that row, so `_param` /
+  `passive_def` / the max-Charge / Overclock's start Charge and the in-match description all read the
+  upgraded numbers. 6 mechs without a passive (and 4 whose passive has no parameter) upgrade cards only.
+- **Card step** — `MechUpgrades.card_def_for(card_id, mech_id, level)` follows `upgrade_id` while that link's
+  own step is unlocked (`card_id` of the step = the card being upgraded, possibly a "+" id for a "++" step).
+  Used in two places: `CardPhaseManager._mech_card_defs_for` (deck build — the swapped row keeps the base
+  row's `count`) and `make_mech_card_by_id` (cards created by passives / `gen_*` / `search` clauses, so a
+  generated 승전보 / 처형 / 락온 is the "+" one too).
+- **Identity** — `GameManager._load_mech_skills` keeps "+" rows out of `mech_cards_for(mech)` (the mech's own
+  list = base cards only) and stamps them with `base_id` (the root card). `CardData.from_mech_def` sets
+  `mech_card_id = base_id`, so a "+" copy keeps the base's art (`card_uid`), and `search_card:ID`,
+  `_hand_has_card`, trigger lookups and the phase-chain ids still match it. Only name, cost, numbers and
+  keywords differ.
+- **Level source** — `BattleSim.mech_level_for(p)` reads `match_ctx.mech_levels["<pilot_id>"]` (written by
+  `MatchFlow._finalize_rosters` from `MechMastery.mech_levels_ctx`, both teams). Missing (standalone run) =
+  0 → no upgrades.
+- **Text** — `step_text(step)` = `Loc.t(desc_key, {from, to})`: the passive param before / after this step,
+  or the card cost before / after (numeric card changes are worded qualitatively in the key). Keys
+  `mastery.upgrade.<id>.desc` (data column, `data/l10n/config.json`); "+" card names / descriptions are
+  `card.mech.<id>.name` / `.desc` like every mech card.
+- Draft content (user tunes it): passive steps — 과적재 p1 −2, 반응 장갑 p1 +1, 고통과 쾌감 p1 +5, 영혼 수확
+  p2 +2 / p1 +1, 오버클럭 p1 +20, 무념 p2 −1, 취약 각인 p1 +5, 조준 보정 p1 +1; the rest are card steps,
+  mostly cost −1 or one number up (see the csv).
 
 ## The 21 mechs
 

@@ -1144,7 +1144,10 @@ card's illustration.
 - **Mech cards (메크 카드) are not drawn; they come with the mech.** The assigned mech's card list
   (`mech_cards.csv`) expanded by `count` is the whole of that pilot's mech cards, and
   the number differs per mech, so the deck size varies with the lineup. `_mech_card_defs_for(p)`
-  returns that mech's rows.
+  returns that mech's rows — **with the pilot's unlocked mech upgrades applied** (§15 A): a base card
+  whose step is unlocked at `_bs.mech_level_for(p)` (`match_ctx.mech_levels`) is swapped for its "+" row
+  (`MechUpgrades.card_def_for`, keeping the base `count`). `make_mech_card_by_id(card_id, owner)` applies the
+  same swap to generated cards. Rules: `../mech/README.md` "Mech upgrades".
 - **The 3 pilot cards (파일럿 카드) are fixed per player (선수)** (`_pilot_cards_for(p, pool)`). They are not
   re-rolled every match — the same player always brings the same 3 cards.
   - The source is the **`pilot_cards`** column of `players.csv` / `intl_players.csv` (card ids joined

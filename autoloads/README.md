@@ -27,6 +27,9 @@ draft detail popup call it.
   (three slots per position, a category list per slot). The seed is `7919 + id` for a player;
   in a standalone run it is team · role.
 - `card_def(id)` — one row of `card_pool_bs`. `parse_card_ids("12|36|41")` — CSV cell parser.
+- Mech cards (`_load_mech_skills`): `mech_card_defs` holds every `mech_cards.csv` row incl. the §15 A
+  upgraded "+" rows (`upgrade_id` on each def); those "+" rows are **not** in `mech_cards_for(mech)` and
+  carry `base_id` = their root card (→ `CardData.mech_card_id`). Swapping is `MechUpgrades.card_def_for`.
 - **Card / skill / passive text is l10n keys — `Loc.t`.** `card_pool_bs` · `mech_card_defs` ·
   `pilot_skills` · `mech_passives` rows carry `name_key` · `description_key` (no `name` /
   `description`); display sites call `Loc.t(def["name_key"])`. The old name-based
@@ -84,6 +87,7 @@ var match_ctx: Dictionary = {
     "player_side":   int (GameEnums.DraftSide),
     "banned_mech_ids": Array[int],
     "all_mechs":      Array[MechData],
+    "mech_levels":    Dictionary,     # §15 A {"<pilot_id>": mastery level 0..5} (MatchFlow, both teams)
 }
 ```
 

@@ -27,7 +27,7 @@ extends CanvasLayer
 # `DraftDetailPanel` 과 **같은 흰 모달**이다(`DimPanel` · `Card` · `SunkPanel` 스탯 칩 ·
 # `GhostButton` 닫기 · `HeadingLabel` / `SubLabel` / `CaptionLabel` / `BodyLabel` / `AccentLabel`).
 # 배정 단계에서 얼굴과 기체를 번갈아 누르므로 두 팝업이 한 벌로 읽혀야 한다.
-# 코드가 정하는 색은 데이터 색(역할 색, 숙련 등급 색, 기벽 등급 색, 장수 배지 색)뿐이다.
+# 코드가 정하는 색은 데이터 색(역할 색, 숙련 레벨 색, 기벽 등급 색, 장수 배지 색, 강화 해금 색)뿐이다.
 # 코드가 정하는 자리는 기기 인셋(`%SafeArea` 의 위아래 여백)뿐이다.
 #
 # 쓰는 법:
@@ -82,12 +82,15 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## `mastery_rows` — `[{name, value, tier, bonus, current}]` (BanPickController
+## `mastery_rows` — `[{name, value, level, progress, bonus, current}]` (BanPickController
 ## `_mastery_rows`), empty outside a season run or for an unanalysed enemy.
 ## `quirk_info` — quirks of the tapped seat's pilot (my side only, §14):
 ## `{pilot, slots, total, rows: [{name, grade, effect, active}]}`.
+## `upgrade_info` — `{pilot, level}` of the tapped seat's pilot (§15 A,
+## `BanPickController._upgrade_info`); level -1 / {} = unknown → steps without lock state.
 ## 노드는 재사용한다(매번 다시 만들지 않음).
-func open(m: MechData, mastery_rows: Array = [], quirk_info: Dictionary = {}) -> void:
+func open(m: MechData, mastery_rows: Array = [], quirk_info: Dictionary = {},
+		upgrade_info: Dictionary = {}) -> void:
 	close()
 	_mech = m
 	if m == null:
@@ -99,6 +102,7 @@ func open(m: MechData, mastery_rows: Array = [], quirk_info: Dictionary = {}) ->
 	_fill_quirks(quirk_info)
 	_fill_passive()
 	_fill_cards()
+	_fill_upgrades(upgrade_info)
 	(%Scroll as ScrollContainer).scroll_vertical = 0
 	visible = true
 
@@ -221,6 +225,32 @@ func _fill_cards() -> void:
 		cell.tapped.connect(_toggle_card_desc)
 
 
+## Mech upgrade steps (§15 A, `MechUpgrades.steps`) — Lv3 / Lv4 / Lv5, each marked
+## 해금 / 잠김 for the tapped seat's pilot when its level is known. Hidden for a mech
+## with no steps.
+func _fill_upgrades(info: Dictionary) -> void:
+	_clear(%UpgradeRows)
+	var steps: Array = MechUpgrades.steps(_mech.id)
+	%UpgradeBlock.visible = not steps.is_empty()
+	if steps.is_empty():
+		return
+	var level: int = int(info.get("level", -1))
+	var pilot_l: Label = %UpgradePilot
+	pilot_l.visible = level >= 0
+	if level >= 0:
+		pilot_l.text = Loc.t(L.MATCH_MECH_DETAIL_UPGRADE_PILOT, {"pilot": String(info.get("pilot", "")),
+				"level": MechMastery.level_name(level), "n": MechUpgrades.unlocked(_mech.id, level).size(),
+				"total": steps.size()})
+	for raw in steps:
+		var st: Dictionary = raw
+		var row_data: Dictionary = {"level": int(st["level"]), "text": MechUpgrades.step_text(st)}
+		if level >= 0:
+			row_data["unlocked"] = MechUpgrades.is_unlocked(st, level)
+		var row := MechUpgradeRow.create()
+		%UpgradeRows.add_child(row)
+		row.fill(row_data)
+
+
 func _toggle_card_desc(node: Card) -> void:
 	var same: bool = node == _desc_node
 	_hide_card_desc()
@@ -284,13 +314,16 @@ func _fill_preview() -> void:
 		if pd == null:
 			continue
 		var v: int = MechMastery.value(s, pd.id, 12)
-		var t: int = MechMastery.tier_of(v)
-		rows.append({"name": pd.name, "value": v, "tier": t,
-				"bonus": MechMastery.bonus_text(t), "current": st == seat})
+		var lv: int = MechMastery.level_for_value(v)
+		rows.append({"name": pd.name, "value": v, "level": lv, "progress": MechMastery.value_progress(v),
+				"bonus": MechMastery.pct_text(lv), "current": st == seat})
 	var quirk_info: Dictionary = {}
+	var upgrade_info: Dictionary = {}
 	if pilots[seat] != null:
 		quirk_info = _preview_quirks(s, pilots[seat], 12)
-	open(mech, rows, quirk_info)
+		upgrade_info = {"pilot": (pilots[seat] as PlayerData).name,
+				"level": MechMastery.level_of(s, (pilots[seat] as PlayerData).id, 12)}
+	open(mech, rows, quirk_info, upgrade_info)
 
 
 func _preview_quirks(s: Dictionary, pd: PlayerData, mech_id: int) -> Dictionary:

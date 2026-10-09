@@ -27,6 +27,7 @@ On `_ready()`, BattleSim reads `GameManager.match_ctx`:
 | `jungle_start_dir` | PilotData.jungle_start_pref on the player-team assassin |
 | `player_side` | `BattleSim.blue_team` via `seed_side_costs()` — the blue side gets the strategy-point head start + first turn |
 | `stress` | `{"<pid>": int}` my pilots' stress at kickoff → `StressEvents.init_for_match` (`stress/README.md`). Shaken stats are already on `player_roster` |
+| `mech_levels` | `{"<pilot_id>": level 0..5}` — §15 A mech mastery level on the assigned mech, both teams → `BattleSim.mech_level_for(p)` → mech upgrades (passive params in `MechSkillSystem.init_for_match`, "+" mech cards in the deck / generated cards — `mech/README.md` "Mech upgrades"). Missing = 0 = no upgrades |
 | `traits` | `[{id, key, p1, p2}]` — manager in-game traits, **my team only** → `TraitHooks` (`trait/README.md`). Empty / ignored when `active = false` → no change |
 | `active = false` | Triggers fallback to ROLE_STATS (no MatchFlow ran); the side also falls back to player = blue |
 

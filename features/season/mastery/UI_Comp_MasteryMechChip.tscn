@@ -4,7 +4,7 @@
 
 [node name="MasteryMechChip" type="Button"]
 auto_translate_mode = 2
-editor_description = "One own-role mech chip (MasteryPilotRow): name + tier · value; tap = set / clear the research mech. Variation is state (PrimaryButton = research mech, else GhostButton); the tier bar colour is data."
+editor_description = "One own-role mech chip (MasteryPilotRow): name + level · stat %; tap = set / clear the research mech. Variation is state (PrimaryButton = research mech, else GhostButton); the level bar (fill = progress inside the level, colour = level) is data."
 custom_minimum_size = Vector2(0, 92)
 offset_right = 290.0
 offset_bottom = 92.0
@@ -14,20 +14,30 @@ theme = ExtResource("1_theme")
 theme_type_variation = &"GhostButton"
 theme_override_font_sizes/font_size = 20
 text = "Bastion
-능숙 65"
+Lv3 · +10%"
 clip_text = true
 
-[node name="TierBar" type="ColorRect" parent="."]
-editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_pilot_row()"
-unique_name_in_owner = true
+[node name="LevelTrack" type="ColorRect" parent="."]
+editor_description = "Level progress track (the empty part of the bar)."
 layout_mode = 1
 anchors_preset = -1
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = -8.0
+offset_top = -10.0
 offset_right = -10.0
 offset_bottom = -4.0
+mouse_filter = 2
+color = Color(0.86, 0.87, 0.9, 1)
+
+[node name="LevelBar" type="ColorRect" parent="LevelTrack"]
+editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_pilot_row()
+Fill: anchor_right = progress inside the level (code), colour = MechMastery.level_color."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.25
+anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.13, 0.68, 0.38, 1)

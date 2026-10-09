@@ -863,7 +863,10 @@ func _mastery_text(pilot_id: int, raw: int) -> String:
 		if pd != null:
 			mech = MechMastery.auto_research_mech(state, pd)
 	if mech >= 0:
-		return Loc.t(L.SEASON_WEEK_MASTERY_MECH, {"n": amount, "mech": MechMastery.mech_name(mech)})
+		# §15 A — the mech's level after the gain ("Bastion Lv3").
+		var mech_txt: String = "%s %s" % [MechMastery.mech_name(mech),
+				MechMastery.level_name(MechMastery.level_of(state, pilot_id, mech))]
+		return Loc.t(L.SEASON_WEEK_MASTERY_MECH, {"n": amount, "mech": mech_txt})
 	return Loc.t(L.SEASON_WEEK_MASTERY, {"n": amount})
 
 

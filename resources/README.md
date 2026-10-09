@@ -38,7 +38,8 @@ One row from the `cards` SQLite table, plus a few runtime fields:
   so the text names effect values instead of repeating numbers (D20): clause `op:v|mod:w` → `{op}`, `{op_mod}`,
   `{mod}` (first wins), plus `{<name>_abs}` for numbers; a hand-built card without keys
   shows the text given to `_init`). `from_def` (cards.csv) / `from_mech_def` (mech_cards.csv — always use
-  it for mech rows). **Identity is never the name** (D3): `card_uid()` = `pilot:<id>` / `mech:<id>`
+  it for mech rows; an upgraded "+" row keeps its base card's `mech_card_id` via the def's `base_id`, §15 A).
+  **Identity is never the name** (D3): `card_uid()` = `pilot:<id>` / `mech:<id>`
   (hand-built: `effect:<effect>`) — art (`CardImages`) and effect sources (`PilotData.fx_src` ·
   `persistent_fx`) use it, `name_of_uid(uid)` shows it. `[x]` in a description:
   `ref_entries(description_key)` → `[{key, text, special, card}]` from `Loc.refs` (D4), `ref_for(term, refs, i)`

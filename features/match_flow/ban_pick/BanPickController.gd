@@ -162,8 +162,8 @@ const AI_HOVER_MAX_COUNT: int = 2
 ## 집어 볼 후보를 고르는 상위 몇 대.
 const AI_CONSIDER_TOP: int = 5
 
-## Mastery tier a pilot needs to get a badge on a grid cell (2 = 능숙).
-const ADEPT_TIER: int = 2
+## Mastery level a pilot needs to get a badge on a grid cell (3 = first mech upgrade, §15 A).
+const ADEPT_LEVEL: int = 3
 ## Enemy badges per cell at most.
 const ENEMY_DOTS_MAX: int = 2
 
@@ -194,7 +194,7 @@ var _quirk_on: bool = false
 var _show_enemy_likely: bool = false
 ## mech_id(int) → {"pilot": String, "value": int} — each enemy pilot's top mech (sheet line).
 var _enemy_likely: Dictionary = {}
-## Grid cell pilot badges (mastery tier >= `ADEPT_TIER`, fixed for the whole draft):
+## Grid cell pilot badges (mastery level >= `ADEPT_LEVEL`, fixed for the whole draft):
 ## mech_id(int) → my pilot ids in seat order (≤ 5) / enemy pilot ids best first (≤ 2,
 ## only while `_show_enemy_likely`).
 var _my_adept: Dictionary = {}
@@ -337,7 +337,7 @@ func _rider_for(side: int, m: MechData) -> PlayerData:
 
 
 ## Grid badges: for every mech, my pilots (seat order) and — when analysis reveals
-## mastery — the enemy's pilots (highest mastery first, ties by seat) at `ADEPT_TIER`+.
+## mastery — the enemy's pilots (highest mastery first, ties by seat) at `ADEPT_LEVEL`+.
 func _setup_adept() -> void:
 	var enemy_side: int = _other_side(_player_side)
 	var enemy_rows: Dictionary = {}   # mech_id → [[value, seat, pid]]
@@ -347,7 +347,7 @@ func _setup_adept() -> void:
 		var theirs: Array = []
 		for st in range(SLOT_COUNT):
 			var pd: PlayerData = _pilot_at(_player_side, st)
-			if pd != null and MechMastery.tier_of(_mastery(pd, mid)) >= ADEPT_TIER:
+			if pd != null and MechMastery.level_for_value(_mastery(pd, mid)) >= ADEPT_LEVEL:
 				mine.append(pd.id)
 			if not _show_enemy_likely:
 				continue
@@ -355,7 +355,7 @@ func _setup_adept() -> void:
 			if ed == null:
 				continue
 			var v: int = _mastery(ed, mid)
-			if MechMastery.tier_of(v) >= ADEPT_TIER:
+			if MechMastery.level_for_value(v) >= ADEPT_LEVEL:
 				theirs.append([v, st, ed.id])
 		theirs.sort_custom(func(a, b):
 			if int(a[0]) != int(b[0]):
@@ -370,8 +370,8 @@ func _setup_adept() -> void:
 
 
 ## Mastery rows for `MechDetailPanel`: every pilot of `side` (seat order) with
-## this mech — `[{name, value, tier, bonus, current}]`. `current` marks the pilot
-## sitting on `seat`. Empty when mastery is off, or for the enemy without analysis.
+## this mech — `[{name, value, level, progress, bonus, current}]`. `current` marks the
+## pilot sitting on `seat`. Empty when mastery is off, or for the enemy without analysis.
 func _mastery_rows(side: int, mech_id: int, seat: int) -> Array:
 	if not _mastery_on:
 		return []
@@ -383,10 +383,21 @@ func _mastery_rows(side: int, mech_id: int, seat: int) -> Array:
 		if pd == null:
 			continue
 		var v: int = _mastery(pd, mech_id)
-		var t: int = MechMastery.tier_of(v)
-		out.append({"name": pd.name, "value": v, "tier": t,
-				"bonus": MechMastery.bonus_text(t), "current": st == seat})
+		var lv: int = MechMastery.level_for_value(v)
+		out.append({"name": pd.name, "value": v, "level": lv,
+				"progress": MechMastery.value_progress(v),
+				"bonus": MechMastery.pct_text(lv), "current": st == seat})
 	return out
+
+
+## Mech upgrade info for `MechDetailPanel` (§15 A) — the pilot on `seat` of `side`:
+## `{pilot, level}`; level -1 = unknown (mastery off, empty seat, or the enemy
+## without analysis) → the panel lists the steps without lock state.
+func _upgrade_info(side: int, mech_id: int, seat: int) -> Dictionary:
+	var pd: PlayerData = _pilot_at(side, seat)
+	if not _mastery_on or pd == null or (side != _player_side and not _show_enemy_likely):
+		return {"pilot": "", "level": -1}
+	return {"pilot": pd.name, "level": MechMastery.level_for_value(_mastery(pd, mech_id))}
 
 
 # ── Quirk helpers (§14, T1) — my pilots only ─────────────────────────────────
@@ -691,13 +702,13 @@ func _fill_sheet_mastery(m: MechData) -> void:
 	var rider: PlayerData = _rider_for(_player_side, m)
 	if rider != null:
 		var v: int = _mastery(rider, m.id)
-		var t: int = MechMastery.tier_of(v)
+		var t: int = MechMastery.level_for_value(v)
 		var qt: int = _quirk_total(_player_side, rider, m.id)
-		var rider_args: Dictionary = {"name": rider.name, "tier": MechMastery.tier_name(t),
-				"value": v, "bonus": MechMastery.bonus_text(t), "quirk": qt}
+		var rider_args: Dictionary = {"name": rider.name, "tier": MechMastery.level_name(t),
+				"value": v, "bonus": MechMastery.pct_text(t), "quirk": qt}
 		rider_lbl.text = Loc.t(L.MATCH_BAN_PICK_RIDER_QUIRK if qt > 0 else L.MATCH_BAN_PICK_RIDER,
 				rider_args)
-		rider_lbl.add_theme_color_override("font_color", MechMastery.tier_color(t))
+		rider_lbl.add_theme_color_override("font_color", MechMastery.level_color(t))
 	if _show_enemy_likely and _enemy_likely.has(m.id):
 		intel_lbl.text = Loc.t(L.MATCH_BAN_PICK_INTEL_ENEMY_PICK,
 				{"pilot": String((_enemy_likely[m.id] as Dictionary)["pilot"])})
@@ -962,12 +973,12 @@ func _refresh_slot_mastery(side: int, slot: BanPickMechSlot, mech_id: int) -> vo
 	if pd == null:
 		tag.visible = false
 		return
-	var t: int = MechMastery.tier_of(_mastery(pd, mech_id))
+	var t: int = MechMastery.level_for_value(_mastery(pd, mech_id))
 	tag.visible = true
 	tag.add_theme_stylebox_override("panel",
-			OutgameTheme.flat_style(MechMastery.tier_color(t), 8))
+			OutgameTheme.flat_style(MechMastery.level_color(t), 8))
 	if slot.mtag_label != null:
-		slot.mtag_label.text = "%s %s" % [MechMastery.tier_name(t), MechMastery.bonus_text(t)]
+		slot.mtag_label.text = "%s %s" % [MechMastery.level_name(t), MechMastery.pct_text(t)]
 
 
 ## The seat's quirk tag `기벽 +N` — total quirk stat bonus of my pilot on that
@@ -1402,7 +1413,8 @@ func _open_mech_detail(mech_id: int, side: int, seat: int) -> void:
 		_mech_detail = MechDetailPanel.create()
 		add_child(_mech_detail)
 	_close_detail_panels()
-	_mech_detail.open(m, _mastery_rows(side, mech_id, seat), _quirk_rows(side, mech_id, seat))
+	_mech_detail.open(m, _mastery_rows(side, mech_id, seat), _quirk_rows(side, mech_id, seat),
+			_upgrade_info(side, mech_id, seat))
 
 
 ## 두 팝업은 **동시에 뜨지 않는다** — 파일럿과 메크를 한 화면에 겹치지 않는

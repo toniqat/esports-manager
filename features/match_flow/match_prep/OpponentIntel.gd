@@ -201,7 +201,7 @@ static func _mechs_for(state: Dictionary, p: PlayerData) -> Array:
 		var mid: int = int(e.get("mech_id", -1))
 		var val: int = int(e.get("value", 0))
 		out.append({"mech_id": mid, "value": val, "name": mech_name(mid),
-				"text": "%s %s" % [mech_name(mid), MechMastery.tier_name(MechMastery.tier_of(val))]})
+				"text": "%s %s" % [mech_name(mid), MechMastery.level_name(MechMastery.level_for_value(val))]})
 	if out.is_empty():
 		for raw in p.main_mechs:
 			if out.size() >= n:

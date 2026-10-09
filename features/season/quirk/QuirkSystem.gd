@@ -207,9 +207,9 @@ static func _clause_holds(state: Dictionary, pd: PlayerData, mech_id: int, claus
 			return _mech_role(mech_id) == pd.role
 		"mech_role":
 			return _mech_role(mech_id) == arg
-		"tier":
+		"tier":   # mech mastery level (0..5, §15 A) on that mech >= arg
 			return MechMastery.is_enabled(state) \
-					and MechMastery.tier_of(MechMastery.value(state, pd.id, mech_id)) >= arg
+					and MechMastery.level_of(state, pd.id, mech_id) >= arg
 	return false
 
 
@@ -256,7 +256,7 @@ static func cond_text(cond: String) -> String:
 			"mech_role":
 				parts.append(Loc.t(L.QUIRK_COND_MECH_ROLE, {"role": OutgameTheme.role_name(arg)}))
 			"tier":
-				parts.append(Loc.t(L.QUIRK_COND_TIER, {"tier": MechMastery.tier_name(arg)}))
+				parts.append(Loc.t(L.QUIRK_COND_TIER, {"tier": MechMastery.level_name(arg)}))
 			_:
 				parts.append(kind)
 	return " · ".join(parts)

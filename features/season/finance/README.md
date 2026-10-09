@@ -33,6 +33,7 @@ missing keys (pre-M6 save) is re-initialised lazily by `_fin`, keeping what was 
 | `alloc` | `{training, facility, welfare}` int % | The manager's **manual** split (sum 100). Ignored while finance is delegated. |
 | `effects` | `{training_pct, welfare_pct}` float % | Bonuses active **this week**, produced by last week's allocation. |
 | `penalty_weeks` | int | Weeks left of the unpaid-training penalty. |
+| `upkeep_cut_pct` | int % | **§16** permanent upkeep cut from the front's `budget_cut` research (stacking, `add_upkeep_cut`), read via `upkeep_cut_pct(state)` — clamped to `FINANCE_UPKEEP_CUT_MAX_PCT`. Absent in old saves = 0. |
 | `week_bonus` · `week_wins` · `week_losses` | int | Match bonus accrued since the last settlement (reset by `settle_week`). |
 | `week_no` | int | Settlements done this run (history label "N주차"). |
 | `manual_profit_weeks` | int | Settled weeks with `net ≥ 0` while `StaffSystem.owner(state, "finance") == "manager"` — trait unlock `finance_manual_profit:N` (M8). Read via `manual_profit_weeks(state)`. |
@@ -44,17 +45,18 @@ History entry (also what `settle_week` returns, plus `toast`):
 `{week_no, phase, phase_week, sponsor, income_pct, trait_income_pct, trait_upkeep_pct, finance_stat, income_mult, upkeep_mult,
 special_income_pct, special_upkeep_pct, special_salary_pct, specials: Array[id] (running during the week),
 special_spend, special_buys: Array[id], specials_expired: Array[id], bonus, wins, losses, income, salaries, upkeep,
-expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
+upkeep_cut_pct, expense, net, reserve, alloc{training, facility, welfare} (amounts), unpaid, balance, fund, level,
 delegated, cuts: Array[cut record]}`.
-A cut record is `{type, …}` with `type` = `CUT_STOP` · `CUT_FUND {amount}` · `CUT_DOWNGRADE {from, to, amount}` ·
+A cut record is `{type, …}` with `type` = `CUT_STOP` · `CUT_FUND {amount}` · `CUT_DOWNGRADE {fid, from, to, amount}` (no `fid` = a pre-§16 record → old line) ·
 `CUT_PENALTY {weeks, pct}` — never text; `FinanceSystem.cut_text(cut)` draws the line (`finance.cut.*`).
 The returned `toast` is translated at settle time and never saved (`SeasonHub.hub_toasts`).
 
 ## Week-end settlement (`settle_week`)
 1. `income = sponsor_income(state, level) + week_bonus` (bonus may be negative), where
    `sponsor_income = round(sponsor_base × income_pct / 100 × income_mult(state))`.
-2. `expense = salary_cost(state) + upkeep_cost(state, level)`, where
-   `upkeep_cost = round(facility upkeep × upkeep_mult(state))` and
+2. `expense = salary_cost(state) + upkeep_cost(state)`, where (§16)
+   `upkeep_cost = round(Σ facility_upkeep_base(fid) × (1 − upkeep_cut_pct / 100) × upkeep_mult(state))`,
+   `facility_upkeep_base(fid) = facilities.csv upkeep(level of fid) × cost_pct(fid) / Σ cost_pct` (`facility_defs.csv`), and
    `salary_cost = round(StaffSystem.weekly_salary_total × (1 + special_pct(salary) / 100))`.
    `projection()` / `weekly_fixed_cost()` call the same helpers, so the panel and the settlement agree.
    The history entry's `income_pct` stays the facility percent; the trait sums are `trait_income_pct` / `trait_upkeep_pct`,
@@ -89,16 +91,20 @@ Applied in order until the shortfall `need = −net` is covered:
 2. **Balance** pays as much as it can (not a cut).
 3. **Facility fund** is raided (`시설 적립금 N 전용`).
 4. Anything still unpaid is written off with **one forced cut**:
-   - level > 1 → **facility downgrade by one level** (`시설 LvA → LvB 강등 (미납 N)`) — lower upkeep from next week;
-   - level 1 → **training penalty**: `penalty_weeks = FINANCE_UNPAID_PENALTY_WEEKS`, training EXP
+   - something above Lv1 → **one facility down one level** (`<시설> LvA → LvB 강등 (미납 N)`, `downgrade_target`):
+     the highest-level **non-front** facility (ties → larger `cost_pct`, then the later one in `FacilitySystem.FACILITIES`);
+     the **front only once every other facility is Lv1** (lowering the front clamps the others — they are already 1).
+     Rationale: the front carries the `facilities.csv` effects (income, training EXP, mastery, incidents) and gates
+     every other level, so it is the last thing a bankrupt team gives up. Lower upkeep from next week;
+   - everything at Lv1 → **training penalty**: `penalty_weeks = FINANCE_UNPAID_PENALTY_WEEKS`, training EXP
      × (1 − `FINANCE_UNPAID_TRAIN_PENALTY_PCT`) while it lasts (`훈련 지원 삭감 n주`).
    The written-off amount is recorded as `unpaid`.
 
 A "hard cut" (steps 3–4) lights the hub card alert and marks the history row 「삭감」.
 
 ## Allocation — delegated vs manual
-- `StaffSystem.is_delegated(state, "finance")` → **auto**: even thirds (training gets the odd percent);
-  at max facility level it is half training / half welfare (nothing left to save for). Decent, not optimal
+- `StaffSystem.is_delegated(state, "finance")` (the front's occupant is staff, §16) → **auto**: even thirds (training gets the odd percent);
+  once **every** facility is at max level (`all_facilities_max`) it is half training / half welfare (nothing left to save for). Decent, not optimal
   (it can overshoot the "full" spends or under-fund the cheaper axis). The sheet says who handles it.
 - Manager owns finance → **manual**: −/+ steppers per axis, `FINANCE_ALLOC_STEP_PCT` per tap, sum always 100.
   `+` takes from the largest other axis (then the next); `−` hands the freed share to the facility fund
@@ -111,13 +117,25 @@ A "hard cut" (steps 3–4) lights the hub card alert and marks the history row �
 front through `FacilitySystem`; the front upgrade additionally needs its `expand` research for the target level, and
 the bankruptcy downgrade lowers the front (which clamps every other facility to it). Other facilities upgrade with
 `FacilitySystem.upgrade(state, fid)` (cost = `upgrade_cost × facility_defs.cost_pct / 100`), paid by
-`FinanceSystem.pay_upgrade(state, cost)` (fund first, then balance). Upkeep still uses the front's row only —
-per-facility upkeep / budget cut is agent F's §16 task.
+`FinanceSystem.pay_upgrade(state, cost)` (fund first, then balance).
+- **Upkeep (§16)**: every facility pays its share of the `facilities.csv` `upkeep` row **for its own level**,
+  weighted by `facility_defs.csv` `cost_pct` (`facility_upkeep_base`): with all seven at one level the total equals that
+  row — the pre-§16 balance (sponsor vs upkeep) is unchanged at run start, and since no facility may exceed the
+  front, the total never exceeds the front-level row. Then the front's permanent **budget cut** (`upkeep_cut_pct`) and
+  `upkeep_mult`. `upkeep_breakdown(state)` = `[{fid, level, upkeep}]` for the sheet.
+- **Upgrade cost** per facility = `facilities.csv upgrade_cost(level) × cost_pct / 100` (`FacilitySystem.upgrade_cost`):
+  the front pays the old full price (it carries every effect); a non-front facility pays its `cost_pct` share — an
+  optional extra for research speed / higher research rows.
+- **Level effects**: only the **front's** level drives the `facilities.csv` multipliers (`train_exp_pct`, `mastery_pct`,
+  `incident_pct`, `income_pct`) — decided §16: other facilities' levels feed research only (`ResearchSystem.level_mult`,
+  row `min_level`), so a cheap side upgrade cannot buy the sponsor / training multipliers.
 - Effects per level (`facilities.csv`, percent, 100 = neutral): `train_exp_pct`, `mastery_pct`,
   `incident_pct`, `income_pct`; weekly `upkeep`; `upgrade_cost` = cost to reach the next level (0 at max).
-- **Upgrade** from the sheet (two-step button: press → 「한 번 더 눌러 확정」 → press). Paid from
-  `facility_fund` first, then `balance`; refused (button disabled with the reason) at max level or when
-  fund + balance < cost. Takes effect immediately (multipliers, upkeep at the next settlement).
+- **Upgrade** (the front) from the sheet (two-step button: press → 「한 번 더 눌러 확정」 → press). Paid from
+  `facility_fund` first, then `balance`; refused (button disabled with the reason) at max level, while the front's
+  `expand` research for the next level is not done (`%FacGate` explains it with the research progress), or when
+  fund + balance < cost. Takes effect immediately (multipliers, upkeep at the next settlement). Other facilities
+  upgrade from their facility sheet (`features/season/facility/`).
 - Start level = team package `facility_level`.
 
 ## Multipliers
@@ -163,18 +181,19 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
 (`… · 특별 지출 N · 만료: <names>`).
 
 ## UI
-- **Hub card**: title `재무 · 시설 LvN`, value = balance, sub = last week's net (`· 삭감` after a hard cut,
-  `첫 정산 전` before the first one), owner badge = `StaffSystem.owner_name(state, "finance")`. Alert dot when
+- **Hub card**: title `재무 · 프론트 LvN`, value = balance, sub = last week's net (`· 삭감` after a hard cut,
+  `첫 정산 전` before the first one), owner badge = `StaffSystem.owner_name(state, "finance")` (§16: the front's occupant). Alert dot when
   balance < one week of fixed cost (`is_low_balance`), a training penalty is running, or last week had a hard cut.
 - **Sheet** (`HubSheet` body = one `FinancePanel` instance, refilled in place after every change): balance + fund, owner line, this week's
   projection (`projection`), warnings; 지난 주 정산 (income / expense lines, net, where the surplus went,
-  cut lines, special spend / expiries); 흑자 배분 (bars, steppers when manual, active effects); 시설 (current /
-  next level effects, cost, upgrade button); 특별 지출 (running entries, then one row per CSV row: name,
+  cut lines, special spend / expiries); 흑자 배분 (bars, steppers when manual, active effects); 시설 = the front (current /
+  next level effects, cost, upgrade button, expansion gate line, the front-cap rule, per-facility weekly upkeep list,
+  budget-cut line); 특별 지출 (running entries, then one row per CSV row: name,
   effect line `special_effect_text` · weeks, desc, and a two-step button — `구매 −N` / `계약 무료` →
   「한 번 더 눌러 확정」 → buy; disabled with the block reason); 최근 기록 (latest `RECENT_ROWS` weeks).
   Only one special row is armed at a time (`_special_armed`; the facility button's `_upgrade_armed`).
 - **F6 preview** — run `UI_View_FinancePanel.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
-  in-memory run with two `settle_week`s (last week + history rows), bound without a sheet.
+  in-memory run with a budget cut and two `settle_week`s (last week + history rows), bound without a sheet.
 - **Sheet scene** (`UI_View_FinancePanel.tscn`, root `VBoxContainer` top-wide 24 short of the body width — scroll-bar
   room; theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized` →
   `set_body_height`), so the scene's `Tail` spacer is the bottom gap.
@@ -188,8 +207,9 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
     ├ %LastWeek       %FinanceAmountRow_Sponsor %FinanceAmountRow_Bonus %FinanceAmountRow_Salaries %FinanceAmountRow_Upkeep · Divider · NetRow (%Net)
     │                 · %AllocLine · %Cuts (template line) · %SpecialSpend · %SpecialsExpired
     ├ AllocSection · %AllocIntro · %AllocDelegated · %Axes (FinanceAllocRow ×3) · %Effects
-    ├ FacilitySection (%FacilityTitle) · %FacNow · %FacNext · %FacCost
+    ├ FacilitySection (%FacilityTitle = the front) · %FacNow · %FacNext · %FacCost
     │                 · %Upgrade (Primary) / %UpgradeConfirm (Dark) / %UpgradeBlocked (Ghost, disabled)
+    │                 · %FacGate (expansion gate) · FacRule (static) · UpkeepTitle · %Upkeeps (template line) · %UpkeepCut
     ├ SpecialsSection · %SpecIntro · %Running (template line) · %RunningGap · %Specials (FinanceSpecialRow)
     ├ HistorySection · %HistEmpty · %History (FinanceHistoryRow)
     └ Tail
@@ -198,7 +218,7 @@ with no staff salaries; `upkeep_delay` with no upkeep) · balance < cost.
   affordable or not, axis fill colours),
   the share-bar fill width (`anchor_right`). List rows are reused across refills (`_ensure_rows`), so a
   tapped button is never freed while emitting; the scene's sample rows are dropped in `_ready`.
-  Template-line lists (`%Cuts`, `%Running`) duplicate their first `Label`. Fixed-colour lines are scene
+  Template-line lists (`%Cuts`, `%Running`, `%Upkeeps`) duplicate their first `Label`. Fixed-colour lines are scene
   variations: `%Fund` `LinkLabel` 44, `%LowBalance` · `%Penalty` · `%Cuts` line · history `%Cut` `NegativeLabel` 22,
   `%Running` line `PositiveLabel` 22.
 - The sponsor × text in 지난 주 정산 is owned by §14 T3 (it reads `income_mult`).

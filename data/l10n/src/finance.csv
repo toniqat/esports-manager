@@ -69,7 +69,7 @@ tx_YC0EYSGFNS,finance.effect.upkeep,active,특별 지출 효과 조각,,,{tx_VGM
 tx_BT8KJSTKS7,finance.effect.incident,active,특별 지출 효과 조각,,,사건 확률 {pct}%,Incident chance {pct}%,draft,5820848a
 tx_2TSKW275F0,finance.effect.salary,active,특별 지출 효과 조각,,,{tx_P32YKYKYRT} {pct}%,{tx_P32YKYKYRT} {pct}%,draft,b15ec13f
 tx_T1M9PEN089,finance.hub.title,active,허브 관리 카드 제목 (런 없음),,,재무,Finance,draft,b0382dc9
-tx_EK67F07FWA,finance.hub.title_level,active,허브 관리 카드 제목,,,재무 · 시설 Lv{level},Finance · Facility Lv{level},draft,e8e4ea6d
+tx_EK67F07FWA,finance.hub.title_level,active,허브 관리 카드 제목,,,재무 · 프론트 Lv{level},Finance · Front office Lv{level},draft,0f26dcb4
 tx_MPW438S5J7,finance.hub.before_first,active,허브 재무 카드 보조 줄,,,첫 정산 전,Before first settlement,draft,1afcc4d9
 tx_Q52XWB8S4X,finance.hub.last_week,active,허브 재무 카드 보조 줄 — {net} = +360,,,지난 주 {net},Last week {net},draft,40f528a7
 tx_MKKQ4Z5M2Y,finance.hub.last_week_cut,active,허브 재무 카드 보조 줄 — 강제 삭감이 난 주,,,지난 주 {net} · 삭감,Last week {net} · cuts,draft,e76694e0
@@ -92,12 +92,12 @@ tx_J9HW9G18D4,finance.panel.hint_facility,active,흑자 배분 축 설명 — �
 tx_4DNE40K656,finance.panel.hint_facility_max,active,흑자 배분 축 설명 — 시설 최고 레벨,,,{tx_KSPTT1YQVS}. 적자 때 비상금으로만 쓰입니다,{tx_KSPTT1YQVS}. Used only as an emergency fund in a deficit,draft,7a091f7b
 tx_2Y4X334GGR,finance.panel.hint_welfare,active,흑자 배분 축 설명 — 복지,,,다음 주 사건 확률 최대 −{pct}% (주 {amount} 지출에서 최대),Next week incident chance up to −{pct}% (maxed at {amount} spent per week),draft,a478ee3a
 tx_5CEBKKHSAS,finance.panel.effects,active,흑자 배분 — 이번 주 효과,,,이번 주 적용 중: 훈련 EXP +{training}% · 사건 확률 −{welfare}%,Active this week: training EXP +{training}% · incident chance −{welfare}%,draft,14038e2a
-tx_2HH94J6ARY,finance.panel.facility_title,active,시설 섹션 제목,,,시설  Lv {level} / {max},Facility  Lv {level} / {max},draft,03df6790
+tx_2HH94J6ARY,finance.panel.facility_title,active,시설 섹션 제목,,,프론트  Lv {level} / {max},Front office  Lv {level} / {max},draft,56594447
 tx_CPW59P2CKT,finance.panel.fac_now,active,시설 현재 레벨 효과 줄,,,지금  {effects},Now  {effects},draft,3c9c7d9a
 tx_KWW448S0GH,finance.panel.fac_next,active,시설 다음 레벨 효과 줄,,,다음  {effects},Next  {effects},draft,faf25b35
-tx_SAXP078SDD,finance.panel.fac_effects,active,시설 레벨 효과 목록,,,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income} · 유지비 {upkeep},Training ×{train} · Mastery ×{mastery} · Incidents ×{incident} · Income ×{income} · Upkeep {upkeep},draft,498f87db
+tx_SAXP078SDD,finance.panel.fac_effects,active,시설 레벨 효과 목록,,,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income},Training ×{train} · Mastery ×{mastery} · Incidents ×{incident} · Income ×{income},draft,7a627b03
 tx_YN9S7WB6S4,finance.panel.fac_cost,active,시설 업그레이드 비용 줄,,,"비용 {cost}: 시설 적립금 먼저, 모자라면 잔고 (가용 {available})","Cost {cost}: facility fund first, then balance (available {available})",draft,bec327df
-tx_JTTYE38FPY,finance.panel.upgrade,active,시설 업그레이드 버튼,,,시설 업그레이드 → Lv {level},Upgrade facility → Lv {level},draft,83c34c73
+tx_JTTYE38FPY,finance.panel.upgrade,active,시설 업그레이드 버튼,,,프론트 업그레이드 → Lv {level},Upgrade front office → Lv {level},draft,03e98b5e
 tx_63XDT8NVFN,finance.panel.upgrade_confirm,active,시설 업그레이드 확인 버튼,,,한 번 더 눌러 확정 (−{cost}),Tap again to confirm (−{cost}),draft,4f54191d
 tx_XHH41J8S28,finance.panel.upgrade_short,active,시설 업그레이드 막힘 버튼,,,{tx_1PAC25VTPQ} ({amount} 필요),{tx_1PAC25VTPQ} ({amount} needed),draft,36d06d19
 tx_SBD8ZAF5DC,finance.panel.spec_intro,active,특별 지출 설명,,,잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 {n}건까지),Paid from the balance at once · lasts a set number of weeks (up to {n} at once),draft,ac99742d
@@ -110,3 +110,9 @@ tx_6DZQQSQ3VE,finance.panel.sponsor,active,지난 주 정산 줄 이름,,,스폰
 tx_1ZGSEKD4JD,finance.panel.sponsor_mult,active,지난 주 정산 줄 이름 — 보정 있음,,,스폰서 수입 (시설 ×{facility} · 보정 ×{mult}),Sponsor income (facility ×{facility} · modifier ×{mult}),draft,201d0587
 tx_VGMAD0GE7N,finance.panel.upkeep,active,지난 주 정산 줄 이름,,,시설 유지비,Facility upkeep,draft,6ab81299
 tx_5ATMNYAZ8A,finance.panel.upkeep_mult,active,지난 주 정산 줄 이름 — 보정 있음,,,{tx_VGMAD0GE7N} (보정 ×{mult}),{tx_VGMAD0GE7N} (modifier ×{mult}),draft,e5bee77e
+tx_A68YMV80H1,finance.cut.downgrade_facility,active,적자 정산 삭감 줄 — 시설 하나 강등 (§16),,,{name} Lv{from} → Lv{to} 강등 (미납 {amount}),{name} Lv{from} → Lv{to} downgrade (unpaid {amount}),draft,4f731717
+tx_9996TAPSGF,finance.panel.upkeep_title,active,재무 시트 시설 섹션 — 시설별 유지비 소제목,,,시설별 유지비 (주),Upkeep per facility (weekly),draft,c9f51bbf
+tx_S6RZ7XDZCZ,finance.panel.upkeep_line,active,재무 시트 — 시설 하나의 주간 유지비,,,{name}  Lv{level} · {amount},{name}  Lv{level} · {amount},draft,4746ce34
+tx_F54VFZ1WNC,finance.panel.upkeep_cut,active,재무 시트 — 누적 유지비 절감,,,운영비 절감 −{pct}% 반영 (프론트 연구),Cost cutting −{pct}% applied (front research),draft,584e6a85
+tx_K6HVE7B1CA,finance.panel.upgrade_gate,active,재무 시트 — 프론트 업그레이드 확장 연구 관문,,,Lv{level} 로 올리려면 프론트의 경영 확장 연구가 먼저 끝나야 합니다 · 진행 {pct}%,Front office research Expansion must finish before Lv{level} · {pct}% done,draft,c9d6cd37
+tx_MGJS84V3XM,finance.panel.fac_rule,active,재무 시트 시설 섹션 — 상한 규칙 안내,,,다른 시설은 프론트 레벨을 넘을 수 없습니다 — 각 시설 시트에서 업그레이드,No facility may exceed the front office level — upgrade others from their facility sheet,draft,db2d644f

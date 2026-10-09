@@ -351,3 +351,4 @@ FRONT_BOOST_WEEKS,3,FrontResearch.gd,프론트 연구 집중 지원 효과 지�
 SCOUT_BASE,2,PersonnelResearch.gd,스태프 스카우트 완료 시 후보 수 기본 (명)
 SCOUT_PER_LEVEL,1,PersonnelResearch.gd,스태프 스카우트 후보 수 — 인력 개발실 레벨당 추가 (명)
 MASTERY_GAIN_LAB,10,MechResearch.gd,메크 연구 완료 시 내 선수 전원이 그 메크에 얻는 숙련도 원값 (점)
+FINANCE_UPKEEP_CUT_MAX_PCT,30,FinanceSystem.gd,프론트 운영비 절감 연구로 줄일 수 있는 시설 유지비 누적 상한 (%)

@@ -158,3 +158,22 @@ own prefix.
 `new_keys` in the kind's domain (never `extract data`). A code key in a `research_*` domain must not have the shape
 `research_<x>.<y>.name|desc` (that is a data alias and gets no `L` constant) — use e.g. `research_mech.note.done`.
 Other agents' existing domains (`training`, `mastery`, `finance`, `staff`, `match` …) stay with their owners.
+
+## FrontResearch (agent F)
+Files: `research/FrontResearch.gd` (handler), `research/FrontResearchBody.gd` + `research/UI_View_FrontResearchBody.tscn`
+(the front sheet section, `FrontResearchBody.create(state)`; F6 preview fills a cut, a boost and half an expansion).
+Rows (`research.csv`, facility `front`, l10n `research_front.csv`):
+
+| rows | `p1` | `p2` | repeatable | completion |
+|---|---|---|---|---|
+| `budget_cut_1..5` (one per `min_level`) | `budget_cut` | upkeep −% | no | `FinanceSystem.add_upkeep_cut` → `finance.upkeep_cut_pct` (stacking, cap `FINANCE_UPKEEP_CUT_MAX_PCT`) |
+| `boost` · `boost_2` (higher `min_level`) | `boost` | research +% | yes | `ResearchSystem.add_boost(state, p2, FRONT_BOOST_WEEKS)` |
+| `expand_2..5` (`min_level = n − 1`, weeks grow) | `expand` | front level n | no | toast note only — `FacilitySystem.front_expand_done(n)` reads the done count |
+
+`row_available` blocks: `expand` for a level the front already has (`research_front.block.expand_reached`) ·
+`budget_cut` once the cap is reached (`research_front.block.cut_max`). Notes: `research_front.note.*`.
+Helpers for other screens: `expand_row(level)`, `expand_progress(state, level)` (0..1, 1 = done),
+`expand_weeks_left(state, level)`, `boost_weeks()`. `FinancePanel` reads `expand_progress` for its upgrade gate line.
+Body: 운영비 절감 (cut total / cap) · 연구 집중 지원 (running boosts, weeks left) · 경영 확장 ladder (per level: reached /
+research done → upgrade in Finance / progress % / locked until front Lv n−1) · 시설 레벨 상한 (rule + each non-front
+facility's level, "· 상한" when it is at the front's level).

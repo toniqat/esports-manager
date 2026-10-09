@@ -191,14 +191,14 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
   rise never becomes a loss; drops pass through untouched.
 
 ## Choice preview (확률 + 방향)
-Every answer of an interview / outing / incident / morning talk shows a preview line under its button
+Every answer of an interview / outing / incident / morning talk / press question shows a preview line under its button
 (`session_view(...).previews[i]`): the mental check chance when the answer rolls one (judge = `judge_for(kind)`:
 staff cover for incidents, else the manager's mental) and the **direction** of each effect, never the number:
 `성공 58% · 신뢰↑` or, when pass and fail differ, `성공 58% · 성공: 신뢰↑ / 실패: 신뢰↓`.
 `MentalEvents.choice_preview(state, row, idx, judge)` sums the clause deltas per label for the passed and the failed
 world (`preview_label`: 신뢰 · 팀 신뢰 · 스트레스 · 팀 스트레스 · stat name · 팀 <stat> · 감독 <stat>), `preview_text`
 formats them (keys `mental.ui.preview.*`). The activity's own stress relief is the same for every answer and is left
-out. The press conference (`MessengerView`) shows no preview yet.
+out. The press conference shows the same line under its answers (`MessengerView.open(..., previews)`, judge = manager).
 
 ## API (static, `state` = `season_state`)
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `outings` · `add_trust` ·

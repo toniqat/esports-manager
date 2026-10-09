@@ -12,20 +12,20 @@ HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAININ
 |---|---|
 | `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
 | `UI_View_PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `UI_View_MessengerView.tscn` instance `%MessengerView_Messenger` whose `outcome_hint` is set in the scene (key `ui.button.tap_to_continue` — "화면을 눌러 계속"). Created by `SeasonHub` with `PressConferenceView.create()` |
-| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference; the week screen's interview / outing / incident use `mental/VnDialogueView` instead). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices)` → signal `choice_picked(idx)` → `show_result(MentalEvents.outcome_view(state, outcome))` (display text — the stored outcome holds keys / note dicts only) / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
+| `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference; the week screen's interview / outing / incident use `mental/VnDialogueView` instead). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices, previews = [])` (`previews[i]` = the chance + direction line under answer i, `MentalSystem.session_view(...).previews`) → signal `choice_picked(idx)` → `show_result(MentalEvents.outcome_view(state, outcome))` (display text — the stored outcome holds keys / note dicts only) / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
 | `UI_View_MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
 | `UI_Comp_MessengerNpcBubble.tscn` / `.gd` | Item — one line of the other side (left): portrait slot (`%Portrait` + `%Glyph`), tail (`%Wedge`), white bubble (`%Bubble` → `Pad` → `%Text`). `create()` + `setup(text, portrait, with_portrait)` — follow-up lines hide portrait + tail but keep their columns |
 | `UI_Comp_MessengerPlayerBubble.tscn` / `.gd` | Item — one manager line (right): amber `%Bubble` + tail. `create()` + `setup(text)` |
 | `UI_Comp_MessengerNarration.tscn` | Item (no script) — centred `*narration` line; code sets `%Text` |
 | `UI_Comp_MessengerNoteChip.tscn` / `.gd` | Item — centred effect / verdict pill. `create()` + `setup(text, good)`; scene = good look (`AccentChip` + `AccentLabel`), bad = `MessengerNoteChipMuted` + `CaptionLabel` |
-| `UI_Comp_MessengerAnswerButton.tscn` | Item (no script) — one answer choice (`GhostButton` 26, 640 wide, ≥ 96 tall, right-aligned, autowrap); code sets text + `pressed` |
+| `UI_Comp_MessengerAnswerButton.tscn` | Item (no script) — one answer choice: VBox (IGNORE, 640 wide, right-aligned) → `%Button` (`MessengerAnswerButton` 26, ≥ 96 tall, autowrap) + `%Preview` (`CaptionLabel`, right-aligned: check chance + effect directions, hidden when empty). Code sets both texts + `pressed` |
 | `MessengerWedge.gd` | `@tool` `_draw` widget — bubble tail. `@export point_left`, `@export_node_path bubble` (tail colour = that bubble's `panel` stylebox fill); the base overlaps the bubble by `OVERLAP` 1 px |
 | `MessengerReporterGlyph.gd` | `@tool` `_draw` widget — reporter microphone placeholder over the portrait slot (no portrait texture) |
 
 **F6 preview** — both scenes fill dummy data when run alone (`resources/UiPreview.gd`), all lines revealed
 at once with `MessengerView.reveal_all()` (preview / harness API) so the answers show:
 `PressConferenceView` = this week's real question of an in-memory run; `MessengerView` = a hand-written
-conference (reporter · narration · manager lines, three answers; picking one shows sample result chips).
+conference (reporter · narration · manager lines, three answers with sample preview lines; picking one shows sample result chips).
 The item scenes preview alone too: `MessengerNpcBubble` (mic portrait + 3-line bubble), `MessengerPlayerBubble`
 (2-line answer), `MessengerNoteChip` (failed-check chip); the script-less items show their baked sample text.
 
@@ -42,7 +42,7 @@ MessengerView (Control, full rect, STOP, theme OutgameTheme.tres)
   │ └ %Body     VBox PASS, separation 0, min width 1080 (code: = viewport width)
   │   ├ %Log    VBox separation 0 — code appends item scenes (one per line, each owns its gap below)
   │   └ %Answers  MarginContainer (top 10 · right 40 · bottom 14), hidden unless choosing
-  │     └ %AnswerList  VBox separation 14 — code adds MessengerAnswerButtons
+  │     └ %AnswerList  VBox separation 14 — code adds MessengerAnswerButtons (button + preview line)
   └ %Hint       FaintLabel, centred, bottom −50 … −22 (grows down to its 31 px min height)
 ```
 

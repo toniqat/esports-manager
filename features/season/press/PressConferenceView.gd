@@ -64,12 +64,15 @@ func _restart() -> void:
 	var sub: String = Loc.t(L.PRESS_CONFERENCE_SUB, {
 		"phase": GameEnums.phase_label(int(s["current_phase"])), "week": int(s["phase_week"]),
 		"outlet": String(view["tag"]) if String(view["tag"]) != "" else Loc.t(L.PRESS_CONFERENCE_DEFAULT_OUTLET)})
-	_messenger.open(sub, Loc.t(L.TERM_ACTIVITY_PRESS), null, view["lines"], view["choices"])
+	_messenger.open(sub, Loc.t(L.TERM_ACTIVITY_PRESS), null, view["lines"], view["choices"],
+			view["previews"])
 
 
 func _on_answer_picked(idx: int) -> void:
 	var s: Dictionary = _gm.season_state
 	_messenger.show_result(MentalEvents.outcome_view(s, MentalSystem.resolve_press(s, idx)))
+	if _hub != null:
+		_hub.autosave("press_answer")
 
 
 func _finish() -> void:

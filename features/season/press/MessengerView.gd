@@ -52,6 +52,7 @@ enum Stage { LINES, CHOICES, OUTCOME, DONE }
 var _portrait: Texture2D = null      # null → reporter microphone glyph
 var _lines: Array = []
 var _choices: Array = []
+var _previews: Array = []
 var _shown: int = 0
 var _stage: int = Stage.DONE
 var _last_side: String = ""          # "npc" / "me" / "narr" — portrait only when the speaker changes
@@ -91,12 +92,15 @@ func _ready() -> void:
 
 # ── API ──────────────────────────────────────────────────────────────────────
 ## Start a fresh dialogue. `portrait` = the left speaker (null → reporter glyph).
-func open(sub: String, title: String, portrait: Texture2D, lines: Array, choices: Array) -> void:
+## `previews[i]` = the line under answer i (check chance + effect directions, "" = none).
+func open(sub: String, title: String, portrait: Texture2D, lines: Array, choices: Array,
+		previews: Array = []) -> void:
 	_sub_lbl.text = sub
 	_title_lbl.text = title
 	_portrait = portrait
 	_lines = lines.duplicate()
 	_choices = choices.duplicate()
+	_previews = previews.duplicate()
 	_shown = 0
 	_last_side = ""
 	_stage = Stage.LINES
@@ -201,10 +205,14 @@ func _show_choices() -> void:
 		_refresh_hint()
 		return
 	for i in _choices.size():
-		var b: Button = ANSWER_SCENE.instantiate()
+		var item: Control = ANSWER_SCENE.instantiate()
+		var b: Button = item.get_node("%Button")
 		b.text = String(_choices[i])
 		b.pressed.connect(_on_choice_pressed.bind(i))
-		_answer_list.add_child(b)
+		var preview: Label = item.get_node("%Preview")
+		preview.text = String(_previews[i]) if i < _previews.size() else ""
+		preview.visible = not preview.text.is_empty()
+		_answer_list.add_child(item)
 	_answers.visible = true
 	_refresh_hint()
 	_scroll_to_bottom()
@@ -305,5 +313,11 @@ func _fill_preview() -> void:
 		Loc.t(L.PRESS_PREVIEW_A1),
 		Loc.t(L.PRESS_PREVIEW_A2),
 		Loc.t(L.PRESS_PREVIEW_A3),
+	], [
+		MentalEvents.preview_text({"checked": true, "chance": 62,
+				"ok": {Loc.t(L.MENTAL_UI_PREVIEW_TRUST_ALL): 1}, "ng": {Loc.t(L.MENTAL_UI_PREVIEW_TRUST_ALL): -1}}),
+		MentalEvents.preview_text({"ok": {Loc.t(L.MENTAL_UI_PREVIEW_SMOD, {"stat": StaffSystem.stat_label("mental")}): 1},
+				"ng": {Loc.t(L.MENTAL_UI_PREVIEW_SMOD, {"stat": StaffSystem.stat_label("mental")}): 1}}),
+		"",
 	])
 	reveal_all()

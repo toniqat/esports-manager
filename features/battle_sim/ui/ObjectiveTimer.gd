@@ -76,6 +76,8 @@ func _draw() -> void:
 	var color: Color = HERALD_COLOR if _kind == ObjectiveSystem.Kind.HERALD \
 			else DRAGON_COLOR
 	var icon_y: float = (size.y - ICON_SIZE) * 0.5
+	if _bs.objective.is_empowered(_kind):
+		_draw_empowered_ring(Vector2(ICON_SIZE * 0.5, icon_y + ICON_SIZE * 0.5), color)
 	_draw_glyph(Vector2(0.0, icon_y), color)
 
 	# 숫자는 아이콘 오른쪽. 남은 폭 한가운데에 놓는다(한 자리 ↔ 두 자리에서
@@ -88,6 +90,20 @@ func _draw() -> void:
 	var x: float = avail_x + maxf(0.0, (size.x - avail_x - num_w) * 0.5)
 	var baseline: float = size.y * 0.5 + float(TURN_FONT_SIZE) * 0.36
 	_outlined(font, Vector2(x, baseline), num, TURN_FONT_SIZE, TURN_COLOR)
+
+
+## **강화 표시** — 다음 보상이 강화 보상이면(`ObjectiveSystem.is_empowered`)
+## 글리프 뒤에 오브젝트 색의 원판 + 테를 깐다. 판이 없는 시계라 테 바깥에 검은
+## 외곽선을 한 겹 먼저 둘러 밝은 전장 위에서도 읽히게 한다.
+const EMPOWERED_RING_R: float = 27.0
+const EMPOWERED_RING_W: float = 3.0
+const EMPOWERED_FILL_ALPHA: float = 0.28
+
+
+func _draw_empowered_ring(c: Vector2, color: Color) -> void:
+	draw_circle(c, EMPOWERED_RING_R, Color(color.r, color.g, color.b, EMPOWERED_FILL_ALPHA))
+	draw_arc(c, EMPOWERED_RING_R, 0.0, TAU, 40, TURN_OUTLINE, EMPOWERED_RING_W + 3.0, true)
+	draw_arc(c, EMPOWERED_RING_R, 0.0, TAU, 40, color, EMPOWERED_RING_W, true)
 
 
 ## 판 없이 전장 위에 뜨는 숫자 — 검은 외곽선을 먼저 깔고 그 위에 본 색.

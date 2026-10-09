@@ -758,6 +758,9 @@ func _bind_cost_donuts(root: Node) -> void:
 	_bs.cost_donut.set_center(Vector2(cx, _bs.BS_HAND_CENTER.y
 			- targeting_btn_band - DONUT_HAND_GAP - CostDonut.RADIUS))
 	_bs.cost_donut.end_turn_pressed.connect(_bs.card_phase.end_card_phase)
+	# 판이 열려 있는 동안 손패가 다음 작전 단계 전에 버려질 카드를 표시한다.
+	_bs.cost_donut.turn_end_toggled.connect(
+			func(_open: bool) -> void: _bs.card_phase.refresh_doom_marks())
 	# 턴 넘기기 판 — 도넛을 탭하면 도넛 자리에 왼쪽에서 밀려 들어온다(`TurnEndPanel`).
 	var turn_end := root.get_node("%TurnEndPanel_Player") as TurnEndPanel
 	turn_end.place(TURN_END_PANEL_LEFT, _bs.cost_donut.rest_center().y)

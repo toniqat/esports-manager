@@ -15,7 +15,7 @@
 | `ReservationChips.gd` | ReservationChips | **Reservation chips (예약 칩)** — card effects settled at a later step (next strategy points · next draw · kill bounty · ambush search) stacked above the ally donut, **one chip per source card** (card art + its values, outlined text, no plate). Tapping a chip opens `ReserveInfo` |
 | `ReserveInfo.gd` + `UI_View_ReserveInfo.tscn` | ReserveInfo | Reservation chip description — layer 12, beside the tapped chip: plate (`BattlePopup`, "예약 효과" + one `hud.reserve.*` line per reserved effect) + the card's `CardDescBox`. Outside press closes (left unhandled); a chip press is left to the chips (toggle). F6: 준비 태세 (card 46) |
 | `ObjectiveTimer.gd` | ObjectiveTimer | Objective (오브젝트) spawn clock — icon + turns remaining on either side of the enemy strip (left Herald (전령) / right Dragon (용)). **Pressing it opens the reward popup** |
-| `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | Objective reward preview — pressing a clock shows the actual cards that objective grants |
+| `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | Objective reward preview — pressing a clock shows the actual cards that objective grants (or the empowered reward text), the empower progress, and where a card reward goes (ghost in the hand's rightmost slot / card flying into the deck) |
 | `PilotDetailPanel.gd` + `UI_View_PilotDetailPanel.tscn` + `UI_View_PilotDetailView.tscn` (+ 8 item scenes, `PilotDetailScoreBar.gd`) | PilotDetailPanel | **Scene-authored** (`PilotDetailPanel.create()`; one `PilotDetailView` instanced per open). Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header (name · mech left, growth points + accrual % on the right — pressing it opens the growth-points plate with the 0 ~ 50k spike bar) + 3 tabs + a stat cell plate (full-width rows / rows of two half cells; every cell name is prefixed with a `CHIP_ICONS` icon, HP · attack values are followed by `(+N)` against the base value — + green / − red; presence only when a pilot skill raised it (`PilotSkillSystem.presence_delta`)). Pressing a cell opens a note plate on the left — the same look as the card description box (`CardDescBox.panel_style`: opaque · borderless · drop shadow below); the note is a `RichTextLabel`, so `{attack}` · `{engage}` · `{atk_growth}` · `{hp_growth}` become icons, and its height is measured from the rendered text (`_fill_note` + `get_content_height`). **Stat plates**: the final value sits on the title line's right end (`%TitleValue`, `_title_value`: chip value, HP = max HP); rows are the breakdown — base · growth (`+N% (+N)`, atk / HP) · **`증가`** (`_append_gain_row` = final − base − growth, only when an effect is on) · current HP / shield (the mech-tab HP / attack plates are mech value · `증가` · current HP — the "파일럿 기본 최대 체력 / 공격력" rows were removed, keys deprecated); at the bottom one cell per effect on that stat (`%FxGrid`, `_stat_effects_of`: pilot skill (icon glyph), mech passive incl. 과적재 (two letters of its name), cards — ledger lines (card art), residual `bonus_*`, temporary attack, lane / evasion card slots, [자신감] in hand) with `+N%` (multipliers) and `+N` under it — a multiplier's `+N` is (base + growth) × pct, compounding / rounding land in `증가`. Mech-tab plates list the in-game stat's effects (`STAT_FX_KEY`); pilot-tab stats and engage hit / evasion have none. Hit / evasion chips show `SimulationCore.effective_hit` / `effective_evasion` (the value the roll uses). Presses that miss within `INFO_ZONE_PAD` (40) around the info column don't close it (`_info_zone`) + **pilot skill plate** (three separate plates) / **held-card fan at the same spot and width as the hand** (6 cards; cards that don't match the tab are dimmed) — pressing a card shows the same description box as the hand. No close button — tapping outside closes it. Open 0.2s / close 0.1s slide + fade |
 | `MarkerTouch.gd` | MarkerTouch | Pressing a battlefield (전장) portrait — while held it grows to `PRESS_SCALE` and moves to the top (it stays on top after release); **long-press (0.45 s) opens the detail panel** |
 | `KillFeed.gd` | KillFeed | Kill log — top-right, one line per kill (처치) / turret (포탑) demolition / objective capture. Kills during an engage (교전) are flushed together after the arena closes |
@@ -270,6 +270,10 @@ literal.
    does nothing (the press is still swallowed).
 3. press outside that zone → panel slides out, donut slides back (`dismissed`). That press is
    deliberately left unhandled so whatever was actually touched still reacts.
+4. **While the panel is out, the hand marks the cards the auto-draw will discard before the next
+   operation phase** (red dim + chevrons on each card). Every open / close emits
+   `CostDonut.turn_end_toggled(open)`; `HudBuilder` routes it to `CardPhaseManager.refresh_doom_marks`
+   (forecast rules: `card_phase/README.md` → *Doomed-card marks*).
 4. phase change / modal / hand preview → `set_flip_allowed(false)` / `set_locked(true)` /
    `set_preview(true)` close it the same way, so the next operation phase starts on the donut.
 
@@ -600,6 +604,10 @@ the deeper `OBJ_HERALD` / `OBJ_DRAGON`.
   panel, and grabbed the gaze that should go to the faces first. Now the icon is slightly
   smaller than the portrait (60px) and vertically centred, so left clock · five faces ·
   right clock read as one row.
+- **Empowered ring.** Once the objective's next reward is the empowered one
+  (`ObjectiveSystem.is_empowered` — `OBJ_EMPOWER_AFTER_TAKES` takes, both teams combined) a
+  translucent disc + ring in the objective colour sits behind the glyph (`_draw_empowered_ring`,
+  radius 27, black outline first — no plate here).
 - **It can be pressed.** `mouse_filter` went IGNORE → **STOP** and it fires
   `timer_pressed(kind)`. `HudBuilder._on_obj_timer_pressed` receives it and calls
   `BattleSim.objective_reward.toggle(kind)` — pressing the same clock again closes it, so
@@ -625,11 +633,23 @@ An **info popup** that opens when a clock is pressed. Drawn on its own `CanvasLa
 └─ plate 560×content (centre of screen, border = objective colour)
      ├ 전령 / 용                    (40pt, purple / vermilion)
      ├ N턴 뒤 등장                  (24pt)  ← ObjectiveSystem.turns_until_cell   ("spawns in N turns")
-     ├ 보상: [전령 제압] — …        (24pt)  ← ObjectiveSystem.reward_text        ("Reward: [Herald Subdued] — …")
+     ├ 3회 획득되면 강화 (n/3) / 강화됨 (22pt) ← ObjectiveSystem.takes / is_empowered ("empowered after 3 takes" / "Empowered")
+     ├ 보상: [전령 제압] — …        (24pt)  ← ObjectiveSystem.reward_text        ("Reward: [Herald Subdued] — …"; hidden once empowered)
      ├ one reward card (Card.tscn at native size) + ×N on the right if several
-     ├ 획득 즉시 손패로 / 덱에 섞여  (22pt)   ("straight into hand on capture / shuffled into deck")
+     │   — empowered: the empowered reward text, wrapped, in the card's place (30pt, objective colour)
+     ├ 획득 즉시 손으로 / 덱에 섞여 / 획득 즉시 적용된다 (22pt)   ("straight into hand" / "shuffled into deck" / "applies the moment it is taken")
      └ [닫기]   (Close)
+[above the dim, card rewards only — where it goes, shown on the spot]
+  Herald: ghost card (α 0.45) in the hand's **rightmost slot** (`ObjectiveRewardFx.hand_right_slot_center`,
+          the slot the card really lands in) + downward chevrons flowing into it (`EntryCue`,
+          `CardPlayPreview.draw_falling_chevrons`)
+  Dragon: a copy of the card leaves the plate's card and flies into the **deck pile** (bottom left,
+          `ObjectiveRewardFx.deck_pile_center`), shrinking and fading — looped (`DECK_FLY_SEC` 0.55 s +
+          `DECK_FLY_GAP_SEC` 0.45 s)
 ```
+
+- **Hand vs deck is told by a picture, not only the 22pt line** (user decision): a reward that comes
+  into the hand and one that is shuffled into the deck look different on the real HUD.
 
 - **Why it exists.** An objective is an event where you choose to participate / not
   participate, but what it gives was nowhere to be seen throughout the match, except one

@@ -7,8 +7,11 @@ extends Control
 #
 # 세 군데에 나눠 그린다.
 #   • **이 노드의 `_draw`** (캔버스, `z_index` 로 손패 위) — 덱 / 버린 더미 위
-#     chevron 기둥 + 장수, 버려질 손패 카드의 붉은 딤 + 아래 chevron, 찾기
-#     돋보기, 보존 자물쇠.
+#     chevron 기둥 + 장수, 찾기 돋보기, 보존 자물쇠.
+#   • **손패 카드 자신** — 버려질 카드의 붉은 딤 + 아래 chevron 은 카드의 자식
+#     (`Card.DoomMark`)이 그린다. 이 노드는 무엇이 버려질지만 정하고
+#     (`doomed_cards`), 켜고 끄는 것은 `CardPhaseManager.refresh_doom_marks` 다.
+#     이 층에 모아 그리던 시절에는 겹친 카드의 딤끼리 포개졌다.
 #   • **`BattleRenderer`** (전장 좌표) — 시전자 하얀 네온, 이동 경로 화살표,
 #     공격 예상(명중률 · 깎일 체력), 회복 / 보호막 예상, 복귀 · 후퇴 고스트,
 #     약탈 · 정글 파밍의 영혼 궤적. 렌더러가 `field_spec()` / `neon_pilot()` 을 읽는다.
@@ -39,7 +42,7 @@ const PILE_DISCOUNT_COLOR := Color(0.45, 1.0, 0.45)
 const SEARCH_COLOR  := Color(1.00, 0.88, 0.45)
 const PRESERVE_COLOR := Color(0.45, 0.90, 1.00)
 const OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.85)
-## 버려질 카드 위 붉은 딤.
+## 버려질 카드 위 붉은 딤(`Card.DoomMark` 가 읽는다).
 const DOOMED_TINT   := Color(0.85, 0.08, 0.06, 0.34)
 
 var _bs: BattleSim = null
@@ -133,6 +136,13 @@ func neon_pilot() -> PilotData:
 ## 렌더러가 읽는 전장 쪽 미리보기. 키: `attack` / `restore` / `ghost` / `soul`. 없는 키는 그릴 것이 없다는 뜻.
 func field_spec() -> Dictionary:
 	return _spec.get("field", {}) as Dictionary
+
+
+## 끄는 카드의 효과로 버려질 손패 카드(CardData). 끄는 중이 아니면 빈 배열.
+func doomed_cards() -> Array:
+	if not _dragging:
+		return []
+	return _spec.get("doomed", []) as Array
 
 
 ## 연출 시계(초). 렌더러가 같은 시계로 흐르게 한다.
@@ -440,6 +450,8 @@ func _add_restore(field: Dictionary, p: PilotData, heal: int, shield: int) -> vo
 func _push_widgets() -> void:
 	if _bs == null:
 		return
+	if _bs.card_phase != null:
+		_bs.card_phase.refresh_doom_marks()
 	if _bs.cost_donut != null:
 		if _spec.has("strategy_gain"):
 			# 위에 뜨는 값은 **효과가 더하는 양**, 가운데 숫자는 비용까지 치른
@@ -490,7 +502,6 @@ func _draw() -> void:
 				"+%d" % from_discard, font)
 	elif search_discard > 0:
 		_draw_pile_search(_bs.pile_discard, search_discard, font)
-	_draw_doomed_cards(_spec.get("doomed", []) as Array)
 	var preserve_n: int = int(_spec.get("preserve", 0))
 	if preserve_n > 0:
 		_draw_preserve_hint(preserve_n, font)
@@ -564,28 +575,6 @@ func _draw_pile_tag(pile: CardPileStack, text: String, font: Font) -> void:
 			PILE_DISCOUNT_COLOR)
 
 
-## 버려질 손패 카드 — 카드 위에 붉은 딤, 그 가운데로 아래 chevron 이 흐른다.
-func _draw_doomed_cards(doomed: Array) -> void:
-	if doomed.is_empty():
-		return
-	var inv: Transform2D = get_global_transform().affine_inverse()
-	var phase: float = fposmod(_t * FLOW_SPEED, 1.0)
-	for node in _bs.player_card_nodes:
-		var c := node as Card
-		if c == null or not doomed.has(c.data) or c.is_dragging:
-			continue
-		draw_set_transform_matrix(inv * c.get_global_transform())
-		draw_rect(Rect2(0.0, 0.0, Card.CARD_W, Card.CARD_H), DOOMED_TINT)
-		var cx: float = Card.CARD_W * 0.5
-		var top: float = Card.CARD_H * 0.30
-		var span: float = CHEVRON_STEP * float(CHEVRON_COUNT)
-		for i in CHEVRON_COUNT + 1:
-			var k: float = (float(i) + phase) / float(CHEVRON_COUNT + 1)
-			var a: float = clampf(minf(k, 1.0 - k) * 4.0, 0.0, 1.0)
-			_draw_chevron(Vector2(cx, top + k * span), false, DISCARD_COLOR, a)
-	draw_set_transform_matrix(Transform2D.IDENTITY)
-
-
 ## 보존 — 손패 행 위 가운데에 자물쇠 + 장수.
 func _draw_preserve_hint(n: int, font: Font) -> void:
 	var nodes: Array = _bs.player_card_nodes
@@ -624,6 +613,13 @@ func _draw_preserve_hint(n: int, font: Font) -> void:
 
 
 func _draw_chevron(c: Vector2, up: bool, col: Color, alpha: float) -> void:
+	draw_chevron(self, c, up, col, alpha)
+
+
+## chevron 한 개(검은 테 + 본 색). 손패 카드의 버려질 표시(`Card` 의 DoomMark)와
+## 오브젝트 보상 미리보기(`ui/ObjectiveRewardPopup.gd`)도 같은 모양을 쓴다.
+static func draw_chevron(ci: CanvasItem, c: Vector2, up: bool, col: Color,
+		alpha: float) -> void:
 	if alpha <= 0.01:
 		return
 	var dy: float = -CHEVRON_H * 0.5 if up else CHEVRON_H * 0.5
@@ -632,8 +628,20 @@ func _draw_chevron(c: Vector2, up: bool, col: Color, alpha: float) -> void:
 		Vector2(c.x, c.y + dy),
 		Vector2(c.x + CHEVRON_W * 0.5, c.y - dy),
 	])
-	draw_polyline(pts, Color(0, 0, 0, 0.8 * alpha), CHEVRON_THICK + 5.0, true)
-	draw_polyline(pts, Color(col.r, col.g, col.b, alpha), CHEVRON_THICK, true)
+	ci.draw_polyline(pts, Color(0, 0, 0, 0.8 * alpha), CHEVRON_THICK + 5.0, true)
+	ci.draw_polyline(pts, Color(col.r, col.g, col.b, alpha), CHEVRON_THICK, true)
+
+
+## 아래로 흐르는 chevron 기둥 — `top` 에서 시작해 `CHEVRON_STEP × CHEVRON_COUNT`
+## 만큼 흘러 내려가며 양 끝에서 페이드한다. `t` 는 초 단위 시계.
+static func draw_falling_chevrons(ci: CanvasItem, cx: float, top: float,
+		col: Color, t: float) -> void:
+	var phase: float = fposmod(t * FLOW_SPEED, 1.0)
+	var span: float = CHEVRON_STEP * float(CHEVRON_COUNT)
+	for i in CHEVRON_COUNT + 1:
+		var k: float = (float(i) + phase) / float(CHEVRON_COUNT + 1)
+		var a: float = clampf(minf(k, 1.0 - k) * 4.0, 0.0, 1.0)
+		draw_chevron(ci, Vector2(cx, top + k * span), false, col, a)
 
 
 ## 가운데 정렬 큰 숫자. `bottom_center` 는 글자 기준선 가운데.

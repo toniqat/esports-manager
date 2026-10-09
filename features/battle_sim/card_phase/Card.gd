@@ -253,6 +253,12 @@ var _respawn_label: Label = null
 # 계획 중시로 보존된 카드인가. `set_preserved` 가 갱신한다.
 var _preserved: bool = false
 var _preserve_mark: Panel = null
+## 버려질 카드 표시(붉은 딤 + 아래로 흐르는 chevron). **카드 자신의 자식**이라
+## 손패의 그리기 순서를 그대로 따른다 — 1번 카드 → 1번 딤 → 2번 카드 → 2번 딤.
+## 예전에는 손패 위 한 층(`CardPlayPreview._draw`)에 딤을 모아 그려, 겹친 카드의
+## 딤끼리 포개져 진해지고 옆 카드의 보이는 몫까지 덮었다.
+var _doomed: bool = false
+var _doom_mark: DoomMark = null
 ## 충전 배지 (`N/M`). 충전 카드가 아니면 꺼진다.
 var _charge_badge: Label = null
 ## 시전자 얼굴 리본 (오른쪽 위 모서리 삼각형). 손패 카드에만 선다.
@@ -430,6 +436,13 @@ func _build_block_overlay() -> void:
 	# 앞면과 맞춘다.
 	cost_badge.reparent(self, false)
 	move_child(cost_badge, get_child_count() - 1)
+	# 버려질 표시는 비용 배지까지 덮는다 — 카드 한 장 전체가 "나간다"는 뜻이다.
+	_doom_mark = DoomMark.new()
+	_doom_mark.name = "DoomMark"
+	_doom_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_doom_mark.size = Vector2(CARD_W, CARD_H)
+	_doom_mark.visible = false
+	add_child(_doom_mark)
 
 
 ## 앞/뒷면 표시를 바꾼다. 비용 배지는 `CardFront` 밖으로 나가 있으므로 앞면과
@@ -475,11 +488,60 @@ func _refresh_block_overlay() -> void:
 		_respawn_label.text = str(_respawn_turns)
 	if _preserve_mark != null and is_instance_valid(_preserve_mark):
 		_preserve_mark.visible = showable and _preserved
+	if _doom_mark != null and is_instance_valid(_doom_mark):
+		_doom_mark.set_on(showable and _doomed)
 	# 비용 배지는 슬래브 위에 앉으므로 슬래브에 덮이지 않는다 — 직접 눌러 준다.
 	if cost_badge != null and is_instance_valid(cost_badge):
 		cost_badge.modulate = (COST_BADGE_BLOCKED_TINT
 				if _block_overlay.visible else Color.WHITE)
 	refresh_charge_badge()
+
+
+## 버려질 카드 표시를 켜고 끈다. 무엇이 버려질지는 `CardPhaseManager.refresh_doom_marks`
+## 한 곳이 정한다(끄는 카드의 버리기 효과 / 턴 넘기기 패널이 열린 동안의 상한 초과 예측).
+func set_doomed(on: bool) -> void:
+	if _doomed == on:
+		return
+	_doomed = on
+	_refresh_block_overlay()
+
+
+func is_doomed() -> bool:
+	return _doomed
+
+
+## 버려질 카드 위의 붉은 딤 + 가운데로 흘러 내려가는 chevron(`CardPlayPreview` 와
+## 같은 모양). 켜져 있는 동안만 시계를 돌린다.
+class DoomMark extends Control:
+	const RADIUS: int = 10
+	## chevron 기둥이 시작하는 높이(카드 높이 비율).
+	const CHEVRON_TOP_RATIO: float = 0.30
+	var _t: float = 0.0
+	var _sb: StyleBoxFlat = null
+
+	func _ready() -> void:
+		_sb = StyleBoxFlat.new()
+		_sb.bg_color = CardPlayPreview.DOOMED_TINT
+		_sb.set_corner_radius_all(RADIUS)
+		set_process(visible)
+
+	func set_on(on: bool) -> void:
+		if visible == on:
+			return
+		visible = on
+		_t = 0.0
+		set_process(on)
+		queue_redraw()
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		if _sb != null:
+			draw_style_box(_sb, Rect2(Vector2.ZERO, size))
+		CardPlayPreview.draw_falling_chevrons(self, size.x * 0.5,
+				size.y * CHEVRON_TOP_RATIO, CardPlayPreview.DISCARD_COLOR, _t)
 
 
 ## Re-poses the card and its shadow for the current hover / selected state.

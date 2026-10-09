@@ -15,8 +15,11 @@ extends Node
 #   • **용** — 보상 카드 N장이 중앙에 부채꼴로 펼쳐졌다가 **한 장처럼 겹쳐지고**,
 #     좌측 아래 **덱 뭉치**로 빨려 들어간다. 겹쳐지는 박자가 "이 여러 장이 이제
 #     한 더미가 된다"이고, 덱으로 향하는 방향이 "지금 쓸 수는 없다"이다.
-#   • **전령** — 보상 카드 한 장이 중앙에 떠올랐다가 **손패 맨 왼쪽 자리**로
+#   • **전령** — 보상 카드 한 장이 중앙에 떠올랐다가 **손패 맨 오른쪽 자리**로
 #     내려앉는다. 손으로 곧장 들어오는 카드라 덱을 거치지 않는다.
+#
+# 강화된 오브젝트(`ObjectiveSystem.is_empowered`)는 카드가 없으므로 이 연출을 타지
+# 않는다 — 전장 위 배너(`BattleRenderer.spawn_cell_banner` / `spawn_buff_banner`)가 맡는다.
 #
 # 적이 가져간 경우에는 둘 다 **상단 상대 손패의 왼쪽 끝**으로 날아가 사라진다.
 # 상대의 덱은 화면에 없으므로 용도 그 자리를 쓴다 — 중요한 것은 "누구 것이
@@ -132,20 +135,21 @@ func play(card_id: int, is_player: bool, count: int, to_deck: bool) -> void:
 ##
 ##   • 적 팀      → 상단 상대 손패의 왼쪽 끝
 ##   • 나 · 덱    → 좌측 아래 덱 뭉치
-##   • 나 · 손패  → 손패 맨 왼쪽 슬롯(그 자리에 실제로 삽입된다)
+##   • 나 · 손패  → 손패 맨 오른쪽 슬롯(그 자리에 실제로 삽입된다)
 func _destination(is_player: bool, to_deck: bool) -> Vector2:
 	if not is_player:
 		return _ai_hand_left_center()
 	if to_deck:
-		return _deck_pile_center()
-	return _hand_left_center()
+		return deck_pile_center(_bs)
+	return hand_right_slot_center(_bs)
 
 
 ## 덱 뭉치의 한가운데. 뭉치가 없으면(HUD 미구축) 화면 왼쪽 아래로 폴백한다.
-func _deck_pile_center() -> Vector2:
-	if _bs.pile_deck != null and is_instance_valid(_bs.pile_deck):
-		return _bs.pile_deck.position + _bs.pile_deck.size * 0.5
-	return Vector2(40.0, _bs.BS_HAND_CENTER.y + Card.CARD_H * 0.5)
+## 보상 미리보기(`ui/ObjectiveRewardPopup.gd`)도 같은 자리를 겨눈다.
+static func deck_pile_center(bs: BattleSim) -> Vector2:
+	if bs.pile_deck != null and is_instance_valid(bs.pile_deck):
+		return bs.pile_deck.position + bs.pile_deck.size * 0.5
+	return Vector2(40.0, bs.BS_HAND_CENTER.y + Card.CARD_H * 0.5)
 
 
 ## 상대 손패 왼쪽 끝 카드의 한가운데.
@@ -155,11 +159,12 @@ func _ai_hand_left_center() -> Vector2:
 	return Vector2(220.0, 140.0)
 
 
-## 손패 맨 왼쪽 슬롯의 한가운데. **카드가 한 장 더 늘어난 뒤의** 배치로 재야
+## 손패 맨 오른쪽 슬롯의 한가운데. **카드가 한 장 더 늘어난 뒤의** 배치로 재야
 ## 실제로 앉을 자리와 맞는다(`slot_position` 은 총 장수로 자리를 나눈다).
-func _hand_left_center() -> Vector2:
-	var total: int = _bs.player_card_nodes.size() + 1
-	var slot: Vector2 = _bs.card_phase.slot_position(0, total)
+## 보상 미리보기의 고스트 카드(`ui/ObjectiveRewardPopup.gd`)도 같은 자리에 선다.
+static func hand_right_slot_center(bs: BattleSim) -> Vector2:
+	var total: int = bs.player_card_nodes.size() + 1
+	var slot: Vector2 = bs.card_phase.slot_position(total - 1, total)
 	return slot + Vector2(Card.CARD_W, Card.CARD_H) * 0.5
 
 

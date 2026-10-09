@@ -11,8 +11,8 @@ const SCOPE_LANE   := "lane"
 const SCOPE_JUNGLE := "jungle"
 
 # 키워드 (cards.csv `keyword` 컬럼). **`|` 로 여러 개를 붙일 수 있다** —
-# 전령 제압은 `exhaust|preserve` 로 "한 번 쓰면 소멸하되 그때까지는 절대
-# 버려지지 않는다"를 함께 단다. 판정은 언제나 `has_keyword()` 를 지나야 한다:
+# 스킬이 만든 카드는 `exhaust|volatile` 로 "쓰면 소멸, 안 쓰고 버려져도
+# 사라진다"를 함께 단다. 판정은 언제나 `has_keyword()` 를 지나야 한다:
 # `keyword == "exhaust"` 로 문자열을 통째로 비교하면 두 번째 키워드가 붙는
 # 순간 첫 번째가 조용히 꺼진다.
 #
@@ -22,9 +22,12 @@ const SCOPE_JUNGLE := "jungle"
 const KW_EXHAUST  := "exhaust"    # 사용 후 소멸 (덱으로도 discard 로도 안 감)
 ## 보존 — **버려지지 않는다.** 손패 상한 초과 자동 버리기도, 버리기 계열 카드
 ## (재고 / 완벽한 마무리 / 과감한 정리 / 솔로 퍼포먼스 / 버리기:N)도 이 카드를
-## 건너뛴다. 오브젝트 보상처럼 "쓸 때를 골라야 하는" 한정 카드를 위한 것이라
-## 작전 단계 한 번짜리인 계획 중시(`preserve:N` 효과)와는 수명이 다르다 —
+## 건너뛴다. "쓸 때를 골라야 하는" 한정 카드를 위한 것이라(지금 다는 카드는
+## 없다 — [전령 제압]은 버려지면 더미로 가서 덱을 다시 돈다) 작전 단계 한
+## 번짜리인 계획 중시(`preserve:N` 효과)와는 수명이 다르다 —
 ## 그쪽은 `BattleSim.preserved_cards_*` 목록, 이쪽은 카드 자신의 키워드다.
+## **`KW_VOLATILE` 과 한 카드에 함께 달 수 없다** — Rebuild game.db 가 거부한다
+## (`addons/csv_to_db/csv_to_db.gd` `EXCLUSIVE_KEYWORDS`).
 const KW_PRESERVE := "preserve"
 ## 휘발성 — **버려질 때 버린 더미로 가지 않고 그 자리에서 사라진다.** 파일럿
 ## 스킬이 손패에 직접 만들어 주는 카드들이 단다(배회의 [이동], 복귀 명령의

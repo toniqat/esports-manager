@@ -114,3 +114,6 @@ tx_8J4PMYV3RW,hud.reserve.chip_bounty,active,reservation chip compact part (kill
 tx_FRNWGED1N8,hud.reserve.chip_search,active,reservation chip compact part (engage card search),,,{tx_VPV5JM208F} {n},Search {n},draft,f5b1dd6e
 tx_HY8TH99C2E,hud.pilot_detail.row.link_partner,active,pilot detail info row label: the pilot this pilot is bonded to (Bond card),,,결속 상대,Bonded with,draft,41c26bcd
 tx_6NND6G12EN,hud.pilot_detail.note.fx_link,active,pilot detail info plate note for the Bond lasting effect,,,결속한 둘 중 하나가 교전에 참여하면 다른 하나도 함께 참여한다. 둘 중 하나가 전장을 떠나면 풀린다.,"When either bonded pilot joins an engage, the other joins too. Ends when either leaves the field.",draft,95eede79
+tx_1VA1Q06P5D,hud.objective_reward.takes,active,objective reward popup: takes so far (both teams combined) toward the empowered reward,,,{max}회 획득되면 강화 ({n}/{max}),Empowered after {max} takes ({n}/{max}),draft,25055080
+tx_5WV0YT1W3P,hud.objective_reward.empowered,active,objective reward popup: the objective now gives the empowered reward,,,강화됨,Empowered,draft,8463ac17
+tx_WZ39630VSG,hud.objective_reward.applied_now,active,objective reward popup: empowered rewards are not cards,,,획득 즉시 적용된다,Applies the moment it is taken,draft,5a65324e

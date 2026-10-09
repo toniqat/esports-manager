@@ -26,8 +26,25 @@ enum Kind { HERALD = 0, DRAGON = 1 }
 
 ## 보상 카드의 cards.csv id. 둘 다 `pool = 0` 이라 스타터 덱에는 들어가지 않고
 ## 오직 여기서만 세상에 나온다.
-const HERALD_CARD_ID: int = 32   # 전령 제압 — 보존 + 소멸, 최외곽 포탑에 피해(`turret_damage`)
+const HERALD_CARD_ID: int = 32   # 전령 제압 — 소멸, 최외곽 포탑에 피해(`turret_damage`)
 const DRAGON_CARD_ID: int = 33   # 용 보상   — 소멸, 드로우 + 성장 효율 영구 가산(`growth_perm`)
+
+## **강화 문턱** — 한 오브젝트가 양 팀 합산으로 이 횟수만큼 가져가진 **뒤부터**
+## 그 오브젝트의 보상이 카드 대신 강화 보상이 된다(`is_empowered`). 경기를
+## 마무리하는 장치다: 후반의 전령은 세 라인을 한꺼번에 밀고, 후반의 용은 팀 전원을
+## 키운다. 무승부(아무도 못 가져감)와 무산은 세지 않는다.
+static var EMPOWER_AFTER_TAKES: int = int(ConstTable.num("OBJ_EMPOWER_AFTER_TAKES"))
+
+## 강화 전령의 박자(s) — 구조물 하나마다 배너를 먼저 띄우고(`HIT_LEAD`) 그 뒤에
+## 피해를 넣은 다음 `HIT_GAP` 만큼 쉬고 다음 구조물로 간다. 세 라인을 한 프레임에
+## 때리면 어느 포탑이 얼마나 깎였는지가 안 읽힌다.
+const EMPOWERED_HIT_LEAD_SEC: float = 0.30
+const EMPOWERED_HIT_GAP_SEC: float = 0.35
+## 강화 용 배너가 뜬 뒤 전장이 다시 흐르기까지의 뜸(s) — 다섯 얼굴 위 배너를
+## 읽을 시간.
+const EMPOWERED_DRAGON_HOLD_SEC: float = 0.70
+## 강화 전령의 피해 숫자 색.
+const EMPOWERED_HIT_COLOR := Color(1.0, 0.45, 0.40)
 
 ## 이 오브젝트를 두고 싸우는 **포지션**. 사망한 파일럿은 참여할 수 없으므로,
 ## 한쪽이 죽어 있으면 그 팀은 그만큼 수적으로 불리한 채로 붙거나 물러나야 한다.
@@ -57,7 +74,8 @@ static var AI_MISJUDGE_DEFAULT: float = ConstTable.num("OBJ_AI_MISJUDGE_DEFAULT"
 
 @onready var _bs: BattleSim = get_parent() as BattleSim
 
-## 오브젝트별 상태. `[{kind, cell, next_turn}]`, 인덱스 = Kind.
+## 오브젝트별 상태. `[{kind, cell, next_turn, takes}]`, 인덱스 = Kind.
+## `takes` = 양 팀 합산 획득 횟수(강화 문턱, `EMPOWER_AFTER_TAKES`).
 var _state: Array = []
 
 ## 오브젝트 하나가 결판날 때까지 켜져 있다 — 결정 창이 떠 있는 동안과 교전
@@ -77,11 +95,13 @@ func init_objectives() -> void:
 			"kind": Kind.HERALD,
 			"cell": SimulationCore.NEUTRAL_LEFT,
 			"next_turn": _bs.OBJ_HERALD_FIRST_TURN,
+			"takes": 0,
 		},
 		{
 			"kind": Kind.DRAGON,
 			"cell": SimulationCore.NEUTRAL_RIGHT,
 			"next_turn": _bs.OBJ_DRAGON_FIRST_TURN,
+			"takes": 0,
 		},
 	]
 	_busy = false
@@ -89,6 +109,18 @@ func init_objectives() -> void:
 
 func is_busy() -> bool:
 	return _busy
+
+
+## `kind` 가 지금까지 가져가진 횟수(양 팀 합산).
+func takes(kind: int) -> int:
+	if kind < 0 or kind >= _state.size():
+		return 0
+	return int((_state[kind] as Dictionary).get("takes", 0))
+
+
+## 다음 보상이 강화 보상인가 — 문턱만큼 가져가진 **뒤**다(문턱째 획득은 아직 카드).
+func is_empowered(kind: int) -> bool:
+	return takes(kind) >= EMPOWER_AFTER_TAKES
 
 
 # ─── 렌더러가 읽는 표시용 상태 ───────────────────────────────────────────────
@@ -194,6 +226,9 @@ func _run_objective_engage(st: Dictionary, kind: int,
 		_bs.last_log = "[%s] 무승부 — 아무도 가져가지 못했다" % label  # l10n-ignore
 		_bs.blog.log_event("OBJ", "%s 무승부 — 다음 %d턴" % [label, int(st["next_turn"])])  # l10n-ignore
 		return
+	# 보상 한 줄은 지급 **전에** 읽는다 — 지급이 획득 횟수를 올리므로, 문턱째
+	# 획득 뒤에 읽으면 방금 받은 카드 보상이 아니라 다음 강화 보상을 말한다.
+	var reward: String = reward_text(kind)
 	await _grant_reward(kind, winner)
 	_push_feed(kind, winner, t0 if winner == 0 else t1)
 	# 고양감(파일럿 스킬)은 **싸워서 이겼을 때만** 충전한다 — 아무도 안 나와
@@ -204,9 +239,9 @@ func _run_objective_engage(st: Dictionary, kind: int,
 		_bs.mech_skill.on_objective_win(winner)
 	_reschedule(st, _bs.OBJ_RESPAWN_TURNS)
 	var side: String = "아군" if winner == 0 else "적군"  # l10n-ignore
-	_bs.last_log = "[%s] %s 획득 · %s" % [label, side, reward_text(kind)]  # l10n-ignore
+	_bs.last_log = "[%s] %s 획득 · %s" % [label, side, reward]  # l10n-ignore
 	_bs.blog.log_event("OBJ", "%s → team%d (교전 승리) · %s · 다음 %d턴"  # l10n-ignore
-			% [label, winner, reward_text(kind), int(st["next_turn"])])
+			% [label, winner, reward, int(st["next_turn"])])
 
 
 ## 한쪽만 참여 — 전투 없이 그 팀이 가져간다. 결과 창을 한 번 띄운다(플레이어가
@@ -363,12 +398,31 @@ func _hp_ratio_sum(group: Array) -> float:
 
 
 # ─── 보상 ────────────────────────────────────────────────────────────────────
-## 화면과 로그에 함께 쓰는 보상 한 줄.
+## 화면과 로그에 함께 쓰는 보상 한 줄. 강화된 뒤에는 강화 보상을 말한다.
 func reward_text(kind: int) -> String:
 	if kind == Kind.HERALD:
+		if is_empowered(kind):
+			return Loc.t(L.BATTLE_OBJECTIVE_REWARD_HERALD_EMPOWERED,
+					{"n": empowered_herald_damage()})
 		return Loc.t(L.BATTLE_OBJECTIVE_REWARD_HERALD,
 				{"n": _card_clause_int(HERALD_CARD_ID, "turret_damage")})
+	if is_empowered(kind):
+		return Loc.t(L.BATTLE_OBJECTIVE_REWARD_DRAGON_EMPOWERED,
+				{"n": empowered_dragon_pct()})
 	return Loc.t(L.BATTLE_OBJECTIVE_REWARD_DRAGON, {"n": _bs.OBJ_DRAGON_CARD_COUNT})
+
+
+## 강화 전령이 라인 하나에 넣는 피해 — [전령 제압] 카드의 `turret_damage` 절
+## 그대로다(무저항 배율은 없다: "적이 레인에 서 있는 수준"). 카드 행이 유일한
+## 원본이라 카드 수치를 고치면 강화 보상도 함께 따라간다.
+func empowered_herald_damage() -> int:
+	return _card_clause_int(HERALD_CARD_ID, "turret_damage")
+
+
+## 강화 용이 아군 **한 명마다** 얹는 성장 적립 % — 용 1회분 전부
+## ([용 보상] `growth_perm` × `OBJ_DRAGON_CARD_COUNT`)를 전원에게 준다.
+func empowered_dragon_pct() -> int:
+	return _card_clause_int(DRAGON_CARD_ID, "growth_perm") * int(_bs.OBJ_DRAGON_CARD_COUNT)
 
 
 ## 카드 `effect` 에서 절 하나의 수치를 읽는다(`turret_damage:N` → N). 보상 안내가
@@ -386,9 +440,14 @@ func _card_clause_int(card_id: int, clause: String) -> int:
 	return 0
 
 
-## 전령은 카드 한 장을 **손패로 곧장**(보존 키워드라 버려지지 않는다), 용은
-## 카드 다섯 장을 **덱에 섞어서**. 둘의 차이가 곧 두 오브젝트의 성격이다 —
-## 전령은 지금 당장 쓸 한 방, 용은 경기 내내 천천히 도는 성장 이득.
+## 전령은 카드 한 장을 **손패로 곧장**(맨 오른쪽 — 버려지면 더미로 가서 덱을
+## 다시 돈다), 용은 카드 세 장을 **덱에 섞어서**. 둘의 차이가 곧 두 오브젝트의
+## 성격이다 — 전령은 지금 당장 쓸 한 방, 용은 경기 내내 천천히 도는 성장 이득.
+##
+## **강화된 뒤에는 카드가 없다**(`is_empowered`) — 전령은 세 라인의 최외곽
+## 구조물을 그 자리에서 때리고(`_grant_empowered_herald`), 용은 팀 전원의 성장
+## 적립을 올린다(`_grant_empowered_dragon`). 강화 여부는 **이번 획득을 세기 전**에
+## 정한다 — 문턱째 획득은 아직 카드 보상이다.
 ##
 ## **지급보다 연출이 먼저다**(`objective/ObjectiveRewardFx.gd`) — 보상 카드를
 ## 화면 한가운데에 펼쳐 보여 준 뒤 들어갈 자리로 날려 보내고, 그 비행이 끝난
@@ -400,6 +459,15 @@ func _grant_reward(kind: int, team: int) -> void:
 	# 오브젝트는 양 팀이 같은 자리로 모이는 약속이라 결과가 어느 쪽으로 갔는지가
 	# 곧 사건이다 — 여기만 승/패를 감촉으로 가른다.
 	Haptics.play(Haptics.Kind.SUCCESS if is_player else Haptics.Kind.WARNING)
+	var empowered: bool = is_empowered(kind)
+	var st: Dictionary = _state[kind] as Dictionary
+	st["takes"] = int(st.get("takes", 0)) + 1
+	if empowered:
+		if kind == Kind.HERALD:
+			await _grant_empowered_herald(team)
+		else:
+			await _grant_empowered_dragon(team)
+		return
 	var to_deck: bool = kind != Kind.HERALD
 	var card_id: int = HERALD_CARD_ID if kind == Kind.HERALD else DRAGON_CARD_ID
 	var count: int = 1 if kind == Kind.HERALD else int(_bs.OBJ_DRAGON_CARD_COUNT)
@@ -408,8 +476,119 @@ func _grant_reward(kind: int, team: int) -> void:
 	if to_deck:
 		_bs.card_phase.grant_cards_to_deck(card_id, is_player, count)
 	else:
-		# 연출이 카드를 손패 **맨 왼쪽**으로 날려 보내고 끝나므로 삽입도 그 자리다.
-		_bs.card_phase.grant_cards_to_hand(card_id, is_player, count, true)
+		# 연출이 카드를 손패 **맨 오른쪽**으로 날려 보내고 끝나므로 삽입도 그 자리이고,
+		# 드로우 인트로는 타지 않는다(방금 본 비행이 두 번 재생된다).
+		_bs.card_phase.grant_cards_to_hand(card_id, is_player, count, false)
+
+
+## 강화 전령 — **세 라인의 최외곽 적 구조물을 그 자리에서 때린다.** 라인마다
+## 최외곽 포탑(T1 → T2, `SimulationCore.outermost_enemy_turrets`)에
+## `empowered_herald_damage()`, 포탑이 다 무너진 라인의 몫은 **적 본진**에 간다
+## (포탑이 없는 라인은 T2 가 무너진 라인이므로 본진은 언제나 열려 있다). 그래서
+## 세 라인이 모두 비었으면 본진에 3배다 — 본진 몫은 한 번에 합쳐 친다(배너 하나 ·
+## 숫자 하나).
+##
+## 깎은 체력만큼의 성장치는 [전령 제압]과 같은 규칙으로 **그 라인의 아군 라이너들**이
+## 나눠 받는다(`CardPhaseManager.award_turret_damage_to_lane`). 본진 몫은 그 몫을
+## 낸 라인들에 고르게 나눈다.
+##
+## 구조물 하나마다: 배너(`BattleRenderer.spawn_cell_banner` — 전령 보상 그림 +
+## "강화 전령 효과") → 피해(포탑 흔들림 · 숫자) → 뜸. 본진이 무너지면 그 자리에서
+## 경기가 끝난다(`check_win_condition`).
+func _grant_empowered_herald(team: int) -> void:
+	var dmg: int = empowered_herald_damage()
+	if dmg <= 0 or _bs.sim_core == null:
+		return
+	var foe: int = 1 - team
+	var by_lane: Dictionary = {}
+	for raw in _bs.sim_core.outermost_enemy_turrets(team):
+		var td := raw as TurretData
+		by_lane[td.lane] = td
+	var hq_lanes: Array = []
+	for lane in range(3):
+		if not by_lane.has(lane) and _bs.sim_core.any_t2_destroyed(foe):
+			hq_lanes.append(lane)
+	var cd: CardData = _bs.card_phase.make_objective_card(HERALD_CARD_ID)
+	var art: Texture2D = CardImages.art_for(cd.card_uid()) if cd != null else null
+	var title: String = Loc.t(L.BATTLE_OBJECTIVE_EMPOWERED_HERALD_EFFECT)
+	var parts: Array = []
+	for lane in range(3):
+		if not by_lane.has(lane):
+			continue
+		var td := by_lane[lane] as TurretData
+		_bs.renderer.spawn_cell_banner(td.grid_pos, art, title)
+		await _wait(EMPOWERED_HIT_LEAD_SEC)
+		if _bs.game_over or not td.alive:
+			continue
+		var before: int = td.hp
+		var log_lines: Array = []
+		_bs.sim_core.apply_card_turret_damage(td, dmg, null, log_lines)
+		var removed: int = maxi(0, before - td.hp)
+		_bs.card_phase.award_turret_damage_to_lane(lane, team, removed)
+		_bs.renderer.spawn_cell_popup(td.grid_pos, "-%d" % dmg, EMPOWERED_HIT_COLOR)
+		parts.append("T%d %s −%d" % [td.tier, _bs.LANE_NAMES[lane], dmg])  # l10n-ignore
+		_bs.renderer.queue_redraw()
+		_bs.hud.update_hud()
+		await _wait(EMPOWERED_HIT_GAP_SEC)
+	if not hq_lanes.is_empty() and not _bs.game_over:
+		var hq_cell: Vector2i = _bs.ENEMY_HQ_POS if team == 0 else _bs.PLAYER_HQ_POS
+		var hq_dmg: int = dmg * hq_lanes.size()
+		_bs.renderer.spawn_cell_banner(hq_cell, art, title)
+		await _wait(EMPOWERED_HIT_LEAD_SEC)
+		var removed_hq: int = _damage_hq(foe, hq_dmg)
+		for lane in hq_lanes:
+			_bs.card_phase.award_turret_damage_to_lane(lane, team,
+					removed_hq / hq_lanes.size())
+		_bs.renderer.spawn_cell_popup(hq_cell, "-%d" % hq_dmg, EMPOWERED_HIT_COLOR)
+		parts.append("HQ −%d (×%d)" % [hq_dmg, hq_lanes.size()])  # l10n-ignore
+		_bs.renderer.queue_redraw()
+		_bs.hud.update_hud()
+		_bs.sim_core.check_win_condition()
+		if not _bs.game_over:
+			await _wait(EMPOWERED_HIT_GAP_SEC)
+	_bs.blog.log_event("OBJ", "강화 전령 → team%d · %s" % [team, ", ".join(parts)])  # l10n-ignore
+
+
+## 본진 `team` 에 `dmg` 를 넣고 실제로 깎인 양을 돌려준다.
+func _damage_hq(team: int, dmg: int) -> int:
+	var before: int = _bs.player_hq_hp if team == 0 else _bs.enemy_hq_hp
+	var after: int = maxi(0, before - dmg)
+	if team == 0:
+		_bs.player_hq_hp = after
+	else:
+		_bs.enemy_hq_hp = after
+	return before - after
+
+
+## 강화 용 — **팀 전원**의 성장 적립 배율에 `empowered_dragon_pct()` 를 영구로
+## 얹는다. 쓰러져 있는 파일럿도 포함한다(팀이 가져간 보상이다). 계산은 [용 보상]과
+## 같은 슬롯(`growth_rate_bonus`), 표시도 같다 — [용 보상] 카드를 출처로 한 지속 효과
+## 장부 한 줄 + 그 카드 그림의 버프 배너.
+func _grant_empowered_dragon(team: int) -> void:
+	var pct: int = empowered_dragon_pct()
+	if pct <= 0:
+		return
+	var cd: CardData = _bs.card_phase.make_objective_card(DRAGON_CARD_ID)
+	var n: int = 0
+	for raw in _bs.pilots:
+		var p := raw as PilotData
+		if p.team != team:
+			continue
+		p.growth_rate_bonus += float(pct) / 100.0
+		if cd != null:
+			p.log_persistent_fx(cd.card_uid(), PilotData.FX_GROWTH_RATE, float(pct) / 100.0)
+			_bs.renderer.spawn_buff_banner(p, cd)
+		n += 1
+	_bs.blog.log_event("OBJ", "강화 용 → team%d · %d명 성장 효율 %+d%% (영구)"  # l10n-ignore
+			% [team, n, pct])
+	_bs.renderer.queue_redraw()
+	_bs.hud.update_hud()
+	await _wait(EMPOWERED_DRAGON_HOLD_SEC)
+
+
+## 트윈 `finished` 가 아니라 타이머로 기다린다(`ObjectiveRewardFx._wait` 와 같은 이유).
+func _wait(sec: float) -> void:
+	await get_tree().create_timer(sec).timeout
 
 
 # ─── 킬로그 ──────────────────────────────────────────────────────────────────

@@ -277,16 +277,21 @@ cards are in `objective/README.md`. Summary:
   If only one side joins, that side takes it without a fight; if both do, after an `OBJ_ENGAGE_ROUNDS`-round engage
   (`EngagePhaseManager.start_objective_engage`) the winner is decided by **survivor count → sum of
   remaining HP ratios**. Dead pilots can't participate, which is a corresponding disadvantage.
-- **Rewards** — Herald: 1 [전령 제압] (Herald Subdued) (cost = its cards.csv `cost`, keep (보존) + exhaust) into the hand. Deals
+- **Rewards** — Herald: 1 [전령 제압] (Herald Subdued) (cost = its cards.csv `cost`, exhaust — no keep (보존); discarded, it cycles through the deck) into the hand's rightmost slot. Deals
   its `turret_damage` clause (cards.csv) as damage to the outermost enemy turret (doubled if there are no enemies on that lane's
   front line), and **allies in that lane split that much growth points evenly**. Dragon: `OBJ_DRAGON_CARD_COUNT`
   [용 보상] (Dragon Reward) (cost = its cards.csv `cost`, exhaust) shuffled into the deck. Its `draw:N` clause + a **permanent**
   growth accrual multiplier from its `growth_perm:N` clause (cards.csv) for a chosen ally (`PilotData.growth_rate_bonus`, cumulative).
   The old `OBJ_DRAGON_GROWTH_PCT` game_config key was deleted — the card clause is the only source.
   Both cards are `pool = 0` and **have no caster** (`owner_pilot == null`).
+- **Empowered rewards** — after `OBJ_EMPOWER_AFTER_TAKES` (const.csv, 3) takes of an objective, both teams
+  combined, every later take skips the cards: the Herald hits the outermost enemy turret of **all three lanes**
+  for its `turret_damage` (lanes with no turret send it to the enemy base — all empty = base ×3), the Dragon
+  gives **every pilot of the team** `growth_perm × OBJ_DRAGON_CARD_COUNT` (+15%). Banners over the hit
+  structures / pilots; the clock gets a ring. Details in `objective/README.md`.
 - **Rewards come in through an effect** (`objective/ObjectiveRewardFx.gd`) — for Dragon,
   N cards fan out in the centre, stack as one, and go to the **deck pile at the bottom left**;
-  for Herald, one card floats up and settles into **the leftmost hand slot**. If the enemy takes it,
+  for Herald, one card floats up and settles into **the rightmost hand slot**. If the enemy takes it,
   both vanish to **the left end of the opponent's hand at the top**. `_grant_reward` grants **after**
   `await`ing the effect, so the same card is never visible in two places.
 - **The objective only borrows those coordinates as a stage; the two cells are ordinary jungle cells** —

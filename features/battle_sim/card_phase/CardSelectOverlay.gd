@@ -240,8 +240,8 @@ func add_card_to_pick(node: Card) -> void:
 	if not _bs.player_card_nodes.has(node):
 		return
 	var cd: CardData = node.data
-	# `보존` 키워드 카드는 버릴 수 없다 — 오브젝트 보상처럼 한 매치에 한 장
-	# 나오는 카드가 버리기:N 한 번에 사라지면 안 된다. `target_count` 도 같은
+	# `보존` 키워드 카드는 버릴 수 없다 — "쓸 때를 골라야 하는" 한정 카드가
+	# 버리기:N 한 번에 사라지면 안 된다. `target_count` 도 같은
 	# 규칙으로 잡혀 있으므로 고를 카드가 모자라는 일은 없다.
 	if mode == Mode.DISCARD and cd != null and cd.is_preserved_by_keyword():
 		return

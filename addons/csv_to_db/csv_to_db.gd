@@ -497,6 +497,24 @@ func _build_l10n(verbose: bool) -> String:
 	return ""
 
 
+## Card tables whose `keyword` column is a `|` list (`CardData.has_keyword`).
+const KEYWORD_TABLES: Array = ["cards", "mech_cards"]
+## Keyword pairs one card may not carry together. `preserve` (never discarded) and
+## `volatile` (vanishes when discarded) answer the same question opposite ways.
+const EXCLUSIVE_KEYWORDS: Array = [["preserve", "volatile"]]
+
+
+# Row-level data rules beyond column / pk checks. Returns "" when the row is fine.
+func _check_row(table_name: String, row: Dictionary) -> String:
+	if not table_name in KEYWORD_TABLES or not row.has("keyword"):
+		return ""
+	var kws: PackedStringArray = String(row["keyword"]).split("|", false)
+	for pair in EXCLUSIVE_KEYWORDS:
+		if kws.has(pair[0]) and kws.has(pair[1]):
+			return "has both keywords '%s' and '%s' (mutually exclusive)" % [pair[0], pair[1]]
+	return ""
+
+
 # Returns Array of Dicts on success, or an error String on failure.
 func parse_csv(path: String, table_name: String, schema: Dictionary) -> Variant:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -539,6 +557,11 @@ func parse_csv(path: String, table_name: String, schema: Dictionary) -> Variant:
 			file.close()
 			return "Table '%s': duplicate primary key '%s' = '%s' in %s" % [table_name, pk_col, pk_val, path]
 		seen_pks[pk_val] = true
+
+		var rule_err: String = _check_row(table_name, row)
+		if rule_err != "":
+			file.close()
+			return "Table '%s': %s = '%s' %s in %s" % [table_name, pk_col, pk_val, rule_err, path]
 
 		# Cast numeric columns using TABLE_DEFS
 		var col_defs: Dictionary = TABLE_DEFS[table_name]

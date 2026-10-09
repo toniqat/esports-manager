@@ -433,11 +433,13 @@ func _hit_test_cell(pos: Vector2) -> Vector2i:
 # portrait was tapped. Pilots with no drawn slot (the >5 overflow circle) still
 # fall back to the solo offset.
 #
-# A click that lands on no marker but inside a pilot's own tile still resolves,
-# ranked by marker distance — that keeps taps on the tile itself working while
-# leaving a stacked cell unambiguous.
+# **Only the portrait counts.** A pilot-target card used to also resolve from a
+# point inside the pilot's own tile (ranked by marker distance) — so dragging a
+# card over a tile lit a target up even though the hand was nowhere near a face.
+# That tile fallback is gone: a pilot card must point at the portrait (its drawn,
+# emphasis-scaled radius — `BattleRenderer.pilot_marker_radius`).
 func _hit_test_pilot(pos: Vector2) -> PilotData:
-	return _hit_test_marker(pos, valid_pilots, true)
+	return _hit_test_marker(pos, valid_pilots)
 
 
 # LOCATION 모드에서 초상으로 칸을 집을 수 있는 파일럿 — 유효 칸에 선 산 파일럿.
@@ -453,11 +455,9 @@ func _location_marker_candidates() -> Dictionary:
 	return out
 
 
-# `candidates`(PilotData → true) 중 커서 아래 초상의 주인. `tile_fallback` 이면
-# 초상을 비껴 자기 타일을 누른 클릭도 그 파일럿으로 읽는다(PILOT 모드 —
-# LOCATION 은 타일 판정을 `_hit_test_cell` 이 따로 한다).
-func _hit_test_marker(pos: Vector2, candidates: Dictionary,
-		tile_fallback: bool = false) -> PilotData:
+# `candidates`(PilotData → true) 중 커서 아래 초상의 주인. 초상 밖이면 null —
+# 타일로 파일럿을 집는 길은 없다(LOCATION 의 타일 판정은 `_hit_test_cell` 이 따로 한다).
+func _hit_test_marker(pos: Vector2, candidates: Dictionary) -> PilotData:
 	if candidates.is_empty():
 		return null
 	var markers: Dictionary = {}
@@ -465,8 +465,6 @@ func _hit_test_marker(pos: Vector2, candidates: Dictionary,
 		markers = _bs.renderer.pilot_marker_positions()
 	var best: PilotData = null
 	var best_d: float = INF
-	var tile_best: PilotData = null
-	var tile_best_d: float = INF
 	var hex_size: float = (_bs.hex_grid as HexGrid).hex_size
 	# Slightly looser than half a tile so the click area covers the visible
 	# marker circle (~31.5 px radius at default scale).
@@ -500,20 +498,10 @@ func _hit_test_marker(pos: Vector2, candidates: Dictionary,
 		if _bs.renderer != null:
 			max_r = maxf(base_r, _bs.renderer.pilot_marker_radius(p))
 		var d: float = marker.distance_to(pos)
-		if d <= max_r:
-			if d < best_d:
-				best_d = d
-				best = p
-			continue
-		if not tile_fallback:
-			continue
-		# 타일 폴백은 강조와 무관하게 **타일 크기** 기준이다 — 커진 초상만큼
-		# 넓히면 옆 칸을 누른 클릭까지 이 파일럿으로 빨려 들어간다.
-		var tile_d: float = _bs.cell_center(p.grid_pos).distance_to(pos)
-		if tile_d <= base_r and d < tile_best_d:
-			tile_best_d = d
-			tile_best = p
-	return _remember_marker_pick(best if best != null else tile_best)
+		if d <= max_r and d < best_d:
+			best_d = d
+			best = p
+	return _remember_marker_pick(best)
 
 
 func _remember_marker_pick(p: PilotData) -> PilotData:

@@ -27,6 +27,10 @@ extends Control
 
 ## Emitted when the 턴 넘기기 panel's hold completes and ending is allowed.
 signal end_turn_pressed
+## Emitted when the 턴 넘기기 panel opens / closes. `HudBuilder` routes it to
+## `CardPhaseManager.refresh_doom_marks` — while the panel is out, the hand marks
+## the cards the auto-draw will discard before the next 작전 단계.
+signal turn_end_toggled(open: bool)
 
 const RADIUS       := 56.0
 const RING_WIDTH   := 16.0
@@ -207,6 +211,7 @@ func set_turn_end_open(open: bool) -> void:
 			_panel.slide_in()
 		else:
 			_panel.slide_out()
+	turn_end_toggled.emit(open)
 
 
 # ── Internals ────────────────────────────────────────────────────────────────

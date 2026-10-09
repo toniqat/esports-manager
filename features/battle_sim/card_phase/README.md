@@ -4,7 +4,7 @@
 
 | File | class_name | Role |
 |---|---|---|
-| `Card.gd` | Card | Visual node for a single card (카드) |
+| `Card.gd` | Card | Visual node for a single card (카드). Its child `DoomMark` (inner class) draws the doomed-card mark — see *Doomed-card marks* |
 | `CardPhaseManager.gd` | CardPhaseManager | The whole operation phase (작전 단계) — deck (덱) / hand (손패) / card effects |
 | `CardSelectOverlay.gd` | CardSelectOverlay | 버리기:N (Discard:N) / 보존:N (Keep:N) hand pick (drop onto the central zone) · 찾기:N (Search:N) / pick-1-of-3 boon grid pick |
 | `CardTargetingOverlay.gd` | CardTargetingOverlay | Card drag = targeting overlay |
@@ -12,7 +12,7 @@
 
 Overlay look (white palette, `resources/README.md` → BattleTheme): the hand pick dims only the field (`DIM_FIELD`), grid picks and the pile viewer use the outgame navy modal dim (`DIM_LIGHT`, titles in `TEXT_ON_FILL`); their buttons are outgame buttons via `BattleTheme.style_button` (확인 = primary amber, 숨김 · 취소 · 닫기 = ghost).
 | `CardDragArrow.gd` | CardDragArrow | Aiming arrow linking card ↔ cursor (a chevron chain along a quadratic Bézier; only the last chevron at the cursor end is full size, the rest 75%) |
-| `CardPlayPreview.gd` | CardPlayPreview | **Hand preview (손패 미리보기)** — pressing highlights the caster, dragging previews the effect (deck / discard pile chevrons · cards that will be discarded · search / keep icons + battlefield · puts preview state on the donut and cost ribbons). See the *Hand preview* section below |
+| `CardPlayPreview.gd` | CardPlayPreview | **Hand preview (손패 미리보기)** — pressing highlights the caster, dragging previews the effect (deck / discard pile chevrons · decides the cards that will be discarded (`doomed_cards`, drawn by the cards) · search / keep icons; `draw_chevron` / `draw_falling_chevrons` are the shared static chevron painters + battlefield · puts preview state on the donut and cost ribbons). See the *Hand preview* section below |
 | `AiCardPlayer.gd` | AiCardPlayer | AI card-play animation (centre card + description panel to its right — no keyword notes, `DESC_BOX_W` 340, top edge = card top) |
 | `CardDescBox.gd` | CardDescBox | **Card description panel** — name · cost · keywords · description text · keyword notes. The card face has no description text, so every place that shows the text (panel beside the hand card · AI card · search/browse grid · ban/pick (밴픽) sheet · mech (메크) detail) builds it with this one class. **The panel has no border.** In-game panels stay **dark** (user decision — excluded from the 2026-10 white battle palette): `panel_style(false)` = `BattleTheme.desc_box()` (`DESC_BG`, drop shadow) and every in-game colour reads a `BattleTheme.DESC_*` token (`DESC_NAME`, `DESC_TEXT`, `DESC_NOTE`, `DESC_KW`, `DESC_KNOCK`, `DESC_SPECIAL`); a panel nested inside a panel is tinted one step and has its shadow turned off by `_tint_nested`. The header is one **[small cost ribbon] name** group centred in the panel (`CostRibbon.make_badge`, `COST_RIBBON_SIZE` 26×36). `build(data, width, light, cost_text, cost_color, with_notes, min_h)` measures the height directly from the font and returns it (`light` = outgame white panel); `with_notes = false` builds it without keyword notes — the hand puts the notes on separate panels from `build_keyword_panels`. `place_near` picks a spot above/below the card. Description notation rules: the **Description notation** section below. The text is resolved by `resolve_text(data)` (formulas `{expr|phrase}` and `\n`), then a `RichTextLabel` inlines an octagon indicator before every "전략 점수" (strategy points), a cost ribbon icon before every "비용" (cost) (strategy-point colour, no border), and a keyword icon before keyword words (`KeywordIcon.WORDS`) and "N턴" (N turns) (`resources/KeywordIcon.gd`, keyword colour — `BattleTheme.DESC_KW` (sky blue) in-game / `ACCENT_TEXT` outgame; draw green · discard red · target in the colour of the side the card aims at) (`StrategyIcon.make_rich_label`; the detail panel's card text works the same; card names inside brackets get no icon). **Description font size (`DESC_FONT`) is 22, the same as the header name** (was 18). Below the keyword row sits an **attribute row** — `card_attributes(data)` lists `[icon] value` for **target** (`target` → enemy / ally / enemy or turret / tile / self …) · **range** (`cast_range` of target / cell cards, 99 or more = whole battlefield) · **cast area** (largest of the `area` column · the effect's `area` / `around_target` / `self_range` · engage radius) (**duration is not on the attribute row** — the text says it, e.g. "3턴 간 교전"); items that don't apply are left out (hand-only cards usually have no row at all). On the narrow hand panel (240) the row wraps, so its height is measured with a stand-in string (`_attr_measure`, icon = three characters). Korean wraps only at spaces (`UiHelpers.keep_words`) |
 
@@ -271,7 +271,11 @@ first auto-draw after the turn ends is what trims the excess.
 | Where it lives | `BattleSim.preserved_cards_p/ai` list | The card itself (`CardData.has_keyword`) |
 | Lifetime | **Until the start of that team's next operation phase** | Permanent |
 | What it blocks | Over-cap auto-discard **only** | **All discards** |
-| Cards that carry it | (any card in hand, chosen) | [전령 제압] (Herald Subdued) (objective (오브젝트) reward) |
+| Cards that carry it | (any card in hand, chosen) | **None at the moment** — [전령 제압] (Herald Subdued) carried it until the keyword was removed from it (discarded, it now cycles through the deck) |
+
+**`보존` and `volatile` are mutually exclusive** — one answers "never discarded", the other "vanishes when
+discarded". Rebuild game.db refuses a `cards` / `mech_cards` row that carries both
+(`addons/csv_to_db/csv_to_db.gd` `EXCLUSIVE_KEYWORDS`).
 
 `_trim_hand_overflow` skips both. **Forced** discards from card effects
 (재고 (Reconsider) / 완벽한 마무리 (Perfect Finish) / 과감한 정리 (Bold Cleanup) / 솔로 퍼포먼스 (Solo Performance) / 버리기:N) ignore 계획 중시's
@@ -279,10 +283,32 @@ keep, but **they cannot break through the `보존` keyword either** — all four
 filter the hand through `_discardable(hand)`, and the player's discard modal also
 rejects it in `add_card_to_discard` and sets `target_count` to **the number of discardable cards**
 (setting it to the hand size would create a modal whose confirm button is locked forever).
-An objective reward that drops once per match must not vanish to a single 재고. The loop is an index
+A "pick your moment" card must not vanish to a single 재고. The loop is an index
 scan rather than `pop_front()` so it does not stop when a kept card sits at the front of the hand, and
 even in the extreme where the whole hand is kept (impossible in practice, since there are at most 2) no infinite loop occurs.
 `_prune_preserved` removes entries that have left the hand on every trim, preventing ghost references.
+
+#### Doomed-card marks (버려질 카드 표시) — `refresh_doom_marks`
+A hand card about to be discarded wears a **red dim + downward-flowing chevrons**. The mark is a child of
+the card (`Card.DoomMark`, toggled by `Card.set_doomed`), so it follows the hand's draw order —
+card 1 → mark 1 → card 2 → mark 2. It used to be painted on one layer above the whole hand
+(`CardPlayPreview._draw_doomed_cards`, **deleted**), so the dims of overlapping cards stacked into a
+darker red and covered the neighbours' visible strips.
+
+`CardPhaseManager.refresh_doom_marks()` is the single place that decides which cards are marked:
+
+| Cause | Source | Refreshed by |
+|---|---|---|
+| Dragging a card with a discard clause | `CardPlayPreview.doomed_cards()` (the play preview table below) | `CardPlayPreview._push_widgets` |
+| **The 턴 넘기기 panel is open** | `forecast_overflow_discards()` — the cards the auto-draw's over-cap trim will discard before the player's next 작전 단계 | `CostDonut.turn_end_toggled` (wired in `HudBuilder`) |
+
+The forecast (`_forecast_draws_until_next_turn`) replays `do_battle_turn`'s economy: the over-threshold points
+burn on passing, then per tick the cost recovery / `cost_tick` trait / auto-draw counters advance, and the
+player is ready once points ≥ `PHASE_THRESHOLD` **and** the pass lock is released (a draw, or the AI reaching
+its threshold — it is also released at once if the AI is ready when passing). The draws are then replayed
+on a copy of the hand with unknown cards appended and `_trim_hand_overflow`'s rule (oldest first, keeps
+skipped, a volatile card doesn't return to the pool). **It is a forecast** — extra points from cards, skills
+or kills before the next phase, and anything the opponent does to the hand, are not considered (user decision).
 
 #### Maximum hand size — verified limit (T5, `HAND_CARD_SCALE` 0.96)
 - **Resting cap = 12.** `MAX_HAND_SIZE` (10) + the only positive `hand_size` trait
@@ -1076,7 +1102,7 @@ moment it goes out.
 | `search` · `search_card` | Above the deck pile | Magnifier + count (`search_discard`: above the discard pile) |
 | `draw_discard` | Above the discard pile | Upward-flowing chevrons + `+N` |
 | `discard` (chosen discard) | Above the discard pile | Downward-flowing chevrons + `-N` |
-| `discard_hand` · `discard_hand_draw` · `discard_right` · `discard_left` · `discard_other_pilots` | **On those cards** | Red dim + a downward chevron at the card centre (cards with the keep keyword excluded by the same rule as each effect) |
+| `discard_hand` · `discard_hand_draw` · `discard_right` · `discard_left` · `discard_other_pilots` | **On those cards** | Red dim + a downward chevron at the card centre (cards with the keep keyword excluded by the same rule as each effect). Drawn **by each card** (`Card.DoomMark`, its last child) — see *Doomed-card marks* below |
 | `preserve` | Centred above the hand row | Padlock + `보존 N` |
 | `strategy` · `discard_other_pilots\|strategy_each` | Strategy point donut | Highlight + **the amount to be added** above it + centre number = **the result after paying the cost** (colour change, reflected in the gauge) — `CostDonut.set_preview` |
 | `cost_reduce_hand` · `cost_reduce_engage` | Affected hand cards | The cost ribbon pulses with the new value (green) — `Card.set_cost_preview` |
@@ -1542,7 +1568,7 @@ The DB column is a `;`-separated chain of clauses. Each clause is
 | `growth:N\|turns:T` | yes | 신중한 예산 · 성장 가속 · 소극적인 태세 — sets the caster's growth (성장) **gain multiplier** to `1 + N/100`. It is a multiple of the growth rate, not an amount added to the rate itself (+N% scales the per-turn rate by `1 + N/100`). Expiry is checked every turn by `SimulationCore.tick_growth_and_expiries`. With **`\|charge`**, N is multiplied by **the number of tokens burned** (성장 가속: its `growth` N per token; with 0 tokens nothing happens). It is an effect that overwrites one slot, so the later one wins. |
 | `growth_until_phase:N` | yes | 완벽한 마무리 — raises the growth gain multiplier of **every member of the caster's team** to `1 + N/100` and sets `growth_until_phase`. `_apply_phase_entry_carryovers` clears it when that team enters its next operation phase. Uses the same field as `growth:N`, so the later one wins. |
 | `growth_perm:N` | yes | [용 보상] — **permanently accumulates** N%p onto the growth accrual multiplier of **one designated allied pilot**. No expiry, no removal. It does not go into the `growth_rate_mult` used by the two clauses above (a slot they overwrite) but into a separate field `PilotData.growth_rate_bonus` — in the slot, eating the Dragon (용) several times would stop at a single Dragon's worth and a single laning card afterwards would wipe it. This clause is the **only** source of Dragon growth (the old `OBJ_DRAGON_GROWTH_PCT` game_config key was deleted). The final multiplier is combined in `BattleSim.add_score` as `growth_rate_mult + growth_rate_bonus`. **A card with no picked target applies it to the caster itself** — [핫핸드] is that case (an untargeted `instant` card, so `picked` is always null). The display reads the **per-card ledger** (`PilotData.persistent_fx`), not the total slot — see the *Persistent-effect ledger* section below. **Player**: PILOT mode (`target=ally`, unlimited `cast_range` — no caster, so the whole battlefield). **AI**: random ally. |
-| `turret_damage:N` | yes | [전령 제압] — N damage to the turret on the picked cell **with no hit roll**. Valid targets are `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: only **the first living enemy turret met when scanning each lane T1 → T2** (no sniping inner turrets; in a lane whose T1 has fallen, T2 inherits the spot so there is still somewhere to use it late game). Application reuses `SimulationCore.apply_card_turret_damage` → the battlefield's `_apply_card_damage` as-is, so the shake FX · kill log · `Building` node release · jungle gain on T1 destruction happen in one place only. **Unopposed multiplier**: if there is not a single enemy pilot on that lane's front line (전선) (`SimulationCore.front_line_cells` — between both teams' front-most turrets, the same set as the gold outline on screen), damage is multiplied by `CARD_HERALD_UNOPPOSED_DMG_MULT` (const.csv, `HERALD_UNOPPOSED_DMG_MULT`). The Herald (전령) is an event of pushing into a lane, so if an undefended lane and a lane held by five were worth the same, "when and where to use it" would vanish. **Growth points (성장치) are split evenly among allies in that lane** (`_award_turret_damage_to_lane`; the right lane has two, sniper · supporter, so half each) — the Herald is a team reward with no caster, so the usual attribution path (`apply_card_turret_damage` → `score_turret_damage(attacker, …)`) reaches no one, and the ones who held that lane while pushing own the siege. Value per point is `SCORE_TURRET_FULL / TURRET_HP`, the same as a turret ground down on foot. **Player**: LOCATION mode. **AI**: random valid cell. |
+| `turret_damage:N` | yes | [전령 제압] — N damage to the turret on the picked cell **with no hit roll**. Valid targets are `compute_turret_damage_targets` → `SimulationCore.outermost_enemy_turrets(team)`: only **the first living enemy turret met when scanning each lane T1 → T2** (no sniping inner turrets; in a lane whose T1 has fallen, T2 inherits the spot so there is still somewhere to use it late game). Application reuses `SimulationCore.apply_card_turret_damage` → the battlefield's `_apply_card_damage` as-is, so the shake FX · kill log · `Building` node release · jungle gain on T1 destruction happen in one place only. **Unopposed multiplier**: if there is not a single enemy pilot on that lane's front line (전선) (`SimulationCore.front_line_cells` — between both teams' front-most turrets, the same set as the gold outline on screen), damage is multiplied by `CARD_HERALD_UNOPPOSED_DMG_MULT` (const.csv, `HERALD_UNOPPOSED_DMG_MULT`). The Herald (전령) is an event of pushing into a lane, so if an undefended lane and a lane held by five were worth the same, "when and where to use it" would vanish. **Growth points (성장치) are split evenly among allies in that lane** (`award_turret_damage_to_lane`; the right lane has two, sniper · supporter, so half each) — the Herald is a team reward with no caster, so the usual attribution path (`apply_card_turret_damage` → `score_turret_damage(attacker, …)`) reaches no one, and the ones who held that lane while pushing own the siege. Value per point is `SCORE_TURRET_FULL / TURRET_HP`, the same as a turret ground down on foot. **Player**: LOCATION mode. **AI**: random valid cell. |
 | `discard_hand` | yes | First clause of 완벽한 마무리 — discard the whole hand. **Ignores** keep (보존). |
 | `discard_hand_draw` | yes | 재고 — discard the whole hand and draw again **as many as were discarded**. Hand size stays the same, only its contents change (if deck + discard run dry, only as many as could be drawn). |
 | `discard_right:N` | yes | 과감한 정리 — discard N cards from the **right** of the hand (the most recently entered side). `hand.pop_back()` × N. |
@@ -1853,9 +1879,13 @@ Deleted names: `BattleSim.anim_pilot_lunge` / `anim_pilot_lunge_return` /
   - **PILOT mode** uses `_hit_test_pilot`, which aims at the pilot's **drawn**
     marker: it reads `BattleRenderer.pilot_marker_positions()` — a fresh run of
     the same per-cell stack solve `_draw()` uses — and picks the valid pilot
-    whose marker is closest to the drop point, within `hex_size * 0.85`. A drop
-    that lands on no marker but inside a pilot's own tile still resolves, ranked
-    by marker distance, so releasing over the tile itself keeps working.
+    whose marker is closest to the drop point, within its drawn radius
+    (`BattleRenderer.pilot_marker_radius`, at least `hex_size * 0.85`).
+    **Only the portrait counts** — a drop or hover over the pilot's tile but
+    off its face resolves to nothing (user decision: a pilot-target card must
+    point at the portrait). The old tile fallback (the `tile_fallback` param of
+    `_hit_test_marker`) lit a target up while the finger was on the tile, nowhere
+    near the face, and was deleted.
     (`hit_test_pilot_at` / `hit_test_cell_at` are its only consumers — the battlefield
     click path is gone.)
     > This is the fix for a real bug. The probes used to be the tile centre and

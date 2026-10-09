@@ -542,6 +542,12 @@ animation clock is also that side's (`anim_time()`).
   already dedups per card). Life `BANNER_DUR` 1.9s (fade in / out), banners on the same pilot stack
   upward (`stack` fixed at spawn). Drawn last, after `_draw_pilot_popups`; textures are uploaded via
   `BattleSim.prime_texture` at spawn.
+  - `spawn_cell_banner(cell, tex, title)` — the same banner anchored **over a cell** instead of a pilot
+    (entry `p = null` + `cell`; its base sits just above the turret HP bar). Used by the empowered
+    Herald (`ObjectiveSystem._grant_empowered_herald`) over each turret / base it hits. `EngageArena`
+    matches entries by pilot, so it never draws these.
+  `spawn_cell_popup(cell, text, color)` floats a damage number over a cell (`CELL_POPUP_DUR` 0.9 s,
+  ×1.3 size) — structures have no portrait, so the number is the only mark there.
   **Engage**: while `engage_phase.is_active()` the battlefield skips them and `EngageArena` draws the
   same list over its stage portraits — both go through the static `draw_banner(ci, e, base, s)` (rise,
   stacking, fade computed from the entry), so the two never diverge. Time is always advanced here.

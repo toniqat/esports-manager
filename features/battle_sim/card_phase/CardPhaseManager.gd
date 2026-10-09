@@ -559,23 +559,29 @@ func make_objective_card(card_id: int) -> CardData:
 	return null
 
 
-## 보상 카드 `count` 장을 **손패로 곧장** 넣는다(전령). 손패 상한은 보지 않는다 —
-## 자기 차례에 들어온 카드가 상한을 넘겨도 버리지 않는 기존 규칙과 같고, 어차피
-## 전령 보상은 `보존` 키워드라 다음 자동 버리기도 이 카드를 건너뛴다.
+## 보상 카드 `count` 장을 **손패 맨 오른쪽으로 곧장** 넣는다(전령). 손패 상한은
+## 보지 않는다 — 자기 차례에 들어온 카드가 상한을 넘겨도 버리지 않는 기존 규칙과
+## 같다. 다음 자동 버리기는 **가장 오래된(왼쪽)** 카드부터 버리므로 방금 들어온
+## 이 카드는 맨 나중 차례다 — 그래도 버려지면 버린 더미로 가서 덱을 다시 돈다.
 ## 실제로 들어간 장수를 돌려준다.
-## `at_left` 는 손패 **맨 왼쪽**에 꽂는다 — 오브젝트 보상 연출
-## (`objective/ObjectiveRewardFx.gd`)이 카드를 그 자리로 날려 보내고 끝나므로,
-## 실제 삽입도 같은 자리여야 연출과 결과가 어긋나지 않는다. 그 경로는 드로우
-## 인트로도 타지 않는다(`spawn_card_node` 이 `at_left` 에서 인트로를 끈다) —
-## 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이 두 번 재생된다.
+##
+## `animate = false` 는 드로우 인트로를 끄고 카드를 **제 슬롯에 바로** 세운다 —
+## 오브젝트 보상 연출(`objective/ObjectiveRewardFx.gd`)이 카드를 그 슬롯으로
+## 날려 보내고 끝나므로, 화면 왼쪽 밖에서 다시 날아오면 방금 본 비행이 두 번
+## 재생되고, 손패 가운데에서 튀어나와도 도착한 자리와 어긋난다.
 func grant_cards_to_hand(card_id: int, is_player: bool, count: int,
-		at_left: bool = false) -> int:
+		animate: bool = true) -> int:
 	var added: int = 0
 	for _i in max(0, count):
 		var cd := make_objective_card(card_id)
 		if cd == null:
 			break
-		add_card_to_hand(cd, is_player, at_left)
+		add_card_to_hand(cd, is_player, false, animate)
+		if is_player and not animate and not _bs.player_card_nodes.is_empty():
+			var total: int = _bs.player_card_nodes.size()
+			var node := _bs.player_card_nodes[total - 1] as Card
+			node.position = slot_position(total - 1, total)
+			node.rotation = slot_rotation(total - 1, total)
 		added += 1
 	if added > 0:
 		_refresh_hand_after_bulk_change(is_player)
@@ -784,7 +790,7 @@ func _next_turn_side() -> int:
 ## trims the excess.
 ##
 ## 계획 중시(`preserve:N`)로 보존된 카드는 **건너뛴다** — 그게 그 카드의 유일한
-## 효과다. `보존` 키워드를 단 카드(오브젝트 보상)도 같이 건너뛴다. 손패가 통째로
+## 효과다. `보존` 키워드를 단 카드도 같이 건너뛴다. 손패가 통째로
 ## 보존되는 경우에도 루프가 멈추도록 인덱스 스캔으로 돈다: 상한 초과가 남아도
 ## 무한 루프는 없다.
 func _trim_hand_overflow(is_player: bool) -> int:
@@ -809,6 +815,103 @@ func _trim_hand_overflow(is_player: bool) -> int:
 		relayout_hand(_bs.player_card_nodes)
 		update_deck_discard_labels()
 	return dropped
+
+
+# ─── 버려질 카드 표시 ────────────────────────────────────────────────────────
+## 예측이 내다보는 BATTLE 틱의 상한 — 그 안에 내 차례가 다시 오지 않으면(점수 회복이
+## 멈춘 비정상 상태) 그때까지 센 드로우로 끊는다.
+const DOOM_FORECAST_MAX_TICKS: int = 400
+
+
+## 손패 카드의 **버려질 표시**(`Card.set_doomed`)를 한 곳에서 정한다. 원인은 둘이다.
+##   1. 카드를 **끄는 동안** — 그 카드의 버리기 효과(`CardPlayPreview.doomed_cards`).
+##   2. **턴 넘기기 패널이 열려 있는 동안** — 다음 내 작전 단계가 올 때까지 자동
+##      드로우가 상한을 넘겨 버릴 카드(`forecast_overflow_discards`).
+## 둘이 겹치지는 않는다(카드를 끌면 패널이 닫힌다) — 끄는 쪽이 먼저다.
+## 미리보기(`CardPlayPreview._push_widgets`)와 패널 여닫기(`CostDonut.turn_end_toggled`)가 부른다.
+func refresh_doom_marks() -> void:
+	var doomed: Array = []
+	if _bs.card_preview != null and _bs.card_preview.is_active():
+		doomed = _bs.card_preview.doomed_cards()
+	elif _bs.cost_donut != null and _bs.cost_donut.is_turn_end_open():
+		doomed = forecast_overflow_discards()
+	for node in _bs.player_card_nodes:
+		var c := node as Card
+		if c == null or not is_instance_valid(c):
+			continue
+		c.set_doomed(doomed.has(c.data) and not c.is_dragging)
+
+
+## 지금 턴을 넘기면 **다음 내 작전 단계가 돌아오기 전까지** 상한 초과 자동 버리기
+## (`_trim_hand_overflow`)로 버려질 손패 카드들(오래된 순).
+##
+## 예측이다 — 그 사이 점수를 더 얻는 일(카드 · 스킬 · 처치)이나 상대가 손패를 건드리는
+## 일은 보지 않는다. 보는 것은 이 셋뿐이다: 넘기는 순간 문턱 초과분이 깎이고, 점수
+## 회복 · 자동 드로우가 `do_battle_turn` 과 같은 박자로 돌며, 패스 잠금은 드로우나
+## 상대 차례(상대 점수가 문턱에 닿는 틱)로 풀린다. 뽑힐 카드는 아직 모르므로 빈
+## 자리로 세고, 덱과 버린 더미가 다 비면 더 뽑지 않는다.
+func forecast_overflow_discards() -> Array:
+	var hand: Array = _bs.player_hand.duplicate()
+	var draws: int = _forecast_draws_until_next_turn()
+	var cap: int = _bs.max_hand_size_for(true)
+	var preserved: Array = _bs.preserved_cards_p
+	var avail: int = _bs.player_deck.size() + _bs.player_discard.size()
+	var doomed: Array = []
+	for _d in draws:
+		if avail <= 0:
+			break
+		avail -= 1
+		hand.append(null)   # 아직 모르는 카드
+		var i: int = 0
+		while hand.size() > cap and i < hand.size():
+			var cd: CardData = hand[i] as CardData
+			if cd != null and (preserved.has(cd) or cd.is_preserved_by_keyword()):
+				i += 1
+				continue
+			hand.remove_at(i)
+			if cd == null:
+				avail += 1
+				continue
+			doomed.append(cd)
+			if not cd.is_volatile():
+				avail += 1
+	return doomed
+
+
+## 지금 넘기면 다음 내 차례까지 자동 드로우가 몇 번 도는가 — `do_battle_turn` 의
+## 회복 · 드로우 박자와 `_next_turn_side` 의 준비 조건을 그대로 따라 센다.
+func _forecast_draws_until_next_turn() -> int:
+	var threshold: int = _bs.PHASE_THRESHOLD
+	var cost: int = mini(_bs.player_cost, threshold)
+	var ai_cost: int = _bs.ai_cost
+	var cost_ctr: int = _bs.cost_counter
+	var draw_ctr: int = _bs.draw_counter
+	var turn: int = _bs.turn_count
+	# 넘기는 순간 상대가 문턱 위면 그 자리에서 상대 차례 — 패스 잠금이 곧바로 풀린다.
+	var unlocked: bool = _ai_turn_ready()
+	var draws: int = 0
+	for _tick in DOOM_FORECAST_MAX_TICKS:
+		turn += 1
+		if turn >= _bs.ECONOMY_START_TURN:
+			cost_ctr += 1
+			if cost_ctr >= _bs.COST_RECOVERY_INTERVAL:
+				cost_ctr = 0
+				if cost < threshold:
+					cost += _bs.COST_RECOVERY
+				if ai_cost < threshold:
+					ai_cost += _bs.COST_RECOVERY
+			if _bs.trait_hooks != null and cost < threshold:
+				cost = maxi(0, cost + _bs.trait_hooks.cost_tick_gain(turn))
+			draw_ctr += 1
+			if draw_ctr >= _bs.CARD_DRAW_INTERVAL:
+				draw_ctr = 0
+				draws += 1
+				unlocked = true
+		if ai_cost >= threshold:
+			unlocked = true
+		if unlocked and cost >= threshold:
+			return draws
+	return draws
 
 
 ## Drops preserve entries whose card has already left the hand (played, forced
@@ -1205,7 +1308,8 @@ func _run_ai_turn() -> void:
 ## 새 카드가 실제로 손패 한 자리를 차지했으면 true. (예전에는 뭉쳐서 흡수되면
 ## false 를 돌려줬는데, 흡수라는 경로 자체가 사라져 지금은 언제나 true 다 —
 ## 호출 측의 분기는 그대로 두어도 옳게 흐른다.)
-func add_card_to_hand(cd: CardData, is_player: bool, at_left: bool = false) -> bool:
+func add_card_to_hand(cd: CardData, is_player: bool, at_left: bool = false,
+		animate: bool = true) -> bool:
 	if cd == null:
 		return false
 	var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
@@ -1215,7 +1319,7 @@ func add_card_to_hand(cd: CardData, is_player: bool, at_left: bool = false) -> b
 	else:
 		hand.append(cd)
 	if is_player:
-		spawn_card_node(cd, at_left)
+		spawn_card_node(cd, at_left, animate)
 	else:
 		_bs.hud.update_ai_hand_visuals()
 	return true
@@ -5145,7 +5249,7 @@ func _effect_turret_damage(n: int, ally_team: int, caster: PilotData,
 	_bs.sim_core.apply_card_turret_damage(td, dmg, caster, log_lines)
 	# 오버킬은 값이 아니다 — 실제로 깎인 만큼만 나눈다.
 	var removed: int = maxi(0, before - td.hp)
-	var shared: String = _award_turret_damage_to_lane(td.lane, ally_team, removed)
+	var shared: String = award_turret_damage_to_lane(td.lane, ally_team, removed)
 	_bs.renderer.queue_redraw()
 	var tag: String = " (무저항 ×%d)" % HERALD_UNOPPOSED_DMG_MULT if unopposed else ""  # l10n-ignore
 	return "T%d %s 포탑 −%d%s%s" % [td.tier, _bs.LANE_NAMES[td.lane], dmg,  # l10n-ignore
@@ -5175,7 +5279,10 @@ func _front_line_unopposed(lane: int, enemy_team: int) -> bool:
 ##
 ## 한 점당 값은 `BattleSim.score_turret_damage` 와 같은 식이라, 다섯이 걸어가
 ## 갈아 낸 포탑과 전령이 부순 포탑의 값어치가 다르지 않다.
-func _award_turret_damage_to_lane(lane: int, ally_team: int,
+##
+## 강화 전령(`ObjectiveSystem._grant_empowered_herald`)도 이 함수로 나눈다 —
+## 본진에 들어간 몫도 같은 한 점당 값이다.
+func award_turret_damage_to_lane(lane: int, ally_team: int,
 		hp_removed: int) -> String:
 	if hp_removed <= 0:
 		return ""
@@ -5214,8 +5321,8 @@ func _effect_growth_until_phase(pct: int, ally_team: int) -> String:
 # 효과, `BattleSim.preserved_cards_*`)은 상한 초과 자동 버리기로부터만 지켜 준다.
 #
 # **`보존` 키워드는 다르다.** 카드 자신이 달고 있는 것이라 강제 버리기도 뚫지
-# 못한다 — 그래서 이 절 전체가 `discardable()` 로 손패를 거른다. 오브젝트
-# 보상은 한 매치에 한 장 나오는 카드이므로 재고 한 번에 날아가면 안 된다.
+# 못한다 — 그래서 이 절 전체가 `discardable()` 로 손패를 거른다. "쓸 때를
+# 골라야 하는" 한정 카드가 재고 한 번에 날아가면 안 된다.
 
 ## 버려지는 카드 한 장을 더미로 보낸다 — **버리기의 유일한 출구**다.
 ##

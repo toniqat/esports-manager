@@ -27,7 +27,7 @@ id,name_key,cost,uses,cast_method,target,cast_range,area,keyword,effect,descript
 29,tx_BD6ASECPTG,2,1,instant,hand,0,0,,discard_right:3;draw:5,tx_38HZVJYJCF,any,1,pilot,draw,,0
 30,tx_W6F5647KDY,4,1,instant,hand,0,0,,discard_other_pilots|strategy_each:1;draw:4,tx_8H6EH36EGS,any,1,pilot,draw,,0
 31,tx_45XHV8YWG8,1,1,location,location,99,0,,move|own_jungle,tx_2NQ79Z541T,jungle,1,pilot,jungle,,0
-32,tx_3KCFBW35Y2,0,1,location,location,99,0,exhaust|preserve,turret_damage:8,tx_5S3Y4PZWTS,any,0,pilot,-,,0
+32,tx_3KCFBW35Y2,0,1,location,location,99,0,exhaust,turret_damage:8,tx_5S3Y4PZWTS,any,0,pilot,-,,0
 33,tx_P0VTR51XGE,0,1,target,ally,99,0,exhaust,draw:1;growth_perm:5,tx_078XVRBVH0,any,0,pilot,-,,0
 34,tx_WAFRZPK7XD,1,1,instant,hand,0,0,exhaust,draw:1;growth_perm:5,tx_J9JA1A653S,any,0,pilot,draw,,0
 35,tx_Q8DWCC62FE,0,1,location,location,2,0,exhaust,move,tx_VYBKRVFG20,any,0,pilot,-,,0

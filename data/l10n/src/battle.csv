@@ -91,3 +91,6 @@ tx_AGCDAR9R10,battle.engage.lane.jungle,active,Lane name inside battle.engage.tu
 tx_Y5RE05FJEQ,battle.stress.toast,active,스트레스 시험 연출 상단 토스트 (StressEventView),,,{name}{i} 시험받고 있습니다...,{name} is being tested...,draft,d9f1cedd
 tx_M6HJ1AQ1K2,battle.stress.effect.awaken,active,스트레스 시험 결과 각성 아래 한 줄,,,경기 동안 {tx_FV39P9GPAJ} +{stress_awaken_stat_pct}%,{tx_FV39P9GPAJ} +{stress_awaken_stat_pct}% for this match,draft,c097a25e
 tx_40RE35Z609,battle.stress.effect.panic,active,스트레스 시험 결과 패닉 아래 한 줄,,,경기 동안 {tx_FV39P9GPAJ} -{stress_panic_stat_pct}%,{tx_FV39P9GPAJ} -{stress_panic_stat_pct}% for this match,draft,eebc3f78
+tx_E5DCQEEPQP,battle.objective.reward_herald_empowered,active,Objective reward line once the Herald is empowered; n = damage per lane,,,"보상: 강화 전령 (세 라인 최외곽 적 포탑에 피해 {n}, 포탑이 없는 라인은 적 본진에)","Reward: Empowered Herald ({n} damage to the outermost enemy turret in all three lanes, or the enemy base where a lane has none)",draft,68cacf01
+tx_M3X69X2VN9,battle.objective.reward_dragon_empowered,active,Objective reward line once the Dragon is empowered; n = percent per pilot,,,보상: 강화 용 (아군 전원 성장 적립 +{n}%),Reward: Empowered Dragon (+{n}% growth gain for every ally),draft,52d2873c
+tx_RQHDFSN38X,battle.objective.empowered_herald_effect,active,Banner over a turret / base hit by the empowered Herald reward,,,강화 전령 효과,Empowered Herald,draft,69dfd8b2

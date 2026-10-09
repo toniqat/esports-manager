@@ -91,6 +91,9 @@ tx_AGCDAR9R10,Jungle
 tx_Y5RE05FJEQ,{name} is being tested...
 tx_M6HJ1AQ1K2,pilot stats +{stress_awaken_stat_pct}% for this match
 tx_40RE35Z609,pilot stats -{stress_panic_stat_pct}% for this match
+tx_E5DCQEEPQP,"Reward: Empowered Herald ({n} damage to the outermost enemy turret in all three lanes, or the enemy base where a lane has none)"
+tx_M3X69X2VN9,Reward: Empowered Dragon (+{n}% growth gain for every ally)
+tx_RQHDFSN38X,Empowered Herald
 tx_CT7HANNW9F,All pilot stats +{n}
 tx_WWXBFY3CCH,Training EXP +{n}%
 tx_NGS28BKV7X,Salary -{n}
@@ -569,6 +572,9 @@ tx_8J4PMYV3RW,Kill +{n}
 tx_FRNWGED1N8,Search {n}
 tx_HY8TH99C2E,Bonded with
 tx_6NND6G12EN,"When either bonded pilot joins an engage, the other joins too. Ends when either leaves the field."
+tx_1VA1Q06P5D,Empowered after {max} takes ({n}/{max})
+tx_5WV0YT1W3P,Empowered
+tx_WZ39630VSG,Applies the moment it is taken
 tx_Q2YD01V4X9,"When the target joins an engage, the caster joins too"
 tx_8224R3117V,"When attacked, reduce that damage by {mech_reactive_armor_cut_pct}% and lose 1. All of it is lost on leaving the battlefield"
 tx_M9AXFZ0YJD,Damage taken from the caster +{mark_target}%. Setting a new Mark releases the previous one

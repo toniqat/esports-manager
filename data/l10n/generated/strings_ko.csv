@@ -91,6 +91,9 @@ tx_AGCDAR9R10,정글
 tx_Y5RE05FJEQ,{name}{i} 시험받고 있습니다...
 tx_M6HJ1AQ1K2,경기 동안 파일럿 능력치 +{stress_awaken_stat_pct}%
 tx_40RE35Z609,경기 동안 파일럿 능력치 -{stress_panic_stat_pct}%
+tx_E5DCQEEPQP,"보상: 강화 전령 (세 라인 최외곽 적 포탑에 피해 {n}, 포탑이 없는 라인은 적 본진에)"
+tx_M3X69X2VN9,보상: 강화 용 (아군 전원 성장 적립 +{n}%)
+tx_RQHDFSN38X,강화 전령 효과
 tx_CT7HANNW9F,모든 파일럿 능력치 +{n}
 tx_WWXBFY3CCH,훈련 경험치 +{n}%
 tx_NGS28BKV7X,샐러리 -{n}
@@ -569,6 +572,9 @@ tx_8J4PMYV3RW,처치 +{n}
 tx_FRNWGED1N8,찾기 {n}
 tx_HY8TH99C2E,결속 상대
 tx_6NND6G12EN,결속한 둘 중 하나가 교전에 참여하면 다른 하나도 함께 참여한다. 둘 중 하나가 전장을 떠나면 풀린다.
+tx_1VA1Q06P5D,{max}회 획득되면 강화 ({n}/{max})
+tx_5WV0YT1W3P,강화됨
+tx_WZ39630VSG,획득 즉시 적용된다
 tx_Q2YD01V4X9,대상이 교전에 참여하면 시전자도 함께 참여한다
 tx_8224R3117V,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다
 tx_M9AXFZ0YJD,시전자에게 받는 피해 +{mark_target}%. 새 목표{eul} 정하면 이전 목표{eun} 풀린다

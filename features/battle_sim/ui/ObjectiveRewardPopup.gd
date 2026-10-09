@@ -17,6 +17,14 @@ extends Node
 # 보상 카드는 `CardPhaseManager.make_objective_card` 가 만든 **진짜 CardData** 를
 # 손패와 같은 `Card.tscn` 노드에 태워 보여 준다 — 따로 그린 그림이면 실제로
 # 손에 들어온 카드와 같은 것인지 확인할 길이 없다.
+#
+# **강화 문턱**(양 팀 합산 획득 n/`ObjectiveSystem.EMPOWER_AFTER_TAKES`)을 한 줄로
+# 적고, 강화된 뒤에는 카드 대신 강화 보상 설명을 카드 자리에 크게 둔다
+# (`ObjectiveSystem.is_empowered` — 강화 보상은 카드가 아니다).
+#
+# 카드 보상이면 **들어가는 곳을 실제 자리에서** 보여 준다(딤 위): 전령은 손패 맨
+# 오른쪽 슬롯의 고스트 카드 + 흘러 들어가는 chevron, 용은 덱 뭉치로 빨려 들어가는
+# 카드 — "손으로 들어오는 보상"과 "덱에 들어가는 보상"을 그림으로 가른다.
 
 ## 열람(12)과 같은 층. 파일럿 상세(13) 아래 — 상세 패널이 열려 있으면 스트립이
 ## 숨겨져 시계도 눌리지 않으므로 둘이 겹칠 일은 없다.
@@ -37,6 +45,8 @@ const TITLE_FONT: int = 40
 const SUB_FONT: int = 24
 const NOTE_FONT: int = 22
 const COUNT_FONT: int = 30
+## 강화 보상 설명(카드 자리).
+const EMPOWERED_FONT: int = 30
 
 const HERALD_COLOR := BattleTheme.OBJ_HERALD
 const DRAGON_COLOR := BattleTheme.OBJ_DRAGON
@@ -110,16 +120,16 @@ func _build() -> void:
 	_root.add_child(dim)
 
 	var is_herald: bool = _kind == ObjectiveSystem.Kind.HERALD
+	var empowered: bool = _bs.objective.is_empowered(_kind)
 	var accent: Color = HERALD_COLOR if is_herald else DRAGON_COLOR
-	var card_id: int = ObjectiveSystem.HERALD_CARD_ID if is_herald \
-			else ObjectiveSystem.DRAGON_CARD_ID
+	var card_id: int = ObjectiveSystem.HERALD_CARD_ID if is_herald 			else ObjectiveSystem.DRAGON_CARD_ID
 	var copies: int = 1 if is_herald else int(_bs.OBJ_DRAGON_CARD_COUNT)
 	var cd: CardData = _bs.card_phase.make_objective_card(card_id)
 
-	# 판 높이는 내용이 정한다 — 제목 · 남은 턴 · 보상 한 줄 · 카드 · 설명 · 닫기.
+	# 판 높이는 내용이 정한다 — 제목 · 남은 턴 · 강화 문턱 · 보상 한 줄 · 카드(강화면
+	# 설명) · 들어가는 곳 · 닫기.
 	var card_h: float = Card.CARD_H
-	var body_h: float = 54.0 + 34.0 + 12.0 + 34.0 + 18.0 + card_h + 14.0 \
-			+ 34.0 + 20.0 + BTN_H
+	var body_h: float = 54.0 + 34.0 + 34.0 + 12.0 + 34.0 + 18.0 + card_h + 14.0 			+ 34.0 + 20.0 + BTN_H
 	var panel_h: float = body_h + PANEL_PAD * 2.0
 	var px: float = (ScreenMetrics.vp_w() - PANEL_W) * 0.5
 	var py: float = (ScreenMetrics.vp_h() - panel_h) * 0.5
@@ -143,20 +153,37 @@ func _build() -> void:
 	y += 54.0
 
 	var left: int = _bs.objective.turns_until_cell(_cell())
-	var when_txt: String = Loc.t(L.HUD_OBJECTIVE_REWARD_SPAWN_IN, {"n": left}) if left > 0 \
-			else Loc.t(L.HUD_OBJECTIVE_REWARD_OPEN_NOW)
+	var when_txt: String = Loc.t(L.HUD_OBJECTIVE_REWARD_SPAWN_IN, {"n": left}) if left > 0 			else Loc.t(L.HUD_OBJECTIVE_REWARD_OPEN_NOW)
 	_add_label(panel, when_txt, SUB_FONT, SUB_COLOR,
+			Vector2(PANEL_PAD, y), Vector2(iw, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
+	y += 34.0
+
+	# 강화 문턱 — 양 팀 합산 획득 횟수. 강화된 뒤에는 "강화됨" 한 낱말(오브젝트 색).
+	var takes_txt: String = Loc.t(L.HUD_OBJECTIVE_REWARD_EMPOWERED) if empowered 			else Loc.t(L.HUD_OBJECTIVE_REWARD_TAKES, {"n": _bs.objective.takes(_kind),
+					"max": ObjectiveSystem.EMPOWER_AFTER_TAKES})
+	_add_label(panel, takes_txt, NOTE_FONT, accent if empowered else NOTE_COLOR,
 			Vector2(PANEL_PAD, y), Vector2(iw, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
 	y += 34.0 + 12.0
 
-	_add_label(panel, _bs.objective.reward_text(_kind), SUB_FONT, SUB_COLOR,
-			Vector2(PANEL_PAD, y), Vector2(iw, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
+	# 강화된 뒤에는 이 한 줄 대신 아래 카드 자리가 같은 글을 크게 말한다(한 줄에
+	# 다 들어가지도 않는다).
+	if not empowered:
+		_add_label(panel, _bs.objective.reward_text(_kind), SUB_FONT, SUB_COLOR,
+				Vector2(PANEL_PAD, y), Vector2(iw, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
 	y += 34.0 + 18.0
 
-	_build_card(panel, cd, Vector2(PANEL_PAD, y), iw, card_h, copies, accent)
+	# 판 위 카드의 화면 좌표(왼쪽 위) — 덱 미리보기의 출발점.
+	var card_at: Vector2 = panel.position + Vector2(PANEL_PAD + (iw - Card.CARD_W) * 0.5, y)
+	if empowered:
+		# 강화 보상은 카드가 아니다 — 카드 자리에 보상 설명을 크게 둔다.
+		_add_wrapped(panel, _bs.objective.reward_text(_kind), EMPOWERED_FONT, accent,
+				Vector2(PANEL_PAD, y), Vector2(iw, card_h))
+	else:
+		_build_card(panel, cd, Vector2(PANEL_PAD, y), iw, card_h, copies, accent)
 	y += card_h + 14.0
 
-	_add_label(panel, _where_text(is_herald), NOTE_FONT, NOTE_COLOR,
+	var where: String = Loc.t(L.HUD_OBJECTIVE_REWARD_APPLIED_NOW) if empowered 			else _where_text(is_herald)
+	_add_label(panel, where, NOTE_FONT, NOTE_COLOR,
 			Vector2(PANEL_PAD, y), Vector2(iw, 34.0), HORIZONTAL_ALIGNMENT_CENTER)
 	y += 34.0 + 20.0
 
@@ -168,6 +195,102 @@ func _build() -> void:
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.pressed.connect(close)
 	panel.add_child(btn)
+
+	if not empowered and cd != null:
+		if is_herald:
+			_build_hand_cue(cd)
+		else:
+			_build_deck_cue(cd, card_at)
+
+
+# ─── 들어가는 곳 미리보기 ────────────────────────────────────────────────────
+# 판 위의 "획득 즉시 손으로 들어온다 / 덱에 섞여 들어간다" 한 줄을 **실제 자리**에서
+# 다시 말한다. 딤 위에 서므로 어두워진 손패 · 덱 뭉치 위에서도 읽힌다.
+#
+#   • 전령(손패) — 손패 **맨 오른쪽 슬롯**(실제로 꽂히는 자리, `ObjectiveRewardFx`
+#     와 같은 계산)에 반투명 고스트 카드, 그 위로 아래를 향한 chevron 이 흘러
+#     들어간다.
+#   • 용(덱) — 판의 카드에서 작은 카드가 떨어져 나와 좌측 아래 **덱 뭉치**로
+#     빨려 들어가기를 반복한다.
+
+## 고스트 카드의 불투명도.
+const GHOST_ALPHA: float = 0.45
+## 덱으로 날아가는 카드 한 번의 비행 / 사이 뜸(s) · 도착 배율.
+const DECK_FLY_SEC: float = 0.55
+const DECK_FLY_GAP_SEC: float = 0.45
+const DECK_FLY_END_SCALE := Vector2(0.34, 0.34)
+
+
+func _build_hand_cue(cd: CardData) -> void:
+	var center: Vector2 = ObjectiveRewardFx.hand_right_slot_center(_bs)
+	var ghost := _bs.CARD_SCENE.instantiate() as Card
+	_root.add_child(ghost)
+	ghost.setup(cd, false, true)
+	_ignore_mouse(ghost)
+	ghost.pivot_offset = Vector2(Card.CARD_W, Card.CARD_H) * 0.5
+	ghost.position = center - ghost.pivot_offset
+	ghost.scale = Vector2.ONE * CardPhaseManager.HAND_CARD_SCALE
+	ghost.modulate = Color(1, 1, 1, GHOST_ALPHA)
+
+	var cue := EntryCue.new()
+	cue.position = Vector2.ZERO
+	cue.size = Vector2(ScreenMetrics.vp_w(), ScreenMetrics.vp_h())
+	cue.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cue.cx = center.x
+	cue.card_top = center.y - Card.CARD_H * 0.5 * CardPhaseManager.HAND_CARD_SCALE
+	_root.add_child(cue)
+
+
+func _build_deck_cue(cd: CardData, from: Vector2) -> void:
+	var fly := _bs.CARD_SCENE.instantiate() as Card
+	_root.add_child(fly)
+	fly.setup(cd, false, true)
+	_ignore_mouse(fly)
+	fly.pivot_offset = Vector2(Card.CARD_W, Card.CARD_H) * 0.5
+	var to: Vector2 = ObjectiveRewardFx.deck_pile_center(_bs) - fly.pivot_offset
+	fly.position = from
+	fly.modulate = Color(1, 1, 1, 0)
+	# 판이 닫히면(`_root` free) 노드와 함께 트윈도 사라진다 — 무한 반복이라도 남지 않는다.
+	var tw := fly.create_tween().set_loops()
+	tw.tween_callback(func() -> void:
+		fly.position = from
+		fly.scale = Vector2.ONE
+		fly.modulate = Color(1, 1, 1, 0.9))
+	tw.tween_property(fly, "position", to, DECK_FLY_SEC).set_ease(
+			Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tw.parallel().tween_property(fly, "scale", DECK_FLY_END_SCALE, DECK_FLY_SEC).set_ease(
+			Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tw.parallel().tween_property(fly, "modulate", Color(1, 1, 1, 0),
+			DECK_FLY_SEC * 0.4).set_delay(DECK_FLY_SEC * 0.6)
+	tw.tween_interval(DECK_FLY_GAP_SEC)
+
+
+static func _ignore_mouse(node: Node) -> void:
+	var ct := node as Control
+	if ct != null:
+		ct.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_ignore_mouse(child)
+
+
+## 고스트 카드 위로 아래를 향한 chevron 이 흘러 들어가는 층.
+class EntryCue extends Control:
+	var cx: float = 0.0
+	var card_top: float = 0.0
+	var _t: float = 0.0
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var span: float = CardPlayPreview.CHEVRON_STEP * float(CardPlayPreview.CHEVRON_COUNT)
+		CardPlayPreview.draw_falling_chevrons(self, cx, card_top - span - CUE_GAP,
+				CardPlayPreview.DRAW_COLOR, _t)
+
+
+## chevron 기둥 아래끝과 고스트 카드 윗변 사이(px).
+const CUE_GAP: float = 6.0
 
 
 ## 보상 카드 한 장 + (여러 장이면) `×N` 배지. 카드가 DB 에서 안 나오면
@@ -224,6 +347,23 @@ static func _add_label(parent: Control, text: String, font_size: int,
 	# 편 글자 전체 폭이라, 그 상태로 좁은 rect 를 요청하면 세터가 요청을 무시하고
 	# 글자 폭까지 부풀린다(가운데 정렬이 그만큼 어긋난다).
 	lbl.clip_text = true
+	lbl.position = at
+	lbl.size = sz
+	lbl.add_theme_font_size_override("font_size", font_size)
+	lbl.add_theme_color_override("font_color", color)
+	parent.add_child(lbl)
+
+
+## 여러 줄로 감기는 가운데 정렬 글 — 강화 보상 설명이 카드 자리를 채운다.
+static func _add_wrapped(parent: Control, text: String, font_size: int,
+		color: Color, at: Vector2, sz: Vector2) -> void:
+	var lbl := Label.new()
+	# 한국어는 낱말 사이에서만 줄을 바꾼다(글자 단위로 쪼개지 않게).
+	lbl.text = UiHelpers.keep_words(text)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lbl.position = at
 	lbl.size = sz
 	lbl.add_theme_font_size_override("font_size", font_size)

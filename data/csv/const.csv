@@ -37,6 +37,7 @@ CARD_CONFIDENCE_HIT_BONUS,0.15,CardPhaseManager.gd,[자신감] 한 장당 전장
 CARD_CLEAR_MIND_COST_CUT,1,CardPhaseManager.gd,[맑은 정신] 한 장이 양 옆 카드 비용을 깎는 양 (비용)
 OBJ_AI_HEADCOUNT_HP_RATIO,0.20,ObjectiveSystem.gd,오브젝트 참여 판단에서 머릿수로 세는 최소 체력 비율 (비율)
 OBJ_AI_MISJUDGE_DEFAULT,0.325,ObjectiveSystem.gd,match_ctx 에 값이 없을 때(단독 실행) AI 오판 확률 — OBJ_MISJUDGE_MIN/MAX 중간값과 맞춘다 (확률)
+OBJ_EMPOWER_AFTER_TAKES,3,ObjectiveSystem.gd,오브젝트 강화 문턱 — 양 팀 합산으로 이 횟수만큼 가져간 뒤부터 그 오브젝트의 보상이 강화 보상으로 바뀐다 (회)
 OBJ_MISJUDGE_MIN,0.05,MatchFlow.gd,리그 1위 팀의 오브젝트 오판 확률 (확률)
 OBJ_MISJUDGE_MAX,0.60,MatchFlow.gd,리그 꼴찌 팀의 오브젝트 오판 확률 (확률)
 TRAINING_EXP_PER_POINT,40,TrainingBoard.gd,스탯 1 포인트에 필요한 훈련 EXP (EXP)

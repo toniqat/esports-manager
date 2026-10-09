@@ -25,7 +25,8 @@ One row from the `cards` SQLite table, plus a few runtime fields:
 - `card_id: int` — cards.csv row id (mech cards use -1). Fixed pilot cards
   (`PlayerData.pilot_cards`) point at a card by this value.
 - `keyword: String` — `|` list (`exhaust` 소멸 / `preserve` 보존 (keep) / `volatile`
-  휘발성 / `charge` 충전 (Charge) / `reposition` 재배치). Read it only through `has_keyword()`; the
+  휘발성 / `charge` 충전 (Charge) / `reposition` 재배치; `preserve` and `volatile` never together — Rebuild game.db
+  refuses the row). Read it only through `has_keyword()`; the
   on-screen name and explanation come from `keyword_label()` / `keyword_note()` (`KEYWORD_LABELS` /
   `KEYWORD_NOTES` = l10n key tables `L.KEYWORD_*`; Charge uses `keyword.charge.label` / `.note` with `{max}`). **Charge is the keyword; what Charge accumulates is tokens** (the `charge` field)
 - `SPECIAL_LABELS` / `SPECIAL_NOTES` — special keyword id → name / note l10n key (`[term]` in descriptions):

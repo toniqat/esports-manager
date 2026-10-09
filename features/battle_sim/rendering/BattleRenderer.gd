@@ -2940,6 +2940,54 @@ func active_banners() -> Array:
 	return banners
 
 
+## 구조물(포탑 · 본진) **칸 위** 배너 — 강화 전령(`ObjectiveSystem._grant_empowered_herald`)이
+## 때리는 자리마다 하나. 파일럿 배너와 같은 모양(`draw_banner`)이고 자리만 칸 위다.
+## 항목은 `p = null` + `cell` — 교전 무대(`EngageArena`)는 파일럿으로 짝을 찾으므로
+## 이 배너를 건너뛴다.
+func spawn_cell_banner(cell: Vector2i, tex: Texture2D, title: String) -> void:
+	var stack: int = 0
+	for raw in banners:
+		var e: Dictionary = raw
+		if e.has("cell") and e["cell"] == cell:
+			stack += 1
+	if tex != null and _bs != null:
+		_bs.prime_texture(tex)
+	banners.append({
+		"p": null,
+		"cell": cell,
+		"tex": tex,
+		"glyph": false,
+		"title": title,
+		"key": "",
+		"t": 0.0,
+		"dur": BANNER_DUR,
+		"stack": stack,
+	})
+	queue_redraw()
+
+
+## 칸 위에 뜨는 피해 숫자(강화 전령의 포탑 · 본진 피해). 파일럿 숫자보다 크고 오래
+## 떠 있다 — 구조물에는 초상이 없어 숫자가 그 자리의 유일한 표시다.
+const CELL_POPUP_DUR: float = 0.9
+const CELL_POPUP_SCALE: float = 1.3
+
+func spawn_cell_popup(cell: Vector2i, text: String, color: Color) -> void:
+	if _bs == null:
+		return
+	_popups.append({
+		"pos":   _bs.cell_center(cell),
+		"text":  text,
+		"color": color,
+		"t":     0.0,
+		"delay": 0.0,
+		"dur":   CELL_POPUP_DUR,
+		"rise":  _bs.DMG_POPUP_RISE_PX,
+		"icon":  null,
+		"scale": CELL_POPUP_SCALE,
+	})
+	queue_redraw()
+
+
 func _push_banner(p: PilotData, tex: Texture2D, glyph: bool, title: String,
 		key: String) -> void:
 	if not key.is_empty():
@@ -2991,6 +3039,12 @@ func _draw_buff_banners() -> void:
 	var s: float = HexGrid.DISPLAY_SCALE
 	for raw in banners:
 		var e: Dictionary = raw
+		if e.has("cell"):
+			# 칸 배너 — 밑변이 구조물 HP 바(`_draw_turret_hp_bar`) 바로 위.
+			var c: Vector2 = _bs.cell_center(e["cell"] as Vector2i)
+			var hg: HexGrid = _bs.hex_grid
+			draw_banner(self, e, Vector2(c.x, c.y - hg.hex_height * 0.38 - 8.0 * s), s)
+			continue
 		var p := e["p"] as PilotData
 		if p == null or not _is_renderable(p):
 			continue

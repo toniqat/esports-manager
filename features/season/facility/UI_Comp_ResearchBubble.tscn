@@ -1,0 +1,109 @@
+[gd_scene load_steps=5 format=3 uid="uid://ccfu82cqn2hnw"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/facility/ResearchBubble.gd" id="2_script"]
+[ext_resource type="Shader" path="res://features/season/facility/research_ring.gdshader" id="3_ring"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ring"]
+resource_local_to_scene = true
+shader = ExtResource("3_ring")
+shader_parameter/progress = 0.4
+shader_parameter/ring_width = 0.09
+shader_parameter/gap = 0.02
+shader_parameter/fill_color = Color(0.961, 0.651, 0.137, 1)
+shader_parameter/track_color = Color(0.886, 0.890, 0.906, 1)
+shader_parameter/gap_color = Color(1, 1, 1, 1)
+shader_parameter/rest_dim = 0.6
+shader_parameter/all_grey = false
+
+[node name="ResearchBubble" type="Control"]
+auto_translate_mode = 2
+editor_description = "Facility research speech bubble on a team base map (BaseMap %Facilities, one per Spot_Fac_* marker). The tail tip (TailTip) stands on the facility spot. Shows the facility name, the active research icon masked to a circle as a radial progress bar (research_ring.gdshader), and the percentage; idle states (vacant · no research · paused) grey the icon and replace the percentage. Hub: tappable (%Hit, also covers the spot under the tail) → FacilitySheet. Week screen: read-only."
+custom_minimum_size = Vector2(104, 150)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 104.0
+offset_bottom = 150.0
+mouse_filter = 2
+theme = ExtResource("1_theme")
+script = ExtResource("2_script")
+
+[node name="Tail" type="Node2D" parent="."]
+editor_description = "Bubble pointer under Body (border + fill triangles, same as the week map pilot bubble). Tip = 10 below its origin = the anchor on the spot."
+position = Vector2(52, 112)
+
+[node name="Edge" type="Polygon2D" parent="Tail"]
+color = Color(0.780, 0.784, 0.808, 1)
+polygon = PackedVector2Array(-12, -2, 12, -2, 0, 12)
+
+[node name="Fill" type="Polygon2D" parent="Tail"]
+color = Color(1, 1, 1, 1)
+polygon = PackedVector2Array(-9, -3, 9, -3, 0, 8)
+
+[node name="TailTip" type="Marker2D" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: ResearchBubble.gd anchor()
+The point that stands on the facility spot (Spot_Fac_*)."
+position = Vector2(52, 124)
+
+[node name="Body" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 104.0
+offset_bottom = 112.0
+mouse_filter = 2
+theme_type_variation = &"WeekMapBubble"
+
+[node name="Name" type="Label" parent="Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: ResearchBubble.gd show_state()
+Facility name."
+layout_mode = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 100.0
+offset_bottom = 26.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 16
+text = "전장 훈련장"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="Icon" type="TextureRect" parent="Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: ResearchBubble.gd show_state()
+Research icon (quirk image) drawn through research_ring.gdshader: circle mask + radial progress ring. Code sets the texture and the shader's progress / all_grey."
+material = SubResource("ShaderMaterial_ring")
+layout_mode = 0
+offset_left = 22.0
+offset_top = 26.0
+offset_right = 82.0
+offset_bottom = 86.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Percent" type="Label" parent="Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: ResearchBubble.gd show_state()
+Progress percentage, or the idle state word (공석 · 대기 · 정지). Colour is data (code)."
+layout_mode = 0
+offset_left = 4.0
+offset_top = 86.0
+offset_right = 100.0
+offset_bottom = 110.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 18
+text = "40%"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: ResearchBubble.gd _ready()
+Tap target: the bubble plus the spot under the tail (the facility building). Code disables it (and sets mouse Ignore) when read-only."
+layout_mode = 0
+offset_right = 104.0
+offset_bottom = 150.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true

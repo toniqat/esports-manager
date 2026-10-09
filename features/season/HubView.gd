@@ -7,7 +7,9 @@ extends Control
 # context-sensitive standings button (INTL → playoff → league).
 #
 # **Layout lives in `UI_View_HubView.tscn`** (header labels, five `SeasonPilotCard` instances, the
-# `HubManageCard` row, toast, bottom bar). This script binds `%` nodes, fills data, wires
+# `HubManageCard` row, the team base map slot `%MapHolder`, toast, bottom bar). The map (§16) is the
+# team's `BaseMap` with one `ResearchBubble` per facility spot; tapping a bubble (or the facility
+# under its tail) opens that facility's `FacilitySheet`. This script binds `%` nodes, fills data, wires
 # signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
 # the whole screen is lowered to the safe top, the background stretched back up, and the
 # bottom bar hung from the safe bottom (`OutgameTheme.fit_bottom_bar`). Create with `HubView.create()`.
@@ -23,6 +25,7 @@ var _next_match_lbl: Label
 var _toast_lbl: Label
 var _roster_cards: Array = []   # SeasonPilotCard, seat order (tap = SeasonPilotDetail)
 var _manage_cards: Array = []   # HubManageCard, `_manage_panels()` order
+var _map: BaseMap = null        # team base map in %MapHolder (built on the first refresh)
 var _start_btn: Button
 var _standings_btn: Button
 var _built: bool = false
@@ -97,7 +100,8 @@ static func trust_color(level: int) -> Color:
 
 
 # ── 관리 카드 줄 (M3~M6) ─────────────────────────────────────────────────────
-## 로스터 아래 가로 한 줄에 작은 카드 셋 — 스태프 · 메크 연구 · 재무.
+## 로스터 아래 가로 한 줄에 작은 카드 둘 — 스태프 · 재무. (§16: 메크 연구 카드는 지도의
+## 메크 연구소 시설로 옮겨 갔다.)
 ## 카드 내용은 각 기능의 패널이 소유한다(`<Panel>.hub_summary(state)` →
 ## `{title, value, sub, owner, alert}`), 누르면 `<Panel>.open(self)` 가
 ## `HubSheet` 를 띄운다. 시트가 닫히면 허브 전체를 다시 그린다 — 시트 안에서
@@ -124,6 +128,27 @@ func _on_manage_pressed(i: int) -> void:
 			sheet = c
 	if sheet != null and not sheet.closed.is_connected(refresh):
 		sheet.closed.connect(refresh)
+
+
+# ── 팀 부지 맵 + 시설 연구 말풍선 (§16) ──────────────────────────────────────
+## 팀 맵은 처음 한 번만 만들고, 말풍선은 매 refresh 마다 제자리에서 다시 채운다
+## (`ResearchBubble.populate` 가 있던 말풍선을 재사용). 말풍선을 누르면 시설 시트.
+func _refresh_map() -> void:
+	var s: Dictionary = _gm.season_state
+	if _map == null:
+		_map = BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
+		_map.name = "BaseMap_Team"
+		(%MapHolder as Control).add_child(_map)
+		_map.size = BaseMap.DESIGN_SIZE
+	for raw in ResearchBubble.populate(_map, s, true):
+		var b: ResearchBubble = raw
+		if not b.pressed.is_connected(_on_facility_pressed):
+			b.pressed.connect(_on_facility_pressed)
+
+
+func _on_facility_pressed(fid: String) -> void:
+	var sheet: HubSheet = FacilitySheet.open(self, fid)
+	sheet.closed.connect(refresh)
 
 
 ## 허브 하단 토스트 — 다른 화면(주 마감 수지 등)이 허브로 돌아오며 띄운다.
@@ -216,6 +241,7 @@ func refresh() -> void:
 	_refresh_next_match()
 	_refresh_roster()
 	_refresh_manage_row()
+	_refresh_map()
 	_refresh_standings_btn()
 
 

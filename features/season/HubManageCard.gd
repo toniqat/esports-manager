@@ -1,7 +1,7 @@
 class_name HubManageCard
 extends Panel
 
-# One small card of `HubView`'s manage row (staff · mech research · finance).
+# One small card of `HubView`'s manage row (staff · finance).
 #
 # **Layout lives in `UI_Comp_HubManageCard.tscn`** (176 tall, width from the row's HBox; `Card` variation,
 # title / value / sub / owner labels, red alert dot top-right, a flat `%Hit` button over the whole

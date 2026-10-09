@@ -6,7 +6,7 @@ pilots stand on its spots.
 
 | File | Role |
 |---|---|
-| `BaseMap.gd` | `class_name BaseMap extends Control`, shared by every map scene. `create(map_id)` (index into `SCENES`), `spot_of_color(symbol)` (training colour → spot), `spot_of_facility(f)` (training facility: a spot name from `training_tiles.csv` `facility` or a colour symbol → spot), `spot_point(spot)`, `add_token(node)` / `clear_tokens()`, `place_tokens(entries)` (fan-out + separation + clamp). F6 preview: one token per spot named after it, three on `W` to show the fan-out |
+| `BaseMap.gd` | `class_name BaseMap extends Control`, shared by every map scene. `create(map_id)` (index into `SCENES`), facility helpers `facility_spot_name(fid)` · `has_facility_spot(fid)` · `facility_point(fid)` · `facility_layer()` (`%Facilities`, null on the stadium) · `place_at_facility(node, fid, anchor)` (§16 research bubbles, `facility/README.md` "UI"), `spot_of_color(symbol)` (training colour → spot), `spot_of_facility(f)` (training facility: a spot name from `training_tiles.csv` `facility` or a colour symbol → spot), `spot_point(spot)`, `add_token(node)` / `clear_tokens()`, `place_tokens(entries)` (fan-out + separation + clamp). F6 preview: one token per spot named after it, three on `W` to show the fan-out |
 | `UI_Comp_BaseMap_<Name>.tscn` (12) | One map each: art + spot markers. `map_id` order = `SCENES` = the image numbering in `resources/images/base_map/` |
 | `UI_Comp_BaseMap_Stadium.tscn` | **Weekend stadium** (not a team map, not in `SCENES`): `BaseMap.create_stadium()` (`STADIUM_SCENE`). Placeholder art = flat `ColorRect` `Art` (`editor_description = "TODO: stadium art …"`) + three `Zone_*` blocks; spots `Spot_TeamRoom` (Saturday prep) · `Spot_Booth` (Sunday match) · `Spot_Press` (Sunday press) · `Spot_W` · `Spot_Entrance` |
 
@@ -35,7 +35,9 @@ BaseMap_<Name> (Control DESIGN_SIZE, mouse Ignore, script BaseMap.gd)
 ├ Art      TextureRect full rect, keep aspect centred (the PNG)
 ├ Spots    Control full rect
 │ ├ Spot_H · Spot_E · Spot_C · Spot_D · Spot_G · Spot_M · Spot_Q · Spot_W   (Marker2D)
-│ └ Spot_Dorm · Spot_Entrance                                               (Marker2D)
+│ ├ Spot_Dorm · Spot_Entrance                                               (Marker2D)
+│ └ Spot_Fac_TrainField · _TrainEngage · _TrainGrowth · _Intel · _MechLab · _Front · _Personnel (Marker2D, §16)
+├ %Facilities  Control full rect, mouse Ignore: code adds the facility research bubbles (ResearchBubble)
 └ %Tokens  Control full rect, mouse Ignore: code adds the pilot tokens
 ```
 
@@ -51,8 +53,11 @@ BaseMap_<Name> (Control DESIGN_SIZE, mouse Ignore, script BaseMap.gd)
   (`_separate`, `TOKEN_STEP` = footprint), then everything is clamped inside the map. So spots may sit near
   each other; tokens simply step aside.
 * Spot positions were first placed by eye on plausible buildings of each picture; tune them in the editor.
+* **Facility spots** (`Spot_Fac_*`, names = `facility_defs.csv` `spot`, team maps only — the stadium has none and no
+  `%Facilities` layer): the tail tip of that facility's research bubble (body ~104 × 124 above it). They were placed
+  so no two bubbles overlap (|dx| ≥ 108 or |dy| ≥ 120); a bubble near the top edge is clamped down over its spot.
 * The week screen instances the map with `BaseMap.create`, names it `BaseMap_Team` and adds it to
   `WeekMapSection` `%MapHolder`. On the weekend `STADIUM` / `PRESS` stages it instances
   `BaseMap.create_stadium()` instead (`BaseMap_Stadium`) and stands all five pilots on
   `SPOT_TEAM_ROOM` (Saturday) / `SPOT_BOOTH` (Sunday morning) / `SPOT_PRESS` (Sunday afternoon).
-* The F6 preview of any map scene puts one token on every `Spot_*` marker of that scene (+ two on `W`).
+* The F6 preview of any map scene puts one token on every `Spot_*` marker except `Spot_Fac_*` (+ two on `W`) and the read-only facility bubbles of an in-memory run.

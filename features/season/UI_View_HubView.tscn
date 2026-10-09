@@ -98,7 +98,7 @@ anchor_right = 1.0
 offset_left = 30.0
 offset_top = 240.0
 offset_right = -30.0
-offset_bottom = 1426.0
+offset_bottom = 1420.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 12
@@ -139,7 +139,7 @@ mouse_filter = 2
 [node name="Manage" type="HBoxContainer" parent="Body"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — HubView.gd _manage_cards
-HubManageCard per HubView._manage_panels() entry, in order (StaffPanel · MasteryPanel · FinancePanel)."
+HubManageCard per HubView._manage_panels() entry, in order (StaffPanel · FinancePanel). The 메크 연구 card was removed in §16 (mech research = the mech lab facility on the map below)."
 custom_minimum_size = Vector2(0, 176)
 layout_mode = 2
 mouse_filter = 2
@@ -151,8 +151,26 @@ layout_mode = 2
 [node name="HubManageCard_Card1" parent="Body/Manage" instance=ExtResource("4_card")]
 layout_mode = 2
 
-[node name="HubManageCard_Card2" parent="Body/Manage" instance=ExtResource("4_card")]
+[node name="GapMap" type="Control" parent="Body"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
+mouse_filter = 2
+
+[node name="MapCaption" type="Label" parent="Body"]
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "tx_70JYF47F2A"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="MapHolder" type="CenterContainer" parent="Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — HubView.gd _refresh_map()
+Code adds the team's BaseMap (BaseMap.create(RunRules.team_map_id), DESIGN_SIZE 1000×634) here, centred, and one ResearchBubble per facility spot (ResearchBubble.populate). Tap a bubble / facility → FacilitySheet."
+custom_minimum_size = Vector2(0, 634)
+layout_mode = 2
+mouse_filter = 2
 
 [node name="SafeBottom" type="Control" parent="."]
 unique_name_in_owner = true

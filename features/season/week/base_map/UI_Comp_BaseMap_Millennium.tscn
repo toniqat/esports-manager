@@ -85,6 +85,52 @@ editor_description = "Entrance (출입구): afternoon, a pilot out alone (stress
 position = Vector2(760, 471)
 gizmo_extents = 28.0
 
+[node name="Spot_Fac_TrainField" type="Marker2D" parent="Spots"]
+editor_description = "Facility train_field (전장 훈련장): research bubble tail tip"
+position = Vector2(290, 180)
+gizmo_extents = 36.0
+
+[node name="Spot_Fac_TrainEngage" type="Marker2D" parent="Spots"]
+editor_description = "Facility train_engage (교전 훈련장): research bubble tail tip"
+position = Vector2(700, 215)
+gizmo_extents = 36.0
+
+[node name="Spot_Fac_TrainGrowth" type="Marker2D" parent="Spots"]
+editor_description = "Facility train_growth (체력 단련실): research bubble tail tip"
+position = Vector2(330, 420)
+gizmo_extents = 36.0
+
+[node name="Spot_Fac_Intel" type="Marker2D" parent="Spots"]
+editor_description = "Facility intel (전력 분석실): research bubble tail tip"
+position = Vector2(470, 230)
+gizmo_extents = 36.0
+
+[node name="Spot_Fac_MechLab" type="Marker2D" parent="Spots"]
+editor_description = "Facility mech_lab (메크 연구소): research bubble tail tip"
+position = Vector2(750, 335)
+gizmo_extents = 36.0
+
+[node name="Spot_Fac_Front" type="Marker2D" parent="Spots"]
+editor_description = "Facility front (프론트): research bubble tail tip"
+position = Vector2(145, 290)
+gizmo_extents = 36.0
+
+[node name="Spot_Fac_Personnel" type="Marker2D" parent="Spots"]
+editor_description = "Facility personnel (인력 개발실): research bubble tail tip"
+position = Vector2(860, 265)
+gizmo_extents = 36.0
+
+[node name="Facilities" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "Facility research bubbles (ResearchBubble, features/season/facility/). Code adds one per Spots/Spot_Fac_* marker (ResearchBubble.populate); under %Tokens so pilots stay on top."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
 [node name="Tokens" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: BaseMap.gd _tokens

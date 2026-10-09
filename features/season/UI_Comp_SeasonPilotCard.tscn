@@ -7,13 +7,13 @@
 
 [node name="SeasonPilotCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "Small vertical pilot card (season hub roster row · week screen bottom row, five in seat order). Width comes from the row (expand), height fixed here. Portrait in the trust ring (level progress) on top with the trust level pill at its bottom-right, then three gauge panels (%Gauges: stress · trust · awakening, PilotGauge), then the emphasised note line. No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
-custom_minimum_size = Vector2(0, 256)
+editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the trust ring (level progress) on top with the trust level pill at its bottom-right, then three gauges (%Gauges: stress · trust · awakening, PilotGauge; each gauge shows its value under the ring (stress number, trust / awakening %) and, on the week screen, today's change on the ring + (+N) / (+N%) under the value). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
+custom_minimum_size = Vector2(0, 244)
 offset_right = 190.0
-offset_bottom = 256.0
+offset_bottom = 244.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
-theme_type_variation = &"Card"
+theme_type_variation = &"SeasonPilotCardBare"
 script = ExtResource("1_script")
 
 [node name="Ring" type="Control" parent="."]
@@ -111,7 +111,7 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_top = 160.0
-offset_bottom = 224.0
+offset_bottom = 240.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
@@ -120,39 +120,20 @@ alignment = 1
 [node name="PilotGauge_Stress" parent="Gauges" instance=ExtResource("3_gauge")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Stress: band-coloured icon, ring = 0..100 + overflow lap to STRESS_MAX, the value under it (replaces the old \"스트레스 N\" line)."
+Stress: band-coloured icon, ring = 0..100 + overflow lap to STRESS_MAX, the value under it; week screen: today's change as a ring segment + (+N) / (-N) under the value (set_day_deltas)."
 layout_mode = 2
 
 [node name="PilotGauge_Trust" parent="Gauges" instance=ExtResource("3_gauge")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Trust: pink heart with the level inside, ring = progress inside the level."
+Trust: pink heart with the level inside, ring = progress inside the level, the progress % under it; week screen: today's change (+N%, set_day_deltas)."
 layout_mode = 2
 
 [node name="PilotGauge_Awaken" parent="Gauges" instance=ExtResource("3_gauge")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Awakening: orange bulb, ring = gauge / threshold (Awakening.gauge / threshold)."
+Awakening: orange bulb, ring = gauge / threshold (Awakening.gauge / threshold), the % under it; week screen: today's change (+N%, set_day_deltas)."
 layout_mode = 2
-
-[node name="StressNote" type="Label" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_note() · pulse_note()
-Emphasised line: hub = mood when shaken; week = that day's stress change (code picks the label variation)."
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 6.0
-offset_top = 224.0
-offset_right = -6.0
-offset_bottom = 254.0
-grow_horizontal = 2
-theme_type_variation = &"NegativeLabel"
-theme_override_font_sizes/font_size = 26
-text = "+6"
-horizontal_alignment = 1
-vertical_alignment = 1
-clip_text = true
 
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true

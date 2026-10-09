@@ -505,7 +505,7 @@ anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = 1239.0
+offset_top = 1227.0
 offset_right = -40.0
 offset_bottom = -142.0
 grow_vertical = 2
@@ -530,14 +530,14 @@ mouse_filter = 2
 [node name="PilotRow" type="HBoxContainer" parent="SafeArea"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _ready() · _refresh_pilot_row() · _place_under_map()
-Always visible directly under the map (%MapPin bottom + 14; every day, morning and afternoon): my five pilots as SeasonPilotCard in seat order (GameEnums.ROLE_DISPLAY_ORDER). Note line = that day's stress change (emphasised). Tap = pilot detail sheet."
+Always visible directly under the map (%MapPin bottom + 14; every day, morning and afternoon): my five pilots as SeasonPilotCard in seat order (GameEnums.ROLE_DISPLAY_ORDER), 244 tall, no card background. The stress gauge shows that day's change (ring segment + (+N) under the value). Tap = pilot detail sheet."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
 offset_top = 969.0
 offset_right = -40.0
-offset_bottom = 1225.0
+offset_bottom = 1213.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 12

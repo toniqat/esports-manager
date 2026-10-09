@@ -54,9 +54,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   ├ %Phase (CaptionLabel 26, centred, x 40 … −40, y 134 … 170)  ← phase name only
   ├ Divider     y 182
   ├ %MapPin     full width, y 194 … 955 (761 = map height), hidden by default: fixed slot for the map (WeekMapSection)
-  ├ %Scroll     x 40 … −40, y 1239 … −142 (= bar top − 14), anchors_preset −1 (grows right only); top set by code
+  ├ %Scroll     x 40 … −40, y 1227 … −142 (= bar top − 14), anchors_preset −1 (grows right only); top set by code
   │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
-  ├ %PilotRow   HBox sep 12, x 40 … −40, y 969 … 1225 (= %MapPin bottom + 14, top-anchored): SeasonPilotCard_Pilot0..4
+  ├ %PilotRow   HBox sep 12, x 40 … −40, y 969 … 1213 (= %MapPin bottom + 14, top-anchored): SeasonPilotCard_Pilot0..4
   │             (seat order), **always shown**. `_place_under_map` keeps row + list under the map (authored gap 14); with no
   │             map (`Stage.OFF`) both move up to %MapPin's top
   └ %Bar        HBox bottom bar, y −128 … 0 — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
@@ -147,9 +147,12 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   pinned in `%MapPin` above the pilot cards and the scrolling list. Spots per colour group, the 1.2× scale / crop
   and the fan-out of tokens sharing a spot: `base_map/README.md`. There is no caption over the map (the old `%Hint`
   "what Next does now" line was removed 2026-10) and no facility research bubbles (hub only).
-* **Pilot cards under the map** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order (portrait + trust ring, the three stress · trust · awakening gauges, no role badge); the note line is
-  **the day's stress change** (`_day_stress_delta` = training row `stress` + self-outing relief + `stress` notes of the
-  day's incident / afternoon outcomes), red `+N` / green `-N`, hidden at 0. Tap = `SeasonPilotDetail` sheet.
+* **Pilot cards under the map** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order (portrait + trust ring, the three stress · trust · awakening gauges, no role badge, no card background); each gauge shows
+  **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `(+N)` stress / `(+N%)` trust ·
+  awakening under the value, nothing at 0; they pop when the result FX starts). `_day_delta(pid, kind)` (kind `stress` ·
+  `trust` · `awaken`) = training row `stress` / `awaken` + self-outing relief (stress) + `kind` / `<kind>_all` notes of the
+  day's talk / incident / afternoon (visit · evening) outcomes. Not counted (not in the day record): the Sunday press answer,
+  the match's awakening gains; `<kind>_all` notes are nominal (unclamped). Tap = `SeasonPilotDetail` sheet.
 * A reload between the settlement and the afternoon lands on `RESULT`: the FX plays again, then the afternoon starts.
 * **Autosave** (`_save` → `SeasonHub.autosave`): after the settlement, the talk opening, the afternoon, the incident roll,
   opening a talk, the visit (`visit`), a story / outing, a focus course (`focus`), an awakening / limit break and

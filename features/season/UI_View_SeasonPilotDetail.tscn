@@ -24,7 +24,7 @@ theme_override_constants/separation = 28
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()
 The same card as the hub / week row, not tappable here."
-custom_minimum_size = Vector2(200, 256)
+custom_minimum_size = Vector2(200, 244)
 layout_mode = 2
 
 [node name="Info" type="VBoxContainer" parent="Head"]

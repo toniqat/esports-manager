@@ -13,7 +13,7 @@ extends Control
 #                  프리시즌                    ← 페이즈 이름 (가운데)
 #    ─────────────────────────────────────
 #   [ 팀 부지 맵 + 선수 토큰 (1200 폭, 좌우 60 잘림) ] ← 고정 (%MapPin)
-#     [선수][선수][선수][선수][선수]           ← 항상, 맵 바로 아래 (%PilotRow, 오늘 스트레스 증감 강조)
+#     [선수][선수][선수][선수][선수]           ← 항상, 맵 바로 아래 (%PilotRow, 스트레스 링에 오늘 증감)
 #     [ 사건 · 오후 카드 ]                     ← 세로 스크롤 (%Scroll, 하단 바까지)
 #    [ 오전 / 오후 ][        다음        ]    ← 하단 바
 #
@@ -624,7 +624,7 @@ func _play_result_fx() -> void:
 		for i in lines.size():
 			_add_float(holder, template, lines[i], start + FX_STAGGER * float(i))
 	for c in _pilot_cards:
-		(c as SeasonPilotCard).pulse_note()
+		(c as SeasonPilotCard).pulse_deltas()
 	var total: float = last_start + FX_TIME + FX_TAIL
 	get_tree().create_timer(total).timeout.connect(_on_result_fx_timeout.bind(_day))
 
@@ -686,8 +686,9 @@ func _result_lines(row: Dictionary) -> Array:
 
 
 # ── 하단 선수 카드 줄 ─────────────────────────────────────────────────────────
-## The five cards above the bottom bar (every day). Note line = the day's stress change
-## (`_day_stress_delta`), red when it rose, green when it fell, hidden at 0.
+## The five cards under the map (every day). The gauges show the day's changes
+## (`_day_delta`: stress · trust points · awakening gauge): ring segment + `(+N)` / `(+N%)`
+## under the value, none at 0.
 func _refresh_pilot_row() -> void:
 	var s: Dictionary = _gm.season_state
 	var by_seat: Dictionary = {}
@@ -702,29 +703,33 @@ func _refresh_pilot_row() -> void:
 			continue
 		var pd2: PlayerData = by_seat[seat]
 		card.show_pilot(pd2.id, MentalSystem.trust(s, pd2.id), StressSystem.value(s, pd2.id))
-		var delta: int = _day_stress_delta(pd2.id)
-		if delta != 0:
-			card.set_note("%+d" % delta, &"NegativeLabel" if delta > 0 else &"PositiveLabel")
+		card.set_day_deltas(_day_delta(pd2.id, "stress"), _day_delta(pd2.id, "trust"),
+				_day_delta(pd2.id, "awaken"))
 
 
-## Stress change of `pid` on the shown weekday so far: the morning training (row key `stress`),
-## a self outing (`AfternoonAway.relief_of`) and the `stress` notes of the day's incident and
-## afternoon action outcomes.
-func _day_stress_delta(pid: int) -> int:
+## Change of `pid`'s `kind` ("stress" · "trust" (points) · "awaken" (gauge points)) on the shown
+## weekday so far: the morning training row (`stress` / `awaken` keys), a self outing (stress:
+## `AfternoonAway.relief_of`) and the `kind` / `<kind>_all` notes of the day's talk, incident
+## and afternoon (visit / evening) outcomes. `<kind>_all` notes carry the clause's nominal
+## delta (a clamped pilot reads it unclamped). Not recorded per day, so not counted: the
+## Sunday press answer and the match's awakening gains (`pending_match.awakening_gains`).
+func _day_delta(pid: int, kind: String) -> int:
 	if not CalendarSystem.is_week_day(_day):
 		return 0
 	var s: Dictionary = _gm.season_state
 	var total: int = 0
 	for raw in (_week_log().get(_day, []) as Array):
 		if int((raw as Dictionary)["pilot_id"]) == pid:
-			total += int((raw as Dictionary).get("stress", 0))
-	total += AfternoonAway.relief_of(s, _day, pid)
+			total += int((raw as Dictionary).get(kind, 0))
+	if kind == "stress":
+		total += AfternoonAway.relief_of(s, _day, pid)
 	var rec: Dictionary = MentalSystem.day_record(s, _day)
 	for k in ["talk", "incident", "evening"]:
 		var outcome: Dictionary = (rec.get(k, {}) as Dictionary).get("outcome", {})
 		for n_raw in (outcome.get("notes", []) as Array):
 			var n: Dictionary = n_raw
-			if String(n.get("type", "")) == "stress" and int(n.get("pid", -1)) == pid:
+			var t: String = String(n.get("type", ""))
+			if (t == kind and int(n.get("pid", -1)) == pid) or t == kind + "_all":
 				total += int(n.get("delta", 0))
 	return total
 

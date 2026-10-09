@@ -977,10 +977,9 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))
 
 	# --- B week UI rework ---
-	# season — stat gauge panels under the week-map pilot tokens (`UI_Comp_PilotGauge`) and
-	# the black masks over a token whose pilot cannot be picked (portrait circle = r 42).
-	_add_derived(th, "PilotGaugePanel", &"DimPanel", flat_style(SURFACE, 12, BORDER_STRONG, 1))
-	_add_derived(th, "PilotGaugeMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 12))
+	# season — the round black masks over a stat gauge ring (`UI_Comp_PilotGauge` %Mask, ring
+	# 42 → r 21) / a map token (portrait circle = r 42) whose pilot cannot be picked.
+	_add_derived(th, "PilotGaugeMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 21))
 	_add_derived(th, "WeekMapPilotMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 42))
 	# season/week — the afternoon visit menu as a speech bubble over the picked token
 	# (`UI_View_VisitMenu`; the tail polygons in the scene use the same SURFACE / BORDER_STRONG).
@@ -1000,6 +999,11 @@ static func _add_screen_variations(th: Theme) -> void:
 	var er_chip: StyleBoxFlat = (th.get_stylebox(&"panel", &"SurfaceChip") as StyleBoxFlat).duplicate()
 	er_chip.bg_color = SURFACE_SUNK
 	_add_derived(th, "EventResultChip", &"SurfaceChip", er_chip)
+
+	# --- Z week UI rework ---
+	# season — `SeasonPilotCard` root without a card (portrait and gauges sit on the page;
+	# hub roster · week row · detail sheet head · own PREP card).
+	_add_derived(th, "SeasonPilotCardBare", &"Card", StyleBoxEmpty.new())
 
 
 ## 둥근 그림 마스크(`clip_children` 부모가 그리는 흰 판).

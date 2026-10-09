@@ -5,17 +5,16 @@
 [ext_resource type="Script" path="res://features/season/GaugeRing.gd" id="3_ring"]
 [ext_resource type="Texture2D" path="res://resources/images/ui/gauge/stress.svg" id="4_icon"]
 
-[node name="PilotGauge" type="Panel"]
+[node name="PilotGauge" type="Control"]
 auto_translate_mode = 2
-editor_description = "One small stat panel under a week-map pilot token (stress / trust / awakening): flat icon inside a radial ring, optional number in the icon (trust level) and under the ring (stress value). PilotGauge.gd picks the kind, icon and colours; %Mask darkens the panel when the pilot cannot be picked."
-custom_minimum_size = Vector2(48, 64)
+editor_description = "One small stat gauge of a SeasonPilotCard (stress / trust / awakening), no panel: flat icon inside a radial ring at the top, optional number in the icon (trust level), the value under the ring (stress number · trust / awakening %) and the change under that ((+N) / (+N%), %Delta, week screen only). PilotGauge.gd picks the kind, icon and colours; %Mask darkens the ring when the pilot cannot be picked."
+custom_minimum_size = Vector2(48, 80)
 layout_mode = 3
 anchors_preset = 0
 offset_right = 48.0
-offset_bottom = 64.0
+offset_bottom = 80.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
-theme_type_variation = &"PilotGaugePanel"
 script = ExtResource("1_gauge")
 
 [node name="VBox" type="VBoxContainer" parent="."]
@@ -27,12 +26,11 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
-alignment = 1
 
 [node name="Ring" type="Control" parent="VBox"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: PilotGauge.gd _fill()
-Radial ring (GaugeRing _draw): first lap + overflow lap on top."
+Radial ring (GaugeRing _draw): first lap + overflow lap on top + the stress change segment."
 custom_minimum_size = Vector2(42, 42)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -82,8 +80,8 @@ vertical_alignment = 1
 
 [node name="Value" type="Label" parent="VBox"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: PilotGauge.gd _fill() · show_stress()
-Exact number under the ring (stress); hidden for the other kinds."
+editor_description = "[필수] 지우면 오류: PilotGauge.gd _fill() · show_stress() · show_trust() · show_awakening()
+Value under the ring (stress number, trust progress % inside the level, awakening %), after today's change."
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -92,11 +90,24 @@ text = "34"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Mask" type="Panel" parent="."]
+[node name="Delta" type="Label" parent="VBox"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: PilotGauge.gd _show_delta() · _fill() · set_dimmed() · pulse_delta()
+Today's change under the value (stress (+N) red / (-N) green; trust · awakening (+N%) green / (-N%) red, code picks the variation); hidden at 0 and off the week screen."
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 15
+text = "(+3)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Mask" type="Panel" parent="VBox/Ring"]
 unique_name_in_owner = true
 visible = false
 editor_description = "[필수] 지우면 오류: PilotGauge.gd set_dimmed()
-Black mask over the whole panel when the pilot cannot be picked."
+Round black mask over the ring (PilotGaugeMask, radius = half the ring) when the pilot cannot be picked; the numbers fade instead."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

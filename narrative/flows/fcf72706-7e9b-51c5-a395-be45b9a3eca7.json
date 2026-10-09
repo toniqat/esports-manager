@@ -1,0 +1,323 @@
+{
+  "id": "fcf72706-7e9b-51c5-a395-be45b9a3eca7",
+  "name": "U03",
+  "parentNodeId": null,
+  "folderId": "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a3",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "9bb60104-7187-57ce-8545-b89d72df66ba",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair",
+          "story",
+          "story_sat",
+          "story_sun"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "d1a8a5ba-f266-50de-b237-eedb0bdd106a",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "cdca34ea-5637-5baf-9a55-0b7dd552e14b",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "40ca2dde-6d45-5043-9040-0166996474cd",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "ceebbd41-3e47-5aea-b01e-d6bb371bb3b2",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "80fd6f37-cb03-5dc7-8abf-cc045553bd16",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "a1d8223f-39c7-5d17-b543-178218ca2594",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "ff07f636-54ee-5433-a6e7-281e96f14759",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "37e4ee74-05d8-5aa7-9b01-8473e1e5c550",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "오늘 너무 많이 잡혔어요… 다 제 탓 같아요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I got caught way too often today… It feels like my fault.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "79253f18-d1f3-5426-b7ec-8941738d3192",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 4,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "이야기 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "37e4ee74-05d8-5aa7-9b01-8473e1e5c550"
+        }
+      ],
+      "sharedValues": {
+        "9bb60104-7187-57ce-8545-b89d72df66ba": "story_sun",
+        "d1a8a5ba-f266-50de-b237-eedb0bdd106a": -1,
+        "cdca34ea-5637-5baf-9a55-0b7dd552e14b": 0,
+        "40ca2dde-6d45-5043-9040-0166996474cd": "last=loss;deaths>=4",
+        "ceebbd41-3e47-5aea-b01e-d6bb371bb3b2": 2
+      }
+    },
+    {
+      "id": "66f880d2-f3a4-5732-9991-4525ae68fa54",
+      "type": "Select",
+      "name": "Select",
+      "localId": 5,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "e748999e-2cb8-51ba-8578-174b7fe5fc1e",
+          "text": "네 탓 아니야. 팀 경기였어.",
+          "sharedValues": {
+            "80fd6f37-cb03-5dc7-8abf-cc045553bd16": "trust:+3;stress:-8"
+          }
+        },
+        {
+          "id": "890173e8-8f0e-5059-928d-22344dd5d2c2",
+          "text": "왜 잡혔는지 같이 보자. 다음엔 안 그래.",
+          "sharedValues": {
+            "80fd6f37-cb03-5dc7-8abf-cc045553bd16": "awaken:+10;stress:+5;ok>trust:+2;ng>trust:-2"
+          }
+        }
+      ],
+      "translations": {
+        "opt:e748999e-2cb8-51ba-8578-174b7fe5fc1e": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "It's not your fault. It was a team game.",
+            "status": "progress"
+          }
+        },
+        "opt:890173e8-8f0e-5059-928d-22344dd5d2c2": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Let's see why you got caught. Next time you won't.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "6b80a5f1-8aac-55d8-9978-10208227416b",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 6,
+      "x": 940,
+      "y": -220,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "…감사해요, 감독님.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "…Thank you, Coach.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "5733e3af-c066-5fa2-b40e-5eb1eb5fa920",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "네, 똑같이 당하진 않을 거예요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Okay. It won't happen the same way twice.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "a1d8223f-39c7-5d17-b543-178218ca2594": "ok"
+      }
+    },
+    {
+      "id": "1fc7be8d-3fd7-55db-9f9c-4f51120c4293",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "지금은 좀… 보고 싶지 않아요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Right now I… don't want to watch it.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "a1d8223f-39c7-5d17-b543-178218ca2594": "ng"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "44a55ad3-6748-5d7c-963a-824f6518e34f",
+      "source": "ff07f636-54ee-5433-a6e7-281e96f14759",
+      "target": "37e4ee74-05d8-5aa7-9b01-8473e1e5c550",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "95ec3cb9-f323-5810-abcb-7153c4abad93",
+      "source": "37e4ee74-05d8-5aa7-9b01-8473e1e5c550",
+      "target": "66f880d2-f3a4-5732-9991-4525ae68fa54",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "a88ff547-0fd4-5948-98b5-c60fe0c30895",
+      "source": "66f880d2-f3a4-5732-9991-4525ae68fa54",
+      "target": "6b80a5f1-8aac-55d8-9978-10208227416b",
+      "sourcePort": "opt:e748999e-2cb8-51ba-8578-174b7fe5fc1e",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "5b3c8868-11c6-507d-8daa-690f23f2093a",
+      "source": "6b80a5f1-8aac-55d8-9978-10208227416b",
+      "target": "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "403c2906-0ac3-56cf-b366-5ea84f3e6cc3",
+      "source": "66f880d2-f3a4-5732-9991-4525ae68fa54",
+      "target": "5733e3af-c066-5fa2-b40e-5eb1eb5fa920",
+      "sourcePort": "opt:890173e8-8f0e-5059-928d-22344dd5d2c2",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "992b924d-87ba-51eb-8d1c-4a20f2ccb573",
+      "source": "5733e3af-c066-5fa2-b40e-5eb1eb5fa920",
+      "target": "1fc7be8d-3fd7-55db-9f9c-4f51120c4293",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "fa4d2dd0-71a6-53f8-ba6e-fa91b1a740ea",
+      "source": "1fc7be8d-3fd7-55db-9f9c-4f51120c4293",
+      "target": "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 9
+}

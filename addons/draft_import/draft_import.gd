@@ -30,7 +30,9 @@ const DOMAIN: String = "mental"
 const TARGET_LOCALE: String = "en"
 const DRAFT_LANG: String = "En"
 ## Event kinds in table order (rows are sorted by kind, then id).
-const KINDS: Array = ["interview", "outing", "incident", "press", "talk", "talk_pair"]
+## `story` / `story_sat` / `story_sun` = the afternoon visit's 이야기 (§15 D, `MentalEvents.STORY_KINDS`).
+const KINDS: Array = ["interview", "outing", "incident", "press", "talk", "talk_pair",
+		"story", "story_sat", "story_sun"]
 ## Wiki speaker name → line marker. No speaker = narration `*`; any other name = plain.
 const SPEAKER_MARKERS: Dictionary = {"감독": ">", "파트너": "&", "태그": "@"}
 const EVENT_HEADER: String = "id,kind,manager_type,stage,cond,effects,weight"

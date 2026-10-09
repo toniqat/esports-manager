@@ -364,3 +364,124 @@ tx_98RHXX4CMN,mental.p15.p15_l2,active,mental_texts.csv text (id=P15_L2),,,변�
 tx_H15XZER9KR,mental.p15.p15_c0,active,mental_texts.csv text (id=P15_C0),,,{name}{eun} 우리 팀의 핵심입니다. 믿습니다.,{name} is the core of our team. I trust them.,draft,96c2500d
 tx_FZWDZJM4MJ,mental.p15.p15_c1,active,mental_texts.csv text (id=P15_C1),,,본인이 누구보다 잘 알 겁니다.,They know it better than anyone.,draft,755ec385
 tx_DGCV1JP42M,mental.p15.p15_c2,active,mental_texts.csv text (id=P15_C2),,,냉정하게 다시 검토하겠습니다.,"I'll take a cold, hard look at it.",draft,2d3da61e
+tx_HK016C7BN6,mental.ui.visit.story,active,Afternoon visit option (VisitMenu) and the story event kind label (mod source),,,이야기,Talk,draft,f7b3b85c
+tx_218TQZXFD8,mental.ui.visit.focus,active,Afternoon visit option (VisitMenu),,,집중 훈련,Focus training,draft,db13f35e
+tx_0R7491YTAP,mental.ui.visit.course.aggression,active,Focus training course name (field accuracy + engage accuracy),,,공격성,Aggression,draft,7418dd85
+tx_B0QVPMTQPG,mental.ui.visit.course.caution,active,Focus training course name (field evasion + engage evasion),,,신중함,Caution,draft,8866edeb
+tx_FEBE3HG3TK,mental.ui.visit.course.operation,active,Focus training course name (field accuracy + field evasion),,,운영력,Operations,draft,cc2202fe
+tx_415VNRQCEY,mental.ui.visit.course.combat,active,Focus training course name (engage accuracy + engage evasion),,,전투력,Combat,draft,8673e162
+tx_X4Z6RJMZGH,mental.ui.visit.course.growth,active,Focus training course name (attack growth + HP growth),,,성장력,Growth,draft,3dc7be35
+tx_BZPQRAK2FA,mental.ui.visit.course.limit_break,active,Focus training course: finishes the pilot's active limit-break goal at once,,,한계돌파,Limit break,draft,1715ca89
+tx_7QBNF0Q0DW,mental.ui.visit.need_goal,active,Focus training course disabled reason,,,진행 중인 한계돌파가 없습니다,No limit break in progress,draft,7f4e7dde
+tx_3NCH9K5W6B,mental.ui.visit.need_points,active,Focus training disabled reason: too few coach points,,,코치 포인트 {n} 필요,Needs {n} coach points,draft,845e1069
+tx_TN0T71EKCT,mental.ui.visit.coach_points,active,VisitMenu header: coach points left this week,,,코치 포인트 {n},Coach points {n},draft,7113bedc
+tx_T4J6SR6Z2H,mental.ui.visit.cost,active,Focus training course row: coach point cost,,,{n}P,{n}P,draft,8fdfbd00
+tx_3FGGE155P3,mental.ui.visit.title_pick,active,VisitMenu caption: 2+ pilots share the tapped spot,,,누구를 방문할까요?,Who will you visit?,draft,ab1521ae
+tx_SBR87FT4VQ,mental.ui.visit.title_menu,active,VisitMenu caption: the three visit options,,,무엇을 함께할까요?,What will you do together?,draft,5c72e178
+tx_KW9B22X657,mental.ui.visit.title_courses,active,VisitMenu caption: course list,,,집중 훈련 코스를 고르세요,Pick a focus training course,draft,3961af13
+tx_KD8HT00MQD,mental.ui.visit.title_result,active,VisitMenu caption: result page,,,집중 훈련 결과,Focus training result,draft,1a3a0d14
+tx_2XVVB7WQTS,mental.ui.visit.focus_note,active,VisitMenu line under the focus training option,,,코치 포인트를 써서 두 능력치를 집중 단련합니다,Spend coach points to drill two stats,draft,2fa70915
+tx_R7T4K0Y2S7,mental.ui.visit.story_note.weekday,active,"VisitMenu line under the story option, Mon–Fri",,,오늘 아침 훈련 이야기를 나눕니다,Talk about this morning's training,draft,cde38c77
+tx_WNWP86AD7S,mental.ui.visit.story_note.sat,active,"VisitMenu line under the story option, Saturday after the ban/pick",,,밴픽과 내일 탈 메크 이야기를 나눕니다,Talk about the ban/pick and tomorrow's mech,draft,1a0929bf
+tx_HVC3644V2Q,mental.ui.visit.story_note.sun,active,"VisitMenu line under the story option, Sunday after the match",,,오늘 경기 이야기를 나눕니다,Talk about today's match,draft,cabb2689
+tx_8ZK21GFG9A,mental.ui.visit.story_note.free,active,"VisitMenu line under the story option, a day without training or match",,,편하게 이야기를 나눕니다,Have a casual chat,draft,ec68d0e8
+tx_XMFHMDB1VX,mental.ui.visit.outing_note,active,VisitMenu line under the outing option,,,스트레스를 크게 풀고 신뢰를 쌓습니다 · 다음 훈련일 EXP 감소,"Big stress relief, builds trust · less EXP on the next training day",draft,e71c3a1f
+tx_0SD9XPG1BX,mental.ui.visit.outing_locked,active,VisitMenu line under the disabled outing option,,,신뢰 Lv.{n}부터 외출할 수 있습니다,Outings unlock at trust Lv.{n},draft,d1c3d9b7
+tx_5F27TFDDBC,mental.ui.visit.pilot_line,active,VisitMenu header / picker row: the pilot's trust level and stress,,,신뢰 Lv.{trust} · 스트레스 {stress},Trust Lv.{trust} · Stress {stress},draft,5ac7c639
+tx_1KK4JVKGME,mental.ui.note.stat_up,active,"Mental result chip: a stat point gained (focus training, story train_bonus)",,,{name} {stat} {delta},{name} {stat} {delta},draft,9ce4db7d
+tx_T3ENXMYQ3T,mental.ui.note.stat_exp,active,Mental result chip: stat EXP banked without a whole point,,,{name} 능력치 EXP {delta},{name} stat EXP {delta},draft,f7f3b556
+tx_BA4R5F2VGH,mental.ui.note.tlexp,active,Mental result chip: training-level EXP,,,{name} 훈련 EXP {delta},{name} training EXP {delta},draft,c2ef1173
+tx_KKBC17X819,mental.ui.note.tlexp_capped,active,"Mental result chip: training EXP not added, the bar is full",,,{name} 훈련 EXP 가득 참,{name} training EXP full,draft,a1d60c73
+tx_WTKYZDZ89S,mental.ui.note.awaken,active,Mental result chip: awakening gauge,,,{name} 깨달음 {delta}%,{name} insight {delta}%,draft,c3b82d88
+tx_066H6FVY7G,mental.ui.note.mastery,active,Mental result chip: mech mastery from a story,,,{name} {mech} 숙련 {delta},{name} {mech} mastery {delta},draft,7c82760c
+tx_0M7GASA49J,mental.ui.note.limit_break,active,Mental result chip: focus training finished the limit-break goal,,,{name} 한계돌파 · 훈련 Lv.{n},{name} limit break · training Lv.{n},draft,30b92413
+tx_394H0Z9JXP,mental.ui.note.coach,active,Mental result chip: coach points spent on focus training,,,코치 포인트 {delta},Coach points {delta},draft,666545ca
+tx_TZ7X70TQNY,mental.ui.preview.awaken,active,Choice preview effect label: awakening gauge,,,깨달음,Insight,draft,7b74ed49
+tx_1CE62HA1KP,mental.ui.preview.tlexp,active,Choice preview effect label: training-level EXP,,,훈련 EXP,Training EXP,draft,b2b1f2f7
+tx_CGDMGJFED0,mental.ui.preview.mastery,active,Choice preview effect label: mech mastery,,,숙련,Mastery,draft,33a4be47
+tx_VE4Y341QPD,mental.ui.preview.stat_exp,active,Choice preview effect label: today's stat EXP again,,,능력치 EXP,Stat EXP,draft,d2745058
+tx_7F4B0GFZD2,mental.x08.x08_l0,active,mental_texts.csv text (id=X08_L0),,,@늦은 밤의 연습실,@The late-night practice room,draft,b0a517f5
+tx_GV27K1VPDW,mental.x08.x08_l1,active,mental_texts.csv text (id=X08_L1),,,*밤늦게 연습실에 불이 켜져 있다.,*The practice room light is still on late at night.,draft,dd57fb0b
+tx_BJMAQY0286,mental.x08.x08_l2,active,mental_texts.csv text (id=X08_L2),,,"아, 감독님… 잠이 안 와서요. 뭔가 잡힐 것 같아요.","Oh, Coach… I couldn't sleep. I feel like something's about to click.",draft,43e6d3ed
+tx_Q9M7R0E478,mental.x08.x08_c0,active,mental_texts.csv text (id=X08_C0),,,조금만 더 하고 자.,"Go a little longer, then sleep.",draft,384324a1
+tx_ZCS35Z46BT,mental.x08.x08_c0_s0,active,mental_texts.csv text (id=X08_C0_S0),,,네! 금방 끝낼게요.,Okay! I'll wrap up soon.,draft,6f0f6040
+tx_7NMY2SE273,mental.x08.x08_c1,active,mental_texts.csv text (id=X08_C1),,,내일 하자. 지금은 자야 해.,Tomorrow. You need sleep now.,draft,185a686a
+tx_GWQWZ15NDP,mental.x08.x08_c1_s0,active,mental_texts.csv text (id=X08_C1_S0),,,"…네, 알겠어요.","…Okay, got it.",draft,60c11484
+tx_AQW6WTGRAR,mental.x09.x09_l0,active,mental_texts.csv text (id=X09_L0),,,@의외의 조언,@Unexpected advice,draft,e2d7a7b0
+tx_EWV0XQT66Q,mental.x09.x09_l1,active,mental_texts.csv text (id=X09_L1),,,옆 팀 선수한테 들은 얘기가 있는데요…,I heard something from a player on another team…,draft,6b488fb3
+tx_T7BNJS7HRZ,mental.x09.x09_l2,active,mental_texts.csv text (id=X09_L2),,,제 플레이에 딱 맞는 것 같아요.,I think it fits my play perfectly.,draft,e4766377
+tx_TET0WE2T76,mental.x09.x09_c0,active,mental_texts.csv text (id=X09_C0),,,흥미롭네. 같이 연구해 보자.,Interesting. Let's study it together.,draft,1e8176d8
+tx_V3T30EPGSK,mental.x09.x09_c0_s0,active,mental_texts.csv text (id=X09_C0_S0),,,역시 감독님이에요!,That's why you're the coach!,draft,fe1dde5e
+tx_DBW2BGB0GK,mental.x09.x09_c0_s1,active,mental_texts.csv text (id=X09_C0_S1),,,…생각보다 안 맞네요.,…It doesn't fit as well as I thought.,draft,15c77a02
+tx_M1VXEGS7B4,mental.x09.x09_c1,active,mental_texts.csv text (id=X09_C1),,,남의 말에 흔들리지 마.,Don't let others' words shake you.,draft,a37920f2
+tx_TTC5NNHPV5,mental.x09.x09_c1_s0,active,mental_texts.csv text (id=X09_C1_S0),,,네… 그럴게요.,Okay… I will.,draft,75feb5cf
+tx_6VFK3CV72J,mental.s01.s01_l0,active,mental_texts.csv text (id=S01_L0),,,"오늘 훈련, 솔직히 좀 빡셌어요.","Today's training was rough, honestly.",draft,8ab49199
+tx_Q98BRPJSVN,mental.s01.s01_l1,active,mental_texts.csv text (id=S01_L1),,,그래도 뭔가 감이 오는 것 같기도 하고요.,But I think I'm starting to get a feel for it.,draft,b48d9a02
+tx_W0Z14DRGRK,mental.s01.s01_c0,active,mental_texts.csv text (id=S01_C0),,,감이 올 때 한 번 더 밀어붙이자. 내가 봐 줄게.,Let's push once more while it clicks. I'll watch.,draft,6a56b76a
+tx_JZ5EFEQZXX,mental.s01.s01_c0_s0,active,mental_texts.csv text (id=S01_C0_S0),,,"…좋아요, 한 번 더 해 볼게요!","…Okay, one more go!",draft,07f3da16
+tx_W2FRM8R0BT,mental.s01.s01_c1,active,mental_texts.csv text (id=S01_C1),,,오늘은 여기까지. 푹 쉬면서 정리하자.,That's enough for today. Rest and let it settle.,draft,191dc492
+tx_H6CKVTXX8X,mental.s01.s01_c1_s0,active,mental_texts.csv text (id=S01_C1_S0),,,"정말요? 감사합니다, 감독님.","Really? Thank you, Coach.",draft,1912fb42
+tx_5W46C53H2W,mental.s01.s01_c2,active,mental_texts.csv text (id=S01_C2),,,잘했어. 그 감각 잊지 마.,Good work. Don't lose that feeling.,draft,77fde958
+tx_DRGWMWTTE1,mental.s01.s01_c2_s0,active,mental_texts.csv text (id=S01_C2_S0),,,네! 꼭 기억할게요.,Yes! I'll remember it.,draft,43624df8
+tx_PHP66PDG2M,mental.s01.s01_c2_s1,active,mental_texts.csv text (id=S01_C2_S1),,,"…네, 노력해 볼게요.","…Okay, I'll try.",draft,e6db67ed
+tx_VX509357K0,mental.s02.s02_l0,active,mental_texts.csv text (id=S02_L0),,,오늘 확실히 늘었어요! 몸이 가벼워요.,I definitely improved today! I feel light.,draft,0ba1f4ef
+tx_TC0DHVZRV7,mental.s02.s02_c0,active,mental_texts.csv text (id=S02_C0),,,기세 탔을 때 더 하자. 저녁에 한 세트 더.,Ride the momentum. One more set tonight.,draft,be99300b
+tx_2A6T933CQM,mental.s02.s02_c0_s0,active,mental_texts.csv text (id=S02_C0_S0),,,"좋아요, 끝까지 가 봐요!","Great, let's go all the way!",draft,62fc10db
+tx_WY97KPWG0R,mental.s02.s02_c1,active,mental_texts.csv text (id=S02_C1),,,무리하지 말고 오늘은 쉬어.,Don't overdo it. Rest today.,draft,0f754652
+tx_MARQQ3RTBF,mental.s02.s02_c1_s0,active,mental_texts.csv text (id=S02_C1_S0),,,"네, 내일 더 잘할게요.","Okay, I'll do even better tomorrow.",draft,f86a4e8b
+tx_SJE17RVD97,mental.s03.s03_l0,active,mental_texts.csv text (id=S03_L0),,,오늘은 아무것도 안 는 것 같아요…,Feels like nothing improved today…,draft,f8042044
+tx_4YAB4P1BF5,mental.s03.s03_c0,active,mental_texts.csv text (id=S03_C0),,,그럴 때일수록 한 번 더. 같이 하자.,That's exactly when we do one more. Together.,draft,c776848e
+tx_KX2KSP6GRC,mental.s03.s03_c0_s0,active,mental_texts.csv text (id=S03_C0_S0),,,…감독님이 같이 해 주시면요.,"…If you're with me, Coach.",draft,bb9fb4ef
+tx_TCYBPNF1T2,mental.s03.s03_c1,active,mental_texts.csv text (id=S03_C1),,,정체기는 누구나 와. 오늘은 쉬자.,Everyone hits a plateau. Let's rest today.,draft,b58e860b
+tx_F54NJ9ZP20,mental.s03.s03_c1_s0,active,mental_texts.csv text (id=S03_C1_S0),,,그렇게 말해 주시니 좀 편하네요.,Hearing that makes me feel better.,draft,15f41129
+tx_34QRZWK36Z,mental.s04.s04_l0,active,mental_texts.csv text (id=S04_L0),,,솔직히… 좀 지쳤어요.,Honestly… I'm a bit worn out.,draft,d1ef46b4
+tx_3VT59RKFMG,mental.s04.s04_c0,active,mental_texts.csv text (id=S04_C0),,,조금만 더 버텨 보자. 오늘 배운 걸 굳히자.,Hang in a little longer. Let's lock in today's lesson.,draft,8201be1a
+tx_7H4K5DTPM5,mental.s04.s04_c0_s0,active,mental_texts.csv text (id=S04_C0_S0),,,…알겠어요. 해 볼게요.,…Got it. I'll try.,draft,031cb6e6
+tx_GW2JEQZHQ2,mental.s04.s04_c0_s1,active,mental_texts.csv text (id=S04_C0_S1),,,지금은 정말 무리예요.,I really can't right now.,draft,f2618064
+tx_0TVKNYP75N,mental.s04.s04_c1,active,mental_texts.csv text (id=S04_C1),,,오늘은 다 내려놓고 쉬어.,Let it all go and rest today.,draft,d4dad4ba
+tx_4GXA8BME14,mental.s04.s04_c1_s0,active,mental_texts.csv text (id=S04_C1_S0),,,고마워요. 숨 좀 돌릴게요.,Thanks. I'll catch my breath.,draft,30b24d84
+tx_HNX6ND2X0T,mental.s05.s05_l0,active,mental_texts.csv text (id=S05_L0),,,"새로 배운 움직임, 아직 몸에 안 익어요.",The new moves still don't feel natural.,draft,1db571c2
+tx_WQSKM4ZE39,mental.s05.s05_c0,active,mental_texts.csv text (id=S05_C0),,,익을 때까지 반복이지. 저녁에 한 세트 더.,Repeat until it sticks. One more set tonight.,draft,6f2e75fc
+tx_5EQ4E4SS9W,mental.s05.s05_c0_s0,active,mental_texts.csv text (id=S05_C0_S0),,,"네, 몸에 붙을 때까지요!","Yes, until it sticks!",draft,fd7dba8b
+tx_SWAJWYDKF0,mental.s05.s05_c1,active,mental_texts.csv text (id=S05_C1),,,급할 것 없어. 내일 다시 보자.,No rush. We'll look at it tomorrow.,draft,0e59c337
+tx_7K7VHDN95S,mental.s05.s05_c1_s0,active,mental_texts.csv text (id=S05_C1_S0),,,"네, 내일 다시 해 볼게요.","Okay, I'll try again tomorrow.",draft,cab58def
+tx_DWVTVF5K3Z,mental.a01.a01_l0,active,mental_texts.csv text (id=A01_L0),,,"내일 탈 메크, 아직 좀 어색해요.",The mech I'm piloting tomorrow still feels a bit awkward.,draft,e9efe4a4
+tx_ABG041CJ2S,mental.a01.a01_c0,active,mental_texts.csv text (id=A01_C0),,,오늘 그 메크로 시뮬레이션 한 번 더 돌리자.,Let's run one more simulation with it today.,draft,64d9c4f6
+tx_CZY2AXN1EZ,mental.a01.a01_c0_s0,active,mental_texts.csv text (id=A01_C0_S0),,,"네, 감 잡아 볼게요.","Okay, I'll get the hang of it.",draft,d85e3f2f
+tx_MCDQ5CHV4Z,mental.a01.a01_c1,active,mental_texts.csv text (id=A01_C1),,,넌 잘 탈 거야. 믿고 맡길게.,You'll do fine. I'm trusting you with it.,draft,1510c1a8
+tx_G88SJPBZCQ,mental.a01.a01_c1_s0,active,mental_texts.csv text (id=A01_C1_S0),,,믿어 주시는 만큼 해낼게요.,I'll live up to that trust.,draft,ff7159e7
+tx_823WJR70DB,mental.a01.a01_c1_s1,active,mental_texts.csv text (id=A01_C1_S1),,,…부담되네요.,…That's a lot of pressure.,draft,5d4f6b84
+tx_F4ZZMBTDD1,mental.a01.a01_c2,active,mental_texts.csv text (id=A01_C2),,,오늘은 푹 자 둬. 내일이 진짜야.,Sleep well tonight. Tomorrow is what counts.,draft,0466eaf8
+tx_40HGH4ZS9Y,mental.a01.a01_c2_s0,active,mental_texts.csv text (id=A01_C2_S0),,,"네, 일찍 잘게요.","Okay, I'll turn in early.",draft,009f75e3
+tx_ABZP4CX6PR,mental.a02.a02_l0,active,mental_texts.csv text (id=A02_L0),,,"상대 밴픽 보셨어요? 우리 조합, 잘 맞을까요?",Did you see their ban/pick? Will our comp hold up?,draft,9369bdee
+tx_EA4DT4VFEN,mental.a02.a02_c0,active,mental_texts.csv text (id=A02_C0),,,조합 연습 한 판 더 하고 들어가자.,Let's run one more comp practice before we call it.,draft,e1b31b63
+tx_F23QYSNPYF,mental.a02.a02_c0_s0,active,mental_texts.csv text (id=A02_C0_S0),,,"좋아요, 호흡 맞춰 봐요.","Sure, let's sync up.",draft,deadab9b
+tx_FHPEQJP0DY,mental.a02.a02_c1,active,mental_texts.csv text (id=A02_C1),,,준비는 끝났어. 자신감만 챙겨.,We're ready. Just bring your confidence.,draft,a920b895
+tx_27ZWX69DNV,mental.a02.a02_c1_s0,active,mental_texts.csv text (id=A02_C1_S0),,,네! 내일 보여 드릴게요.,Yes! I'll show you tomorrow.,draft,986e8720
+tx_GR4XB73CWD,mental.u01.u01_l0,active,mental_texts.csv text (id=U01_L0),,,"MVP라니, 아직도 실감이 안 나요!",MVP… it still hasn't sunk in!,draft,59118215
+tx_HK3CRWJETS,mental.u01.u01_c0,active,mental_texts.csv text (id=U01_C0),,,오늘은 네 날이었어. 마음껏 즐겨.,Today was your day. Enjoy it.,draft,36dc3a80
+tx_2F8XPQ8NS6,mental.u01.u01_c0_s0,active,mental_texts.csv text (id=U01_C0_S0),,,"헤헤, 오늘만큼은 즐길게요!","Hehe, I'll enjoy it just for today!",draft,bf32fd2c
+tx_TGRHJWDW3K,mental.u01.u01_c1,active,mental_texts.csv text (id=U01_C1),,,들뜨지 말고 오늘 경기 다시 보자.,Keep a cool head. Let's review today's match.,draft,4ec8df72
+tx_0A5ZEFAMHZ,mental.u01.u01_c1_s0,active,mental_texts.csv text (id=U01_C1_S0),,,"네, 잘된 장면도 다시 볼게요.","Okay, I'll study the good plays too.",draft,99d7b7e2
+tx_TX2P5VDXN6,mental.u02.u02_l0,active,mental_texts.csv text (id=U02_L0),,,이겼어요! 근데 제 플레이는 좀 아쉬웠어요.,We won! But my own play was a bit disappointing.,draft,e81bd1fb
+tx_7VMY0DVVMG,mental.u02.u02_c0,active,mental_texts.csv text (id=U02_C0),,,팀이 이겼잖아. 그거면 돼.,The team won. That's what matters.,draft,82c26479
+tx_PJXC55G216,mental.u02.u02_c0_s0,active,mental_texts.csv text (id=U02_C0_S0),,,그렇죠! 다음엔 저도 더 잘할게요.,Right! I'll do better next time too.,draft,4287c489
+tx_23APC47XR3,mental.u02.u02_c1,active,mental_texts.csv text (id=U02_C1),,,"아쉬운 장면, 같이 짚어 보자.",Let's go over the rough moments together.,draft,bd4745cb
+tx_WS9B2VRYYE,mental.u02.u02_c1_s0,active,mental_texts.csv text (id=U02_C1_S0),,,"네, 바로 보여 드릴게요.","Sure, let me show you right away.",draft,0321fb67
+tx_MCGHZHC008,mental.u02.u02_c1_s1,active,mental_texts.csv text (id=U02_C1_S1),,,…이긴 날인데요.,…But we won today.,draft,dcffa5ae
+tx_W2RXVAV0F8,mental.u03.u03_l0,active,mental_texts.csv text (id=U03_L0),,,오늘 너무 많이 잡혔어요… 다 제 탓 같아요.,I got caught way too often today… It feels like my fault.,draft,9a3c9cba
+tx_52HBQZZ518,mental.u03.u03_c0,active,mental_texts.csv text (id=U03_C0),,,네 탓 아니야. 팀 경기였어.,It's not your fault. It was a team game.,draft,e6d4b613
+tx_VPB1H9B879,mental.u03.u03_c0_s0,active,mental_texts.csv text (id=U03_C0_S0),,,"…감사해요, 감독님.","…Thank you, Coach.",draft,212e4e1d
+tx_HMGK8XYRB3,mental.u03.u03_c1,active,mental_texts.csv text (id=U03_C1),,,왜 잡혔는지 같이 보자. 다음엔 안 그래.,Let's see why you got caught. Next time you won't.,draft,8da628b0
+tx_G465G1NMYJ,mental.u03.u03_c1_s0,active,mental_texts.csv text (id=U03_C1_S0),,,"네, 똑같이 당하진 않을 거예요.",Okay. It won't happen the same way twice.,draft,88b9ae75
+tx_J1QVCXZS73,mental.u03.u03_c1_s1,active,mental_texts.csv text (id=U03_C1_S1),,,지금은 좀… 보고 싶지 않아요.,Right now I… don't want to watch it.,draft,d5bbd9fd
+tx_0WHT1QBBMX,mental.u04.u04_l0,active,mental_texts.csv text (id=U04_L0),,,졌네요. 분위기가 좀 가라앉았어요.,We lost. The mood's pretty low.,draft,dda21866
+tx_V1X72H23BA,mental.u04.u04_c0,active,mental_texts.csv text (id=U04_C0),,,털고 일어나자. 다음 주가 있어.,Shake it off. There's next week.,draft,39868b98
+tx_9TNC1NTS61,mental.u04.u04_c0_s0,active,mental_texts.csv text (id=U04_C0_S0),,,"네, 다시 해 봐요.","Yeah, let's go again.",draft,e385969d
+tx_YZ0W5CEQ62,mental.u04.u04_c1,active,mental_texts.csv text (id=U04_C1),,,패배에서 배울 게 더 많아. 복기하자.,A loss teaches more. Let's review.,draft,9aaae06b
+tx_FTH0EB8PPJ,mental.u04.u04_c1_s0,active,mental_texts.csv text (id=U04_C1_S0),,,…맞아요. 하나도 안 놓칠게요.,…You're right. I won't miss a thing.,draft,3ff96cfc
+tx_V594GHX4FA,mental.u05.u05_l0,active,mental_texts.csv text (id=U05_L0),,,오늘 K/D/A 좋았죠? 손이 잘 풀렸어요.,"My K/D/A was great today, right? My hands were on fire.",draft,3faeb52c
+tx_VCXMXMSK8Z,mental.u05.u05_c0,active,mental_texts.csv text (id=U05_C0),,,그 감각 잊지 마. 녹화 다시 보자.,Hold on to that feeling. Let's rewatch the recording.,draft,a79c146a
+tx_FXCFD2TVCE,mental.u05.u05_c0_s0,active,mental_texts.csv text (id=U05_C0_S0),,,네! 뭐가 잘됐는지 알고 싶어요.,Yes! I want to know what clicked.,draft,7eb3b10e
+tx_EKR5AC80YA,mental.u05.u05_c1,active,mental_texts.csv text (id=U05_C1),,,잘했어. 오늘은 쉬어.,Well done. Rest today.,draft,dfcf078a
+tx_4DZ12PB99P,mental.u05.u05_c1_s0,active,mental_texts.csv text (id=U05_C1_S0),,,"헤헤, 감사합니다!","Hehe, thank you!",draft,b5627a9d

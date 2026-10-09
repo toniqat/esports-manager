@@ -1,0 +1,286 @@
+{
+  "id": "ec54463e-0fdc-5d63-a9c7-8090444c10c7",
+  "name": "A02",
+  "parentNodeId": null,
+  "folderId": "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a2",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "9b7d9fca-1fbe-564a-ba18-4e09dbf888da",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair",
+          "story",
+          "story_sat",
+          "story_sun"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "85424863-542b-5be2-989c-5f1f8da4dbef",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "32cf91f9-3e17-55e7-b6c0-e68dc4210b10",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "fd7d5426-7dca-5169-8a70-136ba013c734",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "1254a668-58d0-571b-acf7-582bd0721c9e",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "fa565051-5a7c-5f65-86ea-0211c477ec15",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "d741f2b8-7dcc-52b6-9ef2-5988e5a74f22",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "0a470974-34b6-5a05-9e8d-6832acb3a1b7",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "5a6f168f-001f-5ca2-bd4d-1f9429547b55",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "상대 밴픽 보셨어요? 우리 조합, 잘 맞을까요?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Did you see their ban/pick? Will our comp hold up?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "e62e6b35-03f8-5c66-8cf6-d6bd0570641d",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 4,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "이야기 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "5a6f168f-001f-5ca2-bd4d-1f9429547b55"
+        }
+      ],
+      "sharedValues": {
+        "9b7d9fca-1fbe-564a-ba18-4e09dbf888da": "story_sat",
+        "85424863-542b-5be2-989c-5f1f8da4dbef": -1,
+        "32cf91f9-3e17-55e7-b6c0-e68dc4210b10": 0,
+        "fd7d5426-7dca-5169-8a70-136ba013c734": "",
+        "1254a668-58d0-571b-acf7-582bd0721c9e": 1
+      }
+    },
+    {
+      "id": "0a6bac1f-6487-5d11-a894-5919af620390",
+      "type": "Select",
+      "name": "Select",
+      "localId": 5,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "47bb9ba2-905a-574e-8953-b1c93c357f22",
+          "text": "조합 연습 한 판 더 하고 들어가자.",
+          "sharedValues": {
+            "fa565051-5a7c-5f65-86ea-0211c477ec15": "mastery:+6;tlexp:+15;stress:+4"
+          }
+        },
+        {
+          "id": "c32a7b57-79c3-5994-adb1-e95dc0ff6fd9",
+          "text": "준비는 끝났어. 자신감만 챙겨.",
+          "sharedValues": {
+            "fa565051-5a7c-5f65-86ea-0211c477ec15": "trust:+2;awaken:+5"
+          }
+        }
+      ],
+      "translations": {
+        "opt:47bb9ba2-905a-574e-8953-b1c93c357f22": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Let's run one more comp practice before we call it.",
+            "status": "progress"
+          }
+        },
+        "opt:c32a7b57-79c3-5994-adb1-e95dc0ff6fd9": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "We're ready. Just bring your confidence.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "f7154d0e-c9fc-54ce-b719-476984e583ea",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 6,
+      "x": 940,
+      "y": -220,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "좋아요, 호흡 맞춰 봐요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Sure, let's sync up.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "bef55089-fefd-50e1-8c51-78439692f75d",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "네! 내일 보여 드릴게요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Yes! I'll show you tomorrow.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "2be32e35-2903-5605-84db-df5e26b2f4b2",
+      "source": "0a470974-34b6-5a05-9e8d-6832acb3a1b7",
+      "target": "5a6f168f-001f-5ca2-bd4d-1f9429547b55",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "ef2ba7c8-4759-589b-8303-13bfbf8dd3cc",
+      "source": "5a6f168f-001f-5ca2-bd4d-1f9429547b55",
+      "target": "0a6bac1f-6487-5d11-a894-5919af620390",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "2d07e23d-fb72-50a1-aac8-6f6528d1ec33",
+      "source": "0a6bac1f-6487-5d11-a894-5919af620390",
+      "target": "f7154d0e-c9fc-54ce-b719-476984e583ea",
+      "sourcePort": "opt:47bb9ba2-905a-574e-8953-b1c93c357f22",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "e904a048-f3ff-5dde-bb7f-ecf024ac919b",
+      "source": "f7154d0e-c9fc-54ce-b719-476984e583ea",
+      "target": "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "c08cbe14-ed90-5b01-9cd1-5fbae8d67c24",
+      "source": "0a6bac1f-6487-5d11-a894-5919af620390",
+      "target": "bef55089-fefd-50e1-8c51-78439692f75d",
+      "sourcePort": "opt:c32a7b57-79c3-5994-adb1-e95dc0ff6fd9",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "2fe995f1-cd96-5159-811a-e1544166c04a",
+      "source": "bef55089-fefd-50e1-8c51-78439692f75d",
+      "target": "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 8
+}

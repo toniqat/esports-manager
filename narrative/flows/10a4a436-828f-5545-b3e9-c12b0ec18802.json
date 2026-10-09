@@ -1,0 +1,323 @@
+{
+  "id": "10a4a436-828f-5545-b3e9-c12b0ec18802",
+  "name": "S04",
+  "parentNodeId": null,
+  "folderId": "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a1",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "9098d00d-31a7-5449-8263-5f365d0d0393",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair",
+          "story",
+          "story_sat",
+          "story_sun"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "78ad9adb-2a74-5177-9941-69e2df72b62b",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "e3f323c8-3a16-51f2-9ed5-8ff16501fd37",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "eda0a123-15c6-51ee-a1a3-a6c1b170c9c7",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "13566171-8183-5e68-8f77-2534ae27d8b6",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "ce6c1775-766a-5f59-9f5f-db537a55770e",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "9295cbcc-334b-5e37-8b7d-2932bb079dc7",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "f90deb8f-9f2d-55bc-88ce-cfa31b90c243",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "ee62659a-7fd0-5d12-91cb-35adf5f264b3",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "604ffc20-7516-58a8-8a72-5c5964578696",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "솔직히… 좀 지쳤어요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Honestly… I'm a bit worn out.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "264e4c64-8b7c-5989-8b6a-445f8e07d71c",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 4,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "이야기 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "604ffc20-7516-58a8-8a72-5c5964578696"
+        }
+      ],
+      "sharedValues": {
+        "9098d00d-31a7-5449-8263-5f365d0d0393": "story",
+        "78ad9adb-2a74-5177-9941-69e2df72b62b": -1,
+        "e3f323c8-3a16-51f2-9ed5-8ff16501fd37": 0,
+        "eda0a123-15c6-51ee-a1a3-a6c1b170c9c7": "stress>=60",
+        "13566171-8183-5e68-8f77-2534ae27d8b6": 1
+      }
+    },
+    {
+      "id": "d4c45152-89df-5f87-b19b-d92978c130d2",
+      "type": "Select",
+      "name": "Select",
+      "localId": 5,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "73f25c36-7bb2-5243-afb8-5821b767d83f",
+          "text": "조금만 더 버텨 보자. 오늘 배운 걸 굳히자.",
+          "sharedValues": {
+            "ce6c1775-766a-5f59-9f5f-db537a55770e": "train_bonus:std;stress:+12;ok>trust:+2;ng>trust:-3"
+          }
+        },
+        {
+          "id": "f428f221-f9b3-5e31-93de-63a6f24d80ee",
+          "text": "오늘은 다 내려놓고 쉬어.",
+          "sharedValues": {
+            "ce6c1775-766a-5f59-9f5f-db537a55770e": "stress_train:-2;trust:+3"
+          }
+        }
+      ],
+      "translations": {
+        "opt:73f25c36-7bb2-5243-afb8-5821b767d83f": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Hang in a little longer. Let's lock in today's lesson.",
+            "status": "progress"
+          }
+        },
+        "opt:f428f221-f9b3-5e31-93de-63a6f24d80ee": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Let it all go and rest today.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "e0b0d6ec-0b1f-57b9-92f9-4f8c3504fec1",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 6,
+      "x": 940,
+      "y": -220,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "…알겠어요. 해 볼게요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "…Got it. I'll try.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "9295cbcc-334b-5e37-8b7d-2932bb079dc7": "ok"
+      }
+    },
+    {
+      "id": "4832472a-2605-50e1-aff5-f7bbb6078924",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 1240,
+      "y": -220,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "지금은 정말 무리예요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I really can't right now.",
+            "status": "progress"
+          }
+        }
+      },
+      "sharedValues": {
+        "9295cbcc-334b-5e37-8b7d-2932bb079dc7": "ng"
+      }
+    },
+    {
+      "id": "d854e77d-4b81-5d55-bc8f-e0d89ba74792",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "고마워요. 숨 좀 돌릴게요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Thanks. I'll catch my breath.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "8f6b1979-f221-591e-becf-ff48e93ad3a5",
+      "source": "f90deb8f-9f2d-55bc-88ce-cfa31b90c243",
+      "target": "604ffc20-7516-58a8-8a72-5c5964578696",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "d5829cb3-13c2-5017-95b9-95c4abbcd801",
+      "source": "604ffc20-7516-58a8-8a72-5c5964578696",
+      "target": "d4c45152-89df-5f87-b19b-d92978c130d2",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "76985f38-ff39-541f-a334-4c568e88a503",
+      "source": "d4c45152-89df-5f87-b19b-d92978c130d2",
+      "target": "e0b0d6ec-0b1f-57b9-92f9-4f8c3504fec1",
+      "sourcePort": "opt:73f25c36-7bb2-5243-afb8-5821b767d83f",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "b35b096f-8c7c-518c-b9bc-d3f69da57885",
+      "source": "e0b0d6ec-0b1f-57b9-92f9-4f8c3504fec1",
+      "target": "4832472a-2605-50e1-aff5-f7bbb6078924",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "4ce81285-4f31-5194-826e-a3ed6d8fe9dd",
+      "source": "4832472a-2605-50e1-aff5-f7bbb6078924",
+      "target": "ee62659a-7fd0-5d12-91cb-35adf5f264b3",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "f8927d8f-30e6-5e38-a4e7-db0c4eb2313c",
+      "source": "d4c45152-89df-5f87-b19b-d92978c130d2",
+      "target": "d854e77d-4b81-5d55-bc8f-e0d89ba74792",
+      "sourcePort": "opt:f428f221-f9b3-5e31-93de-63a6f24d80ee",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "89cf6ed6-372b-57bb-ad2b-93c621254254",
+      "source": "d854e77d-4b81-5d55-bc8f-e0d89ba74792",
+      "target": "ee62659a-7fd0-5d12-91cb-35adf5f264b3",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 9
+}

@@ -744,6 +744,9 @@ func _consume_pending_match_result() -> bool:
 	FinanceSystem.record_match(s, pm as Dictionary, winner_side == 0)
 	PilotMods.consume_match(s)
 	StressSystem.record_match(s, pm as Dictionary)
+	# §15 — limit-break goals and the awakening gauge read the match rows.
+	LimitBreak.record_match(s, pm as Dictionary)
+	Awakening.on_match(s, pm as Dictionary)
 
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)

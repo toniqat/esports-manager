@@ -20,18 +20,18 @@ const DB_PATH = "res://data/game.db"
 # Required columns and primary key per table
 const SCHEMAS: Dictionary = {
 	"pilots":      {"req": ["id","name","abbrev","hp","atk","heal"],           "pk": "id"},
-	"cards":       {"req": ["id","name_key","cost","uses","cast_method","target","cast_range","area","keyword","effect","description_key","scope","pool","card_type","card_cat","excl_group","charge_max"], "pk": "id"},
+	"cards":       {"req": ["id","name_key","cost","uses","cast_method","target","cast_range","area","keyword","effect","description_key","scope","pool","card_type","card_cat","excl_group","charge_max","upgrade_id"], "pk": "id"},
 	"game_config": {"req": ["key","value"],                                     "pk": "key"},
 	"const":       {"req": ["key","value","module","note"],                     "pk": "key"},
 	"lane_config": {"req": ["lane_id","name","max_pilots","mid_col","mid_row"], "pk": "lane_id"},
-	"players":     {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards","salary","rarity","starter","main_mechs"], "pk": "id"},
+	"players":     {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","skill_id","is_mob","pilot_cards","salary","rarity","starter","main_mechs","mech_pref"], "pk": "id"},
 	"pilot_skills": {"req": ["id","key","name_key","role","type","p1","p2","keyword","description_key"], "pk": "id"},
 	"mechs":       {"req": ["id","name_key","role","hp","atk","presence"],          "pk": "id"},
 	"mech_passives": {"req": ["id","mech_id","key","name_key","p1","p2","keyword","description_key"], "pk": "id"},
-	"mech_cards":    {"req": ["id","mech_id","name_key","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description_key"], "pk": "id"},
+	"mech_cards":    {"req": ["id","mech_id","name_key","count","cost","cast_method","target","cast_range","area","keyword","charge_max","effect","trigger","description_key","upgrade_id"], "pk": "id"},
 	"teams":       {"req": ["id","name_key","short_name_key","budget","facility_level","staff_ids","manual_areas","desc_key","map_id"], "pk": "id"},
 	"intl_teams":   {"req": ["id","name_key","short_name_key"],                         "pk": "id"},
-	"intl_players": {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs"], "pk": "id"},
+	"intl_players": {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs","mech_pref"], "pk": "id"},
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
 	"training_tiles": {"req": ["id","name_key","grade","shape","exp","effect"], "pk": "id"},
 	"scenarios":   {"req": ["id","name_key","salary_cap","desc_key"], "pk": "id"},
@@ -91,6 +91,8 @@ const TABLE_DEFS: Dictionary = {
 		"excl_group":  {"data_type": "text", "not_null": true},
 		# 충전 상한(`charge` 키워드를 단 카드만 읽는다, 그 밖에는 0) — mech_cards 와 같은 뜻.
 		"charge_max":  {"data_type": "int",  "not_null": true},
+		# Upgraded version of this card (a separate row, `+` name) — -1 = none. §15.
+		"upgrade_id":  {"data_type": "int",  "not_null": true},
 	},
 	"game_config": {
 		"key":   {"data_type": "text", "primary_key": true, "not_null": true},
@@ -140,6 +142,9 @@ const TABLE_DEFS: Dictionary = {
 		"starter":   {"data_type": "int",  "not_null": true},
 		# 주력 메크 — `mechs.id` 를 `|` 로(M4). 런 시작 숙련도가 높게 시작한다.
 		"main_mechs": {"data_type": "text", "not_null": true},
+		# Mech preference, best first (`mechs.id` joined by `|`, up to 11) — run-start mastery
+		# levels are dealt from the front by pilot rank (§15 A). Empty = derived from main_mechs.
+		"mech_pref":   {"data_type": "text", "not_null": true},
 	},
 	"pilot_skills": {
 		"id":          {"data_type": "int",  "primary_key": true, "not_null": true},
@@ -221,6 +226,8 @@ const TABLE_DEFS: Dictionary = {
 		# 번개) / death_hand(공격 명령).
 		"trigger":     {"data_type": "text", "not_null": true},
 		"description_key": {"data_type": "text", "not_null": true},
+		# Upgraded version of this card (a separate row, `+` name) — -1 = none. §15.
+		"upgrade_id":  {"data_type": "int",  "not_null": true},
 	},
 	"teams": {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
@@ -256,6 +263,8 @@ const TABLE_DEFS: Dictionary = {
 		"pilot_cards": {"data_type": "text", "not_null": true},
 		# 주력 메크 — `mechs.id` 를 `|` 로(M4). 런 시작 숙련도가 높게 시작한다.
 		"main_mechs":  {"data_type": "text", "not_null": true},
+		# Mech preference, best first — same as `players.mech_pref` (§15 A).
+		"mech_pref":   {"data_type": "text", "not_null": true},
 	},
 	# 포지션별 파일럿 카드 슬롯 3칸. 각 칸은 `|` 로 이은 카드 분류(`cards.card_cat`)
 	# 목록이고, 그 칸은 분류가 하나라도 겹치는 카드 중에서 채운다. 위치 키는

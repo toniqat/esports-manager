@@ -750,3 +750,152 @@ host 서비스: `show_toast` · `refresh_currency` · `rebuild_bar` · `relayout
 - 기반 소유(`GameManager` · `SaveSystem` · `MatchFlow.gd` · `csv_to_db.gd` · `StaffSystem` · `TraitSystem` ·
   `ProfileManager`)는 고치지 않는다. 꼭 필요하면 최소 수정 + 보고.
 - `const.csv` 는 **자기 접두사 키를 맨 끝에 추가**만(T2 는 기존 값 수정). `data/game.db` · `*.translation` 은 커밋하지 않는다.
+
+## 15. Pilot growth rework — §15 contract (2026-10-09, parallel work)
+
+Four features built in parallel worktrees on top of one base commit. Every rule below was confirmed
+with the user (Q&A 2026-10-09); a body detail that disagrees with §15.0 loses.
+
+### 15.0 Decisions (Q&A)
+
+**A. Mech mastery + mech upgrades**
+- Mastery stays **points 0..100** per `pilot × mech` (`season_state.mech_mastery`), shown as a **level 0..5**
+  like trust: level = number of thresholds reached among `MASTERY_LV_1..5` = 20 / 40 / 60 / 80 / 100
+  (progress bar inside the level). Old tiers (미숙/보통/능숙/마스터, `MASTERY_TIER_*`, `MASTERY_BONUS_*`) are removed.
+- Effect: while riding that mech, the pilot's **4 stats** `field_hit · field_eva · engage_hit · engage_eva`
+  (not the two growth stats) × (1 + pct): Lv0 **−20 %**, Lv1 0, Lv2 +5, Lv3 +10, Lv4 +15, Lv5 +20
+  (`MASTERY_PCT_0..5`). Roster copies only (`MatchFlow._finalize_rosters`, as today).
+- Gains: weekly research (`settle_week`), training tile `M`, Saturday **story** (D, via `MechMastery.gain`).
+  **Match-played gain is removed** (`MASTERY_GAIN_MATCH`, `record_match`).
+- Run-start value by **pilot rank** (my 5 = collection rank 1..5, named AI = stars, mobs = rank 1):
+  rank 1: Lv1 ×2 · rank 2: Lv2 ×1, Lv1 ×2 · rank 3: Lv3 ×1, Lv2 ×2, Lv1 ×2 ·
+  rank 4: Lv3 ×2, Lv2 ×2, Lv1 ×5 · rank 5: Lv3 ×3, Lv2 ×3, Lv1 ×5. Everything else Lv0 (0 pts).
+  Level n start = threshold points (Lv1 20, Lv2 40, Lv3 60). Counts live in const (`MASTERY_RANK<r>_L<l>`).
+- Which mechs: new column **`mech_pref`** in `players.csv` / `intl_players.csv` = up to 11 mech ids, `|`-joined,
+  best first. Rank counts are dealt from the front (Lv3s, then Lv2s, then Lv1s). Generated once by script:
+  `main_mechs` → other own-role mechs → other roles (deterministic per pilot id); designers edit afterwards.
+- **Mech upgrades (돌파형)**: reaching Lv3 / Lv4 / Lv5 on a mech unlocks one upgrade step each
+  (cumulative): a passive upgrade or a mech-card upgrade. New table `mech_upgrades.csv`
+  (`mech_id, level, target (passive|card), card_id, value_key/params, desc_key`). Content = drafted by agent A
+  for all mechs (numbers mostly), the user tunes it.
+- Upgraded **cards** are separate rows with an `upgrade_id` link (see C) — mech cards in `mech_cards.csv`
+  (new column `upgrade_id`).
+- BattleSim learns each pilot's mech level via `match_ctx.mech_levels = {"<pilot_id>": level}` (both teams).
+
+**B. Training level + limit break (run only)**
+- `season_state.training_level` per my pilot: level **1..5** (start 1) + training EXP.
+- Training EXP = the **sum of stat EXP** that pilot earned on the training board that day (stat growth
+  itself unchanged). EXP needed for the next level grows with the level (`TLEVEL_EXP_1..4`).
+- When the bar is full: EXP stops accumulating and a **limit-break event** fires at that day's **evening**
+  (forced, like an incident, before the incident). VN dialogue: the pilot worries about stalling; the manager
+  picks **1 of 3 offered goals**. The goal **stays until achieved** (judged on a sliding window of my last
+  matches since the goal was set). Achieved → level +1 and **all 6 stats + `LIMIT_BREAK_STAT_GAIN`**.
+  Lv5 is the cap (no more EXP, no event).
+- Goal pool (pos filter):
+  1. 2 matches: K/D/A ≥ 4 — `(k + a) / max(d, 1)` summed over both (all)
+  2. 2 matches: kills rank 1 in the game, each match (not support)
+  3. 2 matches: 3 objectives taken within turn 50, summed (jungle, mid)
+  4. 1 match: MVP (all)
+  5. 2 matches: score earned rank 1, each match (not support)
+  6. 2 matches: turret damage rank 1, each match (not support, not jungle)
+  7. 2 matches: shield absorbed + HP healed (`care`) rank 1, each match (support only)
+- Focus training "한계돌파" (D) finishes an active goal immediately (`LimitBreak.complete`).
+- Match stats needed (B adds to `PilotData` + `BattleSim.build_pilot_stats`): `turret` (damage to turrets),
+  `score` (score earned, `add_score`), `obj` (objectives taken, `[turn, …]` or count within `LIMIT_BREAK_OBJ_TURN`).
+
+**C. Awakening (깨달음) + card loadout**
+- `season_state.awakening`: gauge per my pilot (percent points, may exceed 100). Sources: training day,
+  story / incident clauses, focus training, … (`Awakening.add_gauge`). On reaching ≥ 100: the event fires
+  **right there** on the week screen (dim + pause + awakening FX), gauge −100 (130 → 30).
+- Choose 1 of 3: **card upgrade** / **card swap** / **add preset** (preset only at training level ≥ 2 and
+  while the pilot has < 2 extra presets).
+  - Upgrade: show the 3 cards of a preset (tabs to switch preset) that are not upgraded yet; tap one →
+    its upgraded version previews above → confirm. Run-only, that pilot, that preset only.
+  - Swap: 3 random candidates (pool = `pool = 1` cards whose `scope` allows the position; not held by the
+    pilot in that preset, no duplicates, `excl_group` respected) on top, the preset's 3 cards below; pick one
+    of each → bottom-right confirm. One swap. An upgraded card swapped out is lost as such.
+  - Add preset: 3 candidate presets (3 cards each, same pool rules) → pick one. Max **2 extra presets**
+    (base + 2). Extra presets can be upgraded / swapped like the base one.
+- Upgraded pilot cards = separate `cards.csv` rows (`pool = 0`, name with "+") linked by new column
+  `upgrade_id` on the base row. Agent C drafts the "+" rows for every `pool = 1` card.
+- Loadout: `season_state.loadouts = {"<pid>": {"presets": [[card_id ×3], …], "active": int}}` (card ids may be
+  "+" ids). Base preset = the pilot's run pilot cards (`GameManager.pilot_card_ids_for`). The active preset is
+  chosen **after ban/pick, right before the match starts** (where mech assignment can still change).
+  `PilotLoadout.apply_to(state, pd)` writes the active preset into the roster copy's `pilot_cards`.
+
+**D. Visit (방문) — afternoon rework**
+- The afternoon "면담" is renamed **방문**. Tap a spot on the base map; when 2+ askable pilots stand there,
+  pick one. Askable = not away (`AfternoonAway.can_request`). One visit per afternoon (as today).
+- After the visit, 3 options:
+  - **집중 훈련** (focus training), spends **coach points**: 공격성 (field_hit + engage_hit) ·
+    신중함 (field_eva + engage_eva) · 운영력 (field_hit + field_eva) · 전투력 (engage_hit + engage_eva) ·
+    성장력 (atk_growth + hp_growth) · 한계돌파 (only while a limit-break goal is active → completes it).
+    Courses give stat EXP (+ training EXP, + awakening gauge).
+  - **이야기** (story) = the old interview event pool, extended: Mon–Fri about that morning's training —
+    choice to take +stress for **+50 % of today's stat EXP** again (`STORY_TRAIN_BONUS_PCT`), or **−2× today's
+    training stress**; Saturday: mastery gain for the pilot's ban/pick mech; Sunday: about that day's match.
+    Stories move trust / stress / awakening gauge, optionally training EXP / mastery (new mental clauses).
+  - **외출** (outing): unchanged conditions (trust level ≥ `TRUST_OUTING_LEVEL`), bigger stress relief, next
+    training bonus, counts for the true ending.
+- **Coach points**: granted each week start = `COACH_POINTS_BASE + COACH_POINTS_PER × effective training stat`
+  (`StaffSystem`), no carry-over. Course costs `FOCUS_COST_*`; 한계돌파 costs more.
+- **Sunday** of a match: STADIUM → PRESS → **AFTERNOON (visit)** → EVENING.
+- Morning talk (훈련 소감, incl. `talk_pair`) **stays**.
+
+### 15.1 State keys (`season_state`, string keys, numbers read with `int()`)
+| Key | Owner | Shape |
+|---|---|---|
+| `mech_mastery` | A | unchanged shape `{"<pid>": {"<mech_id>": int 0..100}}` |
+| `training_level` | B | `{"<pid>": {"level": int 1..5, "exp": int, "goal": {} \| {id, since_match: int, progress…}, "offer": [goal ids], "event_day": int}}` |
+| `awakening` | C | `{"<pid>": int gauge}` + `awakening_pending: [pid…]` |
+| `loadouts` | C | `{"<pid>": {"presets": [[int ×3], …], "active": int}}` |
+| `coach_points` | D | `int` (this week) |
+| `mental.days["<d>"].evening` | D | `action` gains `"visit"` sub-actions: `{action: "focus"\|"story"\|"outing"\|"pass", …}` |
+
+### 15.2 Interfaces (stubs in the base commit — keep the signatures)
+```
+TrainingLevel (features/season/training/TrainingLevel.gd, B)
+  init_run(state) · level(state, pid) -> int · exp_of(state, pid) -> int · exp_need(state, pid) -> int
+  is_capped(state, pid) -> bool          # bar full, waiting for a limit break (or Lv5)
+  add_exp(state, pid, amount) -> int     # applied amount (0 when capped)
+  on_training_day(state, rows)           # TrainingBoard.apply_day_training hook (row.exp = that day's EXP)
+LimitBreak (features/season/training/LimitBreak.gd, B)
+  pending_event(state, day) -> int       # pid whose limit-break dialogue must open this evening, -1 none
+  session(state, pid) -> Dictionary      # VN view dict (lines, choices = 3 goal texts, previews)
+  choose_goal(state, pid, idx) -> Dictionary   # outcome view
+  goal_active(state, pid) -> bool · goal_text(state, pid) -> String
+  complete(state, pid) -> Dictionary     # level +1, stats + gain (focus training / goal met)
+  record_match(state, pending_match)     # SeasonHub hook, after RunStats.record_match
+Awakening (features/season/awakening/Awakening.gd, C)
+  init_run(state) · gauge(state, pid) -> int · add_gauge(state, pid, amount, source := "") -> void
+  next_pending(state) -> int             # pid with a pending awakening, -1 none (week screen polls)
+  on_training_day(state, rows) · on_match(state, pending_match)
+AwakeningView (features/season/awakening/, C) — static create(); open(pid); signal closed
+PilotLoadout (features/season/awakening/PilotLoadout.gd, C)
+  init_run(state) · presets(state, pid) -> Array · active(state, pid) -> int · set_active(state, pid, idx)
+  apply_to(state, pd: PlayerData)        # MatchFlow._finalize_rosters hook (my pilots only)
+MechMastery (A) — keeps gain(state, pid, mech, amount); adds level_of(state, pid, mech) -> int,
+  level_progress(...) -> float, pct_for_level(l) -> float, mech_levels_ctx(state, rosters) -> Dictionary
+```
+Hooks wired in the base commit: `GameManager.start_run` → `TrainingLevel.init_run`, `Awakening.init_run`,
+`PilotLoadout.init_run`; `TrainingBoard.apply_day_training` → `TrainingLevel.on_training_day`,
+`Awakening.on_training_day`; `SeasonHub._consume_pending_match_result` → `LimitBreak.record_match`,
+`Awakening.on_match`; `MatchFlow._finalize_rosters` → `PilotLoadout.apply_to`.
+The **week screen** (`WeekProgressView`, D) polls `Awakening.next_pending` after each state change and opens
+`AwakeningView`; at the evening it asks `LimitBreak.pending_event` first and plays `LimitBreak.session` in the
+existing `VnDialogueView` (overlay kind `limit_break`).
+
+### 15.3 const.csv key prefixes (append at the end; the merge takes the line union)
+A `MASTERY_*` · B `TLEVEL_*`, `LIMIT_BREAK_*` · C `AWAKEN_*`, `LOADOUT_*` · D `VISIT_*`, `FOCUS_*`, `COACH_*`, `STORY_*`.
+
+### 15.4 File ownership
+| Agent | Owns |
+|---|---|
+| A | `features/season/mastery/**`, `features/match_flow/ban_pick/**` (mastery parts), `MatchFlow.gd` (mastery parts, `match_ctx.mech_levels`), `features/battle_sim/mech/**`, `MechSkillSystem`, `data/csv/mech_cards.csv`, new `mech_upgrades.csv`, `players.csv` / `intl_players.csv` `mech_pref`, `WeekProgressView._mastery_text` only |
+| B | `TrainingLevel.gd`, `LimitBreak.gd`, `features/season/training/**` (level display), `features/battle_sim/` match counters (`PilotData`, `build_pilot_stats`, turret / score / objective hooks), `features/season/run_stats/**` if needed, limit-break Draft flows under `narrative/` |
+| C | `features/season/awakening/**` (new), `data/csv/cards.csv` (+ rows, `upgrade_id`), ban/pick preset picker (new scene, a hook in `BanPickController` before the match start), `GameManager.pilot_card_ids_for` if needed |
+| D | `features/season/week/**`, `features/season/mental/**`, `features/season/staff/**` (coach points), `narrative/**` (story flows), `addons/draft_import/**`, `SeasonHub` Sunday-afternoon routing |
+Shared, edit in place but minimally: `SeasonPilotCard` / `SeasonPilotDetail` (B adds training level, C adds the
+gauge + presets — separate rows), `data/l10n/src/*.csv` (own domain rows; generated files are rebuilt after merge),
+`data/csv/const.csv` (append only). **Never commit** `data/game.db`, `data/l10n/generated/*`, `*.translation`,
+`mental_events.csv` / `mental_texts.csv` / `data/draft/*` (regenerated after merge).

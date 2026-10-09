@@ -308,6 +308,10 @@ func start_run(run_setup: Dictionary) -> String:
 	QuirkSystem.init_run(season_state)
 	FinanceSystem.init_run(season_state, team_id)
 	MentalSystem.init_run(season_state)
+	# §15 — training level, awakening gauge, card loadouts (after the rank / card setup above).
+	TrainingLevel.init_run(season_state)
+	Awakening.init_run(season_state)
+	PilotLoadout.init_run(season_state)
 	return ""
 
 

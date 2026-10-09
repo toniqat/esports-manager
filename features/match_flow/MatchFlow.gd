@@ -353,6 +353,8 @@ func _finalize_rosters(p_roster: Array, e_roster: Array) -> void:
 			if pd == null:
 				continue
 			PilotMods.apply_to(s, pd)
+			# §15 C — the active card preset (my pilots only; others untouched).
+			PilotLoadout.apply_to(s, pd)
 			MechMastery.apply_to(s, pd)
 			QuirkSystem.apply_to(s, pd)
 			# Last: shaken (위축) scales the stats the mods above already moved.

@@ -66,6 +66,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `quirk/` | 기벽 — run-only pilot passives | `features/season/quirk/README.md` |
 | ↳ `finance/` | Weekly budget, facilities, allocation, special spending | `features/season/finance/README.md` |
 | ↳ `mental/` | Trust, stress (`StressSystem`), morning talk (훈련 소감 · 합동 훈련 pair), interviews, outings, evening incidents, choice preview, `PilotMods` — event data authored in `narrative/` (Draft) | `features/season/mental/README.md` |
+| ↳ `awakening/` | 깨달음 (awakening) gauge + 3-way pick, pilot card loadouts (presets, upgraded `+` cards) — §15 C | `features/season/awakening/README.md` |
 | `features/match_flow/` | PREP → BAN_PICK → BattleSim handoff (`match_ctx`), cheat menu | `features/match_flow/README.md` |
 | ↳ `match_prep/` | Opponent intel / analysis tiers | `features/match_flow/match_prep/README.md` |
 | ↳ `ban_pick/` | Ban / pick, mech assignment, `MechDetailPanel` | `features/match_flow/ban_pick/README.md` |
@@ -91,7 +92,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 ### Docs (`docs/`)
 | File | Read when |
 |---|---|
-| `outgame_dev_plan.md` | Outgame milestones and **parallel-work contracts** (§10 M1·M2, §11 M3~M7, §12 M8~M10, §13 task list, §14 §13 contract) |
+| `outgame_dev_plan.md` | Outgame milestones and **parallel-work contracts** (§10 M1·M2, §11 M3~M7, §12 M8~M10, §13 task list, §14 §13 contract, §15 pilot growth rework) |
 | `mobile_safe_area.md` | Placing / moving any UI |
 | `ios_testbuild.md` | iOS CI build, `.ipa` download |
 | `run_balance.md` | Score / currency / EXP formula derivation (run sim) |

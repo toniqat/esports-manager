@@ -19,7 +19,6 @@ const FACILITIES: Array = ["train_field", "train_engage", "train_growth"]
 ## Owner of course lines no research row grants (Basic Training I) — the growth
 ## facility also researches Basic Training II~IV, so the whole basic line is its.
 const DEFAULT_FACILITY: String = "train_growth"
-const BODY_SCENE: String = "res://features/season/facility/research/UI_Comp_TrainingResearchBody.tscn"
 
 static var _line_fac: Dictionary = {}   # course line → facility id (built from research rows)
 static var _line_fac_built: bool = false
@@ -69,9 +68,8 @@ static func on_complete(state: Dictionary, row: Dictionary, _target: String) -> 
 	return {"text_key": L.RESEARCH_TRAINING_NOTE_GAIN, "args": {"tile": tile, "count": int(g["count"])}}
 
 
-## Sheet section: the facility's occupant → its course EXP multiplier, then each course
-## line this facility researches with its ladder (grade · facility level) and what the
-## run owns of it (`TrainingResearchBody`).
+## Facility screen body: the facility's research rows as course cards with a per-week
+## progress bar, select on tap, owned courses modal (`TrainingResearchBody`).
 static func make_body(state: Dictionary, fid: String) -> Control:
 	if not FACILITIES.has(fid):
 		return null

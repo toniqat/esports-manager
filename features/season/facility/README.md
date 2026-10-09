@@ -14,7 +14,7 @@ Tuning numbers live only in `data/csv/const.csv` (keys below) and the data CSVs 
 | `FrontBody.gd` + `UI_View_FrontBody.tscn` | Front body (no research): cap rule + every other facility's level |
 | `ResearchBubble.gd` + `UI_Comp_ResearchBubble.tscn` | Map speech bubble per facility (hub: tappable, week screen: read-only) |
 | `research_ring.gdshader` | Icon masked to a circle as a radial progress bar (bubble) |
-| `research/TrainingResearch*` · `research/UI_Comp_TrainingResearch*` | Kind `training` handler + body |
+| `research/TrainingResearch*` · `research/UI_*_TrainingResearch*` | Kind `training` handler + body (research cards) + owned courses modal |
 | `research/IntelResearch*` · `research/UI_Comp_IntelResearchBody.tscn` | Kind `intel` handler + body (+ `rank(state, team_id)`) |
 | `research/MechResearch.gd` | Kind `mech` handler; body = `mastery/MechLabBody` |
 | `research/PersonnelResearch.gd` | Kind `personnel` handler (auto); body = `staff/PersonnelBody` |
@@ -245,7 +245,8 @@ The facility is in `ResearchSystem.AUTO_KINDS` — `ensure_auto` keeps `scout` a
 
 ## TrainingResearch (`research/TrainingResearch.gd`, kind `training`)
 Files: `research/TrainingResearch.gd` (handler + course→facility map), `research/TrainingResearchBody.gd` +
-`UI_Comp_TrainingResearchBody.tscn`, `UI_Comp_TrainingResearchLine.tscn` — *body being reworked (2026-10-09).*
+`UI_View_TrainingResearchBody.tscn` (body), `research/TrainingResearchCard.gd` + `UI_Comp_TrainingResearchCard.tscn`
+(one research card), `research/TrainingResearchOwned.gd` + `UI_View_TrainingResearchOwned.tscn` (owned courses modal).
 
 - **Rows** (`research.csv`, `facility` = `train_*`): one row per training tile except Basic Training I (`T01`,
   owned from the start) — every other tile in `training_tiles.csv` is granted by exactly one row. `p1` = tile id.
@@ -268,4 +269,22 @@ Files: `research/TrainingResearch.gd` (handler + course→facility map), `resear
   `TrainingTile.training_exp_mult(FacilitySystem.stat_value(state, fid))`. `TrainingBoard.exp_mult_table` uses it
   per cell — details in `features/season/training/README.md` "Training stat — per facility". Other helpers:
   `FACILITIES`, `ladder(fid)`.
-- l10n: rows `research_training.<rid>.name/desc`; code keys `research_training.block.*` · `.note.*` · `.body.*`.
+- **Body** (`TrainingResearchBody`, UI rework 2026-10-09 by the user): no "진행 중" line, no row description, no
+  ladder section. The facility's rows (CSV order) as `TrainingResearchCard`s in a **3-column grid scrolling inside
+  the body** (card height from the scene: ≈ 4.5 rows in the 1540 px slot of a 1080×1920 screen, more rows on long
+  phones). A row is **hidden** when it gives nothing any more (`row_available` blocked = line owned higher, or a
+  finished non-repeatable basic row) unless it is the active one; below `min_level` it is faded with `Lv n 필요`.
+  Card: the course thumbnail in the training-board look (`training/UI_Comp_TrainingCourseCard`, cap = owned copies
+  of exactly that tile `×n` / `∞` / `미보유`), a status line (`n주 연구` · active `n주 남음` (`weeks_left`;
+  `연구 중` when no rate) · active-but-blocked `정지됨`), and the progress bar **split into `weeks` segments**
+  (segment i = `clamp(progress × weeks − i, 0, 1)`, `progress` = `ResearchSystem.progress`). Active card =
+  `SelectableCardOn`. Tap a card = `ResearchSystem.select(state, fid, rid, "")` (HUB only — `Hit` disabled
+  otherwise, refusals → `message`) → `changed` + refill. Tap a thumbnail = the course info popover
+  (`training/UI_View_TrainingCoursePopover`, instanced in the body outside the scroll, below the thumbnail or
+  above it; `%InfoCatcher` closes it on any tap). Bottom bar action `보유 중인 훈련 코스` → `TrainingResearchOwned`
+  (CanvasLayer modal, dim: every owned course (`TrainingCourses.owned_tile_ids`) as a `TrainingCourseCard`,
+  5 columns, scroll capped to the safe area, tap = the same popover, close button / dim tap closes).
+  `TrainingResearchBody.cap_of(state, tile)` · `place_popover(pop, at, bounds)` are shared with the modal.
+  F6 previews: body (`train_field` Lv2, two courses owned, 사격 훈련 II active at 45 %), card, owned modal.
+- l10n: rows `research_training.<rid>.name/desc` (the `desc` cells are no longer shown); code keys
+  `research_training.block.*` · `.note.*` · `.card.*` · `.owned.title`; scene `.training_research_owned.sub`.

@@ -1,0 +1,131 @@
+[gd_scene load_steps=4 format=3 uid="uid://csmrdttu466ql"]
+
+[ext_resource type="Script" path="res://features/season/facility/research/TrainingResearchCard.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://hufggc2gsct7" path="res://features/season/training/UI_Comp_TrainingCourseCard.tscn" id="3_course"]
+
+[node name="TrainingResearchCard" type="PanelContainer"]
+editor_description = "One research card of a training facility body (TrainingResearchBody %Grid, 3 columns): the course thumbnail in the training-board card look (tap = info popover), a status line, and the progress bar split into one segment per research week. Code switches SelectableCard / SelectableCardOn (active row) and fades %Content for a level-locked row."
+custom_minimum_size = Vector2(0, 322)
+offset_right = 312.0
+offset_bottom = 322.0
+size_flags_horizontal = 3
+theme = ExtResource("2_theme")
+theme_type_variation = &"SelectableCard"
+script = ExtResource("1_script")
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchCard.gd _ready() · fill()
+Whole-card tap target = select this research (HUB only; disabled otherwise or when the facility level is too low)."
+layout_mode = 2
+focus_mode = 0
+flat = true
+
+[node name="Content" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchCard.gd fill()
+Faded (modulate) when the facility level is below the row's min level."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="ThumbBox" type="CenterContainer" parent="Content/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="TrainingCourseCard_Thumb" parent="Content/VBox/ThumbBox" instance=ExtResource("3_course")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchCard.gd fill()
+The course in the training-board card look (grade band · owned count · shape · name)."
+layout_mode = 2
+
+[node name="ThumbHit" type="Button" parent="Content/VBox/ThumbBox/TrainingCourseCard_Thumb"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchCard.gd _ready()
+Tap on the thumbnail = the course's info popover (always enabled)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Status" type="Label" parent="Content/VBox"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TrainingResearchCard.gd fill()
+Weeks of research · weeks left (active) · paused · facility level needed; code switches the label variation."
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "3주 남음"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="Bar" type="HBoxContainer" parent="Content/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchCard.gd fill()
+One segment per research week (code duplicates the first Seg to the row's weeks); each Seg's Fill anchor_right = that week's share of the progress."
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Seg" type="Panel" parent="Content/VBox/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Content/VBox/Bar/Seg"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Seg2" type="Panel" parent="Content/VBox/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Content/VBox/Bar/Seg2"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.4
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Seg3" type="Panel" parent="Content/VBox/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Content/VBox/Bar/Seg3"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.0
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"

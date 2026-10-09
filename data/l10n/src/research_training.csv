@@ -65,9 +65,10 @@ tx_EBFDNYKE96,research_training.block.owned_higher,active,Training research bloc
 tx_6WVG8N4C08,research_training.note.gain,active,Research toast note: one course copy added,,,{tile} +1 (보유 {count}),{tile} +1 (owned {count}),draft,f8f6c4fa
 tx_V9NPEPYYS2,research_training.note.upgrade,active,Research toast note: course line upgraded,,,{from} → {tile} (보유 {count}),{from} → {tile} (owned {count}),draft,42918791
 tx_5QB65MDX49,research_training.note.basic,active,Research toast note: basic course upgraded,,,빈 칸 훈련 → {tile},Empty cells now train {tile},draft,d489014f
-tx_AC1WCSB0X8,research_training.body.title,active,Facility sheet training body: section title (scene text),,,훈련 코스 연구,Course Research,draft,1962d2dd
-tx_V93GKWZPM0,research_training.body.stat,active,Facility sheet training body: occupant + EXP multiplier of this facility's courses,,,{name} 담당 · 훈련 {value} → 이 훈련장 코스 EXP ×{mult},{name} · training {value} → this facility's courses EXP ×{mult},draft,25003b71
-tx_88S9T5ZDNW,research_training.body.owned,active,Facility sheet training body: owned level + count of a line,,,보유 {tile} ×{count},Own {tile} ×{count},draft,57e1f0e8
-tx_3TCS926866,research_training.body.owned_all,active,Facility sheet training body: basic line (unlimited),,,보유 {tile} · 빈 칸 전부,Own {tile} · every empty cell,draft,8633d5ec
-tx_EWD5MBCCEY,research_training.body.not_owned,active,Facility sheet training body: line not owned,,,미보유,Not owned,draft,e7ff5073
-tx_PN5J2CCXY4,research_training.body.step,active,Facility sheet training body: one research step = course grade + facility level needed,,,{grade} Lv{level},{grade} Lv{level},draft,44e85a16
+tx_S4PDAQDXKH,research_training.card.weeks,active,Training facility research card status: research length in weeks (idle row),,,{weeks}주 연구,{weeks}-week research,draft,5c403312
+tx_91QM7A45ZW,research_training.card.weeks_left,active,"Training facility research card status: active row, week ends left at the current rate",,,{weeks}주 남음,{weeks} {plural:weeks|{tx_HZJA6JHW21}|{tx_RE3J5S0400}} left,draft,72c4602b
+tx_R2D1QEASCG,research_training.card.active,active,Training facility research card status: active row with no rate (nobody seated),,,연구 중,Researching,draft,9c6009a2
+tx_NQ55SJ1GZZ,research_training.card.paused,active,Training facility research card status: active row that is blocked now (progress kept),,,정지됨,Paused,draft,dc885fa7
+tx_2K7K3FW47B,research_training.card.need_level,active,Training facility research card status: facility level needed for this row,,,Lv {level} 필요,Needs Lv {level},draft,e3066c31
+tx_4Y88DKP9E7,research_training.owned.title,active,Training facility bottom bar button + owned courses modal title,,,보유 중인 훈련 코스,Owned Courses,draft,61abc18c
+tx_F3AZ6WY1P2,research_training.training_research_owned.sub,active,UI_View_TrainingResearchOwned.tscn Root/SafeArea/Card/VBox/Sub text,,,훈련 보드에 놓을 수 있는 코스입니다. 코스를 누르면 설명을 봅니다.,Courses you can place on the training board. Tap one to see its details.,draft,794d621c

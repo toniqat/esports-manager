@@ -1404,7 +1404,7 @@ darkened like the old role badge). Replaces the per-screen texts ("韮膘护" / "氙
 
 - **Used by**: `PilotThumb` 路 `DraftSlot` 路 `CollectionCell` (top-left of the art), `CollectionDetailSheet`
   (`PilotThumb.add_position_badge`), `DraftDetailPanel` header, `SeasonPilotCard` (hub 路 week),
-  `MasteryPilotRow`, `RunResultPilotRow`, `IntelPilotRow`, `ShopShardRow`, `EndingView` roster, BattleSim
+  `MechLabCard`, `RunResultPilotRow`, `IntelPilotRow`, `ShopShardRow`, `EndingView` roster, BattleSim
   `MvpView` and the victory panel's MVP row (`UI_View_BattleHud.tscn` `%PositionBadge_MvpPosition`).
 - **Look**: the root attaches `OutgameTheme.tres` itself, so the badge looks the same inside dark battle scenes;
   variation `PositionBadgePanel`. Width = the widest of the five abbreviations at the current size, so text placed

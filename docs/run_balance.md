@@ -57,7 +57,7 @@ Phase reached (share of runs that **ended** there; C = clear):
 | 50 (60 runs) | 1.7% | 5.0% | 0 | 5.0% | 3.3% | 3.3% | 81.7% | 4.58 | 5 | 45.3 | 46.1 | 30.4 |
 
 At AI parity (edge 1) 81% of runs die in PRESEASON: making the top 4 of 8 and then winning
-SF + F is ≈ 0.5 × 0.25. A full campaign is 33 weeks and 50 player matches.
+SF + F is ≈ 0.5 × 0.25. A full campaign is 36 weeks and 36 player matches (one a week; consts below were tuned for the old 50 — retune pending).
 
 Edge 4.0, pooled 600 runs (`e4.0` + two verification batches), per end class:
 

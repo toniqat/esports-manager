@@ -1,0 +1,155 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "531389a4-88e1-5bca-8858-7ef63bb9d304": {
+      "id": "531389a4-88e1-5bca-8858-7ef63bb9d304",
+      "name": "P11",
+      "start": "d569e4b7-605b-5d9b-86a6-25375e12d010",
+      "end": "0b9e0107-6042-5772-8150-d9887e655966",
+      "nodes": {
+        "d569e4b7-605b-5d9b-86a6-25375e12d010": {
+          "localId": 1,
+          "type": "Start",
+          "next": "f60bd84c-3390-5bd7-bfe2-bf25e0082c02"
+        },
+        "0b9e0107-6042-5772-8150-d9887e655966": {
+          "localId": 2,
+          "type": "End"
+        },
+        "f60bd84c-3390-5bd7-bfe2-bf25e0082c02": {
+          "localId": 3,
+          "memoIds": [
+            "c49eff72-06e4-5102-b8a4-aabbd49c0f56"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_576HKVWRTP}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_576HKVWRTP}"
+                }
+              ]
+            }
+          },
+          "next": "8cf00cbb-6f9a-535d-9fd5-5ffb75f48866"
+        },
+        "8cf00cbb-6f9a-535d-9fd5-5ffb75f48866": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 승리 축하드립니다. 경기 내내 주도권을 놓치지 않았는데요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Congratulations on today's win. You never let go of the initiative."
+                }
+              ]
+            }
+          },
+          "next": "d50f8d18-9656-5968-b429-c9a4ea5bf0b2"
+        },
+        "d50f8d18-9656-5968-b429-c9a4ea5bf0b2": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "승리의 가장 큰 원동력은 무엇이었습니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "What was the biggest driver of the win?"
+                }
+              ]
+            }
+          },
+          "next": "b8e7f4b9-f68b-5775-b9b0-ff08852703ab"
+        },
+        "c49eff72-06e4-5102-b8a4-aabbd49c0f56": {
+          "localId": 6,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=win",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "f60bd84c-3390-5bd7-bfe2-bf25e0082c02"
+        },
+        "b8e7f4b9-f68b-5775-b9b0-ff08852703ab": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "c3c19241-638e-55e8-90f3-386af214845d",
+              "text": "선수들이 준비한 걸 그대로 보여 줬습니다.",
+              "next": "0b9e0107-6042-5772-8150-d9887e655966",
+              "attrs": {
+                "effects": "trust_all:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "The players showed exactly what we prepared."
+                }
+              }
+            },
+            {
+              "id": "e8c8c7ef-630c-5fff-a5f5-78f0f6d6b882",
+              "text": "밴픽에서 이미 이겼다고 봅니다.",
+              "next": "0b9e0107-6042-5772-8150-d9887e655966",
+              "attrs": {
+                "effects": "smod:tactics:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I think we had already won at ban/pick."
+                }
+              }
+            },
+            {
+              "id": "20671312-9e47-5851-b865-247408698619",
+              "text": "아직 보완할 점이 많습니다.",
+              "next": "0b9e0107-6042-5772-8150-d9887e655966",
+              "attrs": {
+                "effects": "ok>smod:mental:+1:1;ng>trust_all:-1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "We still have a lot to work on."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

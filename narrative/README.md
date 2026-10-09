@@ -39,7 +39,9 @@ Attributes are defined **per flow** in Draft (no project-wide definitions): dupl
 start a new one so the memo, attribute definitions and speaker picker come along.
 
 ## Kinds
-`interview` · `outing` (picked by `stage`) · `incident` (evening, forced) · `press` (weekly conference) ·
+`interview` · `outing` (picked by `stage`) · `incident` (evening, forced) · `press` (weekly conference, Sunday
+afternoon after the match — `cond` `last=win` / `last=loss` puts a question in the **result pool**, drawn with chance
+`PRESS_RESULT_POOL_CHANCE`; questions without it are the general pool) ·
 `talk` (morning talk right after training) · `talk_pair` (morning talk with the pilot who trained in the same
 tile — both appear, single-pilot clauses hit both). Morning-talk conds: `train=<colour>[,<colour>…]`,
 `ups>=N` / `ups<N` (stat points gained today), `stress>=N` / `stress<N`.

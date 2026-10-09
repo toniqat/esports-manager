@@ -1359,6 +1359,9 @@ func _build_assign_prompt() -> void:
 	_start_btn = _view.start_button
 	_start_btn.visible = true
 	_start_btn.disabled = true
+	# Saturday prep (split): the picks are stored and the match waits for Sunday.
+	if _mf != null and _mf.is_prep_only():
+		_start_btn.text = Loc.t(L.MATCH_FLOW_PICKS_DONE)
 
 
 # ── 배정 단계의 상세 팝업 ────────────────────────────────────────────────────

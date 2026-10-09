@@ -1,0 +1,305 @@
+{
+  "id": "7e6ffc36-d38b-5ff5-bfcb-cb80a7877e65",
+  "name": "P13",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "5744a79d-0518-5200-becb-d2401e618e55",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "78c53999-46a5-5ac9-b0f4-f466ddd60df0",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "11c4d30e-c875-5132-b29f-09290c172aae",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "7ac76346-cef9-5e2f-9e8d-ef9d145583f6",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "d5da8726-cd1d-57e0-92b9-6294a9b9519f",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "8df1919d-9211-5e6e-a8d0-3040c8b5176c",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "d70ecd95-f2af-51b5-9c63-c3953387d1e0",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "3478aa72-98fe-51c1-86cf-80bfeddb2f3b",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_J8VCATJ5GB}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_J8VCATJ5GB}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "9966e9d3-f5b3-56c0-a996-127b319f6a5c",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "기세가 좋습니다. 이 흐름을 다음 주까지 이어 갈 수 있을까요?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "You're on a roll. Can you carry this into next week?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "56b31411-e81f-5c8a-9ec6-c720b5ae7ab3",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 5,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "다음 상대도 만만치 않다는 평입니다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "People say the next opponent is no pushover either.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "966d1ec6-2417-5de9-8aa4-4eb8dfce7dfe",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 6,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6"
+        }
+      ],
+      "sharedValues": {
+        "5744a79d-0518-5200-becb-d2401e618e55": "press",
+        "78c53999-46a5-5ac9-b0f4-f466ddd60df0": -1,
+        "11c4d30e-c875-5132-b29f-09290c172aae": 0,
+        "7ac76346-cef9-5e2f-9e8d-ef9d145583f6": "last=win",
+        "d5da8726-cd1d-57e0-92b9-6294a9b9519f": 1
+      }
+    },
+    {
+      "id": "628b780a-ec84-5432-b73b-15d13916b81c",
+      "type": "Select",
+      "name": "Select",
+      "localId": 7,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "dff41477-d119-56f2-9440-0b1b56f99a86",
+          "text": "흐름이 왔을 때 밀어붙여야죠.",
+          "sharedValues": {
+            "8df1919d-9211-5e6e-a8d0-3040c8b5176c": "smod:mental:+1:1"
+          }
+        },
+        {
+          "id": "9120d144-6e52-5abc-8109-12b8cf2ac885",
+          "text": "들뜨지 않게 훈련부터 다시 하겠습니다.",
+          "sharedValues": {
+            "8df1919d-9211-5e6e-a8d0-3040c8b5176c": "trust_all:+1;stress_all:-2"
+          }
+        },
+        {
+          "id": "322d802e-51a2-5e6c-95c9-809c69b6c659",
+          "text": "다음 상대 생각은 내일 하겠습니다.",
+          "sharedValues": {
+            "8df1919d-9211-5e6e-a8d0-3040c8b5176c": "ok>trust_all:+2;ng>smod:tactics:-1:1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:dff41477-d119-56f2-9440-0b1b56f99a86": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "When the momentum comes, you push.",
+            "status": "progress"
+          }
+        },
+        "opt:9120d144-6e52-5abc-8109-12b8cf2ac885": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "We'll stay grounded and go back to training.",
+            "status": "progress"
+          }
+        },
+        "opt:322d802e-51a2-5e6c-95c9-809c69b6c659": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I'll think about the next opponent tomorrow.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "50f20fc2-9813-5105-9f06-64d2ad612885",
+      "source": "3478aa72-98fe-51c1-86cf-80bfeddb2f3b",
+      "target": "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "b94b185b-3319-5dc7-bcc2-4122ae6b892f",
+      "source": "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6",
+      "target": "9966e9d3-f5b3-56c0-a996-127b319f6a5c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "aef72bd7-cbda-5cda-b2d7-5f45fab99c13",
+      "source": "9966e9d3-f5b3-56c0-a996-127b319f6a5c",
+      "target": "56b31411-e81f-5c8a-9ec6-c720b5ae7ab3",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "6b482a84-f499-5e2b-8662-56f665f2fb59",
+      "source": "56b31411-e81f-5c8a-9ec6-c720b5ae7ab3",
+      "target": "628b780a-ec84-5432-b73b-15d13916b81c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "7471bc6b-4088-5b2f-8258-bb56e001f309",
+      "source": "628b780a-ec84-5432-b73b-15d13916b81c",
+      "target": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+      "sourcePort": "opt:dff41477-d119-56f2-9440-0b1b56f99a86",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "e779ea5c-ec4a-57e1-9c2c-9cda5670da3b",
+      "source": "628b780a-ec84-5432-b73b-15d13916b81c",
+      "target": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+      "sourcePort": "opt:9120d144-6e52-5abc-8109-12b8cf2ac885",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "460f862f-0684-582a-bbdf-ed80e35d99db",
+      "source": "628b780a-ec84-5432-b73b-15d13916b81c",
+      "target": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+      "sourcePort": "opt:322d802e-51a2-5e6c-95c9-809c69b6c659",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 8
+}

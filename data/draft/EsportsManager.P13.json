@@ -1,0 +1,155 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "7e6ffc36-d38b-5ff5-bfcb-cb80a7877e65": {
+      "id": "7e6ffc36-d38b-5ff5-bfcb-cb80a7877e65",
+      "name": "P13",
+      "start": "3478aa72-98fe-51c1-86cf-80bfeddb2f3b",
+      "end": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+      "nodes": {
+        "3478aa72-98fe-51c1-86cf-80bfeddb2f3b": {
+          "localId": 1,
+          "type": "Start",
+          "next": "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6"
+        },
+        "973a6aed-dbad-57d0-a56f-62ce2300bbf7": {
+          "localId": 2,
+          "type": "End"
+        },
+        "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6": {
+          "localId": 3,
+          "memoIds": [
+            "966d1ec6-2417-5de9-8aa4-4eb8dfce7dfe"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_J8VCATJ5GB}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_J8VCATJ5GB}"
+                }
+              ]
+            }
+          },
+          "next": "9966e9d3-f5b3-56c0-a996-127b319f6a5c"
+        },
+        "9966e9d3-f5b3-56c0-a996-127b319f6a5c": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "기세가 좋습니다. 이 흐름을 다음 주까지 이어 갈 수 있을까요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "You're on a roll. Can you carry this into next week?"
+                }
+              ]
+            }
+          },
+          "next": "56b31411-e81f-5c8a-9ec6-c720b5ae7ab3"
+        },
+        "56b31411-e81f-5c8a-9ec6-c720b5ae7ab3": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "다음 상대도 만만치 않다는 평입니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "People say the next opponent is no pushover either."
+                }
+              ]
+            }
+          },
+          "next": "628b780a-ec84-5432-b73b-15d13916b81c"
+        },
+        "966d1ec6-2417-5de9-8aa4-4eb8dfce7dfe": {
+          "localId": 6,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=win",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "8c0fbcd9-b740-504c-a0af-2c65dbcf59b6"
+        },
+        "628b780a-ec84-5432-b73b-15d13916b81c": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "dff41477-d119-56f2-9440-0b1b56f99a86",
+              "text": "흐름이 왔을 때 밀어붙여야죠.",
+              "next": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+              "attrs": {
+                "effects": "smod:mental:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "When the momentum comes, you push."
+                }
+              }
+            },
+            {
+              "id": "9120d144-6e52-5abc-8109-12b8cf2ac885",
+              "text": "들뜨지 않게 훈련부터 다시 하겠습니다.",
+              "next": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+              "attrs": {
+                "effects": "trust_all:+1;stress_all:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "We'll stay grounded and go back to training."
+                }
+              }
+            },
+            {
+              "id": "322d802e-51a2-5e6c-95c9-809c69b6c659",
+              "text": "다음 상대 생각은 내일 하겠습니다.",
+              "next": "973a6aed-dbad-57d0-a56f-62ce2300bbf7",
+              "attrs": {
+                "effects": "ok>trust_all:+2;ng>smod:tactics:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll think about the next opponent tomorrow."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

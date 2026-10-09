@@ -25,6 +25,9 @@ func enter(player_roster: Array, enemy_roster: Array, player_team_name: String, 
 	_mf.canvas.add_child(_view)
 	_view.fill(_mf.gm.season_state, player_roster, enemy_roster, player_team_name, enemy_team_name)
 	_view.start_pressed.connect(_on_start_pressed)
+	# Saturday prep (split): this button leads to the ban/pick, not to the match.
+	if _mf.is_prep_only():
+		_view.set_start_text(Loc.t(L.MATCH_FLOW_PREP_TO_BAN_PICK))
 
 
 func _on_start_pressed() -> void:

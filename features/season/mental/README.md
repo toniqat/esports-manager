@@ -33,6 +33,10 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   the level changes. It affects **only** outing unlock (level ≥ `TRUST_OUTING_LEVEL`) and the true ending — no match stat effect.
 - **A training day** (Mon–Fri) has three halves after the morning training (`features/season/week/README.md`):
   **morning talk** (one pilot, no outing) → **afternoon** (interview / outing) → **evening** (forced incident).
+  **Saturday** (after the stadium prep) and a plain weekend day have the **afternoon + evening** only (no
+  training, so no morning talk); the **Sunday of a match** has only the evening (its afternoon is the press
+  conference). The afternoon / evening / incident entry points accept any weekday 0..6
+  (`CalendarSystem.is_week_day`); the morning talk stays Mon–Fri.
 - **Morning talk** (훈련 소감, one per morning, record `days["<day>"].talk`): opened by `begin_morning` when the
   training result FX ends; `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` (Next
   without a talk). A pilot who trained in the **same placed tile** that day (week log row `group`, joint training)
@@ -47,20 +51,22 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   - Outing: only with a pilot at trust level ≥ `TRUST_OUTING_LEVEL`.
     Effects: the row's clauses (trust +, `pmod:all:+N:-1` until next match) + `outings[pid] += 1` +
     **next training day** EXP × `MENTAL_OUTING_EXP_MULT` for that pilot
-    (`training_exp_mult(state, pid, day)`; `TrainingBoard` (M3) multiplies it; a Friday outing
-    hits next Monday — `end_week` carries it over).
+    (`training_exp_mult(state, pid, day)`; `TrainingBoard` (M3) multiplies it; a Friday / Saturday /
+    Sunday outing hits next Monday — stored as day `TRAINING_DAYS`, `end_week` carries it over).
   - Interview / outing checks are judged with the manager's own mental.
-- **Incidents** roll once per Mon–Fri when that day's **evening** starts (`begin_dusk`, marker
+- **Incidents** roll once per day when that day's **evening** starts (`begin_dusk`, marker
   `days["<day>"].dusk = true`; the week screen calls it on the afternoon's Next and skips the evening when nothing
   happens):
   chance `MENTAL_INCIDENT_CHANCE × FinanceSystem.incident_mult(state) × TraitSystem.run_pct_mult(state, "incident_pct")`,
   target = a random pilot of mine.
   A pending incident opens its dialog by itself and must be answered; checks use
   `StaffSystem.effective_for_incident(state)` (staff can cover).
-- **Press** (once per week before training): one `press` row per week. Rows with `mention=mvp|worst`
+- **Press** (once per week, **Sunday afternoon after the match**): one `press` row per week. Rows with `mention=mvp|worst`
   target the last own match's MVP (if mine) / my lowest MVP-metric pilot (`run_stats.matches`);
   generic rows move whole-team trust or add a temporary manager-stat mod (`StaffSystem.add_mod`).
-  Checks use the manager's own mental.
+  **Result pools**: rows whose cond has a `last=win` / `last=loss` token are the result pool, the rest the
+  general pool; the result pool is drawn with chance `PRESS_RESULT_POOL_CHANCE` (an empty pool falls back
+  to the other) — `is_result_press(row)`. Checks use the manager's own mental.
 - **True ending** = run **clear** + outings with that pilot ≥ `TRUE_ENDING_OUTINGS`.
   `true_ending_pilots(state)` → `RunResult` puts `result.true_endings` on a clear only →
   `ProfileManager.apply_run_result` records `achievements[pid].true_ending`.
@@ -118,7 +124,7 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
 {
   "week": "<phase>-<phase_week>",   # week the fields below belong to ("" after end_week)
   # (old saves may still carry "interviews_used" / "outings_used": ignored, no longer written)
-  "days": {"<day 0..4>": {
+  "days": {"<day 0..6>": {
       "evening":  {action: "interview"|"outing"|"pass", pilot_id, event, choice (-1 = open), outcome{}},
       "incident": {} (rolled, none) | {event, pilot_id, choice (-1 = pending), outcome{}},
       "talk":     {} (morning open, nothing chosen) | {action: "talk"|"pass", pilot_id, partner_id (-1 = alone),

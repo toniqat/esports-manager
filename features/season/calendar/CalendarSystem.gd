@@ -4,11 +4,11 @@ extends Node
 # Week-by-week clock for the campaign. Owns calendar arithmetic and
 # SeasonPhase transitions. Reads/writes GameManager.season_state.
 #
-# The campaign progresses one week at a time — not one day. The internal
-# weekday is conceptually always Monday at the start of a week; matches
-# happen on Fri/Sat/Sun internally during the week but those days are never
-# exposed to the player. After advance_week() the calendar jumps 7 days
-# forward and phase_week increments.
+# The calendar date (`year/month/day/weekday`) always sits on the week's Monday;
+# the day the player is on is `season_state.week_day` (0 = Mon … 6 = Sun, owned
+# by the week screen). The player's one match of the week is on Sunday, its
+# ban/pick on Saturday. After advance_week() the calendar jumps 7 days forward
+# and phase_week increments.
 
 signal week_advanced(new_date: Dictionary)        # {year, month, day, weekday}
 signal phase_changed(new_phase: int)              # GameEnums.SeasonPhase
@@ -18,31 +18,37 @@ signal phase_changed(new_phase: int)              # GameEnums.SeasonPhase
 
 const DAYS_IN_MONTH: Array = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-# ── 한 주 안의 요일 ─────────────────────────────────────────────────────────
-# 주는 **월~일 이레**로 흐른다(`season_state["week_day"]` 0..6). 월~금 닷새는
-# 훈련판의 다섯 줄이고, **토·일 이틀이 경기일**이다. 그 두 날에 실제로 경기가
-# 배정되는지는 스케줄이 정한다 — 없으면 그날은 그냥 넘어간다.
+# ── Days of a week ───────────────────────────────────────────────────────────
+# A week runs Mon–Sun (`season_state["week_day"]` 0..6). Mon–Fri are the five rows of
+# the training board. **The player plays one match per week, always on Sunday**:
+#   Sat (PREP_DAY)  morning = stadium → match prep (intel · ban/pick); afternoon /
+#                   evening = a normal day without training
+#   Sun (MATCH_DAY) morning = stadium → the match; afternoon = press conference;
+#                   evening = a normal evening → week end
+# A week without a player match has plain Sat / Sun (no stadium, no press).
 const DAYS_PER_WEEK: int = 7
-## 훈련이 있는 요일 수 (월~금). 훈련판의 행 수(`TrainingBoard.ROWS`)와 같다.
+## Training days (Mon–Fri) = the training board's rows (`TrainingBoard.ROWS`).
 const TRAINING_DAYS: int = 5
-## 경기가 설 수 있는 요일 index → 경기일 번호(0 = 토, 1 = 일).
-const MATCH_DAYS: Dictionary = {5: 0, 6: 1}
-## 리그가 한 주에 소화하는 라운드 수. 토 한 라운드, 일 한 라운드.
-const ROUNDS_PER_WEEK: int = 2
+## Match prep (ban/pick) day — Saturday.
+const PREP_DAY: int = 5
+## Match day — Sunday.
+const MATCH_DAY: int = 6
+## Weekday index → match-day number. Sunday is the only match day, so this is 0
+## (`matchday` of every schedule / bracket entry is 0).
+const MATCH_DAYS: Dictionary = {MATCH_DAY: 0}
+## League rounds per week — one, on Sunday.
+const ROUNDS_PER_WEEK: int = 1
+## `season_state.schedule_format` — 2 = one round per week, Sunday matches (this table).
+## Old saves without the key (two rounds on Sat · Sun) are fixed on load by
+## `migrate_weekly_format`.
+const SCHEDULE_FORMAT: int = 2
 
-# Total length (in weeks) of each SeasonPhase. League phases run **2 rounds
-# per week** (토 · 일), so PRESEASON (single round-robin = 7 rounds) = 4 league
-# weeks — 마지막 주는 토요일 한 라운드만 남는다 — plus a 2-week playoff
-# (SF week + F week). MID/REGULAR (double round-robin = 14 rounds) = 7 league
-# weeks + 2 playoff. INTL phases are 3-week 8-team SE tournaments
-# (QF week + SF week + F week).
-#
-# **토너먼트는 여전히 주 1경기다** — 플레이오프도 국제대회도 한 주에 자기
-# 라운드 하나뿐이고, 그 경기는 **토요일**(matchday 0)에 선다. 8강·4강·결승은
-# 라운드 사이에 한 주씩 쉬어야 대진표가 읽히고, 리그처럼 이틀에 몰면
-# 3주짜리 국제대회가 이틀 반으로 줄어든다.
+# Total length (in weeks) of each SeasonPhase. Every league phase is a **single
+# round robin** (8 teams = 7 rounds) at **1 round per week** (Sunday) = 7 league
+# weeks, plus a 2-week playoff (SF week + F week). INTL phases are 3-week 8-team
+# SE tournaments (QF week + SF week + F week). Campaign = 9+3+9+3+9+3 = 36 weeks.
 const PHASE_WEEKS: Dictionary = {
-	GameEnums.SeasonPhase.PRESEASON:      6,    # 4 league + 2 playoff
+	GameEnums.SeasonPhase.PRESEASON:      9,    # 7 league + 2 playoff
 	GameEnums.SeasonPhase.PRESEASON_INTL: 3,    # QF / SF / F
 	GameEnums.SeasonPhase.MIDSEASON:      9,    # 7 league + 2 playoff
 	GameEnums.SeasonPhase.MIDSEASON_INTL: 3,
@@ -52,11 +58,19 @@ const PHASE_WEEKS: Dictionary = {
 
 # League-only weeks per phase (excludes the trailing 2 playoff weeks). Used
 # by LeagueManager to enumerate scheduled rounds, and to gate
-# is_league_match_week(). = ceil(rounds / ROUNDS_PER_WEEK).
+# is_league_match_week(). = rounds / ROUNDS_PER_WEEK.
 const LEAGUE_WEEKS: Dictionary = {
-	GameEnums.SeasonPhase.PRESEASON: 4,    # 7 rounds
-	GameEnums.SeasonPhase.MIDSEASON: 7,    # 14 rounds
-	GameEnums.SeasonPhase.REGULAR:   7,    # 14 rounds
+	GameEnums.SeasonPhase.PRESEASON: 7,    # 7 rounds (single RR)
+	GameEnums.SeasonPhase.MIDSEASON: 7,
+	GameEnums.SeasonPhase.REGULAR:   7,
+}
+
+## League weeks of the old 2-rounds-per-week format (format 1, no `schedule_format`
+## key) — only `migrate_weekly_format` reads it.
+const _OLD_LEAGUE_WEEKS: Dictionary = {
+	GameEnums.SeasonPhase.PRESEASON: 4,
+	GameEnums.SeasonPhase.MIDSEASON: 7,
+	GameEnums.SeasonPhase.REGULAR:   7,
 }
 
 # Playoff bracket spans (in weeks) at the tail of each league phase.
@@ -96,11 +110,17 @@ static func is_training_day(day: int) -> bool:
 	return day >= 0 and day < TRAINING_DAYS
 
 
-## 그 요일의 경기일 번호(0 = 토, 1 = 일). 경기가 설 수 없는 요일이면 -1.
+## Match-day number of a weekday (Sunday = 0), -1 when no match can stand on it.
 ## **경기가 실제로 배정돼 있는가는 이 함수가 답하지 않는다** — 그건 스케줄이
 ## 답한다(`LeagueManager.player_match_on_day` 등).
 static func matchday_of(day: int) -> int:
 	return int(MATCH_DAYS.get(day, -1))
+
+
+## A weekday index inside the week (0..6). Sat / Sun without training still have the
+## morning talk / afternoon / evening halves.
+static func is_week_day(day: int) -> bool:
+	return day >= 0 and day < DAYS_PER_WEEK
 
 
 # True iff the current phase is a league phase AND we're inside its league
@@ -199,3 +219,63 @@ func _advance_phase() -> void:
 	s["current_phase"] = cur + 1
 	s["phase_week"] = 1
 	phase_changed.emit(int(s["current_phase"]))
+
+
+# ── Old saves (format 1 → 2) ─────────────────────────────────────────────────
+## Brings a run saved under the old week format (2 league rounds per week on Sat · Sun,
+## 4 preseason league weeks, double round robin in MID / REGULAR, tournaments on
+## Saturday) onto the current one. No-op once `schedule_format` is
+## `SCHEDULE_FORMAT`. Called by `SaveSystem.load_run`; static, so no scene is needed.
+##
+## * In a league week: the **unplayed rounds** of the current phase are re-stamped one
+##   per week from the current `phase_week` (all on Sunday, `matchday` 0); rounds that no
+##   longer fit before the playoffs are voided (`played` true, `winner` -1, `phase_week` 0,
+##   `void` true — kept in the array so `pending_match.schedule_idx` stays valid).
+## * In a playoff week: `phase_week` and the playoff bracket move by the added league weeks.
+## * Matches keep their array index; tournament entries keep `matchday` 0 (now Sunday).
+static func migrate_weekly_format(state: Dictionary) -> void:
+	if int(state.get("schedule_format", 1)) >= SCHEDULE_FORMAT:
+		return
+	state["schedule_format"] = SCHEDULE_FORMAT
+	var phase: int = int(state.get("current_phase", 0))
+	var new_lw: int = int(LEAGUE_WEEKS.get(phase, 0))
+	var old_lw: int = int(_OLD_LEAGUE_WEEKS.get(phase, 0))
+	var sched: Array = state.get("match_schedule", [])
+	if new_lw <= 0:
+		return   # INTL phase — 3 weeks before and after
+	var pweek: int = int(state.get("phase_week", 1))
+	if pweek > old_lw:
+		# Playoff weeks: shift onto the new numbering, with the bracket.
+		var delta: int = new_lw - old_lw
+		state["phase_week"] = pweek + delta
+		var t: Variant = state.get("current_tournament", null)
+		if t is Dictionary and String((t as Dictionary).get("type", "")) == "PLAYOFF":
+			for m in ((t as Dictionary).get("bracket", []) as Array):
+				(m as Dictionary)["phase_week"] = int((m as Dictionary).get("phase_week", 0)) + delta
+		return
+	# League weeks: one unplayed round per week from this week on.
+	var rounds: Array = []
+	for m_raw in sched:
+		var m: Dictionary = m_raw
+		if int(m.get("phase", -1)) != phase or bool(m.get("played", false)):
+			continue
+		var r: int = int(m.get("round", 0))
+		if not rounds.has(r):
+			rounds.append(r)
+	rounds.sort()
+	for m_raw in sched:
+		var m: Dictionary = m_raw
+		if int(m.get("phase", -1)) != phase:
+			continue
+		m["matchday"] = 0
+		if bool(m.get("played", false)):
+			continue
+		var k: int = rounds.find(int(m.get("round", 0)))
+		var week: int = pweek + k
+		if week > new_lw:
+			m["played"] = true
+			m["winner"] = -1
+			m["phase_week"] = 0
+			m["void"] = true
+		else:
+			m["phase_week"] = week

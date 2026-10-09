@@ -1,0 +1,305 @@
+{
+  "id": "531389a4-88e1-5bca-8858-7ef63bb9d304",
+  "name": "P11",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "f75bcbae-20c3-5f3f-8ce4-f0f2620bc407",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "41fa57b5-fd71-58b4-8607-49ff526e278e",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "0638c1a3-5e77-55e6-a791-a1d4c9cda05d",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "e287e270-7e88-5ff3-8402-a794926eac30",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "29421239-999f-5bee-9d63-8a5d6ac4d3f9",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "1f4847f4-b531-53f3-aa74-be1cb4bc96c5",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "72635a0c-570f-50c4-95f1-89ee36cdce08",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "d569e4b7-605b-5d9b-86a6-25375e12d010",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "0b9e0107-6042-5772-8150-d9887e655966",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "f60bd84c-3390-5bd7-bfe2-bf25e0082c02",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_576HKVWRTP}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_576HKVWRTP}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "8cf00cbb-6f9a-535d-9fd5-5ffb75f48866",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "오늘 승리 축하드립니다. 경기 내내 주도권을 놓치지 않았는데요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Congratulations on today's win. You never let go of the initiative.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "d50f8d18-9656-5968-b429-c9a4ea5bf0b2",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 5,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "승리의 가장 큰 원동력은 무엇이었습니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "What was the biggest driver of the win?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "c49eff72-06e4-5102-b8a4-aabbd49c0f56",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 6,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "f60bd84c-3390-5bd7-bfe2-bf25e0082c02"
+        }
+      ],
+      "sharedValues": {
+        "f75bcbae-20c3-5f3f-8ce4-f0f2620bc407": "press",
+        "41fa57b5-fd71-58b4-8607-49ff526e278e": -1,
+        "0638c1a3-5e77-55e6-a791-a1d4c9cda05d": 0,
+        "e287e270-7e88-5ff3-8402-a794926eac30": "last=win",
+        "29421239-999f-5bee-9d63-8a5d6ac4d3f9": 1
+      }
+    },
+    {
+      "id": "b8e7f4b9-f68b-5775-b9b0-ff08852703ab",
+      "type": "Select",
+      "name": "Select",
+      "localId": 7,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "c3c19241-638e-55e8-90f3-386af214845d",
+          "text": "선수들이 준비한 걸 그대로 보여 줬습니다.",
+          "sharedValues": {
+            "1f4847f4-b531-53f3-aa74-be1cb4bc96c5": "trust_all:+2"
+          }
+        },
+        {
+          "id": "e8c8c7ef-630c-5fff-a5f5-78f0f6d6b882",
+          "text": "밴픽에서 이미 이겼다고 봅니다.",
+          "sharedValues": {
+            "1f4847f4-b531-53f3-aa74-be1cb4bc96c5": "smod:tactics:+1:1"
+          }
+        },
+        {
+          "id": "20671312-9e47-5851-b865-247408698619",
+          "text": "아직 보완할 점이 많습니다.",
+          "sharedValues": {
+            "1f4847f4-b531-53f3-aa74-be1cb4bc96c5": "ok>smod:mental:+1:1;ng>trust_all:-1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:c3c19241-638e-55e8-90f3-386af214845d": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "The players showed exactly what we prepared.",
+            "status": "progress"
+          }
+        },
+        "opt:e8c8c7ef-630c-5fff-a5f5-78f0f6d6b882": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I think we had already won at ban/pick.",
+            "status": "progress"
+          }
+        },
+        "opt:20671312-9e47-5851-b865-247408698619": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "We still have a lot to work on.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "6e7f551b-976e-5691-8b8e-12a0014c33a8",
+      "source": "d569e4b7-605b-5d9b-86a6-25375e12d010",
+      "target": "f60bd84c-3390-5bd7-bfe2-bf25e0082c02",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "085015de-1936-54df-a206-5fc95e62fc98",
+      "source": "f60bd84c-3390-5bd7-bfe2-bf25e0082c02",
+      "target": "8cf00cbb-6f9a-535d-9fd5-5ffb75f48866",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "eed97312-0de7-5e32-918c-3743b3bdbc49",
+      "source": "8cf00cbb-6f9a-535d-9fd5-5ffb75f48866",
+      "target": "d50f8d18-9656-5968-b429-c9a4ea5bf0b2",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "feedd285-41f9-54b3-a9c6-31597b28935b",
+      "source": "d50f8d18-9656-5968-b429-c9a4ea5bf0b2",
+      "target": "b8e7f4b9-f68b-5775-b9b0-ff08852703ab",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "7a6249b7-5ee9-5d4b-9f83-759c46485a3c",
+      "source": "b8e7f4b9-f68b-5775-b9b0-ff08852703ab",
+      "target": "0b9e0107-6042-5772-8150-d9887e655966",
+      "sourcePort": "opt:c3c19241-638e-55e8-90f3-386af214845d",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "bf97afb3-888c-592b-a04a-b028684b6853",
+      "source": "b8e7f4b9-f68b-5775-b9b0-ff08852703ab",
+      "target": "0b9e0107-6042-5772-8150-d9887e655966",
+      "sourcePort": "opt:e8c8c7ef-630c-5fff-a5f5-78f0f6d6b882",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "9a4d79ea-8785-5588-ba65-f158d3c01934",
+      "source": "b8e7f4b9-f68b-5775-b9b0-ff08852703ab",
+      "target": "0b9e0107-6042-5772-8150-d9887e655966",
+      "sourcePort": "opt:20671312-9e47-5851-b865-247408698619",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 8
+}

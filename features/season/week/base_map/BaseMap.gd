@@ -34,11 +34,20 @@ const SCENES: Array = [
 	"res://features/season/week/base_map/UI_Comp_BaseMap_WildHunt.tscn",
 ]
 
+## The weekend stadium (Sat prep / Sun match / Sun press), not a team map — not in
+## `SCENES`, so no `teams.csv` `map_id` can pick it.
+const STADIUM_SCENE: String = "res://features/season/week/base_map/UI_Comp_BaseMap_Stadium.tscn"
+
 const SPOT_NEUTRAL: String = "W"
 ## Growth spot (colours A / P share it); also a valid `facility` value.
 const SPOT_GROWTH: String = "G"
 const SPOT_DORM: String = "Dorm"
 const SPOT_ENTRANCE: String = "Entrance"
+## Stadium spots: team room (Saturday analysis / ban-pick), stage booths (Sunday match),
+## press room (Sunday afternoon).
+const SPOT_TEAM_ROOM: String = "TeamRoom"
+const SPOT_BOOTH: String = "Booth"
+const SPOT_PRESS: String = "Press"
 
 ## Training tile colour symbol → spot. Growth A / P share `G`; the amplifier's black
 ## self cell `K` and "no tile" (basic course) stand on the neutral spot.
@@ -63,6 +72,11 @@ const _PREVIEW_TOKEN: String = "res://features/season/week/UI_Comp_WeekMapPilot.
 static func create(map_id: int) -> BaseMap:
 	var idx: int = clampi(map_id, 0, SCENES.size() - 1)
 	return (load(String(SCENES[idx])) as PackedScene).instantiate() as BaseMap
+
+
+## Instantiates the stadium map (`STADIUM_SCENE`).
+static func create_stadium() -> BaseMap:
+	return (load(STADIUM_SCENE) as PackedScene).instantiate() as BaseMap
 
 
 ## Spot of a training colour symbol ("" = no tile → neutral).
@@ -169,7 +183,11 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var scene: PackedScene = load(_PREVIEW_TOKEN) as PackedScene
 	var entries: Array = []
-	var spots: Array = ["H", "E", "C", "D", "G", "M", "Q", "W", "W", "W", SPOT_DORM, SPOT_ENTRANCE]
+	# Every marker of this scene (team maps and the stadium alike), two extra on W.
+	var spots: Array = []
+	for m in get_node("Spots").get_children():
+		spots.append(String(m.name).trim_prefix("Spot_"))
+	spots.append_array([SPOT_NEUTRAL, SPOT_NEUTRAL])
 	for spot in spots:
 		var tok: Control = scene.instantiate() as Control
 		add_token(tok)

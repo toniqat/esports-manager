@@ -1,14 +1,15 @@
 class_name PressConferenceView
 extends Control
 
-# ── Press conference (right before the week starts) ──────────────────────────
+# ── Press conference (Sunday afternoon, after the week's match) ──────────────
 #
 # A messenger screen (`MessengerView`): the reporter speaks on the left, the
 # manager answers on the right. Lines appear one per tap, then 2–3 answers;
 # the picked answer is applied by `MentalSystem.resolve_press` (team trust ±,
 # a temporary manager-stat mod, or — for a question that mentions a pilot —
-# that pilot's trust ±), the effects show as chips, and a tap moves on to the
-# training plan via `SeasonHub.on_press_finished()`.
+# that pilot's trust ±), the effects show as chips, and a tap goes back to the
+# week (Sunday evening) via `SeasonHub.on_press_finished()`. The question reacts
+# to the match result (win / loss pools, `MentalSystem.press_session`).
 #
 # The question comes from `mental_events.csv` (kind `press`) — drawn once per
 # week by `MentalSystem.press_session` (seeded, stored in `mental.press`), so

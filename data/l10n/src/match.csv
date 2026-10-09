@@ -63,3 +63,5 @@ tx_WYAR6ATGZK,match.ban_pick.role.sniper,active,"Mech role tag on ban/pick filte
 tx_51C591RCKG,match.prep.warn_badge,active,PREP pilot card red badge on the opponent pilot the analyst flags,6,,경계 대상,Threat,draft,6074eff5
 tx_FVQ03DD4B3,match.prep.overall,active,PREP pilot card caption above the big stat total,,,종합,Overall,draft,f7c86d76
 tx_EE9ZYA8C66,match.prep.no_mech,active,PREP pilot card mech chip row when the pilot has no mech,,,주력 메크 없음,No main mech,draft,e22b486d
+tx_P5GRXR0NQ6,match.flow.prep_to_ban_pick,active,"Match prep bottom button on Saturday (prep only, the match is on Sunday)",,,밴픽 시작,Start Ban/Pick,draft,978f73c2
+tx_E2AWTQEV33,match.flow.picks_done,active,Ban/pick assign-step bottom button on Saturday: stores the picks and returns to the season (the match is on Sunday),,,준비 완료,Ready,draft,439878df

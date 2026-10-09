@@ -2,21 +2,22 @@
 
 Owns the regular-league round-robin schedule, AI-vs-AI auto resolution,
 standings table, and the playoff cut-line check (top 4 of 8 = playoffs).
-The campaign progresses 1 week at a time, and **each league week holds two
-rounds** — one round on Saturday (`matchday = 0`), one round on Sunday (`matchday = 1`).
+The campaign progresses 1 week at a time, and **each league week holds one
+round, on Sunday** (`matchday = 0` = `CalendarSystem.MATCH_DAY`) — the player plays
+exactly one match per league week (ban/pick on Saturday, the match on Sunday).
 
 ## Schedule shape
-- **PRESEASON** — single round-robin (7 rounds, 28 matches, each team
-  plays every other once). **4 league weeks** — the round count is odd, so the last week
-  ends with a single Saturday round and Sunday is empty.
-- **MIDSEASON / REGULAR** — double round-robin (14 rounds, 56 matches,
-  home-and-away). **7 league weeks**.
+- **Every league phase (PRESEASON · MIDSEASON · REGULAR)** — single round-robin (7 rounds,
+  28 matches, each team plays every other once). **7 league weeks**. (MID / REGULAR were a
+  double round robin before the one-match-per-week calendar.)
 - **\*\_INTL** phases — no league schedule. INTL bracket lives in
   `features/season/tournament/` (3-week 8-team SE).
-- **2 rounds = 1 week.** Round `r_idx` → `phase_week = r_idx / 2 + 1`,
-  `matchday = r_idx % 2`. Each match is stamped with the Monday of its
+- **1 round = 1 week** (`CalendarSystem.ROUNDS_PER_WEEK`). Round `r_idx` → `phase_week = r_idx + 1`,
+  `matchday = 0` (Sunday). Each match is stamped with the Monday of its
   phase_week so save metadata stays coherent — `weekday` stays 0 and the
-  day the match actually lands on is what `matchday` says.
+  day the match actually lands on is what `matchday` says. Generating a schedule also sets
+  `season_state.schedule_format = CalendarSystem.SCHEDULE_FORMAT` (old saves are migrated on load,
+  `calendar/README.md` "Old saves").
 - Schedule is generated lazily and idempotently:
   - `SeasonHub._show_hub()` calls `LeagueManager.ensure_phase_scheduled()`
     on every hub entry — covers the initial PRESEASON post-draft.
@@ -24,18 +25,17 @@ rounds** — one round on Saturday (`matchday = 0`), one round on Sunday (`match
     phase transition (MIDSEASON, REGULAR). INTL transitions are no-ops.
 
 ## Match-day flow
-- The player enters by pressing "경기 시작" (Start match) on **Sat / Sun of the week-progress
-  screen (시간 경과 화면)** (`SeasonHub.on_week_day_match_start` → MatchFlow → BattleSim). On return,
-  SeasonHub records the result and settles only **that match day's (경기일)** AI matches
-  (`_resolve_ai_for_matchday`).
+- The player does the ban/pick on **Saturday morning** (stadium, "경기 준비" →
+  `SeasonHub.on_week_day_match_prep` → MatchFlow PREP + BAN_PICK, picks stored) and plays on
+  **Sunday morning** ("경기 시작" → `SeasonHub.on_week_day_match_start` → BattleSim with those picks).
+  On return SeasonHub records the result and settles that match day's AI matches
+  (`_resolve_ai_for_matchday`); a Sunday without a player match settles them on its "확인".
 - `resolve_matchday(md)` does that work — it runs `simulate_ai_match()` on matches with
   `phase == current_phase && phase_week == current_phase_week && matchday == md` that do not
   involve the player team, and records the results.
   `md < 0` means the whole week (the sweep-up path of end of week (주 마감)). No-op when not a
   league week (`is_league_match_week()`).
 - `resolve_current_week()` remains as another name for `resolve_matchday(-1)`.
-- **Running per match day is the point** — running the whole week at once would put Sunday
-  results that haven't been played yet into the standings shown after Saturday's match.
 
 ## Standings
 - `season_state["league_standings"]` — `team_id (int) → {wins, losses}`.
@@ -69,12 +69,13 @@ Each entry in `season_state["match_schedule"]` is a Dictionary:
 {
   "phase":      GameEnums.SeasonPhase,
   "phase_week": int,                  # 1-indexed week within the phase
-  "matchday":   int,                  # 0 = Sat, 1 = Sun
+  "matchday":   int,                  # 0 = Sunday (the only match day; old saves: 0 Sat / 1 Sun)
   "round":      int,                  # round-robin round index
   "year":       int, "month": int, "day": int, "weekday": int,
   "team_a":     int, "team_b": int,
   "played":     bool,
   "winner":     int,                  # team_id or -1 if not played
+  "void":       bool,                 # optional — old-save round that no longer fit (played, winner -1, phase_week 0)
 }
 ```
 

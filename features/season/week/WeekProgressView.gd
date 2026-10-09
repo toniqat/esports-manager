@@ -38,8 +38,17 @@ extends Control
 # **이미 정산된 날은 다시 정산하지 않는다** — 경기를 치르고 같은 요일로 돌아와도,
 # 불러오기를 해도 같은 기록을 다시 그린다.
 #
-# **토·일**은 경기일이다(`CalendarSystem.MATCH_DAYS`). 그날 플레이어 경기가
-# 배정돼 있으면 아래 버튼이 **"경기 시작"** 이 되고, 그것을 누르면 MatchFlow 로 넘어간다.
+# ── Weekend (Sat · Sun) ── one player match per week, on Sunday ─────────────
+#   Sat STADIUM   stadium map; "경기 준비" → MatchFlow PREP + BAN_PICK (picks stored,
+#                 `SeasonHub.on_week_day_match_prep`), then AFTERNOON → EVENING on the
+#                 team map (no training, no morning talk).
+#   Sun STADIUM   stadium map; "경기 시작" → BattleSim with the Saturday picks
+#                 (`SeasonHub.on_week_day_match_start`) → standings → PRESS
+#                 (stadium map, "기자회견" → `SeasonHub.open_press`) → EVENING (team
+#                 map, the evening incident rolls by itself) → "주 마감 →".
+# A weekend day without a player match runs AFTERNOON → EVENING only. The weekend
+# stages are read from the records too (picks in `pending_match`, the week's result,
+# `MentalSystem.press_answered`, the afternoon / dusk records).
 #
 # ── 씬 ──────────────────────────────────────────────────────────────────────
 # **배치 · 스타일은 `UI_View_WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
@@ -62,8 +71,8 @@ const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp
 
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
 
-## Training-day half, read from the records (`_stage`).
-enum Stage { OFF, MORNING, RESULT, TALK, AFTERNOON, EVENING }
+## Day stage, read from the records (`_stage`). STADIUM / PRESS are weekend-only.
+enum Stage { OFF, MORNING, RESULT, TALK, AFTERNOON, EVENING, STADIUM, PRESS }
 
 # ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
 const MATCH_CARD_H: float = 168.0    # the player's match card (others: OTHER_MATCH_H)
@@ -164,6 +173,7 @@ func refresh() -> void:
 		return
 	_day = clampi(int(_gm.season_state.get("week_day", 0)), 0,
 			CalendarSystem.DAYS_PER_WEEK - 1)
+	_advance_weekend()
 	_refresh_rail()
 	_refresh_header()
 	_rebuild_list()
@@ -183,15 +193,21 @@ func refresh() -> void:
 					_gm.season_state, _day, "", -1))
 
 
-## Where the training day stands — read from the records, never stored on its own:
-## no `week_day_log[day]` = MORNING, settled without a talk record = RESULT, talk record
-## (`MentalSystem.morning_started`) = TALK, afternoon rolled (`AfternoonAway.started`) =
-## AFTERNOON, evening marked (`MentalSystem.dusk_started`) = EVENING. Match days = OFF.
-## Old saves reach the afternoon without a talk record: the morning talk is simply skipped.
+## Where the day stands — read from the records, never stored on its own.
+## Training days (Mon–Fri): no `week_day_log[day]` = MORNING, settled without a talk
+## record = RESULT, talk record (`MentalSystem.morning_started`) = TALK, afternoon rolled
+## (`AfternoonAway.started`) = AFTERNOON, evening marked (`MentalSystem.dusk_started`) =
+## EVENING. Old saves reach the afternoon without a talk record: the talk is skipped.
+## Weekend: STADIUM while the Saturday prep / Sunday match is open, PRESS until the
+## Sunday press conference is answered, then the afternoon / evening records.
 func _stage() -> int:
-	if not CalendarSystem.is_training_day(_day):
-		return Stage.OFF
 	var s: Dictionary = _gm.season_state
+	if not CalendarSystem.is_training_day(_day):
+		if _weekend_stage() != Stage.OFF:
+			return _weekend_stage()
+		if AfternoonAway.started(s, _day):
+			return Stage.EVENING if MentalSystem.dusk_started(s, _day) else Stage.AFTERNOON
+		return Stage.EVENING if MentalSystem.dusk_started(s, _day) else Stage.OFF
 	if not _week_log().has(_day):
 		return Stage.MORNING
 	if AfternoonAway.started(s, _day):
@@ -199,6 +215,43 @@ func _stage() -> int:
 	if MentalSystem.morning_started(s, _day):
 		return Stage.TALK
 	return Stage.RESULT
+
+
+## STADIUM / PRESS of a weekend day, else OFF. Needs the hub (F6 preview: OFF).
+func _weekend_stage() -> int:
+	if _hub == null:
+		return Stage.OFF
+	if _day == CalendarSystem.PREP_DAY and _hub.needs_match_prep(_day):
+		return Stage.STADIUM
+	if _day == CalendarSystem.MATCH_DAY:
+		if _hub.has_player_match_on_day(_day):
+			return Stage.STADIUM
+		if _hub.press_pending():
+			return Stage.PRESS
+	return Stage.OFF
+
+
+## Sunday after the match and the press: this week's match was played on Sunday.
+func _is_match_sunday() -> bool:
+	return _hub != null and _day == CalendarSystem.MATCH_DAY and _hub.player_result_this_week() != ""
+
+
+## Weekend days move on by themselves once nothing is left to decide: a weekend day
+## without stadium / press opens its afternoon (`AfternoonAway.begin`), and the Sunday
+## of a match, after the press, opens its evening (`MentalSystem.begin_dusk` rolls the
+## incident). Both are recorded and saved, so a reload lands on the same stage.
+func _advance_weekend() -> void:
+	if _hub == null or CalendarSystem.is_training_day(_day) or _weekend_stage() != Stage.OFF:
+		return
+	var s: Dictionary = _gm.season_state
+	if _is_match_sunday():
+		if not MentalSystem.dusk_started(s, _day):
+			MentalSystem.begin_dusk(s, _day)
+			_save("incident")
+		return
+	if not AfternoonAway.started(s, _day) and not MentalSystem.dusk_started(s, _day):
+		AfternoonAway.begin(s, _day)
+		_save("afternoon")
 
 
 ## 그날 훈련을 정산한다 (오전의 "다음"). **기록이 이미 있으면 아무것도 하지 않는다** —
@@ -321,10 +374,6 @@ func _rebuild_list() -> void:
 	_list_body.custom_minimum_size.x = _list_scroll.get_parent_area_size().x \
 			+ _list_scroll.offset_right - _list_scroll.offset_left
 
-	var md: int = CalendarSystem.matchday_of(_day)
-	if md >= 0:
-		_add_match_cards(md)
-
 	var stage: int = _stage()
 	if stage != Stage.OFF:
 		# Base map (pinned), then what the player still has to decide: the afternoon
@@ -337,11 +386,17 @@ func _rebuild_list() -> void:
 		_add_incident_card()
 		# The day's training results are shown on the map (rising texts) and in the
 		# bottom cards' stress change; the list only says when nothing was settled.
-		if stage != Stage.MORNING and (_week_log().get(_day, []) as Array).is_empty():
+		if CalendarSystem.is_training_day(_day) and stage != Stage.MORNING \
+				and (_week_log().get(_day, []) as Array).is_empty():
 			_add_note_card(Loc.t(L.SEASON_WEEK_NO_TRAINING_LOG))
-	elif md >= 0:
-		pass   # 주말 — 경기 카드가 이미 그 자리를 답했다
-	else:
+	# The round's matches: on Sunday (the match day), and on Saturday while the
+	# prep for them is open.
+	var md: int = CalendarSystem.matchday_of(_day)
+	if stage == Stage.STADIUM and _day == CalendarSystem.PREP_DAY:
+		md = CalendarSystem.matchday_of(CalendarSystem.MATCH_DAY)
+	if md >= 0:
+		_add_match_cards(md)
+	elif stage == Stage.OFF:
 		_add_note_card(Loc.t(L.SEASON_WEEK_NO_SCHEDULE))
 
 	# The end marker stays last: the separation before it is the gap under the last card.
@@ -372,7 +427,15 @@ func _add_map_section(stage: int) -> void:
 	_list_scroll.offset_top = _map_pin.offset_bottom \
 			+ float(_list_body.get_theme_constant("separation"))
 	var hint: String = Loc.t(L.SEASON_WEEK_MAP_HINT_MORNING)
-	if stage == Stage.RESULT:
+	if stage == Stage.STADIUM:
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_STADIUM_PREP if _day == CalendarSystem.PREP_DAY
+				else L.SEASON_WEEK_MAP_HINT_STADIUM_MATCH)
+	elif stage == Stage.PRESS:
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_PRESS)
+	elif stage == Stage.EVENING and not MentalSystem.incident_pending(s, _day) \
+			and MentalSystem.incident_session(s, _day).is_empty():
+		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_EVENING_QUIET)
+	elif stage == Stage.RESULT:
 		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_RESULT)
 	elif stage == Stage.TALK:
 		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_TALK_DONE if MentalSystem.talk_done(s, _day)
@@ -384,8 +447,10 @@ func _add_map_section(stage: int) -> void:
 		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_EVENING)
 	(section.get_node("%Hint") as Label).text = hint
 
-	var map: BaseMap = BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
-	map.name = "BaseMap_Team"
+	var stadium: bool = stage == Stage.STADIUM or stage == Stage.PRESS
+	var map: BaseMap = BaseMap.create_stadium() if stadium \
+			else BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
+	map.name = "BaseMap_Stadium" if stadium else "BaseMap_Team"
 	(section.get_node("%MapHolder") as Control).add_child(map)
 	map.size = BaseMap.DESIGN_SIZE
 
@@ -397,7 +462,7 @@ func _add_map_section(stage: int) -> void:
 	var names: Dictionary = {}
 	var groups: Dictionary = {}
 	var board: TrainingBoard = _board()
-	if board != null:
+	if board != null and CalendarSystem.is_training_day(_day):
 		colors = board.day_colors(_day)
 		names = board.day_tile_names(_day)
 		groups = board.day_groups(_day)
@@ -421,6 +486,8 @@ func _add_map_section(stage: int) -> void:
 			facility = String((groups.get(seat, {}) as Dictionary).get("facility", ""))
 		# The training's facility (joint training = one shared spot), else its colour's spot.
 		var spot: String = BaseMap.spot_of_facility(facility if facility != "" else color)
+		if stadium:
+			spot = _stadium_spot(stage)
 		var away: String = AfternoonAway.away_of(s, _day, pid) \
 				if stage == Stage.AFTERNOON or stage == Stage.EVENING else ""
 		if away == AfternoonAway.AWAY_DORM:
@@ -432,6 +499,14 @@ func _add_map_section(stage: int) -> void:
 		var hold: Control = token.get_node("%Portrait")
 		entries.append({"node": token, "spot": spot, "anchor": hold.position + hold.size * 0.5})
 	map.place_tokens(entries)
+
+
+## Where my pilots stand on the stadium map: the team room on Saturday (analysis and
+## ban/pick), the stage booths on Sunday morning, the press room after the match.
+func _stadium_spot(stage: int) -> String:
+	if stage == Stage.PRESS:
+		return BaseMap.SPOT_PRESS
+	return BaseMap.SPOT_TEAM_ROOM if _day == CalendarSystem.PREP_DAY else BaseMap.SPOT_BOOTH
 
 
 ## One pilot token on the map (`UI_Comp_WeekMapPilot.tscn`). No name under the portrait:
@@ -607,7 +682,7 @@ func _refresh_pilot_row() -> void:
 ## a self outing (`AfternoonAway.relief_of`) and the `stress` notes of the day's incident and
 ## afternoon action outcomes.
 func _day_stress_delta(pid: int) -> int:
-	if not CalendarSystem.is_training_day(_day):
+	if not CalendarSystem.is_week_day(_day):
 		return 0
 	var s: Dictionary = _gm.season_state
 	var total: int = 0
@@ -752,10 +827,18 @@ func _match_row(m: Dictionary, pid: int, tag: String, namer: Node) -> Dictionary
 	if is_player:
 		var opp: int = tb if ta == pid else ta
 		title = "vs  %s" % _team_name(namer, opp)
+	# Hint under my card: Saturday = today's prep, Sunday = straight to the match when the
+	# picks are stored (else the full PREP → ban/pick flow), afterwards = over.
+	var hint_key: String = L.SEASON_WEEK_HINT_DONE
+	if is_player and not played:
+		hint_key = L.SEASON_WEEK_HINT_START
+		if _day == CalendarSystem.PREP_DAY:
+			hint_key = L.SEASON_WEEK_HINT_PREP
+		elif _hub != null and _hub.match_picks_ready():
+			hint_key = L.SEASON_WEEK_HINT_MATCH_READY
 	return {
 		"player": is_player, "tag": tag, "title": title, "status": status, "result": result,
-		"hint": Loc.t(L.SEASON_WEEK_HINT_START if (is_player and not played)
-				else L.SEASON_WEEK_HINT_DONE),
+		"hint": Loc.t(hint_key),
 	}
 
 
@@ -852,22 +935,26 @@ func _refresh_action_button() -> void:
 	var stage: int = _stage()
 	_stage_btn.visible = stage != Stage.OFF
 	var stage_key: String = L.SEASON_WEEK_STAGE_MORNING
-	if stage == Stage.AFTERNOON:
+	if stage == Stage.AFTERNOON or stage == Stage.PRESS:
 		stage_key = L.SEASON_WEEK_STAGE_AFTERNOON
 	elif stage == Stage.EVENING:
 		stage_key = L.SEASON_WEEK_STAGE_EVENING
 	_stage_btn.text = Loc.t(stage_key)  # l10n-dynamic: season.week.stage.*
-	if _hub != null and _hub.has_player_match_on_day(_day):
-		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_START_MATCH)
+	if stage == Stage.STADIUM:
 		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
 		# 도로 둥글어져 이 칸만 화면에서 떠오른다. 갈아입은 뒤 인셋 몫을 다시 얹는다.
+		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_MATCH_PREP if _day == CalendarSystem.PREP_DAY
+				else L.SEASON_WEEK_BTN_START_MATCH)
 		_set_action_kind(&"BarDarkButton")
 		return
-	if stage != Stage.OFF:
+	if stage == Stage.PRESS:
+		_action_btn.text = Loc.t(L.TERM_ACTIVITY_PRESS)
+	elif _day >= CalendarSystem.DAYS_PER_WEEK - 1 and (stage == Stage.EVENING or stage == Stage.OFF):
+		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_END_WEEK)
+	elif stage != Stage.OFF:
 		_action_btn.text = Loc.t(L.UI_BUTTON_NEXT)
 	else:
-		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_END_WEEK if _day >= CalendarSystem.DAYS_PER_WEEK - 1
-				else L.UI_BUTTON_CONFIRM)
+		_action_btn.text = Loc.t(L.UI_BUTTON_CONFIRM)
 	_set_action_kind(&"BarPrimaryButton")
 
 
@@ -880,6 +967,18 @@ func _on_action_pressed() -> void:
 	if _overlay != null or (_skip_popup != null and _skip_popup.is_open()):
 		return
 	match _stage():
+		Stage.STADIUM:
+			if _hub == null:
+				return
+			if _day == CalendarSystem.PREP_DAY:
+				_hub.on_week_day_match_prep()
+			else:
+				_hub.on_week_day_match_start()
+			return
+		Stage.PRESS:
+			if _hub != null:
+				_hub.open_press()
+			return
 		Stage.MORNING:
 			_settle_day()
 			refresh()
@@ -922,7 +1021,7 @@ func _leave_day() -> void:
 	if _hub.has_player_match_on_day(_day):
 		_hub.on_week_day_match_start()
 		return
-	if CalendarSystem.is_training_day(_day) \
+	if CalendarSystem.is_week_day(_day) and AfternoonAway.started(_gm.season_state, _day) \
 			and not MentalSystem.evening_done(_gm.season_state, _day):
 		MentalSystem.begin_evening(_gm.season_state, _day, MentalSystem.ACTION_PASS, -1)
 	_hub.on_week_day_confirmed()
@@ -959,7 +1058,7 @@ func _on_skip_confirmed() -> void:
 
 ## The afternoon dialog was started but not answered (e.g. the game was reloaded).
 func _evening_open() -> bool:
-	if not CalendarSystem.is_training_day(_day):
+	if not CalendarSystem.is_week_day(_day):
 		return false
 	var e: Dictionary = MentalSystem.evening(_gm.season_state, _day)
 	return not e.is_empty() and String(e.get("action", "")) != MentalSystem.ACTION_PASS \

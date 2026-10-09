@@ -143,7 +143,7 @@ static func can_outing(state: Dictionary, pilot_id: int) -> bool:
 	return outing_unlocked(state, pilot_id)
 
 
-# ── Evening (one action per Mon–Fri) ─────────────────────────────────────────
+# ── Afternoon action (one per day; Mon–Sat, and a plain Sunday) ──────────────
 ## That weekday's evening record, or {} when nothing was chosen yet.
 ## `{action, pilot_id, event, choice(-1 = dialog open), outcome{}}`.
 static func evening(state: Dictionary, day: int) -> Dictionary:
@@ -159,7 +159,7 @@ static func evening_done(state: Dictionary, day: int) -> bool:
 ## when refused (trust gate, already used, pass). Re-calling on a day whose dialog
 ## is still open returns the same session (same event).
 static func begin_evening(state: Dictionary, day: int, action: String, pilot_id: int) -> Dictionary:
-	if not CalendarSystem.is_training_day(day):
+	if not CalendarSystem.is_week_day(day):
 		return {}
 	var rec: Dictionary = _day(state, day)
 	var e: Dictionary = rec.get("evening", {})
@@ -207,10 +207,10 @@ static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictiona
 		var o: Dictionary = state.get("outings", {})
 		o[str(pid)] = outings(state, pid) + 1
 		state["outings"] = o
-		# The next training day pays for the night out (Friday → next Monday,
-		# carried over by `end_week`).
+		# The next training day pays for the night out (Friday / Saturday / Sunday →
+		# next Monday = `TRAINING_DAYS`, carried over by `end_week`).
 		var fat: Dictionary = _mental(state).get("fatigue", {})
-		fat[str(pid)] = day + 1
+		fat[str(pid)] = mini(day + 1, CalendarSystem.TRAINING_DAYS)
 		_mental(state)["fatigue"] = fat
 		(out["notes"] as Array).append({"type": "outing", "count": outings(state, pid)})
 	e["choice"] = choice
@@ -372,7 +372,7 @@ static func _talk_session(t: Dictionary) -> Dictionary:
 ## Start the evening of `day`: mark it and roll the incident once. Returns the incident
 ## record ({} = a quiet evening).
 static func begin_dusk(state: Dictionary, day: int) -> Dictionary:
-	if not CalendarSystem.is_training_day(day):
+	if not CalendarSystem.is_week_day(day):
 		return {}
 	_day(state, day)["dusk"] = true
 	return ensure_incident(state, day)
@@ -382,12 +382,12 @@ static func dusk_started(state: Dictionary, day: int) -> bool:
 	return bool(_day(state, day).get("dusk", false))
 
 
-# ── Incidents (rolled when a weekday's evening starts) ───────────────────────
+# ── Incidents (rolled when a day's evening starts, any day of the week) ──────
 ## Roll that weekday's incident once (`begin_dusk`) (chance `MENTAL_INCIDENT_CHANCE` ×
 ## `FinanceSystem.incident_mult` × trait `incident_pct`, M8). Returns the incident record or {} (none).
 ## `{event, pilot_id, choice(-1 = unresolved), outcome{}}`.
 static func ensure_incident(state: Dictionary, day: int) -> Dictionary:
-	if not CalendarSystem.is_training_day(day):
+	if not CalendarSystem.is_week_day(day):
 		return {}
 	var rec: Dictionary = _day(state, day)
 	if rec.has("incident"):
@@ -436,10 +436,16 @@ static func resolve_incident(state: Dictionary, day: int, choice: int) -> Dictio
 	return out
 
 
-# ── Press conference (once per week, before training) ────────────────────────
+# ── Press conference (once per week, Sunday afternoon after the match) ───────
 ## This week's press session — drawn once and kept in `mental.press`.
 ## Rows with `mention=mvp|worst` target that pilot (and are skipped when there is
 ## no last match / no such pilot).
+##
+## **Result pools**: rows whose cond holds a `last=win` / `last=loss` token form the
+## result pool (only the one matching the last own match can hold); every other row is
+## the general pool. After a match the result pool is drawn with chance
+## `PRESS_RESULT_POOL_CHANCE` (const.csv), else the general pool; an empty pool falls
+## back to the other one.
 static func press_session(state: Dictionary) -> Dictionary:
 	var m: Dictionary = _mental(state)
 	var key: String = week_key(state)
@@ -449,7 +455,8 @@ static func press_session(state: Dictionary) -> Dictionary:
 				"pilot_id": int(p.get("pilot_id", -1))}
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _seed(state, -1, "press", 0)
-	var cands: Array = []
+	var result_pool: Array = []
+	var general_pool: Array = []
 	var targets: Dictionary = {}
 	for r_raw in MentalEvents.rows_of(MentalEvents.KIND_PRESS):
 		var r: Dictionary = r_raw
@@ -463,14 +470,29 @@ static func press_session(state: Dictionary) -> Dictionary:
 				continue
 		if not MentalEvents.cond_ok(state, r, target):
 			continue
-		cands.append(r)
+		if is_result_press(r):
+			result_pool.append(r)
+		else:
+			general_pool.append(r)
 		targets[String(r["id"])] = target
+	var cands: Array = general_pool
+	if not result_pool.is_empty() and (general_pool.is_empty()
+			or rng.randf() < ConstTable.num("PRESS_RESULT_POOL_CHANCE")):
+		cands = result_pool
 	var pick: Dictionary = MentalEvents.weighted_pick(state, cands, rng)
 	if pick.is_empty():
 		return {}
 	var pid: int = int(targets[String(pick["id"])])
 	m["press"] = {"week": key, "event": String(pick["id"]), "pilot_id": pid, "choice": -1, "outcome": {}}
 	return {"kind": MentalEvents.KIND_PRESS, "event": String(pick["id"]), "pilot_id": pid}
+
+
+## A press row of the result pool — its cond reacts to the last match (`last=win|loss`).
+static func is_result_press(r: Dictionary) -> bool:
+	for c in (r.get("cond", []) as Array):
+		if String((c as Dictionary).get("key", "")) == "last":
+			return true
+	return false
 
 
 ## This week's press question has been answered (the week's training plan is next).

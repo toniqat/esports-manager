@@ -1,0 +1,305 @@
+{
+  "id": "4aaca3a3-1560-5d36-b604-650428b6760d",
+  "name": "P14",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "eb96e7a4-fc67-5fbc-8b76-2663fe60d8bc",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "327f505d-7979-519f-974a-dd00c77f2d1a",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "bec25a7a-a011-56ef-9dbf-75934457cfb7",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "4260c608-3c73-5089-b1f2-c4261638f856",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "8ece3b0b-7695-5187-b2fb-0416d72b16cf",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "8773fb44-a705-528a-9020-ee053093e9c7",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "0c4ac82a-7478-50ec-9744-2c62c85ad902",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "4ccc42da-ae0e-5e8a-904a-6292076abf9e",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "5109dd17-4378-5a51-b687-071def746d6a",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "4b7dbefd-5741-583b-8bbd-cf06cde2925d",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_576HKVWRTP}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_576HKVWRTP}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "05eb8c63-c058-5c50-9f50-b2a50fa725be",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "아쉬운 패배입니다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "A disappointing loss.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "59408bf8-f0e3-5844-9733-4de69151659d",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 5,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "어디서부터 꼬였다고 보십니까?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Where do you think it started to go wrong?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "d4a0f975-064d-5c1b-b186-4f6e397bb42e",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 6,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "4b7dbefd-5741-583b-8bbd-cf06cde2925d"
+        }
+      ],
+      "sharedValues": {
+        "eb96e7a4-fc67-5fbc-8b76-2663fe60d8bc": "press",
+        "327f505d-7979-519f-974a-dd00c77f2d1a": -1,
+        "bec25a7a-a011-56ef-9dbf-75934457cfb7": 0,
+        "4260c608-3c73-5089-b1f2-c4261638f856": "last=loss",
+        "8ece3b0b-7695-5187-b2fb-0416d72b16cf": 1
+      }
+    },
+    {
+      "id": "a1f70528-15a9-5068-9830-8720209330e0",
+      "type": "Select",
+      "name": "Select",
+      "localId": 7,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "64ff1281-b0c5-5e7b-96df-ae4bf9b63248",
+          "text": "밴픽에서 제가 판단을 잘못했습니다.",
+          "sharedValues": {
+            "8773fb44-a705-528a-9020-ee053093e9c7": "trust_all:+2;smod:tactics:-1:1"
+          }
+        },
+        {
+          "id": "f765c68f-93ca-577a-b0dd-eacfe98191da",
+          "text": "교전 한두 번이 승부를 갈랐을 뿐입니다.",
+          "sharedValues": {
+            "8773fb44-a705-528a-9020-ee053093e9c7": "ok>smod:mental:+1:1;ng>stress_all:+3"
+          }
+        },
+        {
+          "id": "1fc9c82e-dec3-5286-b5c9-e4cc50fdce3b",
+          "text": "선수들 집중력이 부족했습니다.",
+          "sharedValues": {
+            "8773fb44-a705-528a-9020-ee053093e9c7": "trust_all:-2;smod:mental:+1:1"
+          }
+        }
+      ],
+      "translations": {
+        "opt:64ff1281-b0c5-5e7b-96df-ae4bf9b63248": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I made the wrong calls at ban/pick.",
+            "status": "progress"
+          }
+        },
+        "opt:f765c68f-93ca-577a-b0dd-eacfe98191da": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "One or two fights decided it, that's all.",
+            "status": "progress"
+          }
+        },
+        "opt:1fc9c82e-dec3-5286-b5c9-e4cc50fdce3b": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "The players lacked focus.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "86f70768-c558-532a-bef1-aad089ee6824",
+      "source": "4ccc42da-ae0e-5e8a-904a-6292076abf9e",
+      "target": "4b7dbefd-5741-583b-8bbd-cf06cde2925d",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "d51b9dc8-c843-5a99-8e8a-803d994431b5",
+      "source": "4b7dbefd-5741-583b-8bbd-cf06cde2925d",
+      "target": "05eb8c63-c058-5c50-9f50-b2a50fa725be",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "55b8180a-adb9-5faf-97ba-74351821c38a",
+      "source": "05eb8c63-c058-5c50-9f50-b2a50fa725be",
+      "target": "59408bf8-f0e3-5844-9733-4de69151659d",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "028e0632-6a1b-5e70-bd63-e38645f8e84f",
+      "source": "59408bf8-f0e3-5844-9733-4de69151659d",
+      "target": "a1f70528-15a9-5068-9830-8720209330e0",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "6b99784a-7711-5ea4-ad84-2a5192cab639",
+      "source": "a1f70528-15a9-5068-9830-8720209330e0",
+      "target": "5109dd17-4378-5a51-b687-071def746d6a",
+      "sourcePort": "opt:64ff1281-b0c5-5e7b-96df-ae4bf9b63248",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "308b06d0-2b19-5e13-987d-d4ed81216d42",
+      "source": "a1f70528-15a9-5068-9830-8720209330e0",
+      "target": "5109dd17-4378-5a51-b687-071def746d6a",
+      "sourcePort": "opt:f765c68f-93ca-577a-b0dd-eacfe98191da",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "61d39697-de83-597b-9d18-f04bd3796d6b",
+      "source": "a1f70528-15a9-5068-9830-8720209330e0",
+      "target": "5109dd17-4378-5a51-b687-071def746d6a",
+      "sourcePort": "opt:1fc9c82e-dec3-5286-b5c9-e4cc50fdce3b",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 8
+}

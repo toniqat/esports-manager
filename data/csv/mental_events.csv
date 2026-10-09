@@ -31,6 +31,11 @@ P07,press,-1,0,mention=worst,ok>trust:+5;ng>trust:+2|trust:+1|trust:-4;smod:ment
 P08,press,-1,0,mention=worst,trust:+4;smod:mental:-1:1|ok>trust:+1;ng>trust:-2,1
 P09,press,0,0,,smod:tactics:+1:1|trust_all:+2,1
 P10,press,1,0,,trust_all:+2|smod:mental:+1:1,1
+P11,press,-1,0,last=win,trust_all:+2|smod:tactics:+1:1|ok>smod:mental:+1:1;ng>trust_all:-1,1
+P12,press,-1,0,last=win;mention=mvp,trust:+4|trust_all:+1|ok>trust:+2;ng>trust:-3,1
+P13,press,-1,0,last=win,smod:mental:+1:1|trust_all:+1;stress_all:-2|ok>trust_all:+2;ng>smod:tactics:-1:1,1
+P14,press,-1,0,last=loss,trust_all:+2;smod:tactics:-1:1|ok>smod:mental:+1:1;ng>stress_all:+3|trust_all:-2;smod:mental:+1:1,1
+P15,press,-1,0,last=loss;mention=worst,trust:+4|ok>trust:+2;ng>stress:+5|trust:-3;smod:mental:+1:1,1
 T01,talk,-1,0,,trust:+2;stress:-3|ok>trust:+3;ok>pmod:all:+1:-1;ng>stress:+4,1
 T02,talk,-1,0,ups>=1,trust:+3;pmod:all:+1:-1|ok>pmod:all:+2:-1;ng>trust:-2,2
 T03,talk,-1,0,ups<1,ok>trust:+3;ok>stress:-5;ng>stress:+3|trust:+4|trust:-2,2

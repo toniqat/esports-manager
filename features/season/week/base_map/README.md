@@ -8,6 +8,7 @@ pilots stand on its spots.
 |---|---|
 | `BaseMap.gd` | `class_name BaseMap extends Control`, shared by every map scene. `create(map_id)` (index into `SCENES`), `spot_of_color(symbol)` (training colour → spot), `spot_of_facility(f)` (training facility: a spot name from `training_tiles.csv` `facility` or a colour symbol → spot), `spot_point(spot)`, `add_token(node)` / `clear_tokens()`, `place_tokens(entries)` (fan-out + separation + clamp). F6 preview: one token per spot named after it, three on `W` to show the fan-out |
 | `UI_Comp_BaseMap_<Name>.tscn` (12) | One map each: art + spot markers. `map_id` order = `SCENES` = the image numbering in `resources/images/base_map/` |
+| `UI_Comp_BaseMap_Stadium.tscn` | **Weekend stadium** (not a team map, not in `SCENES`): `BaseMap.create_stadium()` (`STADIUM_SCENE`). Placeholder art = flat `ColorRect` `Art` (`editor_description = "TODO: stadium art …"`) + three `Zone_*` blocks; spots `Spot_TeamRoom` (Saturday prep) · `Spot_Booth` (Sunday match) · `Spot_Press` (Sunday press) · `Spot_W` · `Spot_Entrance` |
 
 | `map_id` | Scene | Art |
 |---|---|---|
@@ -51,4 +52,7 @@ BaseMap_<Name> (Control DESIGN_SIZE, mouse Ignore, script BaseMap.gd)
   each other; tokens simply step aside.
 * Spot positions were first placed by eye on plausible buildings of each picture; tune them in the editor.
 * The week screen instances the map with `BaseMap.create`, names it `BaseMap_Team` and adds it to
-  `WeekMapSection` `%MapHolder`.
+  `WeekMapSection` `%MapHolder`. On the weekend `STADIUM` / `PRESS` stages it instances
+  `BaseMap.create_stadium()` instead (`BaseMap_Stadium`) and stands all five pilots on
+  `SPOT_TEAM_ROOM` (Saturday) / `SPOT_BOOTH` (Sunday morning) / `SPOT_PRESS` (Sunday afternoon).
+* The F6 preview of any map scene puts one token on every `Spot_*` marker of that scene (+ two on `W`).

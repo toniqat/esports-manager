@@ -43,6 +43,12 @@ func _ready() -> void:
 		_fill_preview()
 
 
+## Relabels the bottom bar (Saturday prep: "밴픽 시작" instead of the scene's "경기 시작").
+func set_start_text(text: String) -> void:
+	var start: Button = %Start
+	start.text = text
+
+
 func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
 		player_team_name: String, enemy_team_name: String) -> void:
 	%Matchup.text = "%s  vs  %s" % [player_team_name, enemy_team_name]

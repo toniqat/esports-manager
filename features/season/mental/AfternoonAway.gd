@@ -29,9 +29,10 @@ static func started(state: Dictionary, day: int) -> bool:
 
 
 ## Start the afternoon of `day`: roll once and record. A second call returns the
-## stored record untouched. Not a training day → {}.
+## stored record untouched. Outside the week (0..6) → {}. Saturday / a plain Sunday
+## have an afternoon too (no training that day).
 static func begin(state: Dictionary, day: int) -> Dictionary:
-	if not CalendarSystem.is_training_day(day):
+	if not CalendarSystem.is_week_day(day):
 		return {}
 	var rec: Dictionary = MentalSystem.day_record(state, day)
 	if rec.get(_KEY, null) is Dictionary:

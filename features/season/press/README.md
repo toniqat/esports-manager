@@ -1,16 +1,17 @@
 # Press conference (기자회견) (press)
 
-A **messenger screen** that opens once right before the week starts. `Screen.PRESS` in `SeasonHub`.
+A **messenger screen** that opens once a week, on **Sunday afternoon right after the match**.
+`Screen.PRESS` in `SeasonHub`. (It used to open right before the week started; that conference was
+removed — HUB now goes straight to TRAINING.)
 
 ```
-HubView "이번 주 시작 →"  →  PRESS  →  (pick an answer)  →  TRAINING
+Sunday match → standings "확인" → PRESS → (pick an answer) → WEEK (Sunday evening)
+                (or the week screen's "기자회견" when the run was reloaded in between)
 ```
-
-("이번 주 시작 →" = Start this week.)
 
 | File | Role |
 |---|---|
-| `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` |
+| `PressConferenceView.gd` | `class_name PressConferenceView extends Control` — the screen: draws this week's `MentalSystem.press_session` in a `MessengerView`, applies the answer with `MentalSystem.resolve_press`, then `SeasonHub.on_press_finished()` (→ the week's Sunday evening) |
 | `UI_View_PressConferenceView.tscn` | The screen scene: root (theme `OutgameTheme.tres`, PASS) + one `UI_View_MessengerView.tscn` instance `%MessengerView_Messenger` whose `outcome_hint` is set in the scene (key `ui.button.tap_to_continue` — "화면을 눌러 계속"). Created by `SeasonHub` with `PressConferenceView.create()` |
 | `MessengerView.gd` | `class_name MessengerView extends Control` — **shared messenger dialogue** (press conference; the week screen's interview / outing / incident use `mental/VnDialogueView` instead). Create with `MessengerView.create()` (`.new()` is an empty Control). API: `open(sub, title, portrait, lines, choices, previews = [])` (`previews[i]` = the chance + direction line under answer i, `MentalSystem.session_view(...).previews`) → signal `choice_picked(idx)` → `show_result(MentalEvents.outcome_view(state, outcome))` (display text — the stored outcome holds keys / note dicts only) / `show_outcome(reply_lines, notes, verdict)` → signal `closed`. `reveal_all()` shows every remaining line + the choices at once (previews / harnesses). `@export outcome_hint` = bottom hint after the outcome. Line grammar: plain = left speaker, `>text` = manager (right), `*text` = narration (see `features/season/mental/README.md`). |
 | `UI_View_MessengerView.tscn` | The **frame** (below): header, scroll, `%Log` column, `%Answers` block, hint |
@@ -92,15 +93,23 @@ something prepared." / "That question is a bit rude."; hint "Tap the screen to c
   choices appear at bottom right (`답변을 고르세요` (Choose an answer)).
 * Picking one appends that answer as a player bubble, applies it (`MentalSystem.resolve_press`),
   and shows the effects as centred chips (plus a `멘탈 판정 성공 / 실패` chip when the entry rolls a
-  check). The hint becomes `화면을 눌러 계속`; the next tap goes to the training plan via
+  check). The hint becomes `화면을 눌러 계속`; the next tap goes back to the week (Sunday evening) via
   `SeasonHub.on_press_finished()` — the player must be able to read what the answer did.
 
 ## Data (M7)
 
-Questions are `mental_events.csv` rows of kind `press`, their texts `mental_texts.csv` l10n keys (grammar: `features/season/mental/README.md`).
+Questions are `mental_events.csv` rows of kind `press`, their texts `mental_texts.csv` l10n keys (grammar: `features/season/mental/README.md`),
+authored in Draft (`narrative/`, folder 기자회견).
 The `@` line is the outlet shown in the header (`… · <outlet> 기자`). One question per week,
 drawn by `MentalSystem.press_session` (seeded per run + week, kept in `season_state.mental.press`) —
 reopening the screen in the same week shows the same question and a second answer is not applied.
+
+**Result-reactive pools** — the conference follows the week's match, so the question reacts to it:
+rows whose cond holds `last=win` / `last=loss` (the last own match, `run_stats.matches`) form the
+**result pool** (win: P11 · P12 (`mention=mvp`) · P13; loss: P04 · P14 · P15 (`mention=worst`)); every
+other row is the **general pool** (P01–P03, P05–P10). The result pool is drawn with chance
+`PRESS_RESULT_POOL_CHANCE` (const.csv), else the general pool; an empty pool falls back to the other
+(`MentalSystem.press_session` / `is_result_press`).
 Generic questions move whole-team trust (`trust_all`) or add a temporary manager-stat mod (`smod`);
 `mention=mvp|worst` questions name a pilot from the last own match and move that pilot's trust.
 

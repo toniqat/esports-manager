@@ -1,0 +1,305 @@
+{
+  "id": "bdf6291b-6a40-5aca-938a-21ca3ff6fa82",
+  "name": "P12",
+  "parentNodeId": null,
+  "folderId": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "3d85a9c9-825a-5fb0-9339-e38783996441",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "d1e73859-7d8e-58bc-a1b5-bd0d0f32ea43",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "1026b2c0-b95e-5833-97e9-be9cabf3a490",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "524bda6a-d34c-54f1-9bb3-68667930f260",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "efd313f0-e7c9-52f6-a13a-0cbb0c3f222b",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "ee6be43a-225a-503e-b6e0-320fe303d6bc",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "f497a5e8-ab34-5e36-ba2e-665ea6020e2a",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "434699d9-6e55-5af1-961e-2f770ef85f20",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "48a2d68c-3257-58d6-979a-9a6ce90f307b",
+      "type": "End",
+      "name": "End",
+      "localId": 2,
+      "x": 1540,
+      "y": 40
+    },
+    {
+      "id": "77f3d2c1-6a9e-5e07-8f9b-3bcb747ec479",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+      "content": "{tx_MH87R5EDPY}",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{tx_MH87R5EDPY}",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "ce678252-f8b5-5bfa-a371-f7a98ab09440",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "오늘 {name} 선수의 활약이 눈부셨습니다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{name} was dazzling today.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "bb0b9e2e-f819-5679-9dd9-d2c5d568069a",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 5,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+      "content": "따로 칭찬해 주실 말이 있을까요?",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Any special words of praise?",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "0552723d-9669-506f-8bdb-30967e2cc8eb",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 6,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "기자회견 이벤트 설정",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "77f3d2c1-6a9e-5e07-8f9b-3bcb747ec479"
+        }
+      ],
+      "sharedValues": {
+        "3d85a9c9-825a-5fb0-9339-e38783996441": "press",
+        "d1e73859-7d8e-58bc-a1b5-bd0d0f32ea43": -1,
+        "1026b2c0-b95e-5833-97e9-be9cabf3a490": 0,
+        "524bda6a-d34c-54f1-9bb3-68667930f260": "last=win;mention=mvp",
+        "efd313f0-e7c9-52f6-a13a-0cbb0c3f222b": 1
+      }
+    },
+    {
+      "id": "77231220-70e9-5ab1-a230-9d869a06aa0c",
+      "type": "Select",
+      "name": "Select",
+      "localId": 7,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "2404d5aa-a7c6-59ad-9278-57e06e39d9e4",
+          "text": "오늘의 주인공은 {name}입니다.",
+          "sharedValues": {
+            "ee6be43a-225a-503e-b6e0-320fe303d6bc": "trust:+4"
+          }
+        },
+        {
+          "id": "83691a56-7bd3-541c-ba91-b72e4dd232fc",
+          "text": "팀 전체가 함께 만든 승리입니다.",
+          "sharedValues": {
+            "ee6be43a-225a-503e-b6e0-320fe303d6bc": "trust_all:+1"
+          }
+        },
+        {
+          "id": "ce0fce18-96c9-5c34-a701-1f7ac6d5cc27",
+          "text": "이 정도는 당연히 해 줘야죠.",
+          "sharedValues": {
+            "ee6be43a-225a-503e-b6e0-320fe303d6bc": "ok>trust:+2;ng>trust:-3"
+          }
+        }
+      ],
+      "translations": {
+        "opt:2404d5aa-a7c6-59ad-9278-57e06e39d9e4": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Today belongs to {name}.",
+            "status": "progress"
+          }
+        },
+        "opt:83691a56-7bd3-541c-ba91-b72e4dd232fc": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "It was a win the whole team made together.",
+            "status": "progress"
+          }
+        },
+        "opt:ce0fce18-96c9-5c34-a701-1f7ac6d5cc27": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "That's only what I expect.",
+            "status": "progress"
+          }
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "3be9b7f6-bdf5-5cce-8347-21851ed3cd74",
+      "source": "434699d9-6e55-5af1-961e-2f770ef85f20",
+      "target": "77f3d2c1-6a9e-5e07-8f9b-3bcb747ec479",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "55b27f44-4185-5e50-83eb-be0ace80681b",
+      "source": "77f3d2c1-6a9e-5e07-8f9b-3bcb747ec479",
+      "target": "ce678252-f8b5-5bfa-a371-f7a98ab09440",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "ad803984-659b-5053-af51-c3ddc5cbfcbc",
+      "source": "ce678252-f8b5-5bfa-a371-f7a98ab09440",
+      "target": "bb0b9e2e-f819-5679-9dd9-d2c5d568069a",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "5832d09e-d825-518f-b7ad-601b5b84222d",
+      "source": "bb0b9e2e-f819-5679-9dd9-d2c5d568069a",
+      "target": "77231220-70e9-5ab1-a230-9d869a06aa0c",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "7e97e6e5-e192-59b7-aa30-e5c1f920bef2",
+      "source": "77231220-70e9-5ab1-a230-9d869a06aa0c",
+      "target": "48a2d68c-3257-58d6-979a-9a6ce90f307b",
+      "sourcePort": "opt:2404d5aa-a7c6-59ad-9278-57e06e39d9e4",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "d3a392a8-c71d-5b0d-8915-3adf6d26e12b",
+      "source": "77231220-70e9-5ab1-a230-9d869a06aa0c",
+      "target": "48a2d68c-3257-58d6-979a-9a6ce90f307b",
+      "sourcePort": "opt:83691a56-7bd3-541c-ba91-b72e4dd232fc",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "cb640e29-3bc6-53f5-b024-c15556d123e4",
+      "source": "77231220-70e9-5ab1-a230-9d869a06aa0c",
+      "target": "48a2d68c-3257-58d6-979a-9a6ce90f307b",
+      "sourcePort": "opt:ce0fce18-96c9-5c34-a701-1f7ac6d5cc27",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 8
+}

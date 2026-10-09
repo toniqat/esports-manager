@@ -1,0 +1,155 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "b9601b33-bb48-5007-a5b3-9ca46d5800ab": {
+      "id": "b9601b33-bb48-5007-a5b3-9ca46d5800ab",
+      "name": "P15",
+      "start": "d0c7542d-975c-598b-9f74-1a57eb105e2e",
+      "end": "0f88b867-d779-5eb4-bfea-797658befe6a",
+      "nodes": {
+        "d0c7542d-975c-598b-9f74-1a57eb105e2e": {
+          "localId": 1,
+          "type": "Start",
+          "next": "a795ad7d-eead-5765-b352-415f961582a5"
+        },
+        "0f88b867-d779-5eb4-bfea-797658befe6a": {
+          "localId": 2,
+          "type": "End"
+        },
+        "a795ad7d-eead-5765-b352-415f961582a5": {
+          "localId": 3,
+          "memoIds": [
+            "d09692ff-efb2-5258-9a7c-754780fe82ea"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_MH87R5EDPY}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_MH87R5EDPY}"
+                }
+              ]
+            }
+          },
+          "next": "243128ab-4b47-518f-95c7-8b51d4fd657f"
+        },
+        "243128ab-4b47-518f-95c7-8b51d4fd657f": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 {name} 선수가 많이 고전했는데요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name} struggled a lot today."
+                }
+              ]
+            }
+          },
+          "next": "63b127d1-2b24-536e-89b4-1df562135f9a"
+        },
+        "63b127d1-2b24-536e-89b4-1df562135f9a": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "변화를 고려하고 계십니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Are you considering changes?"
+                }
+              ]
+            }
+          },
+          "next": "8e2743ae-ad47-5375-8931-babd52bc4000"
+        },
+        "d09692ff-efb2-5258-9a7c-754780fe82ea": {
+          "localId": 6,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=loss;mention=worst",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "a795ad7d-eead-5765-b352-415f961582a5"
+        },
+        "8e2743ae-ad47-5375-8931-babd52bc4000": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "6225ac94-516d-54eb-b466-c668928a1f1b",
+              "text": "{name}{eun} 우리 팀의 핵심입니다. 믿습니다.",
+              "next": "0f88b867-d779-5eb4-bfea-797658befe6a",
+              "attrs": {
+                "effects": "trust:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "{name} is the core of our team. I trust them."
+                }
+              }
+            },
+            {
+              "id": "5427f68c-2ee0-5c7f-baac-d6068db28c37",
+              "text": "본인이 누구보다 잘 알 겁니다.",
+              "next": "0f88b867-d779-5eb4-bfea-797658befe6a",
+              "attrs": {
+                "effects": "ok>trust:+2;ng>stress:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "They know it better than anyone."
+                }
+              }
+            },
+            {
+              "id": "6b22000c-e4fb-5539-904e-cf0b6eda70d5",
+              "text": "냉정하게 다시 검토하겠습니다.",
+              "next": "0f88b867-d779-5eb4-bfea-797658befe6a",
+              "attrs": {
+                "effects": "trust:-3;smod:mental:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I'll take a cold, hard look at it."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

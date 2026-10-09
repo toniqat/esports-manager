@@ -27,7 +27,7 @@ primary action at the right end**.
 | HubView | `리그 순위` (League standings) (1, ghost) / `이번 주 시작 →` (Start this week) (2, primary) |
 | TrainingView | `판 비우기` (Clear board) (1, ghost) / `훈련 확정` (Confirm training) (2, primary) |
 | LeagueView · BracketView · IntlBracketView | `확인` (OK) full width |
-| WeekProgressView | `확인` / `주 마감 →` (End of week) / `경기 시작` (Start match) (dark) — always exactly one, full width |
+| WeekProgressView | stage label (1, ghost) + `다음` / `확인` / `주 마감 →` (End of week) / `기자회견` (Press conference) (primary), or `경기 준비` (Match prep, Sat) / `경기 시작` (Start match, Sun) (dark) — `week/README.md` |
 | EndingView · GameOverView | `정산` (Settle) full width → `RunResult.SCENE_PATH` (the run is already settled on entry) |
 
 The four conventions (body height is derived back from `bottom_bar_top()` · the colour fill extends
@@ -90,35 +90,35 @@ calls `init_season` (no recursion) — both share `_init_season_core`.
 
 ## Weekly flow
 The week flows **one day at a time across all seven days, Mon–Sun** (`season_state["week_day"]` 0..6).
+**The player plays one match per week, on Sunday**; its ban/pick happens on Saturday.
 
 ```
 HUB (just before the week starts — roster · next match · "이번 주 시작 →")
-  → PRESS      (press conference — messenger. A few lines, then answer choices)
-  → TRAINING   (daily training — slot tiles into the board to plan training, then "훈련 확정")
-  → WEEK       (week progress — left weekday rail + that day's card list)
-       월 → 화 → 수 → 목 → 금   on each weekday apply_day_training(day) settles only
-                                 that row, raises stats, and shows the result as cards
-       토 (match day 0) ┬ player has a match → "경기 시작"
-       일 (match day 1) │     → MatchFlow (PREP → BAN_PICK) → BattleSim
-                        │     → re-enter Season → apply result + settle that match day's AI
-                        │     → STANDINGS → "확인" → WEEK (same weekday)
-                        └ none → a single "확인" settles only that day's AI matches, next day
-       Sunday's "주 마감 →"
-  → CalendarSystem.advance_week (rolls 7 days, bumps phase_week, possibly
+  → TRAINING   (daily training — slot tiles into the board, then "훈련 확정")
+  → WEEK       (week progress — top weekday rail + that day's map / cards)
+       월 → 금   training days: morning training (apply_day_training(day)) → talk → afternoon → evening
+       토        morning  = stadium map, "경기 준비" → MatchFlow PREP → BAN_PICK (split mode)
+                            → picks stored in pending_match.picks → back to Season (autosave)
+                 afternoon / evening = a normal day without training (interview / outing, incident)
+       일        morning  = stadium map, "경기 시작" → MatchFlow resumes at LAUNCH from the picks
+                            → BattleSim → re-enter Season → apply result + that day's AI matches
+                            → STANDINGS / bracket → "확인"
+                 afternoon = PRESS (press conference, questions react to the result) → WEEK
+                 evening  = normal evening (incident roll) → "주 마감 →"
+  → SeasonHub._end_week → CalendarSystem.advance_week (rolls 7 days, bumps phase_week, possibly
     advances phase / bootstraps tournament for next phase)
   → TrainingBoard.reset_for_new_week (clear board + reset week-progress state)
   → HUB (autosave: post_week)
 ```
 
-**Training is applied per weekday.** Previously "훈련 확정" settled the whole week at once with a
-single `apply_week_training()` and one `TRAINING_RESULT` screen showed the result; once the
-week-progress screen (시간 경과 화면) started asking "what happened that day" for each weekday,
-settlement was split into `apply_day_training(day)` too.
-`Screen.TRAINING_RESULT` and `TrainingResultView` **were deleted** at that point.
+**The week-start press conference was removed** — HUB "이번 주 시작 →" goes straight to TRAINING,
+and the conference is the Sunday afternoon after the match (`press/README.md`). A week without a
+player match has plain Sat / Sun (afternoon + evening only, no stadium, no press).
 
-**Sat·Sun are the two match days (경기일).** The league runs two rounds a week to fill both, while
-tournaments (playoffs · international tournaments (국제대회)) have one round a week and always stand
-on Saturday only. Details in `calendar/README.md`.
+**Training is applied per weekday** (`apply_day_training(day)`, Mon–Fri only); `Screen.TRAINING_RESULT`
+and `TrainingResultView` were deleted when the week started flowing one day at a time.
+
+Rules of the calendar (one round per week, 36-week campaign): `calendar/README.md`.
 
 ## Architecture
 `SeasonHub.gd` is a thin orchestrator (`class_name SeasonHub extends Control`).
@@ -135,10 +135,10 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (progress toward the next trust level, band colour `HubView.trust_color(level)`: grey < `TRUST_OUTING_LEVEL`, green from there, amber past halfway to `TRUST_LEVEL_MAX`) with the trust **level** at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
 | *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row): see "Pilot card · detail sheet" below. |
 | *(overlay)* SeasonPilotDetail | `SeasonPilotDetail.gd` + `UI_View_SeasonPilotDetail.tscn` | Pilot detail `HubSheet` body, opened by tapping a pilot portrait / card anywhere in a run (hub, week screen, training board headers). See below. |
-| PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen right before the week starts (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
+| PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen of the Sunday afternoon, after the match (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **Daily training (일상 훈련) tile board (타일판)** — 5 columns (players) × 5 rows (one per day; weekdays are not written on screen). Placement checks + settlement (`cell_exp` / `compute_day_gains`) + **weekday application** (`apply_day_training(day)`) + leftover-EXP bank. `training/README.md` |
 | TrainingView             | `training/TrainingView.gd` + `.tscn`         | Schedule editor; "훈련 확정" calls `SeasonHub.on_training_confirmed` — it does not settle the board but **opens the week** (puts the weekday cursor on Monday). |
-| WeekProgressView         | `week/WeekProgressView.gd` + `.tscn`         | **Week progress** — top horizontal weekday rail + that day's training results / match cards + bottom "확인" ("경기 시작" on a match day). Layout in `.tscn`, cards are `week/Week*Card.tscn` item scenes; `create()`. `week/README.md` |
+| WeekProgressView         | `week/WeekProgressView.gd` + `.tscn`         | **Week progress** — top horizontal weekday rail + that day's base map (team map, or the **stadium map** on the Sat / Sun mornings and the Sunday press) + cards + bottom bar. Layout in `.tscn`, cards are `week/Week*Card.tscn` item scenes; `create()`. `week/README.md` |
 | LeagueManager            | `league/LeagueManager.gd`                    | Round-robin schedule keyed by `phase_week` (1 round per week), standings, `resolve_current_week()` for AI matches. |
 | TournamentManager        | `tournament/TournamentManager.gd`            | 4-team SE playoff bracket distributed across 2 weeks (SF week + F week). |
 | InternationalTournament  | `tournament/InternationalTournament.gd`      | 8-team SE INTL bracket distributed across 3 weeks (QF / SF / F). |
@@ -259,35 +259,41 @@ SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)
 | Phase           | League weeks | Playoff weeks | Total |
 |---|---|---|---|
-| PRESEASON       | 7  (single RR) | 2 (SF / F)    | 9     |
-| PRESEASON_INTL  | —              | 3 (QF / SF / F) | 3   |
-| MIDSEASON       | 14 (double RR) | 2             | 16    |
-| MIDSEASON_INTL  | —              | 3             | 3     |
-| REGULAR         | 14 (double RR) | 2             | 16    |
-| REGULAR_INTL    | —              | 3             | 3     |
+| PRESEASON       | 7 (single RR) | 2 (SF / F)      | 9 |
+| PRESEASON_INTL  | —             | 3 (QF / SF / F) | 3 |
+| MIDSEASON       | 7 (single RR) | 2               | 9 |
+| MIDSEASON_INTL  | —             | 3               | 3 |
+| REGULAR         | 7 (single RR) | 2               | 9 |
+| REGULAR_INTL    | —             | 3               | 3 |
 
-Total ≈ 50 weeks (~ 11.5 months).
+Total = 36 weeks, one player match per week (details: `calendar/README.md`).
 
 ## Match-day handoff
-- On Sat / Sun of the week-progress screen, if `SeasonHub.has_player_match_on_day(day)` is
-  true, the bottom button becomes **"경기 시작"** (Start match). Pressing it,
-  `on_week_day_match_start()` → `_launch_player_match_on_day(matchday)` fills
-  `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
-  winner_side}`) and does `change_scene_to_file` to MatchFlow.
-  Priority is as before: INTL > playoff > league (`_find_player_match_source`).
-- MatchFlow runs PREP → BAN_PICK (ban/pick (밴픽) + mech (메크) assignment) → BattleSim. The
-  jungle start (정글 시작) direction is asked by BattleSim right before the opening (개시).
-- When BattleSim ends, the win panel's "다음 →" (Next) returns to `Season.tscn`.
+- **Saturday morning** (`WeekProgressView` stage `STADIUM`, `SeasonHub.needs_match_prep(day)`): the
+  bottom button is **"경기 준비"**. `on_week_day_match_prep()` → `_launch_player_match_on_day(0, split = true)`
+  fills `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id, winner_side: -1,
+  split: true}`) and changes scene to MatchFlow. Priority is as before: INTL > playoff > league
+  (`_find_player_match_source`, `_player_match_ref`).
+- MatchFlow runs PREP → BAN_PICK (ban/pick + mech assignment). In split mode it then stores the
+  LAUNCH snapshot in `pending_match.picks` (not `match_resume`), autosaves and fades back to
+  `Season.tscn` (`features/match_flow/README.md` "Saturday prep").
+- `SeasonHub._consume_pending_match_result` keeps a `pending_match` that has `picks` and no result;
+  the hub resumes on the week screen (Saturday afternoon). `match_picks_ready()` = picks stored and
+  still pointing at this Sunday's match.
+- **Sunday morning** (stage `STADIUM`, `has_player_match_on_day(6)`): **"경기 시작"** →
+  `on_week_day_match_start()` copies the picks into `match_resume`, autosaves (`pre_match`) and opens
+  MatchFlow, which resumes at LAUNCH (`_resume_at_launch` — roster mods / mastery / quirks / stress
+  applied with Sunday's state) → BattleSim. Without valid picks (old save) the full
+  PREP → BAN_PICK → BattleSim flow runs instead. The jungle start direction is asked by BattleSim.
+- When BattleSim ends, the win panel's "다음 →" returns to `Season.tscn`.
 - `SeasonHub._ready` consumes `pending_match`, applies the result via
   `LeagueManager.record_result()` / `TournamentManager.record_result()` /
-  `InternationalTournament.record_result()`, then calls
-  `_resolve_ai_for_matchday(md)` — **only that match day's AI matches**. Running the whole week
-  would put Sunday results that haven't been played yet into the standings shown after Saturday's
-  match. It then routes to STANDINGS.
-- **"확인"** (OK) on the standings / bracket is `on_standings_confirmed()` — if the week is running
-  (`week_day >= 0`) it returns to that weekday, otherwise to the hub. The old
-  "다음 주 →" button was deleted from all three screens (advancing the week moved to the Sunday
-  close).
+  `InternationalTournament.record_result()`, then calls `_resolve_ai_for_matchday(0)` (only on the
+  match day), autosaves (`post_match`) and routes to STANDINGS / bracket.
+- **"확인"** on the standings / bracket is `on_standings_confirmed()` — right after the Sunday match
+  (`press_pending()`: my match of the week is played and this week's press is unanswered) it opens
+  **PRESS**; otherwise it returns to the running week, or to the hub. `on_press_finished()` returns to
+  the week (Sunday evening). `player_result_this_week()` = `"win"` / `"loss"` / `""`.
 
 ## Tournament lifecycle
 - TournamentManager and InternationalTournament both listen to
@@ -335,36 +341,38 @@ literals, the same card would be drawn in a different grey on each screen, and t
 palette once would mean combing through a dozen-plus files.
 **In-game (BattleSim) does not use this table** — the battlefield (전장) is a dark screen.
 
-## Autosave triggers (5)
+## Autosave triggers
 0. **Post-match** — `SeasonHub._ready` right after the BattleSim result is
    applied (so closing on the standings screen preserves the outcome).
 1. **Post-run-start** — `SeasonHub._show_hub` on the first HUB of a fresh run.
    Detected from state, no extra save key (`_is_run_start`): PRESEASON, week 1,
    `week_day == -1` and no PRESEASON entry in `match_schedule` yet — measured before
    `ensure_phase_scheduled` lays the schedule, so it is true exactly once per run.
-2. **Pre-ban-pick** — `MatchFlow._on_prep_finished` after the player
-   confirms PREP. Writes `season_state["match_resume"] = {phase: BAN_PICK,
-   player_side, ...}`.
-3. **Post-ban-pick** — `MatchFlow._on_ban_pick_finished` before
-   `change_scene_to_file` to BattleSim. Writes the full match snapshot
-   (banned/picked/assigned mech IDs) into `match_resume`.
-4. **Post-week-end** — `SeasonHub._end_week` after `advance_week` (the
-   Sunday close). Captures both post-match weeks and no-match weeks.
+2. **Pre-ban-pick** (Saturday) — `MatchFlow._on_prep_finished` after the player
+   confirms PREP. Writes `season_state["match_resume"] = {phase: BAN_PICK, player_side, ...}`.
+3. **Post-ban-pick** (Saturday) — `MatchFlow._store_picks_and_return`: the picks go into
+   `pending_match.picks`, `match_resume` is cleared, then back to the season.
+4. **Pre-match** (Sunday) — `SeasonHub.on_week_day_match_start`: `match_resume` = the stored picks
+   (phase LAUNCH), so a crash mid-battle resumes into BattleSim.
+5. **Weekly flow** — every step of the week (`autosave(reason)`), including the press answer and the
+   Sunday evening, and **post-week-end** (`_end_week` after `advance_week`).
 
 **No autosave after the run ends** — `SeasonHub.autosave` is a no-op while
 `season_state.run_over` is true, so the post-match / post-week saves that
 follow a game-over / ending result never resurrect the deleted `run.save`.
 
 No save fires inside BattleSim. Closing mid-battle leaves the disk save at
-trigger #3; resume re-enters BattleSim with the locked-in picks but the
+trigger #4; resume re-enters BattleSim with the locked-in picks but the
 battle replays from scratch.
 
 ## Resume routing
 The lobby's "이어하기" (Continue) branches on `season_state["match_resume"]`:
 - Non-null → `MatchFlow.tscn` (MatchFlow consumes the hint and skips
-  PREP, jumping directly to BAN_PICK or LAUNCH depending on the saved
-  phase).
-- Null → `Season.tscn` → SeasonHub → HUB.
+  PREP, jumping directly to BAN_PICK — Saturday — or LAUNCH — Sunday).
+- Null → `Season.tscn` → SeasonHub → `_resume_screen()`: WEEK when a week is running (every
+  weekend stage — Saturday picks, Sunday press — is read back from the records), else HUB.
+  Between the Saturday ban/pick and the Sunday match `match_resume` is null on purpose, so the run
+  continues in the season.
 
 The lobby run card shows a "경기 진행 중" (Match in progress) chip when `meta.match_in_progress == true`
 (set whenever `match_resume` is non-null at save time).
@@ -375,7 +383,7 @@ Lazy view builders cache the instance after first creation.
 - `Screen.HUB` → simplified HubView. Calls `LeagueManager.ensure_phase_scheduled()`
   + `TournamentManager.ensure_active()` + `InternationalTournament.ensure_active()`
   to handle save-loads landing on tournament weeks.
-- `Screen.PRESS` → `PressConferenceView` (opens a fresh conference every time).
+- `Screen.PRESS` → `PressConferenceView` (opens this week's conference every time; Sunday afternoon).
 - `Screen.TRAINING` → `TrainingView`.
 - `Screen.WEEK` → `WeekProgressView` (the weekday cursor is `season_state["week_day"]`).
 - `Screen.LEAGUE` → `LeagueView` (standings).
@@ -410,9 +418,8 @@ BracketView (Control, full rect, OutgameTheme)          IntlBracketView — same
   forward, bumps `phase_week`, transitions phase if `phase_week` exceeds
   `phase_max_weeks(current_phase)`. Emits `week_advanced` (always) and
   `phase_changed` (on phase transitions).
-- `phase_week` weekday stays at 0 (Mon) — the player conceptually sits at
-  the start of each week. F/S/S match days are fictional internal
-  ordering.
+- The calendar date stays on the week's Monday (`weekday` 0); the day the player is on is
+  `season_state.week_day`, and every match stands on Sunday (`matchday` 0).
 - `is_league_match_week()` / `is_playoff_week()` / `is_playoff_bootstrap_week()`
   drive which subsystem owns the current week.
 - `date_of_week_offset(n)` returns the Monday of the week n weeks ahead
@@ -453,12 +460,10 @@ Details: **`docs/mobile_safe_area.md`**
 ## Detail moved from root CLAUDE.md
 
 ### Season → MatchFlow → BattleSim handoff
-Pressing "경기 시작" on Sat / Sun of the week-progress screen,
-`SeasonHub.on_week_day_match_start()` → `_launch_player_match_on_day(matchday)`
-fills `season_state["pending_match"]` (`{source, schedule_idx, enemy_team_id,
-winner_side}`) and does `change_scene_to_file` to MatchFlow.tscn.
-MatchFlow runs PREP (review rosters) → BAN_PICK (ban/pick + mech assignment) →
-BattleSim (the jungle start direction is asked inside it). **BAN_PICK also receives both teams'
+Saturday "경기 준비" → `SeasonHub.on_week_day_match_prep()` → MatchFlow (split) PREP → BAN_PICK →
+picks stored in `pending_match.picks` → back to Season. Sunday "경기 시작" →
+`SeasonHub.on_week_day_match_start()` → `match_resume` = picks → MatchFlow LAUNCH → BattleSim
+(details: "Match-day handoff" above). **BAN_PICK also receives both teams'
 rosters and team names** — it stands 5 eye portraits (초상화) per team at the top and bottom of the
 screen, the same as the battlefield strip (스트립), attaches mech slots outside them, and once the 14
 moves are done **writes the assignments directly into those rosters** and returns them
@@ -468,15 +473,14 @@ moves are done **writes the assignments directly into those rosters** and return
 The side (`player_side`) is **currently always fixed to BLUE**
 (the old per-match random draw was removed), and together it decides the ban/pick order and
 BattleSim's strategy-point priority · first turn — see the "Side (blue / red)" (진영 (블루 / 레드))
-entry above.
+entry in `features/match_flow/README.md`.
 After BattleSim, the win panel's "다음 →" returns to
 `Season.tscn`. `SeasonHub._consume_pending_match_result` applies the
 result via `LeagueManager.record_result()` /
 `TournamentManager.record_result(slot, winner)` /
 `InternationalTournament.record_result(slot, winner)` based on
-`pending_match.source`. Then `_resolve_remaining_ai_for_week()` sweeps up
-remaining AI matches scheduled for the same week, and the hub routes to
-the appropriate STANDINGS view.
+`pending_match.source`, the round's AI matches resolve (`_resolve_ai_for_matchday(0)`), and the hub
+routes to the appropriate STANDINGS view, then the Sunday press.
 
 ### Season — Playoff bracket (Phase 7)
 Each league phase reserves **2 trailing playoff weeks** (SF week + F

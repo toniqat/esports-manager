@@ -15,14 +15,16 @@ extends RefCounted
 #
 # Old 3-slot files (user://saves/slot*.save) are ignored — no migration.
 #
-# Auto-save trigger points (all wired outside this file):
+# Auto-save trigger points (all wired outside this file, table in README.md):
 #   1. SeasonHub: first HUB entry after GameManager.start_run (post-run-start).
-#   2. MatchFlow: right before BAN_PICK starts (pre-match).
-#   3. MatchFlow: right after ban/pick + mech assignment, before BattleSim
-#      launch (post-ban-pick). season_state.match_resume captures the locked-in
-#      match state so resume re-enters MatchFlow at LAUNCH (→ BattleSim) directly.
-#   4. SeasonHub: right after _consume_pending_match_result clears the
-#      finished match (post-match).
+#   2. MatchFlow (Saturday): right before BAN_PICK starts (pre-ban-pick).
+#   3. MatchFlow (Saturday): right after ban/pick + mech assignment (post-ban-pick) —
+#      the picks go into season_state.pending_match.picks and MatchFlow returns to
+#      the season (match_resume null → the lobby continues into Season.tscn).
+#   4. SeasonHub (Sunday "경기 시작"): match_resume = the stored picks (pre-match), so
+#      a resume re-enters MatchFlow at LAUNCH (→ BattleSim) directly.
+#   5. SeasonHub: right after _consume_pending_match_result applies the
+#      finished match (post-match), then every step of the week.
 # No save fires while BattleSim is running. Manual saving is not exposed.
 # The run file is deleted when the run is settled (RunResult.settle_current_run —
 # ENDING / GAME_OVER entry or a lobby abandon).
@@ -98,6 +100,8 @@ static func load_run() -> String:
 	if gm == null:
 		return "GameManager not found"
 	gm.season_state = _deserialize_season_state(ss)
+	# Old week format (two league rounds on Sat · Sun) → one Sunday match per week.
+	CalendarSystem.migrate_weekly_format(gm.season_state)
 	return ""
 
 
@@ -157,11 +161,13 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"team_meta":         s.get("team_meta", []),
 		"intl_team_meta":    s.get("intl_team_meta", []),
 		"match_schedule":    s.get("match_schedule", []),
+		"schedule_format":   int(s.get("schedule_format", CalendarSystem.SCHEDULE_FORMAT)),
 		"all_pilots":        _pilots_to_array(s.get("all_pilots", [])),
 		"intl_pilots":       _pilots_to_array(s.get("intl_pilots", [])),
 		"team_rosters":      s.get("team_rosters", {}),
 		"league_standings":  s.get("league_standings", {}),
 		"training_board":    s.get("training_board", []),
+		"training_courses":  (s.get("training_courses", {}) as Dictionary).duplicate(true),
 		"week_day":          int(s.get("week_day", -1)),
 		"week_day_log":      s.get("week_day_log", {}),
 		"training_exp_carry": s.get("training_exp_carry", {}),
@@ -203,11 +209,17 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"team_meta":         s.get("team_meta", []),
 		"intl_team_meta":    s.get("intl_team_meta", []),
 		"match_schedule":    s.get("match_schedule", []),
+		# Missing = a run saved before the one-match-per-week calendar (format 1);
+		# `load_run` migrates it (`CalendarSystem.migrate_weekly_format`).
+		"schedule_format":   int(s.get("schedule_format", 1)),
 		"all_pilots":        _array_to_pilots(s.get("all_pilots", [])),
 		"intl_pilots":       _array_to_pilots(s.get("intl_pilots", [])),
 		"team_rosters":      _rosters_in(s.get("team_rosters", {})),
 		"league_standings":  _int_keyed_dict_in(s.get("league_standings", {})),
 		"training_board":    _board_in(s.get("training_board", [])),
+		# Missing (a run saved before course ownership) = Basic Training I only,
+		# filled by `TrainingCourses.inventory` on first read.
+		"training_courses":  _courses_in(s.get("training_courses", {})),
 		# 주 진행 상태 셋. 둘 다 **정수 키** dict 이라 되돌리는 손질이
 		# 필요하다 — JSON 은 키를 문자열로 돌려주므로 그대로 실으면
 		# `log[3]` 이 영원히 빈 배열을 돌려줘 같은 요일 훈련이 두 번 먹는다.
@@ -276,16 +288,16 @@ static func _run_setup_in(d: Dictionary) -> Dictionary:
 		e["stats"] = st
 		staff.append(e)
 	out["staff"] = staff
-	# M8 — equipped traits (ids) · M10 — breakthrough stages of my five.
+	# M8 — equipped traits (ids) · rank of my five (`pilot_ranks`; old saves wrote `pilot_breakthrough`).
 	var traits: Array = []
 	for raw in (d.get("traits", []) as Array):
 		traits.append(int(raw))
 	out["traits"] = traits
-	var bts: Dictionary = {}
-	var raw_bts: Dictionary = d.get("pilot_breakthrough", {})
-	for k in raw_bts.keys():
-		bts[str(k)] = int(raw_bts[k])
-	out["pilot_breakthrough"] = bts
+	var ranks: Dictionary = {}
+	var raw_ranks: Dictionary = d.get("pilot_ranks", {})
+	for k in raw_ranks.keys():
+		ranks[str(k)] = int(raw_ranks[k])
+	out["pilot_ranks"] = ranks
 	return out
 
 
@@ -313,6 +325,15 @@ static func _board_in(rows: Array) -> Array:
 			"x": int(d.get("x", 0)),
 			"y": int(d.get("y", 0)),
 		})
+	return out
+
+
+## Owned training courses `{line: {tile, count}}` — `count` comes back from JSON as a float.
+static func _courses_in(d: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for line in d.keys():
+		var e: Dictionary = d[line]
+		out[String(line)] = {"tile": String(e.get("tile", "")), "count": int(e.get("count", 0))}
 	return out
 
 
@@ -347,8 +368,8 @@ static func _pilots_to_array(pilots: Array) -> Array:
 			# 런 준비 — Lv1 샐러리 · 등급 · 이 런의 레벨(스탯은 이미 레벨 반영 값).
 			"salary": p.salary, "rarity": p.rarity, "level": p.level,
 			"main_mechs": p.main_mechs.duplicate(),
-			# M10 — breakthrough (effects already folded into the fields above).
-			"breakthrough": p.breakthrough, "train_bonus_pct": p.train_bonus_pct,
+			# Rank (effects already folded into the fields above).
+			"rank": p.rank, "train_bonus_pct": p.train_bonus_pct,
 		})
 	return out
 
@@ -372,7 +393,7 @@ static func _array_to_pilots(rows: Array) -> Array:
 		pd.level = int(d.get("level", 1))
 		for raw_mech in (d.get("main_mechs", []) as Array):
 			pd.main_mechs.append(int(raw_mech))
-		pd.breakthrough = int(d.get("breakthrough", 0))
+		pd.rank = int(d.get("rank", d.get("breakthrough", 0)))
 		pd.train_bonus_pct = int(d.get("train_bonus_pct", 0))
 		out.append(pd)
 	return out

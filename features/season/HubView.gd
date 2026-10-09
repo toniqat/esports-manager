@@ -301,8 +301,9 @@ func _on_pilot_pressed(pilot_id: int) -> void:
 # ── Button handlers ──────────────────────────────────────────────────────────
 func _on_start_pressed() -> void:
 	if _hub != null:
-		# 주는 기자회견으로 열린다 — 훈련 계획은 그 다음이다.
-		_hub.goto(SeasonHub.Screen.PRESS)
+		# The week opens on the training plan — the press conference moved to Sunday
+		# afternoon, after the match (`SeasonHub.press_pending`).
+		_hub.goto(SeasonHub.Screen.TRAINING)
 
 
 func _on_standings_pressed() -> void:

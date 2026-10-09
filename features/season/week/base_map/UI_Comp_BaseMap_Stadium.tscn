@@ -1,0 +1,101 @@
+[gd_scene load_steps=2 format=3 uid="uid://c6xblkegdwjua"]
+
+[ext_resource type="Script" uid="uid://dklrmpucuhjmi" path="res://features/season/week/base_map/BaseMap.gd" id="1_map"]
+
+[node name="BaseMap_Stadium" type="Control"]
+editor_description = "Weekend stadium map (BaseMap.gd, BaseMap.create_stadium). Saturday morning = match prep (team room), Sunday morning = the match (stage booths), Sunday afternoon = press room. Not a team map: no teams.csv map_id points here."
+custom_minimum_size = Vector2(1000, 634)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1000.0
+offset_bottom = 634.0
+mouse_filter = 2
+script = ExtResource("1_map")
+
+[node name="Art" type="ColorRect" parent="."]
+editor_description = "TODO: stadium art — replace this flat placeholder (and the Zone_* blocks) with a TextureRect of the stadium picture (resources/images/base_map/), keep aspect centred like the team maps."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.32, 0.36, 0.44, 1)
+
+[node name="Zone_Stage" type="ColorRect" parent="Art"]
+editor_description = "Placeholder block: the stage with the two teams' booths (Spot_Booth)."
+layout_mode = 0
+offset_left = 260.0
+offset_top = 40.0
+offset_right = 740.0
+offset_bottom = 280.0
+mouse_filter = 2
+color = Color(0.45, 0.5, 0.6, 1)
+
+[node name="Zone_TeamRoom" type="ColorRect" parent="Art"]
+editor_description = "Placeholder block: our team room backstage (Spot_TeamRoom)."
+layout_mode = 0
+offset_left = 40.0
+offset_top = 360.0
+offset_right = 340.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0.4, 0.45, 0.54, 1)
+
+[node name="Zone_Press" type="ColorRect" parent="Art"]
+editor_description = "Placeholder block: the press room (Spot_Press)."
+layout_mode = 0
+offset_left = 660.0
+offset_top = 360.0
+offset_right = 960.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0.4, 0.45, 0.54, 1)
+
+[node name="Spots" type="Control" parent="."]
+editor_description = "Spot markers (Marker2D, map-local position = where the portrait centre stands). Names are read by BaseMap.spot_point: Spot_<Booth|TeamRoom|Press|W|Entrance>; a missing one falls back to Spot_W."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Spot_Booth" type="Marker2D" parent="Spots"]
+editor_description = "Stage booths: my five pilots on Sunday morning (match day)"
+position = Vector2(500, 150)
+gizmo_extents = 28.0
+
+[node name="Spot_TeamRoom" type="Marker2D" parent="Spots"]
+editor_description = "Team room: Saturday morning (opponent analysis, ban/pick)"
+position = Vector2(190, 470)
+gizmo_extents = 28.0
+
+[node name="Spot_Press" type="Marker2D" parent="Spots"]
+editor_description = "Press room: Sunday afternoon (press conference)"
+position = Vector2(810, 470)
+gizmo_extents = 28.0
+
+[node name="Spot_W" type="Marker2D" parent="Spots"]
+editor_description = "Neutral fallback (stadium hall centre)"
+position = Vector2(500, 420)
+gizmo_extents = 28.0
+
+[node name="Spot_Entrance" type="Marker2D" parent="Spots"]
+editor_description = "Stadium entrance (unused for now)"
+position = Vector2(500, 590)
+gizmo_extents = 28.0
+
+[node name="Tokens" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: BaseMap.gd _tokens
+Code adds the pilot tokens (UI_Comp_WeekMapPilot) here and places them on the spots."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

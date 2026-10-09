@@ -1,0 +1,155 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "4aaca3a3-1560-5d36-b604-650428b6760d": {
+      "id": "4aaca3a3-1560-5d36-b604-650428b6760d",
+      "name": "P14",
+      "start": "4ccc42da-ae0e-5e8a-904a-6292076abf9e",
+      "end": "5109dd17-4378-5a51-b687-071def746d6a",
+      "nodes": {
+        "4ccc42da-ae0e-5e8a-904a-6292076abf9e": {
+          "localId": 1,
+          "type": "Start",
+          "next": "4b7dbefd-5741-583b-8bbd-cf06cde2925d"
+        },
+        "5109dd17-4378-5a51-b687-071def746d6a": {
+          "localId": 2,
+          "type": "End"
+        },
+        "4b7dbefd-5741-583b-8bbd-cf06cde2925d": {
+          "localId": 3,
+          "memoIds": [
+            "d4a0f975-064d-5c1b-b186-4f6e397bb42e"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{tx_576HKVWRTP}"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{tx_576HKVWRTP}"
+                }
+              ]
+            }
+          },
+          "next": "05eb8c63-c058-5c50-9f50-b2a50fa725be"
+        },
+        "05eb8c63-c058-5c50-9f50-b2a50fa725be": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "아쉬운 패배입니다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "A disappointing loss."
+                }
+              ]
+            }
+          },
+          "next": "59408bf8-f0e3-5844-9733-4de69151659d"
+        },
+        "59408bf8-f0e3-5844-9733-4de69151659d": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "84ab847b-1bad-5351-8718-5cf62bff28a4",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "어디서부터 꼬였다고 보십니까?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Where do you think it started to go wrong?"
+                }
+              ]
+            }
+          },
+          "next": "a1f70528-15a9-5068-9830-8720209330e0"
+        },
+        "d4a0f975-064d-5c1b-b186-4f6e397bb42e": {
+          "localId": 6,
+          "attrs": {
+            "kind": "press",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=loss",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "기자회견 이벤트 설정",
+          "attachedTo": "4b7dbefd-5741-583b-8bbd-cf06cde2925d"
+        },
+        "a1f70528-15a9-5068-9830-8720209330e0": {
+          "localId": 7,
+          "type": "Select",
+          "options": [
+            {
+              "id": "64ff1281-b0c5-5e7b-96df-ae4bf9b63248",
+              "text": "밴픽에서 제가 판단을 잘못했습니다.",
+              "next": "5109dd17-4378-5a51-b687-071def746d6a",
+              "attrs": {
+                "effects": "trust_all:+2;smod:tactics:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "I made the wrong calls at ban/pick."
+                }
+              }
+            },
+            {
+              "id": "f765c68f-93ca-577a-b0dd-eacfe98191da",
+              "text": "교전 한두 번이 승부를 갈랐을 뿐입니다.",
+              "next": "5109dd17-4378-5a51-b687-071def746d6a",
+              "attrs": {
+                "effects": "ok>smod:mental:+1:1;ng>stress_all:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "One or two fights decided it, that's all."
+                }
+              }
+            },
+            {
+              "id": "1fc9c82e-dec3-5286-b5c9-e4cc50fdce3b",
+              "text": "선수들 집중력이 부족했습니다.",
+              "next": "5109dd17-4378-5a51-b687-071def746d6a",
+              "attrs": {
+                "effects": "trust_all:-2;smod:mental:+1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "The players lacked focus."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

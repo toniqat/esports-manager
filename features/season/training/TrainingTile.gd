@@ -101,47 +101,12 @@ const GRADE_COLORS: Array = [
 	Color(1.00, 0.79, 0.32),
 ]
 
-## ── Staff stats → grade unlock / placement limit / EXP multiplier (M3) ────────
-## The fixed `GRADE_PLACE_LIMIT` table is gone: limits, unlocks and the EXP
-## multiplier are all derived from the **effective manager/staff stats**
-## (`StaffSystem.effective`) through the static lookups below. Numbers live in
-## const.csv only (`TACTICS_GRADE_*`, `TRAINING_STAT_*`).
-##
-## * Tactics → highest usable grade. D is always usable; C/B/A/S unlock at
-##   `TACTICS_GRADE_C/B/A/S`.
-## * Training → per-grade placement limit. The top-tier limits are
-##   `TRAINING_STAT_LIMIT_C/B/A/S`; the stat picks a tier (`TRAINING_STAT_TIER_2/3`
-##   thresholds) whose `TRAINING_STAT_LIMIT_PCT_n` scales them (round, min 1).
-##   D stays unlimited (-1) — it is the filler course for empty cells.
-## * Training → tile EXP multiplier `1 + (stat − PIVOT) × STEP`.
-##
-## Tiles can be reused any number of times (no owned quantity), so the limit is
-## still the one thing that stops "plaster the board with the strongest tile".
-static var TACTICS_GRADE: Array = [
-	0,
-	ConstTable.int_of("TACTICS_GRADE_C"),
-	ConstTable.int_of("TACTICS_GRADE_B"),
-	ConstTable.int_of("TACTICS_GRADE_A"),
-	ConstTable.int_of("TACTICS_GRADE_S"),
-]
-static var TOP_PLACE_LIMIT: Array = [
-	-1,
-	ConstTable.int_of("TRAINING_STAT_LIMIT_C"),
-	ConstTable.int_of("TRAINING_STAT_LIMIT_B"),
-	ConstTable.int_of("TRAINING_STAT_LIMIT_A"),
-	ConstTable.int_of("TRAINING_STAT_LIMIT_S"),
-]
-## Tier n (1-based) starts at `LIMIT_TIER_MIN[n-1]` effective training.
-static var LIMIT_TIER_MIN: Array = [
-	0,
-	ConstTable.int_of("TRAINING_STAT_TIER_2"),
-	ConstTable.int_of("TRAINING_STAT_TIER_3"),
-]
-static var LIMIT_TIER_PCT: Array = [
-	ConstTable.num("TRAINING_STAT_LIMIT_PCT_1"),
-	ConstTable.num("TRAINING_STAT_LIMIT_PCT_2"),
-	ConstTable.num("TRAINING_STAT_LIMIT_PCT_3"),
-]
+## ── Training stat → EXP multiplier (M3) ──────────────────────────────────────
+## Tile EXP multiplier `1 + (stat − PIVOT) × STEP` from the effective training
+## stat (`StaffSystem.effective`), numbers in const.csv (`TRAINING_STAT_EXP_*`).
+## There is no per-grade placement limit or tactics unlock any more: tiles are
+## owned items and the board takes as many copies as the run owns
+## (`TrainingCourses`).
 static var EXP_PIVOT: float = ConstTable.num("TRAINING_STAT_EXP_PIVOT")
 static var EXP_STEP: float = ConstTable.num("TRAINING_STAT_EXP_STEP")
 
@@ -184,6 +149,8 @@ var tile_name: String:
 	get:
 		return Loc.t(name_key)  # l10n-dynamic: training.tile.*.name
 var grade: int = 0
+## Upgrade line (`line` column; "" in CSV = its own id). See `TrainingCourses`.
+var line: String = ""
 
 ## 이 타일이 덮는 칸의 상대 좌표. `Vector2i(dx, dy)` — dx = 선수(열) 오프셋,
 ## dy = 요일(행) 오프셋. 언제나 (0,0) 을 포함하도록 정규화돼 있다.
@@ -210,6 +177,9 @@ static func from_def(def: Dictionary) -> TrainingTile:
 	t.id          = String(def.get("id", ""))
 	t.name_key    = String(def.get("name_key", ""))
 	t.grade       = int(def.get("grade", 0))
+	t.line        = String(def.get("line", ""))
+	if t.line.is_empty():
+		t.line = t.id
 	t._parse_shape(String(def.get("shape", "W")))
 	t._parse_exp(String(def.get("exp", "")))
 	t._parse_effect(String(def.get("effect", "")))
@@ -289,54 +259,6 @@ func extent() -> Vector2i:
 		w = maxi(w, (c as Vector2i).x + 1)
 		h = maxi(h, (c as Vector2i).y + 1)
 	return Vector2i(w, h)
-
-
-## How many tiles of this grade fit on the board for the given effective
-## training stat. -1 = unlimited.
-func place_limit(training_stat: int) -> int:
-	return place_limit_for(grade, training_stat)
-
-
-## Can this tile be used at all with the given effective tactics stat?
-func is_unlocked(tactics_stat: int) -> bool:
-	return grade_unlocked(grade, tactics_stat)
-
-
-## Per-grade placement limit for an effective training stat. -1 = unlimited (D).
-static func place_limit_for(grade_idx: int, training_stat: int) -> int:
-	if grade_idx <= 0 or grade_idx >= TOP_PLACE_LIMIT.size():
-		return -1
-	var pct: float = float(LIMIT_TIER_PCT[limit_tier(training_stat) - 1])
-	return maxi(1, int(round(float(TOP_PLACE_LIMIT[grade_idx]) * pct / 100.0)))
-
-
-## Placement-limit tier 1..3 for an effective training stat.
-static func limit_tier(training_stat: int) -> int:
-	var tier: int = 1
-	for i in LIMIT_TIER_MIN.size():
-		if training_stat >= int(LIMIT_TIER_MIN[i]):
-			tier = i + 1
-	return tier
-
-
-## Effective tactics needed to use this grade (D = 0).
-static func required_tactics(grade_idx: int) -> int:
-	if grade_idx <= 0 or grade_idx >= TACTICS_GRADE.size():
-		return 0
-	return int(TACTICS_GRADE[grade_idx])
-
-
-static func grade_unlocked(grade_idx: int, tactics_stat: int) -> bool:
-	return tactics_stat >= required_tactics(grade_idx)
-
-
-## Highest grade index usable with this tactics stat (0 = D only).
-static func max_unlocked_grade(tactics_stat: int) -> int:
-	var g: int = 0
-	for i in range(1, TACTICS_GRADE.size()):
-		if grade_unlocked(i, tactics_stat):
-			g = i
-	return g
 
 
 ## Tile EXP multiplier from the effective training stat (never below 0).

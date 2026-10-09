@@ -14,8 +14,12 @@ extends Node
 # ── 저장 ─────────────────────────────────────────────────────────────────────
 # `season_state["training_board"]` = Array of `{tile, x, y}`.
 # `x` = 선수 자리(0..4), `y` = 요일(0..4), `tile` = `training_tiles.id`.
-# **빈 칸은 적지 않는다** — 정산할 때 기본 코스(`FILLER_TILE_ID`)가 자동으로
-# 메우므로 "아무것도 안 놓은 판"과 "기본으로 도배한 판"이 같은 결과를 낸다.
+# **빈 칸은 적지 않는다** — 정산할 때 기본 코스(`filler_tile_id()`, 보유한 기초 훈련
+# 단계)가 자동으로 메우므로 "아무것도 안 놓은 판"과 "기본으로 도배한 판"이 같은 결과를 낸다.
+#
+# ── 보유 ─────────────────────────────────────────────────────────────────────
+# 코스는 보유 개수가 있는 아이템이다(`TrainingCourses`, `season_state["training_courses"]`).
+# 한 타일은 보유한 장수만큼 판에 놓을 수 있다 — 등급별 상한 · 전술 해금은 없다.
 
 const COLS: int = 5          # 선수
 const ROWS: int = 5          # 하루씩 다섯 줄 (달력으로는 월~금)
@@ -23,8 +27,6 @@ const ROWS: int = 5          # 하루씩 다섯 줄 (달력으로는 월~금)
 ## 그 표의 유일한 소비자였고, 일상 훈련이 되면서 그 글자가 사라졌다. 요일 이름이
 ## 필요한 자리는 시간 경과 화면 하나이고 그쪽은 `OutgameTheme.DAY_NAMES` 를 읽는다.
 
-## 빈 칸을 메우는 기본 코스. 이 id 가 CSV 에 없으면 빈 칸은 그냥 0 이 된다.
-const FILLER_TILE_ID: String = "T01"
 
 ## **EXP 는 스탯 포인트가 아니다** — 이만큼 모여야 스탯이 1 오른다. 그래야
 ## 타일 표에 세 자리 수를 적어도 스탯이 한 주에 백 단위로 튀지 않는다.
@@ -51,6 +53,22 @@ func all_tiles() -> Array:
 		if t != null:
 			out.append(t)
 	return out
+
+
+## The run's owned courses (one per line, at its owned level) — the inventory row.
+func owned_tiles() -> Array:
+	var out: Array = []
+	for id in TrainingCourses.owned_tile_ids(_gm.season_state):
+		var t: TrainingTile = tile(String(id))
+		if t != null:
+			out.append(t)
+	return out
+
+
+## Basic course at the owned level — fills every empty cell. If this id is
+## missing from the CSV, empty cells give 0.
+func filler_tile_id() -> String:
+	return TrainingCourses.filler_tile_id(_gm.season_state)
 
 
 ## id 로 타일 하나. 캐시하는 이유는 판을 한 번 정산할 때 같은 타일을 스물몇 번
@@ -102,18 +120,27 @@ func occupancy() -> Dictionary:
 	return occ
 
 
-## 그 등급이 판에 몇 장 올라가 있는가.
-func placed_count_of_grade(grade: int) -> int:
+## How many copies of this tile are on the board (`ignore_entry` = not counted).
+func placed_count(t: TrainingTile, ignore_entry: int = -1) -> int:
+	if t == null:
+		return 0
 	var n: int = 0
-	for e in board():
-		var t: TrainingTile = tile(String((e as Dictionary).get("tile", "")))
-		if t != null and t.grade == grade:
+	var b: Array = board()
+	for i in b.size():
+		if i != ignore_entry and String((b[i] as Dictionary).get("tile", "")) == t.id:
 			n += 1
 	return n
 
 
+## Copies of this tile the run owns. -1 = unlimited (the basic course).
+func owned_count(t: TrainingTile) -> int:
+	if t == null:
+		return 0
+	return TrainingCourses.owned_count(_gm.season_state, t.id)
+
+
 # ── Staff stats (M3) ─────────────────────────────────────────────────────────
-# Every staff-stat read on this board goes through these three, which in turn
+# Every staff-stat read on this board goes through these, which in turn
 # go through `StaffSystem.effective` — the view, placement checks, settlement
 # and auto-arrange all see the same numbers.
 
@@ -131,46 +158,13 @@ func training_stat() -> int:
 	return staff_stat("training")
 
 
-func tactics_stat() -> int:
-	return staff_stat("tactics")
-
-
-## Placement limit of this tile's grade right now. -1 = unlimited.
-func limit_of(t: TrainingTile) -> int:
-	if t == null:
-		return 0
-	return t.place_limit(training_stat())
-
-
-## Is this tile's grade unlocked by the current tactics stat?
-func is_unlocked(t: TrainingTile) -> bool:
-	return t != null and t.is_unlocked(tactics_stat())
-
-
-## Can one more of this tile go on the board (grade unlocked and under its limit)?
+## Can one more copy of this tile go on the board (owned copies left)?
 ## Used by the view to lock inventory cards — placement position is separate.
-func can_take_more(t: TrainingTile) -> bool:
-	return is_unlocked(t) and grade_slot_free(t)
-
-
-## 그 타일을 지금 한 장 더 놓을 수 있는가 — **등급 상한만** 본다(자리는 별개).
-## 타일은 몇 번이든 다시 쓸 수 있으므로(보유 수량이 없다) 이 상한 하나가
-## "가장 센 타일로 도배"를 막는 유일한 장치다.
-func grade_slot_free(t: TrainingTile, ignore_entry: int = -1) -> bool:
-	if t == null:
-		return false
-	var limit: int = limit_of(t)
-	if limit < 0:
+func can_take_more(t: TrainingTile, ignore_entry: int = -1) -> bool:
+	var owned: int = owned_count(t)
+	if owned == TrainingCourses.UNLIMITED:
 		return true
-	var n: int = 0
-	var b: Array = board()
-	for i in b.size():
-		if i == ignore_entry:
-			continue
-		var other: TrainingTile = tile(String((b[i] as Dictionary).get("tile", "")))
-		if other != null and other.grade == t.grade:
-			n += 1
-	return n < limit
+	return placed_count(t, ignore_entry) < owned
 
 
 ## `origin` 에 그 타일을 놓을 수 있는가. `ignore_entry` 는 **자기 자신을 옮기는
@@ -179,9 +173,7 @@ func grade_slot_free(t: TrainingTile, ignore_entry: int = -1) -> bool:
 func can_place(t: TrainingTile, origin: Vector2i, ignore_entry: int = -1) -> bool:
 	if t == null:
 		return false
-	if not is_unlocked(t):
-		return false
-	if not grade_slot_free(t, ignore_entry):
+	if not can_take_more(t, ignore_entry):
 		return false
 	var occ: Dictionary = {}
 	var b: Array = board()
@@ -291,7 +283,7 @@ func cell_exp() -> Dictionary:
 
 	# 빈 칸은 기본 코스가 메운다 — "아무것도 안 놓은 판"과 "기본으로 도배한
 	# 판"이 같은 결과를 내야 판을 비워 두는 것이 손해가 아니게 된다.
-	var filler: TrainingTile = tile(FILLER_TILE_ID)
+	var filler: TrainingTile = tile(filler_tile_id())
 	if filler != null:
 		for x2 in COLS:
 			for y2 in ROWS:
@@ -352,7 +344,7 @@ func cell_exp() -> Dictionary:
 ## `FinanceSystem.training_exp_mult(state)` ×
 ## `MentalSystem.training_exp_mult(state, pilot_id, day)` (plan §11.3) ×
 ## trait `train_exp_pct` (`TraitSystem.run_pct_mult`, M8) ×
-## the pilot's breakthrough `PlayerData.train_bonus_pct` (plan §12.3).
+## the pilot's rank-row `PlayerData.train_bonus_pct` (`stat_growth`, `RunRules.apply_rank`).
 ## Seats without a pilot get the shared part only.
 func exp_mult_table() -> Dictionary:
 	var state: Dictionary = _gm.season_state
@@ -596,9 +588,9 @@ func apply_day_training(day: int) -> Array:
 	return rows
 
 
-## Colour symbol of the basic course (`FILLER_TILE_ID`) that fills empty cells.
+## Colour symbol of the basic course (`filler_tile_id`) that fills empty cells.
 func filler_color() -> String:
-	var t: TrainingTile = tile(FILLER_TILE_ID)
+	var t: TrainingTile = tile(filler_tile_id())
 	return String(t.cell_colors[0]) if t != null and not t.cell_colors.is_empty() else ""
 
 
@@ -647,7 +639,7 @@ func day_groups(day: int) -> Dictionary:
 
 
 ## Display name of the training each seat does on row `day`, `{seat: String}` for every
-## seat `0..COLS-1` — the placed tile's name, or the basic course (`FILLER_TILE_ID`) for an
+## seat `0..COLS-1` — the placed tile's name, or the basic course (`filler_tile_id`) for an
 ## empty cell. The week screen shows it in the morning bubble over each pilot on the map.
 func day_tile_names(day: int) -> Dictionary:
 	var out: Dictionary = {}
@@ -661,7 +653,7 @@ func day_tile_names(day: int) -> Dictionary:
 		for c in t.cells:
 			if oy + (c as Vector2i).y == day:
 				out[ox + (c as Vector2i).x] = t.tile_name
-	var filler: TrainingTile = tile(FILLER_TILE_ID)
+	var filler: TrainingTile = tile(filler_tile_id())
 	for seat in COLS:
 		if not out.has(seat):
 			out[seat] = filler.tile_name if filler != null else ""
@@ -765,41 +757,36 @@ func player_pilots_by_seat() -> Array:
 # way), and deterministic (no randomness, fixed tie-breaks):
 #   1. clear the board; rank each pilot's stats by **deficit against the role
 #      average** (`coach_needs` — every pilot of that role in `all_pilots`);
-#   2. walk unlocked grades from the highest down to C (D = the filler course).
-#      Inside a grade:
-#      a. focus pass — up to `COACH_FOCUS_PCT`% of the grade limit goes to
-#         **focused** tiles (fewer than six stats) on the neediest pilots, one
-#         pilot per turn, each copy aimed at that pilot's weakest not-yet-
-#         reinforced stat among the top `COACH_WEAK_RANK`, at the position that
-#         raises that pilot's EXP in that stat the most;
-#      b. broad pass — the rest goes to broad tiles (all-stat / amplifiers) by
-#         the old rule: first day-then-seat position that raises the board's
+#   2. walk the owned courses grade by grade, highest first. Inside a grade:
+#      a. focus pass — every owned copy of the **focused** tiles (fewer than six
+#         stats) goes to the neediest pilots, one pilot per turn, each copy
+#         aimed at that pilot's weakest not-yet-reinforced stat among the top
+#         `COACH_WEAK_RANK`, at the position that raises that pilot's EXP in
+#         that stat the most;
+#      b. broad pass — the owned copies of broad tiles (all-stat / amplifiers)
+#         by the old rule: first day-then-seat position that raises the board's
 #         total EXP (`board_total_exp`);
-#      c. whatever the broad pass could not use goes back to the focus pass;
 #   3. one more broad sweep over all grades — amplifiers placed before the
 #      tiles they amplify get a second chance.
-# Never auto-placed: mastery (`M`) tiles and any tile whose effect has a clause
-# other than `mult` / `flat` (quirk tiles, T1) — those are separate decisions.
+# Only owned copies are placed (`can_place` → `can_take_more`). Never
+# auto-placed: the basic course (it is what an empty cell already is), mastery
+# (`M`) tiles and any tile whose effect has a clause other than `mult` / `flat`
+# (quirk tiles, T1) — those are separate decisions.
 
 ## Rebuilds the board with the coach's arrangement. Returns the tiles placed.
 func auto_arrange() -> int:
 	clear_board()
-	var top: int = TrainingTile.max_unlocked_grade(tactics_stat())
+	var top: int = TrainingTile.GRADE_NAMES.size() - 1
 	var needs: Dictionary = coach_needs()
 	var reinforced: Dictionary = {}     # seat → {stat: true}
 	var placed: int = 0
-	for g in range(top, 0, -1):
+	for g in range(top, -1, -1):
 		var pool: Array = _coach_pool(g)
 		if pool.is_empty():
 			continue
-		var limit: int = limit_of(pool[0])
-		var quota: int = limit
-		if limit > 0:
-			quota = ceili(float(limit) * clampf(ConstTable.num("COACH_FOCUS_PCT"), 0.0, 100.0) / 100.0)
-		placed += _coach_focus_pass(pool, needs, reinforced, quota)
+		placed += _coach_focus_pass(pool, needs, reinforced)
 		placed += _coach_broad_pass(pool)
-		placed += _coach_focus_pass(pool, needs, reinforced, 1 << 20)
-	for g2 in range(top, 0, -1):
+	for g2 in range(top, -1, -1):
 		placed += _coach_broad_pass(_coach_pool(g2))
 	return placed
 
@@ -860,23 +847,25 @@ func _role_stat_avgs() -> Dictionary:
 	return out
 
 
-# Tiles of grade `g` the coach may use, in a fixed order (bigger shapes first,
-# then id). Locked grades give an empty pool.
+# Owned tiles of grade `g` the coach may use, in a fixed order (bigger shapes
+# first, then id).
 func _coach_pool(g: int) -> Array:
 	var pool: Array = []
-	for t_raw in all_tiles():
+	for t_raw in owned_tiles():
 		var t: TrainingTile = t_raw
-		if t.grade == g and is_unlocked(t) and coach_may_use(t):
+		if t.grade == g and coach_may_use(t):
 			pool.append(t)
 	pool.sort_custom(_auto_order)
 	return pool
 
 
-## Mastery tiles and tiles carrying any effect clause other than `mult` / `flat`
-## (e.g. T1's `quirk:*`) are never auto-placed. Reads the raw CSV effect so a
+## The basic course, mastery tiles and tiles carrying any effect clause other
+## than `mult` / `flat` (e.g. T1's `quirk:*`) are never auto-placed. Reads the raw CSV effect so a
 ## clause kind `TrainingTile` does not parse still counts.
 func coach_may_use(t: TrainingTile) -> bool:
 	if t == null or t.has_mastery() or t.cell_colors.has(TrainingTile.COLOR_MASTERY):
+		return false
+	if TrainingCourses.is_basic(t.id):
 		return false
 	var raw: String = String(_gm.training_tile_def(t.id).get("effect", ""))
 	for part in raw.split(";", false):
@@ -897,10 +886,10 @@ static func _auto_order(a: TrainingTile, b: TrainingTile) -> bool:
 	return a.id < b.id
 
 
-# Focus pass: up to `quota` focused tiles from `pool`, one per pilot per round.
-# Pilots take turns fewest-reinforced first, then the largest deficit, then seat.
-# Returns the tiles placed.
-func _coach_focus_pass(pool: Array, needs: Dictionary, reinforced: Dictionary, quota: int) -> int:
+# Focus pass: the owned focused tiles of `pool`, one per pilot per round, until
+# no copy fits. Pilots take turns fewest-reinforced first, then the largest
+# deficit, then seat. Returns the tiles placed.
+func _coach_focus_pass(pool: Array, needs: Dictionary, reinforced: Dictionary) -> int:
 	var focused: Array = []
 	for t_raw in pool:
 		if is_focused_tile(t_raw):
@@ -909,11 +898,9 @@ func _coach_focus_pass(pool: Array, needs: Dictionary, reinforced: Dictionary, q
 		return 0
 	var placed: int = 0
 	var progress: bool = true
-	while progress and placed < quota and grade_slot_free(focused[0]):
+	while progress:
 		progress = false
 		for seat in _coach_seat_order(needs, reinforced):
-			if placed >= quota or not grade_slot_free(focused[0]):
-				break
 			if _coach_reinforce(int(seat), focused, needs, reinforced):
 				placed += 1
 				progress = true
@@ -1008,8 +995,8 @@ func _coach_broad_pass(pool: Array) -> int:
 		progress = false
 		for t2_raw in broad:
 			var t2: TrainingTile = t2_raw
-			if not grade_slot_free(t2):
-				break
+			if not can_take_more(t2):
+				continue
 			if _auto_place_one(t2):
 				placed += 1
 				progress = true

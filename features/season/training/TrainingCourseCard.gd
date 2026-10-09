@@ -2,11 +2,11 @@ class_name TrainingCourseCard
 extends Panel
 
 # 코스 카드 한 장 — `TrainingView` 인벤토리 줄(`%CourseRow`)의 반복 항목. 세로로 선
-# 카드이고 위에서부터 등급 띠(등급 글자 · 놓임/상한) → 오목한 상자 안의 모양
+# 카드이고 위에서부터 등급 띠(등급 글자 · 놓임/보유) → 오목한 상자 안의 모양
 # 미니어처 → 이름. 설명문과 EXP 요약은 정보 팝오버(`TrainingCoursePopover`)가 든다.
 #
 # **레이아웃의 정본은 `UI_Comp_TrainingCourseCard.tscn` 이다** (카드 크기, 띠 높이, 상자 자리,
-# 이름 칸, 잠금 칩 — 에디터에서 고친다). 이 스크립트가 정하는 것은 데이터뿐:
+# 이름 칸 — 에디터에서 고친다). 이 스크립트가 정하는 것은 데이터뿐:
 # 등급 색(테두리 · 띠 · 등급 글자), 고른 카드의 옷, 잠긴 카드의 흐림, 모양 미니어처
 # (`%Mini` 의 `draw` — 상자 크기에서 칸 크기를 역산한다).
 #
@@ -36,10 +36,9 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## 카드를 채운다. `grade_locked` = 전술이 모자라 등급이 안 열림(잠금 칩),
-## `locked` = 그것이거나 등급 상한에 닿음(흐림, 집을 수 없음).
-func fill(t: TrainingTile, cap_text: String, grade_locked: bool, locked: bool,
-		lock_reason: String) -> void:
+## 카드를 채운다. `cap_text` = 놓임/보유, `locked` = 보유한 장수를 전부 놓음
+## (흐림, 집을 수 없음).
+func fill(t: TrainingTile, cap_text: String, locked: bool) -> void:
 	tile = t
 	if _frame == null:
 		_frame = OutgameTheme.variation_box(&"TrainingCourseCardFrame")
@@ -56,8 +55,6 @@ func fill(t: TrainingTile, cap_text: String, grade_locked: bool, locked: bool,
 	(%Name as Label).text = t.tile_name
 	(%Body as Control).modulate = Color(1, 1, 1, 0.42) if locked else Color(1, 1, 1, 1)
 
-	(%LockChip as Control).visible = grade_locked
-	(%LockText as Label).text = lock_reason
 	(%Mini as Control).queue_redraw()
 
 
@@ -97,5 +94,5 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var t := TrainingTile.from_def({"id": "T12", "name_key": "tx_Z7JQDJ9DV2", "grade": 3,
 			"shape": "CC/DD", "exp": "engage_hit:52|engage_eva:52", "effect": ""})
-	fill(t, "1/2", false, false, "")
+	fill(t, "1/2", false)
 	set_selected(true, false)

@@ -27,7 +27,7 @@ extends Control
 #      코스 타일이 앉는다. 여러 칸 타일의 안쪽 경계는 이음매의 **가운데
 #      토막**만 희미하게 남는다(2×2 = 작은 십자, 가로 2칸 = 작은 세로 일자).
 #   3. **타일 인벤토리** — 세로로 선 **카드 한 줄의 가로 스크롤**이다. 카드에는
-#      등급 띠 · 놓임/상한 · 모양 미니어처 · 이름만 있고 **설명문은 없다** —
+#      등급 띠 · 놓임/보유 · 모양 미니어처 · 이름만 있고 **설명문은 없다** —
 #      카드를 누르면 그 위에 정보 팝오버가 뜬다(`_select_card`). 타일은 몇 번이든
 #      다시 쓸 수 있고(보유 수량 없음) **등급별 배치 개수 상한**이 대신 판을 조인다.
 #
@@ -140,7 +140,7 @@ var _inv_press_tile: TrainingTile = null
 
 var _thumb_faces: Array = []             # 5 TextureRect
 ## Per-pilot EXP chip on each thumbnail (`_refresh_exp_chips`) — shown only when
-## that pilot's multiplier differs from the team-wide one (breakthrough bonus).
+## that pilot's multiplier differs from the team-wide one (rank-row `stat_growth` bonus).
 var _thumb_exp_chips: Array = []         # 5 Panel (`%ExpChip` of each TrainingThumb)
 var _thumb_exp_texts: Array = []         # 5 Label (`%ExpText`)
 var _exp_chip_base: StyleBoxFlat = null  # 씬의 칩 옷 — 색만 바꿔 복사한다
@@ -158,7 +158,7 @@ var _hover_ok: bool = false
 
 var _built: bool = false
 
-# Staff (M3): who runs training / tactics, the EXP multiplier line, and the
+# Staff (M3): who runs training, the EXP multiplier line, and the
 # "코치 추천" (auto-arrange) slot of the bottom bar — hidden when the manager
 # owns training (`StaffSystem.is_delegated`).
 var _staff_lbl: Label = null
@@ -290,12 +290,11 @@ func _refresh_staff() -> void:
 		return
 	var state: Dictionary = _board.season_state()
 	if _staff_lbl != null:
-		_staff_lbl.text = "%s · %s" % [
-			_owner_text(state, "training"), _owner_text(state, "tactics")]
+		# Tactics no longer gates course grades (courses are owned items), so
+		# only the training owner is named here.
+		_staff_lbl.text = _owner_text(state, "training")
 	if _effect_lbl != null:
-		var top: int = TrainingTile.max_unlocked_grade(_board.tactics_stat())
-		_effect_lbl.text = Loc.t(L.TRAINING_VIEW_EFFECT_LINE, {
-			"effect": _effect_text(_shared_parts(state)), "grade": String(TrainingTile.GRADE_NAMES[top])})
+		_effect_lbl.text = _effect_text(_shared_parts(state))
 	_refresh_exp_chips(state)
 	if _bar_buttons.size() == 3:
 		var auto_btn: Button = _bar_buttons[1]
@@ -307,7 +306,7 @@ func _refresh_staff() -> void:
 ## Team-wide EXP multiplier parts — the same calls `TrainingBoard.exp_mult_table`
 ## multiplies for every cell (training stat × finance × trait `train_exp_pct`).
 ## Part labels are l10n keys, translated in `_effect_text`.
-## Per-pilot parts (breakthrough, outing fatigue) are not here; see `_refresh_exp_chips`.
+## Per-pilot parts (rank-row growth bonus, outing fatigue) are not here; see `_refresh_exp_chips`.
 func _shared_parts(state: Dictionary) -> Array:
 	return [
 		[L.TERM_PERSON_STAFF, TrainingTile.training_exp_mult(_board.training_stat())],
@@ -344,7 +343,7 @@ static func _effect_text(parts: Array) -> String:
 
 ## Thumbnail chips: each pilot's own multiplier relative to the team-wide one, read
 ## from `TrainingBoard.exp_mult_table` (what settlement multiplies). A pilot's best
-## day is used, so a single outing-fatigue day does not hide the breakthrough bonus.
+## day is used, so a single outing-fatigue day does not hide the rank-row growth bonus.
 func _refresh_exp_chips(state: Dictionary) -> void:
 	if _thumb_exp_chips.size() != COLS:
 		return
@@ -823,14 +822,11 @@ func _rebuild_inventory() -> void:
 	for child in _inv_row.get_children():
 		child.queue_free()
 
-	for t_raw in _board.all_tiles():
+	for t_raw in _board.owned_tiles():
 		var t: TrainingTile = t_raw
 		var card := TrainingCourseCard.create()
 		_inv_row.add_child(card)
-		var grade_locked: bool = not _board.is_unlocked(t)
-		var cap: String = "" if grade_locked \
-				else _cap_text(_board.placed_count_of_grade(t.grade), _board.limit_of(t))
-		card.fill(t, cap, grade_locked, _card_locked(t), _lock_reason(t))
+		card.fill(t, _cap_of(t), _card_locked(t))
 		# 탭 = 고르기(정보 팝오버), 세로 드래그 = 집기. **잠긴 카드도 고를 수 있다** —
 		# 못 놓는 것과 무엇인지 못 보는 것은 다른 일이다.
 		card.gui_input.connect(_on_card_input.bind(t, card))
@@ -840,7 +836,7 @@ func _rebuild_inventory() -> void:
 	_inv_row.add_child(pad)
 
 
-## Locked = grade not unlocked by tactics, or its placement limit is reached.
+## Locked = every owned copy is already on the board.
 ## Locked cards can still be selected (popover), never picked up.
 func _card_locked(t: TrainingTile) -> bool:
 	if _board == null:
@@ -848,13 +844,10 @@ func _card_locked(t: TrainingTile) -> bool:
 	return not _board.can_take_more(t)
 
 
-## "전술 11 필요" — the tactics a locked grade needs.
-static func _lock_reason(t: TrainingTile) -> String:
-	return Loc.t(L.TRAINING_VIEW_LOCK_REASON, {"n": TrainingTile.required_tactics(t.grade)})
-
-
-static func _cap_text(placed: int, limit: int) -> String:
-	return "∞" if limit < 0 else "%d/%d" % [placed, limit]
+## `placed/owned` of one course ("∞" for the unlimited basic course).
+func _cap_of(t: TrainingTile) -> String:
+	var owned: int = _board.owned_count(t)
+	return "∞" if owned == TrainingCourses.UNLIMITED else "%d/%d" % [_board.placed_count(t), owned]
 
 
 ## 인벤토리 카드에서 끌어내기 — `DragScroll` 이 **세로** 드래그로 판정했을 때만
@@ -891,24 +884,20 @@ func _on_card_input(event: InputEvent, t: TrainingTile, card: TrainingCourseCard
 	_select_card(t, card)
 
 
-## 팝오버(`TrainingCoursePopover`)는 등급 · 이름 · 놓임/상한 · **EXP** · **효과** 를
+## 팝오버(`TrainingCoursePopover`)는 등급 · 이름 · 놓임/보유 · **EXP** · **효과** 를
 ## 든다 — 설명문 줄은 없다(`README.md` "Course inventory + info popover").
 func _select_card(t: TrainingTile, card: TrainingCourseCard) -> void:
 	_close_popover()
 	_sel_tile = t
 	_sel_card = card
 	card.set_selected(true, _card_locked(t))
-	# Locked grade (tactics): one extra line saying what it needs vs. now.
-	var lock: String = ""
-	if _board != null and not _board.is_unlocked(t):
-		lock = Loc.t(L.TRAINING_VIEW_LOCK_NOW, {"reason": _lock_reason(t), "n": _board.tactics_stat()})
 	_popover = TrainingCoursePopover.create()
 	# 팝오버 자신이 클릭을 삼키고(씬에서 STOP) **그 클릭으로 닫힌다**. 삼키지 않으면
 	# 밑에 깔린 카드가 대신 눌려 방금 연 것이 그 자리에서 닫히거나 옆 코스로
 	# 갈아타 버린다 — 팝오버는 카드 두어 장을 덮으므로 반드시 일어나는 일이다.
 	_popover.gui_input.connect(_on_popover_input)
 	add_child(_popover)
-	_popover.fill(t, _cap_text(_board.placed_count_of_grade(t.grade), _board.limit_of(t)), lock)
+	_popover.fill(t, _cap_of(t))
 	_place_popover()
 
 
@@ -984,6 +973,8 @@ func _fill_preview() -> void:
 	_board = TrainingBoard.new()
 	_board.name = "PreviewBoard"
 	add_child(_board)
+	# A new run owns Basic Training I only — the preview owns two of every course.
+	TrainingCourses.grant_all(_board.season_state(), 2)
 	_board.auto_arrange()
 	refresh()
 	_preview_pick_card.call_deferred()

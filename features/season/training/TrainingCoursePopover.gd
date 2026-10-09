@@ -1,12 +1,12 @@
 class_name TrainingCoursePopover
 extends Panel
 
-# 코스 카드를 누르면 그 위에 뜨는 정보 팝오버 — 등급 · 이름 · 놓임/상한 · **EXP** ·
-# **효과** (+ 전술이 모자라 잠긴 등급이면 그 이유 한 줄). 뒤의 둘은 타일 데이터에서
+# 코스 카드를 누르면 그 위에 뜨는 정보 팝오버 — 등급 · 이름 · 놓임/보유 · **EXP** ·
+# **효과**. 뒤의 둘은 타일 데이터에서
 # 만들어진다(`exp_summary` / `effect_summary`) — 설명문 줄은 없다(`README.md`).
 #
 # **레이아웃의 정본은 `UI_View_TrainingCoursePopover.tscn` 이다** (폭, 줄마다의 x · 폭 · 글꼴,
-# 테두리 · 그림자). 코드가 정하는 것은 **높이**뿐이다: `Exp` · `Effect` · `Lock` 의 y 와
+# 테두리 · 그림자). 코드가 정하는 것은 **높이**뿐이다: `Exp` · `Effect` 의 y 와
 # 높이, 판 전체 높이를 글자에서 역산한다(`_text_height`). 컨테이너 자동 크기에 맡기면
 # 자리를 잡는 프레임(`TrainingView._place_popover`)과 그리는 프레임이 어긋난다 —
 # 줄바꿈 Label 의 최소 높이는 레이아웃이 한 번 돈 뒤에야 맞는다.
@@ -32,22 +32,21 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## 채우고 높이를 세운다. `lock` 이 비어 있지 않으면 놓임/상한 대신 잠금 이유 줄이 붙는다.
-func fill(t: TrainingTile, cap_text: String, lock: String) -> void:
+## 채우고 높이를 세운다. `cap_text` = 놓임/보유.
+func fill(t: TrainingTile, cap_text: String) -> void:
 	var sty := OutgameTheme.variation_box(&"TrainingCoursePopoverFrame")
 	sty.border_color = t.grade_color()
 	add_theme_stylebox_override(&"panel", sty)
 
 	(%Title as Label).text = "[%s] %s" % [t.grade_name(), t.tile_name]
 	var cap: Label = %Cap
-	cap.text = "" if not lock.is_empty() else cap_text
+	cap.text = cap_text
 	cap.add_theme_color_override(&"font_color", t.grade_color())
 
 	var exp_lbl: Label = %Exp
 	var y: float = exp_lbl.position.y
 	y = _place_line(exp_lbl, t.exp_summary(), y, true)
 	y = _place_line(%Effect, t.effect_summary(), y)
-	y = _place_line(%Lock, lock, y)
 	size = Vector2(size.x, y - LINE_GAP + PAD_BOTTOM)
 
 
@@ -82,11 +81,9 @@ static func _text_height(text: String, width: float, font_size: int) -> float:
 	return total + float(lines - 1) * LINE_SPACING
 
 
-## F6 단독 실행 미리보기 — 손으로 적은 3등급 코스(EXP + 증폭 효과), 전술이 모자라 잠긴
-## 등급의 이유 줄까지(`resources/UiPreview.gd`).
+## F6 단독 실행 미리보기 — 손으로 적은 3등급 코스(EXP + 증폭 효과)(`resources/UiPreview.gd`).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var t := TrainingTile.from_def({"id": "T14", "name_key": "tx_CHY4PWBWTD", "grade": 3,
 			"shape": "K/W/W", "exp": "all:38", "effect": "mult:mate_all:125"})
-	fill(t, "0/2", Loc.t(L.TRAINING_VIEW_LOCK_NOW, {
-		"reason": Loc.t(L.TRAINING_VIEW_LOCK_REASON, {"n": 11}), "n": 9}))
+	fill(t, "0/2")

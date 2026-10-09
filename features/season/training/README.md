@@ -17,17 +17,18 @@ too** — the only place that needs weekday names is the **week-progress screen 
 ## Files
 | File | Role |
 |---|---|
-| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the **staff-stat lookups** (grade unlock from tactics, per-grade placement limit and EXP multiplier from training — see "Manager / staff stats" below). |
-| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stats (`training_stat` / `tactics_stat` / `limit_of` / `is_unlocked` / `can_take_more`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map) and training names (`day_tile_names`, empty cell = basic course; the week screen's morning speech bubbles), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
+| `TrainingTile.gd` | `class_name TrainingTile` — one CSV row = one tile. **Grammar parsing lives only here** (shape · colour · EXP · mastery · effect clauses · quirk ops). Also owns the colour table · grade table and the training-stat EXP multiplier (`training_exp_mult`, see "Manager / staff stats" below). `line` = the tile's upgrade line. |
+| `TrainingCourses.gd` | `class_name TrainingCourses` — static, **the run's owned courses** (`season_state["training_courses"]`): `new_inventory` · `inventory` · `owned_count` · `owned_tile_ids` · `filler_tile_id` · `grant` (upgrade rule) · `grant_all` (previews). See "Owned courses" below. |
+| `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stat (`training_stat`), ownership (`owned_tiles` / `owned_count` / `placed_count` / `can_take_more` / `filler_tile_id`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map) and training names (`day_tile_names`, empty cell = basic course; the week screen's morning speech bubbles), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
 | `TrainingView.gd` · `UI_View_TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
 | `UI_Comp_TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip · `%Hit` tap target). No script — `TrainingView._bind_thumbs` sets the role border colour and wires `%Hit` → `SeasonPilotDetail.open` (pilot detail sheet, `features/season/README.md`); five instances sit in `UI_View_TrainingView.tscn`. |
-| `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · cap · shape well · name · lock chip). `fill(tile, cap, grade_locked, locked, lock_reason)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
-| `TrainingCoursePopover.gd` · `.tscn` | `class_name TrainingCoursePopover` — the info popover over a selected card. `fill(tile, cap, lock)` sets the text and **derives the height from the text** (`_text_height`); `TrainingView._place_popover` positions it. |
+| `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · placed/owned · shape well · name). `fill(tile, cap, locked)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
+| `TrainingCoursePopover.gd` · `.tscn` | `class_name TrainingCoursePopover` — the info popover over a selected card. `fill(tile, cap)` sets the text and **derives the height from the text** (`_text_height`); `TrainingView._place_popover` positions it. |
 
 **F6 preview** — each scene with a script fills dummy data when run alone (`resources/UiPreview.gd`):
-`TrainingView` = in-memory run + preview-only `TrainingBoard` child, coach auto-arrange, third course card
+`TrainingView` = in-memory run + preview-only `TrainingBoard` child, two copies of every course (`TrainingCourses.grant_all`), coach auto-arrange, third course card
 selected with its popover; `TrainingCourseCard` / `TrainingCoursePopover` = hand-written grade-3 tiles
-(card selected; popover with a lock line).
+(card selected; popover).
 
 ## Board axes
 ```
@@ -55,6 +56,7 @@ every clause would become a lie each time the board is rotated.
 |---|---|
 | `id` | `T01` … (text PK) |
 | `grade` | 0=D 1=C 2=B 3=A 4=S |
+| `line` | Optional upgrade line (`basic`, `field_hit`, `field_eva`, `engage_hit`, `engage_eva`, `atk_growth`, `hp_growth`). Empty = the tile is its own line. Levels of one line differ by `grade` and **must keep the same shape** (an upgrade rewrites placed tiles in place). Names carry the level as a Roman numeral (`기초 훈련 I` … `IV`, `사격 훈련 I` … `III`) |
 | `shape` | Colour string with rows separated by `/`. **One row = one day, one character = one player.** `W`=1 cell, `WW`=two on the same weekday, `W/W`=one player for two days, `CC/DD`=two × two days, `WWWWW`=one day for all five |
 | `exp` | `stat:value` joined by `\|`. `all:N` = all six stats. **Value given per cell**, so an n-cell tile gives n times. `mastery:N` = mech-mastery EXP per mastery (`M`) cell (see "Mastery tiles") |
 | `effect` | Clauses joined by `;` |
@@ -122,7 +124,8 @@ creating self-amplification unrelated to placement.
 ## Settlement (`cell_exp` → `compute_gains` / `compute_day_gains`)
 Three stages, and the key design point is that **order doesn't change the result**.
 
-1. Lay down base EXP per cell. Empty cells are filled by the basic course (`FILLER_TILE_ID` = T01),
+1. Lay down base EXP per cell. Empty cells are filled by the basic course at the owned level
+   (`filler_tile_id()` → `TrainingCourses.filler_tile_id`, T01 · T02 · T22 · T23 = 기초 훈련 I~IV),
    so **"a board with nothing placed" and "a board plastered with basics" give the same result**.
 2. Scan all clauses, building a **multiplier table** and an **additive table** separately.
    Multipliers stack multiplicatively (two multipliers a% and b% → a×b) — stacking additively would run away with
@@ -230,7 +233,7 @@ TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: 
 ```
 **Scene owns**: every position / size / font size, variations — including the training-only screen
 variations `TrainingThumbFrame` · `TrainingThumbExpChip` · `TrainingCourseCardFrame` · `TrainingCourseGradeBand` ·
-`TrainingCourseShapeWell` · `TrainingCourseLockChip` · `TrainingCoursePopoverFrame` — and the bar separators.
+`TrainingCourseShapeWell` · `TrainingCoursePopoverFrame` — and the bar separators.
 **Code owns**: data colours (role border on each thumb, grade colour on card frame · band · grade letter ·
 popover border · cap, POSITIVE / NEGATIVE on the EXP chip, the selected-card look), the safe-area insets
 (`indent_to_safe_top` on the view, `extend_background`, and `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)` —
@@ -306,12 +309,13 @@ the cards, the engine starts a drag after just 10px, getting ahead of the direct
 side (board) still uses the built-in path. Which card is picked up is `_inv_press_tile`, recorded by
 `_on_card_input` at the moment of the press. Locked cards can't be picked up (they can be selected).
 
-From the top, one card is a **grade band** (22% grade-colour fill + grade letter + `놓임/상한`
-(placed/limit)) → **shape miniature in a sunken box** (cells up to 26px) → **name** (up to two
+The row shows **only owned courses** (`TrainingBoard.owned_tiles`, one card per line at its owned
+level). From the top, one card is a **grade band** (22% grade-colour fill + grade letter + `놓임/보유`
+(placed/owned, `∞` for the basic course)) → **shape miniature in a sunken box** (cells up to 26px) → **name** (up to two
 lines). No description or EXP summary — when skimming to choose, you compare names and shapes.
 
 **Tapping a card shows an info popover above it** (`_select_card` → `TrainingCoursePopover.fill` →
-`_place_popover`) — four items: grade · name · placed/limit · **EXP summary** · **effect summary**.
+`_place_popover`) — four items: grade · name · placed/owned · **EXP summary** · **effect summary**.
 No description line (see the CSV section above). EXP uses full stat names, not abbreviations
 (`전장 회피 +N` (Battlefield evasion +N), not `전회 +N`) — it's 348px wide and the only question
 here is "what does this course raise", so there's no reason to make readers decode. It appears
@@ -327,38 +331,45 @@ adds the font's line height and doesn't count the `line_spacing` (default theme 
 between lines, so two-line text measured at 49px comes back as 46. Those 3px poking past the
 popover's bottom edge onto the board were the cause of **the description overflowing the panel** —
 `_text_height` counts the lines and adds that share back (measured 1 line 23 · 2 lines 49 · 3 lines
-75, matching `Label.get_minimum_size().y` exactly). **Locked cards (those that hit the grade limit)
+75, matching `Label.get_minimum_size().y` exactly). **Locked cards (every owned copy already placed)
 can still be selected** — being unable to place it and being unable to see what it is are different
 things. The popover swallows clicks itself and **closes on that click**: otherwise the card beneath
 gets pressed instead, so the popover just opened closes on the spot or switches to the neighbouring
 course (the popover covers two or so cards, so this always happens).
 
-## Placement constraint — per-grade count limits
-Tiles **can be reused any number of times** (there is no owned quantity). So the per-grade
-placement limit is the **only** mechanism that prevents "plaster the board with the strongest
-tile". D is always unlimited (it is the filler course). The C/B/A/S limits are no longer a fixed
-table — they come from the effective **training** stat (next section). Each inventory card shows
-`놓임/상한`, and cards of a grade that hit its limit are locked.
+## Owned courses (`TrainingCourses`)
+Courses are **items with a count**. A tile can go on the board as many times as the run owns it
+(`TrainingBoard.can_take_more` = placed < owned); there is no per-grade limit and no tactics
+unlock any more. Inventory cards show `놓임/보유`, and a card whose copies are all placed is locked.
+
+- **State**: `season_state["training_courses"]` = `{line: {"tile": tile_id, "count": int}}`
+  (string keys, JSON round-trip via `SaveSystem._courses_in`). `count` -1 = unlimited.
+- **New run** (`GameManager.init_season` → `TrainingCourses.new_inventory`): **Basic Training I only**.
+  A run saved before ownership gets the same on first read (`TrainingCourses.inventory`).
+- **Basic line** (`basic`, 기초 훈련 I~IV = D/C/B/A, all-stat +8 / +12 / +14 / +16 per cell): unlimited,
+  and the owned level is also what **fills every empty cell** — upgrading it raises the whole board.
+  The coach never places it (an empty cell already is it).
+- **Upgrade rule** (`grant(state, tile_id, n)`): a line is owned at one level; every copy counts as the
+  highest grade acquired. A higher level replaces the lower one (copies on the board are rewritten in
+  place); a lower level adds a copy at the owned level — own 사격 훈련 II ×1, gain 사격 훈련 I →
+  사격 훈련 II ×2. Stat lines (사격 · 회피 기동 · 근접 교전 · 반응 · 화력 증강 · 내구 단련) are
+  I / II / III = C / B / A, single-stat +44 / +52 / +58 per cell.
+- **Acquisition is not designed yet** — nothing in the game calls `grant` (only the F6 preview's
+  `grant_all`). 한계 돌파 (old T13) was removed.
 
 ## Manager / staff stats (M3)
-Contract: `docs/outgame_dev_plan.md` §11. Both stats are read only through
+Contract: `docs/outgame_dev_plan.md` §11. The training stat is read only through
 `StaffSystem.effective(state, stat)` (manager + temporary mods, assistant, or the dedicated coach —
-whichever is highest), via `TrainingBoard.training_stat()` / `tactics_stat()`. The lookups that
-turn a stat into a rule live in `TrainingTile` (static, so they take the stat as an argument). All
-numbers are in `data/csv/const.csv` — this README names keys only.
+whichever is highest), via `TrainingBoard.training_stat()`. The lookup that
+turns it into a rule lives in `TrainingTile` (static, takes the stat as an argument). Numbers are in
+`data/csv/const.csv` — this README names keys only. **Tactics no longer touches training** (it used to
+unlock grades; courses are owned items now), so the staff line names only the training owner.
 
 | Stat | Rule | Keys |
 |---|---|---|
-| **Tactics** | Highest usable grade. D always; C/B/A/S unlock at their thresholds (`TrainingTile.max_unlocked_grade` / `grade_unlocked` / `required_tactics`). `can_place` refuses a locked grade. | `TACTICS_GRADE_C/B/A/S` |
-| **Training** | Per-grade placement limit = top-tier limit × tier percentage (rounded, at least 1). The stat picks the tier (`TrainingTile.limit_tier`). `TrainingTile.place_limit_for(grade, stat)`. | `TRAINING_STAT_LIMIT_C/B/A/S`, `TRAINING_STAT_TIER_2/3`, `TRAINING_STAT_LIMIT_PCT_1/2/3` |
 | **Training** | Tile EXP multiplier `1 + (stat − pivot) × step` (`TrainingTile.training_exp_mult`). | `TRAINING_STAT_EXP_PIVOT`, `TRAINING_STAT_EXP_STEP` |
 
-Thresholds are placeholders tuned so a manager alone (no coach, starting manager stats) gets D·C
-and the lowest limit tier, and a good dedicated coach reaches A/S and the top tier.
-
-**Locked-grade cards are still shown** — a dark chip on the shape well says what they need
-(`전술 N 필요`), the content fades, and the info popover adds one red line
-(`%Lock`, `NegativeLabel` 16: `전술 N 필요 (지금 전술 M)`). Like limit-locked cards they can be selected but not picked up
+Cards whose owned copies are all placed fade; they can be selected but not picked up
 (`TrainingView._card_locked` = `not TrainingBoard.can_take_more(t)`).
 
 ### Where the EXP multipliers meet
@@ -409,7 +420,7 @@ cell on that cell's day — so a tile costs those training days. Parsing lives i
   A pilot has one cell per day, so a multi-day tile acts once per `Q` day — `Q/K` acts once.
 - Tiles (placeholders): `T18 기벽 발굴` (C, `Q`, gain) · `T19 기벽 재조정` (B, `Q`, reroll) ·
   `T20 동반 발굴` (B, `QQ`, gain for two pilots) · `T21 잠재력 개방` (A, `Q/K`, slot — two days of one
-  pilot). They compete with stat tiles for the per-grade placement limit and for the day itself.
+  pilot). They compete with stat tiles for the day itself.
 - Auto-arrange never places them (`coach_may_use` rejects any non-`mult`/`flat` clause — see below).
 
 ## Auto-arrange — "코치 추천" (M3, reworked §14 T6)
@@ -422,28 +433,28 @@ player can edit the result as usual.
 It is **per-pilot weak-stat reinforcement + grade balance** — still a **plain rule, not an
 optimiser** (plan §11.0 / §14.0 — no bonus either way), and deterministic (fixed tie-breaks, no RNG).
 The M3 version only asked "does this raise the board's total EXP", which a focused single-stat tile
-never does (it gives less in total than the all-stat filler), so a C-only team got nothing but `T02`.
+never does (it gives less in total than the all-stat filler), so a C-only team got nothing but the
+old all-stat `W/W` C tile.
 
 1. Clear the board. `coach_needs()` ranks each pilot's six stats by **deficit against the role
    average** (every pilot of that role in `all_pilots`; ties keep `PlayerData.STAT_KEYS` order) and
    keeps the top `COACH_WEAK_RANK`.
-2. Walk unlocked grades from the highest down to C (D is the filler). Inside a grade:
-   - **focus pass** — up to `COACH_FOCUS_PCT`% of the grade limit (rounded up) goes to **focused**
+2. Walk the **owned** courses grade by grade, highest first. Inside a grade:
+   - **focus pass** — the owned copies of **focused**
      tiles (`is_focused_tile`: trains fewer than six stats). Pilots take turns (fewest reinforced
      stats first, then the largest deficit, then seat); each turn aims at that pilot's weakest stat
      not yet reinforced that some tile trains, and picks the tile + origin covering that pilot's
      column with the **largest gain in that stat for that pilot** (ties: earliest day, then leftmost).
-     A tile with a downside clause (e.g. `mult:day_prev_all:50`) is thereby placed where the
-     downside costs least;
-   - **broad pass** — the rest of the limit goes to broad tiles (all-stat / amplifiers) by the M3
-     rule: first day-then-seat position that raises `board_total_exp`;
-   - whatever the broad pass could not use goes back to the focus pass.
+     A tile with a downside clause is thereby placed where the downside costs least;
+   - **broad pass** — the owned copies of broad tiles (all-stat / amplifiers) by the M3
+     rule: first day-then-seat position that raises `board_total_exp`.
 3. One more broad sweep over all grades (an amplifier placed before what it amplifies gets a
    second chance).
 
-**Never auto-placed** (`coach_may_use`): mastery tiles (`M` cells / `mastery:N`) and any tile whose
+**Never auto-placed** (`coach_may_use`): the basic course (an empty cell already is it), mastery tiles (`M` cells / `mastery:N`) and any tile whose
 raw `effect` has a clause kind other than `mult` / `flat` (e.g. T1's `quirk:*`) — what to research and
-which quirk to chase are separate decisions. Keys: `COACH_FOCUS_PCT`, `COACH_WEAK_RANK`.
+which quirk to chase are separate decisions. Only owned copies are placed (`can_place`), so with
+just Basic Training I the coach places nothing. Key: `COACH_WEAK_RANK`.
 
 ## Drag & drop (`TrainingView`)
 Uses Godot's built-in drag (`set_drag_forwarding`). There are two origins.

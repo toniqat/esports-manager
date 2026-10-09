@@ -110,31 +110,3 @@ text = "사격 훈련"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
-
-[node name="LockChip" type="Panel" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()
-Grade not unlocked by tactics: the reason, over the shape well. Shown by code."
-visible = false
-layout_mode = 0
-offset_left = 16.0
-offset_top = 90.0
-offset_right = 152.0
-offset_bottom = 126.0
-mouse_filter = 2
-theme_type_variation = &"TrainingCourseLockChip"
-
-[node name="LockText" type="Label" parent="LockChip"]
-editor_description = "[필수] 지우면 오류 — TrainingCourseCard.gd fill()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"OnFillLabel"
-theme_override_font_sizes/font_size = 18
-text = "전술 11 필요"
-horizontal_alignment = 1
-vertical_alignment = 1

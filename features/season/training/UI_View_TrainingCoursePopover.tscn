@@ -5,7 +5,7 @@
 
 [node name="TrainingCoursePopover" type="Panel"]
 auto_translate_mode = 2
-editor_description = "Info popover over a selected course card (TrainingView). Width and x / font of every line are the scene's; the height and the y of Exp / Effect / Lock are derived from the text in code (placement needs the height in the same frame). Border = grade colour (data, code). STOP — it swallows the tap that closes it."
+editor_description = "Info popover over a selected course card (TrainingView). Width and x / font of every line are the scene's; the height and the y of Exp / Effect are derived from the text in code (placement needs the height in the same frame). Border = grade colour (data, code). STOP — it swallows the tap that closes it."
 offset_right = 380.0
 offset_bottom = 159.0
 theme = ExtResource("2_theme")
@@ -62,17 +62,4 @@ offset_bottom = 111.0
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 16
 text = "같은 열 다음 날 ×1.2"
-autowrap_mode = 3
-
-[node name="Lock" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — TrainingCoursePopover.gd fill()"
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 16.0
-offset_top = 121.0
-offset_right = 364.0
-offset_bottom = 143.0
-theme_type_variation = &"NegativeLabel"
-theme_override_font_sizes/font_size = 16
-text = "전술 11 필요 (지금 전술 6)"
 autowrap_mode = 3

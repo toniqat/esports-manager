@@ -608,7 +608,8 @@ key without a row returns null and the panel just omits the icon.
 
 ### TeamLogos.gd · StaffImages.gd (temporary pictograms)
 `TeamLogos.texture(team_id)` → `images/team_logos/team_<id>.svg` (placeholder shield emblems for league teams
-0..7; INTL teams 100.. borrow `team_<id % 8>.svg`). `StaffImages.portrait(who)` → `images/staff/manager_bust.svg`
+0..7; INTL teams 100.. borrow `team_<id % 8>.svg`). `TeamLogos.color(team_id)` = the team's signature colour
+(`COLORS`, the shield fill of that logo, same `id % 8` rule — change both together; PREP card banners). `StaffImages.portrait(who)` → `images/staff/manager_bust.svg`
 for `"manager"`, else `staff_bust.svg` (one upper-body pictogram for every staff member). Facility pictograms
 live in `images/facilities/fac_<fid>.svg` (`FacilitySystem.icon_of`). All are stand-ins until real art exists —
 swap the files (or add per-id files and look them up first) without touching callers.

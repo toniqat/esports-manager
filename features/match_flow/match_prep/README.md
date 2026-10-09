@@ -8,6 +8,7 @@ MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_d
 |---|---|
 | `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name, enemy_team_id)` (MatchFlow passes its `enemy_team_id`) creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
 | `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll: the analyst note on top, then **opponent cards** (same side as ban/pick) · the centred **versus block** (own logo + short name · `VS` · opponent short name + logo) · own cards, bottom bar `경기 시작`. No team-name line, no section titles, no tier chip (2026-10). `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name, enemy_team_id = -1)` (-1 = the roster's `team_id`) · signal `start_pressed`. Card tap → detail sheet (my run pilot = `SeasonPilotDetail.open`, opponent / my pilot outside a run = `MatchPrepPilotDetail.open`) |
+| `TeamBanner.gd` | `class_name TeamBanner` — `_draw` widget behind one card row: square, borderless band in `color` (the team's `TeamLogos.color`) with lighter horizontal stripes (`STRIPE_PITCH` 12, 3 thick) and a darker band along the top / bottom edge. Placed as `%OwnBanner` / `%EnemyBanner` in the PREP scene |
 | `UI_Comp_MatchPrepPilotCard.tscn` / `MatchPrepPilotCard.gd` | `class_name MatchPrepPilotCard` — one pilot card (section below). `create()` · `fill(row, own, trust, warn)` · signal `pressed(pilot_id)` |
 | `UI_View_MatchPrepPilotDetail.tscn` / `MatchPrepPilotDetail.gd` | `class_name MatchPrepPilotDetail` — `HubSheet` body for an opponent pilot: tier line + one `IntelPilotRow` (six stats / mech line / card line exactly as the reveal tier allows). `open(host, intel, row)` (sheet title = pilot name) |
 | `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own, team_id = -1)` returns rows + analyst notes + `analyst_who` + `threat_pilot_id` as data (`team_id` -1 = `roster_team(roster)`); `strongest_row(rows)` (the "경계 대상" lane), `tier_for(state, team_id, is_own = false)` (also read by ban/pick), `roster_team(roster)`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` (caches `mechs.name_key`, resolves with `Loc.t`) |
@@ -31,12 +32,13 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
   ├ %Scroll (40 side margin, top 104, bottom = bar + 12) → Body (VBox, expand = fills the scroll height)
   │   EnemyIntelPad/%IntelView_EnemyIntel (show_rows = false, show_header = false: analyst note only) ·
   │   TopSpace (expand) · EnemyCardsGap 20 (room for the `경계 대상` chip sticking 16 above a card) ·
-  │   EnemyCardsPad/%EnemyCards (HBox sep 10: MatchPrepPilotCard_Enemy0..4, expand) · VersusGap 28 ·
+  │   EnemyCardsPad [%EnemyBanner (TeamBanner, fills the pad) + EnemyBandPad (18 sides · 22 top/bottom) /
+  │     %EnemyCards (HBox sep 10: MatchPrepPilotCard_Enemy0..4, expand)] · VersusGap 28 ·
   │   VersusPad/Versus (HBox centred, sep 40): OwnSide (240: %OwnLogo 128² · %OwnAbbr HeadingLabel 40) ·
   │     VsText `VS` (AccentLabel 64) · EnemySide (%EnemyLogo · %EnemyAbbr) · VersusGap2 28 ·
-  │   OwnCardsPad/%OwnCards (MatchPrepPilotCard_Own0..4) · BottomSpace (expand) · BottomPad 16
+  │   OwnCardsPad [%OwnBanner + OwnBandPad / %OwnCards (MatchPrepPilotCard_Own0..4)] · BottomSpace (expand) · BottomPad 16
   │   (*Pad right 8 → with the scroll bar the rows end 16 short of the scroll's right edge;
-  │    five cards = (992 − 4 × 10) / 5 ≈ 190 wide on the 1080 design width)
+  │    five cards inside the banner = (992 − 36 − 4 × 10) / 5 ≈ 183 wide on the 1080 design width)
   └ %Start (bottom-anchored, 128 high, BarPrimaryButton)
 ```
 - The two expand spacers centre the enemy cards · versus · own cards block in the space under the
@@ -48,7 +50,7 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
   (`show_intel`), the ten cards from `OpponentIntel.build()` rows (seat order; a missing pilot hides
   its card) and the versus block (`_fill_versus`: `TeamLogos.texture(team_id)` + `GameManager.team_short_name`
   = `teams.csv` `short_name_key`, team ids = the two `build()` results' `team_id`; no team id → no logo and
-  the team name `fill` got). Own cards get `MentalSystem.trust`; the enemy card whose
+  the team name `fill` got). The two banners get `TeamLogos.color(team_id)` (`_fill_banner`; no team id → the scene's colour). Own cards get `MentalSystem.trust`; the enemy card whose
   `pilot_id == threat_pilot_id` gets the warn chip.
 - The scroll bar now sits at the scroll's own right edge (inside the 40px margin); the old code-built
   body was 1000 wide, which pushed the bar ~8px further right.

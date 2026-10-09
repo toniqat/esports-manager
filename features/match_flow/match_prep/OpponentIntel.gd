@@ -6,15 +6,16 @@ extends RefCounted
 # and the league team detail sheet. Screens draw what this returns
 # (`IntelView`), so the reveal rule lives in exactly one place.
 #
-# Reveal tier (`StaffSystem.analysis_tier`, thresholds `ANALYSIS_TIER_1..3`):
+# Reveal tier = the opponent team's analysis rank (§16: `IntelResearch.rank`, raised one step
+# per completed 전력 분석실 research on that team) shifted by the `analysis_tier` traits:
 #   0  name + role only
 #   1  + stats as ranges (`ANALYSIS_APPROX_STEP` wide buckets), total as "≈"
 #   2  + exact stats + top-mastery mechs (`MechMastery.top_mechs`)
 #   3  + the three fixed pilot cards (`GameManager.pilot_card_ids_for`)
 # The player's own team is always FULL. Outside a season (MatchFlow run straight
-# from the editor) everything is FULL too — there is no staff to ask.
+# from the editor) everything is FULL too — there is no research to read.
 #
-# Interpretation: when analysis is delegated (`StaffSystem.is_delegated`), the
+# Interpretation: when staff sits in the intel facility (`FacilitySystem.is_delegated_fid`), the
 # result carries 1–2 short analyst lines (strongest lane, suggested ban). When
 # the manager owns analysis the screen shows raw data only. The heuristic is
 # deliberately simple — "reasonable", never optimal.
@@ -24,6 +25,8 @@ const TIER_APPROX: int = 1
 const TIER_MECHS: int = 2
 const TIER_CARDS: int = 3
 const FULL: int = TIER_CARDS
+## The facility whose research raises the rank and whose staff occupant writes the note (§16).
+const INTEL_FACILITY: String = "intel"
 
 const TIER_LABELS: Array = [  # l10n-keys: match.intel.tier.*
 	L.MATCH_INTEL_TIER_NAME_ONLY, L.MATCH_INTEL_TIER_APPROX, L.MATCH_INTEL_TIER_MECHS, L.MATCH_INTEL_TIER_FULL,
@@ -34,18 +37,26 @@ static var _mech_loaded: bool = false
 
 
 # ── Tier ──────────────────────────────────────────────────────────────────────
-## Reveal tier for a roster. `is_own` = the player's team (always FULL).
-static func tier_for(state: Dictionary, is_own: bool) -> int:
+## Reveal tier for `team_id`'s roster. `is_own` = the player's team (always FULL).
+## Opponents: the team's analysis rank (`IntelResearch.rank`) + the `analysis_tier` traits, 0..3.
+static func tier_for(state: Dictionary, team_id: int, is_own: bool = false) -> int:
 	if is_own or not bool(state.get("active", false)):
 		return FULL
-	return clampi(StaffSystem.analysis_tier(state), TIER_NAME_ONLY, FULL)
+	if team_id < 0:
+		return TIER_NAME_ONLY
+	var r: int = IntelResearch.rank(state, team_id)
+	if r >= FULL:
+		return FULL
+	return clampi(r + TraitSystem.run_mod(state, "analysis_tier"), TIER_NAME_ONLY, FULL)
 
 
-## Effective analysis value needed for `tier` (0 for tier 0).
-static func threshold_of(tier: int) -> int:
-	if tier <= 0:
-		return 0
-	return ConstTable.int_of("ANALYSIS_TIER_%d" % clampi(tier, 1, 3))
+## Team id of a roster (its first pilot's `team_id`), -1 for an empty roster.
+static func roster_team(roster: Array) -> int:
+	for raw in roster:
+		var p := raw as PlayerData
+		if p != null:
+			return p.team_id
+	return -1
 
 
 # ── Roster lookup ─────────────────────────────────────────────────────────────
@@ -66,8 +77,8 @@ static func team_roster(state: Dictionary, team_id: int) -> Array:
 
 
 # ── Builder ───────────────────────────────────────────────────────────────────
-## → `{tier, tier_label, own, rows: [row], delegated, analyst, notes: [String],
-##     threat_pilot_id, analysis (effective value), next_need (value for the next tier, 0 at FULL)}`.
+## `team_id` = whose roster (its analysis rank sets the tier); -1 = read it from the roster.
+## → `{tier, tier_label, own, team_id, rows: [row], delegated, analyst, notes: [String], threat_pilot_id}`.
 ## `threat_pilot_id` = the pilot the analyst's "경계 대상" line names (`strongest_row`), -1 when
 ## that line is not shown (manager owns analysis, tier 0, own team).
 ## A row (one per pilot, display order 탑 → 서폿):
@@ -75,8 +86,9 @@ static func team_roster(state: Dictionary, team_id: int) -> Array:
 ##     stats: [{label, text, value}], total_text,
 ##     show_mechs, mechs: [{mech_id, name, text}], show_cards, cards: [String]}`
 ## `value` is the exact stat for tier >= 2, the bucket midpoint at tier 1, -1 at 0.
-static func build(state: Dictionary, roster: Array, is_own: bool) -> Dictionary:
-	var tier: int = tier_for(state, is_own)
+static func build(state: Dictionary, roster: Array, is_own: bool, team_id: int = -1) -> Dictionary:
+	var tid: int = team_id if team_id >= 0 else roster_team(roster)
+	var tier: int = tier_for(state, tid, is_own)
 	var rows: Array = []
 	var sorted: Array = roster.duplicate()
 	sorted.sort_custom(func(a, b): return GameEnums.role_seat((a as PlayerData).role) \
@@ -86,12 +98,11 @@ static func build(state: Dictionary, roster: Array, is_own: bool) -> Dictionary:
 		if p != null:
 			rows.append(_row_for(state, p, tier))
 	var delegated: bool = not is_own and bool(state.get("active", false)) \
-			and StaffSystem.is_delegated(state, "analysis")
+			and FacilitySystem.is_delegated_fid(state, INTEL_FACILITY)
 	var out: Dictionary = {
 		"tier": tier, "tier_label": Loc.t(String(TIER_LABELS[tier])), "own": is_own,  # l10n-dynamic: match.intel.tier.*
-		"rows": rows, "delegated": delegated, "analyst": "", "notes": [], "threat_pilot_id": -1,
-		"analysis": StaffSystem.effective(state, "analysis") if bool(state.get("active", false)) else 0,
-		"next_need": threshold_of(tier + 1) if tier < FULL else 0,
+		"team_id": tid, "rows": rows, "delegated": delegated, "analyst": "", "notes": [],
+		"threat_pilot_id": -1,
 	}
 	if delegated:
 		out["analyst"] = analyst_label(state)
@@ -101,15 +112,14 @@ static func build(state: Dictionary, roster: Array, is_own: bool) -> Dictionary:
 	return out
 
 
-## "서지안 (분석가)" / "한서준 (어시스턴트 매니저)" / "감독".
+## The intel facility's occupant: "서지안 (분석가)" / "한서준 (어시스턴트 매니저)" / "감독".
 static func analyst_label(state: Dictionary) -> String:
-	var who: String = StaffSystem.owner_name(state, "analysis")
-	match StaffSystem.owner(state, "analysis"):
-		StaffSystem.OWNER_STAFF:
-			return "%s (%s)" % [who, StaffSystem.job_label("analyst")]
-		StaffSystem.OWNER_ASSISTANT:
-			return "%s (%s)" % [who, StaffSystem.job_label("assistant")]
-	return Loc.t(L.TERM_PERSON_MANAGER)
+	if not FacilitySystem.is_delegated_fid(state, INTEL_FACILITY):
+		return Loc.t(L.TERM_PERSON_MANAGER)
+	var occ: String = FacilitySystem.occupant(state, INTEL_FACILITY)
+	var e: Dictionary = FacilitySystem.run_staff(state, int(occ)) if occ.is_valid_int() else {}
+	return "%s (%s)" % [FacilitySystem.occupant_name(state, INTEL_FACILITY),
+			StaffSystem.job_label(String(e.get("job", "")))]
 
 
 ## Analyst lines — at most two. Strongest lane (by visible stat total) and a

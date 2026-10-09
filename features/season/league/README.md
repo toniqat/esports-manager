@@ -93,8 +93,8 @@ for save metadata and the lobby run card, never for match-day filtering.
   **Tapping a row opens the team detail** (`open_team_detail(team_id, rank)` → `LeagueTeamDetail.open`
   → `HubSheet`): rank · record, then the five pilots under the analysis reveal rule — the same
   `OpponentIntel` / `IntelView` pair MatchFlow PREP uses (`features/match_flow/match_prep/README.md`). The own team
-  is always fully visible; other teams follow `StaffSystem.analysis_tier`, with an analyst note
-  when analysis is delegated.
+  is always fully visible; other teams follow their own analysis rank (`IntelResearch.rank`, §16 — `open_team_detail`
+  passes `tid` to `OpponentIntel.build`), with an analyst note when staff sits in the intel facility.
 - `LeagueTeamDetail.gd` + `UI_View_LeagueTeamDetail.tscn` — the team detail **sheet body** (like the hub
   panels): VBox top-wide in `sheet.body`, 16 short of the right edge (scroll-bar room) —
   `%Record` (SubLabel 24) · RecordGap · `%IntelView_Intel` (`UI_Comp_IntelView.tscn` instance) · Tail 20. On `resized`

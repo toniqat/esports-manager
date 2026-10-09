@@ -6,20 +6,20 @@ MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_d
 
 | File | Role |
 |---|---|
-| `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name)` creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
-| `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll with **opponent on top** (same side as ban/pick: analysis header + five pilot cards) and own team below (five cards), bottom bar `경기 시작`. `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name)` · signal `start_pressed`. Card tap → detail sheet (my run pilot = `SeasonPilotDetail.open`, opponent / my pilot outside a run = `MatchPrepPilotDetail.open`) |
+| `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name, enemy_team_id)` (MatchFlow passes its `enemy_team_id`) creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
+| `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll with **opponent on top** (same side as ban/pick: analysis header + five pilot cards) and own team below (five cards), bottom bar `경기 시작`. `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name, enemy_team_id = -1)` (-1 = the roster's `team_id`) · signal `start_pressed`. Card tap → detail sheet (my run pilot = `SeasonPilotDetail.open`, opponent / my pilot outside a run = `MatchPrepPilotDetail.open`) |
 | `UI_Comp_MatchPrepPilotCard.tscn` / `MatchPrepPilotCard.gd` | `class_name MatchPrepPilotCard` — one pilot card (section below). `create()` · `fill(row, own, trust, stress, warn)` · signal `pressed(pilot_id)` |
 | `UI_View_MatchPrepPilotDetail.tscn` / `MatchPrepPilotDetail.gd` | `class_name MatchPrepPilotDetail` — `HubSheet` body for an opponent pilot: tier line + one `IntelPilotRow` (six stats / mech line / card line exactly as the reveal tier allows). `open(host, intel, row)` (sheet title = pilot name) |
-| `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own)` returns rows + analyst notes + `threat_pilot_id` as data; `strongest_row(rows)` (the "경계 대상" lane), `tier_for`, `threshold_of`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` (caches `mechs.name_key`, resolves with `Loc.t`) |
+| `OpponentIntel.gd` | `class_name OpponentIntel` (static). **The single reveal rule** — `build(state, roster, is_own, team_id = -1)` returns rows + analyst notes + `threat_pilot_id` as data (`team_id` -1 = `roster_team(roster)`); `strongest_row(rows)` (the "경계 대상" lane), `tier_for(state, team_id, is_own = false)` (also read by ban/pick), `roster_team(roster)`, `team_roster(state, team_id)` (league `all_pilots` / INTL `intl_pilots`), `mech_name` (caches `mechs.name_key`, resolves with `Loc.t`) |
 | `UI_Comp_IntelView.tscn` / `.gd` | `class_name IntelView` — one team's `build()` result as a **container scene** (VBox: parent width, content height): tier header · analyst note / "no analyst" line · five `IntelPilotRow`. `create()` · `show_intel(intel)`. `@export show_rows` (default true) — PREP sets it false (header + note only, the pilots are cards). Shared with the league team detail (`features/season/league/LeagueTeamDetail`, a `HubSheet` body, rows on) |
 | `UI_Comp_IntelPilotRow.tscn` / `.gd` | `class_name IntelPilotRow` — one pilot row (item scene, `fill(row)`): portrait slot · role / name / total · six stat cells · mech line · card line |
 
 **F6 standalone run** of `UI_View_MatchPrepView.tscn` shows dummy data: in-memory run (`UiPreview.ensure_run`)
-vs its next league opponent (`UiPreview.ensure_league`), the run's real analysis tier; `경기 시작` only
+vs its next league opponent (`UiPreview.ensure_league`) at that team's real analysis rank; `경기 시작` only
 prints, card taps open the real sheets — `_fill_preview()` at the bottom of the script, helper `resources/UiPreview.gd`.
 `UI_Comp_MatchPrepPilotCard.tscn` alone = a hand-written tier-2 opponent mid flagged `경계 대상`;
-`UI_View_MatchPrepPilotDetail.tscn` alone = the body (no sheet) for the first pilot of another team at the run's tier.
-`UI_Comp_IntelView.tscn` alone = another team of the in-memory run at the run's tier; `UI_Comp_IntelPilotRow.tscn` alone =
+`UI_View_MatchPrepPilotDetail.tscn` alone = the body (no sheet) for the first pilot of another team at its rank.
+`UI_Comp_IntelView.tscn` alone = another team of the in-memory run at its rank; `UI_Comp_IntelPilotRow.tscn` alone =
 a hand-written tier-2 mid row.
 
 ## PREP screen scene (`UI_View_MatchPrepView.tscn`)
@@ -89,7 +89,13 @@ IntelPilotRow (MarginContainer): %Back (Card preview → code lead_bar_style(rol
   analyst note card is the `IntelAnalystNote` variation (amber `ACCENT_DIM`, radius 14, as before). Stat cells are whole-pixel widths (≤ 1px text shift).
 
 ## Reveal tiers
-`StaffSystem.analysis_tier(state)` (thresholds `ANALYSIS_TIER_1..3`, const.csv):
+**Per opponent team (§16)**: `OpponentIntel.tier_for(state, team_id)` = the team's analysis rank
+`IntelResearch.rank(state, team_id)` (0..3, all teams 0 at run start, +1 per completed 전력 분석실 research on
+that team — `features/season/facility/README.md` → IntelResearch) + the `analysis_tier` manager traits
+(`TraitSystem.run_mod`, clamped 0..3; a rank-3 team stays 3). The old analyst-stat tier
+(`StaffSystem.analysis_tier`, `ANALYSIS_TIER_1..3`) is gone. Callers pass the team id: PREP (`MatchFlow.enemy_team_id`),
+the league team detail (`LeagueView.open_team_detail` tid), ban/pick (`OpponentIntel.roster_team` of the enemy
+roster — enemy likely picks / mastery tags need tier >= 2).
 
 | Tier | Opponent rows show |
 |---|---|
@@ -99,11 +105,12 @@ IntelPilotRow (MarginContainer): %Back (Card preview → code lead_bar_style(rol
 | 3 | + the three fixed pilot cards (`GameManager.pilot_card_ids_for` → `card_def.name`) |
 
 - **Own team is always tier 3.** Outside a season (`season_state.active == false`, MatchFlow run straight from the editor) everything is tier 3 too.
-- The header chip shows the tier and, below full, `내 분석 v · 다음 단계 n 필요`.
+- The header chip shows `분석 단계 n · <label>` and, below full, how to raise it (`match.intel.need`:
+  research the team in the 전력 분석실).
 - PREP shows whatever rosters `MatchFlow` passes in — if those are match copies with mastery / mods applied, the numbers shown are the match numbers.
 
 ## Auto vs manual (analyst note)
-- `StaffSystem.is_delegated(state, "analysis")` → an amber note `분석 · <name> (<job>)` with up to two lines from `OpponentIntel.interpret`: the strongest lane by visible stat total (+ its highest stat), then a suggested ban (top-mastery mech on their side — ties go to the stronger pilot) from tier 2, else the weakest lane. Tier 0 says the data is too thin. Deliberately a simple heuristic, not optimal.
+- Staff seated in the intel facility (`FacilitySystem.is_delegated_fid(state, "intel")`) → an amber note `분석 · <name> (<job>)` (`analyst_label` = the intel occupant) with up to two lines from `OpponentIntel.interpret`: the strongest lane by visible stat total (+ its highest stat), then a suggested ban (top-mastery mech on their side — ties go to the stronger pilot) from tier 2, else the weakest lane. Tier 0 says the data is too thin. Deliberately a simple heuristic, not optimal.
 - The strongest-lane pilot is also data: `build()["threat_pilot_id"]` (`strongest_row`), set only when that line is shown (delegated, tier >= 1, opponent) — PREP marks that card with the red `경계 대상` chip.
-- Manager owns analysis → one faint line `분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접.`; the player reads the raw data.
+- Nobody / the manager in the intel facility → one faint line `분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접.`; the player reads the raw data.
 - Separate from `enemy_misjudge_chance` (that is the opponent's ability, not our information).

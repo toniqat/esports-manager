@@ -61,7 +61,7 @@ func _fill_preview() -> void:
 		return
 	var s: Dictionary = gm.season_state
 	var tid: int = (int(s["player_team_id"]) + 1) % 8
-	var intel: Dictionary = OpponentIntel.build(s, OpponentIntel.team_roster(s, tid), false)
+	var intel: Dictionary = OpponentIntel.build(s, OpponentIntel.team_roster(s, tid), false, tid)
 	var rows: Array = intel["rows"]
 	if not rows.is_empty():
 		show_detail(intel, rows[0])

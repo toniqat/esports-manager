@@ -12,6 +12,7 @@ tr_p1,train_growth,training,tx_C8K89H4B51,tx_F85JHZN635,2,1,1,T08,,Adamant
 tr_b2,train_growth,training,tx_W35EV2FTR7,tx_QDYMDSS6VG,3,2,0,T02,,Recursion
 tr_q1,train_growth,training,tx_2BQGFBTYKJ,tx_W546ZD811X,2,1,1,T18,,Flashy
 in_scout,intel,intel,tx_J3Y69RGNTH,tx_F4XDP3C9Q9,2,1,1,,,Quantum_Computing
+in_deep,intel,intel,tx_CX9KQC20YH,tx_HF10DRTSC6,1,3,1,,,Trueshot_Prodigy
 mech_study,mech_lab,mech,tx_1B74EM9AMW,tx_KHARDPAGQ1,2,1,1,,,Spirit_Link
 budget_cut,front,front,tx_M9XAM000XY,tx_E124ZY8HS9,3,1,1,budget_cut,5,Undying_Guard
 boost,front,front,tx_GCWN9S4V5Q,tx_Z1QWCYFAHY,2,1,1,boost,10,Firebrand

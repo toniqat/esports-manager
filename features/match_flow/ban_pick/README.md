@@ -326,7 +326,7 @@ numbers live in `features/season/mastery/README.md` / `MASTERY_*` in const.csv.
 
 | Where | What |
 |---|---|
-| Mech slots (`_refresh_slot_mastery`) | Top-left tag `<level> <pct>` (e.g. `Lv3 +10%`, §15 A) filled with the level colour (`MechMastery.level_color`) — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (`StaffSystem.analysis_tier >= 2`) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
+| Mech slots (`_refresh_slot_mastery`) | Top-left tag `<level> <pct>` (e.g. `Lv3 +10%`, §15 A) filled with the level colour (`MechMastery.level_color`) — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (the enemy team's reveal tier >= 2 — `OpponentIntel.tier_for`, per-team analysis rank §16) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
 | Grid cells (`_refresh_cell_marks`) | Pilot badges (`BanPickPilotDot`) — see "Grid pilot badges" below. Taken cells show none. |
 | Bottom sheet (`_fill_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name LvN points (명중 · 회피 ±%)`, and the analysis line `상대 예상 픽 — pilot` (an enemy pilot's top-mastery machine, `_enemy_likely`, analysis tier ≥ 2). |
 | `MechDetailPanel` | A `숙련도` block — that team's five pilots with this machine (level · points · %), the tapped seat's pilot marked ▶ (`_mastery_rows`; enemy only with analysis tier ≥ 2). Under the cards a **메크 강화** block (§15 A): the mech's 3 upgrade steps (Lv3 / Lv4 / Lv5, `MechUpgrades.steps` + `step_text`), each `해금` / `잠김` for the tapped seat's pilot (`_upgrade_info` → `{pilot, level}`; level −1 = unknown → no lock state: enemy without analysis, standalone). |
@@ -338,7 +338,7 @@ Computed once per `enter` (`_setup_adept`, mastery does not change during the dr
   with that mech is level ≥ `ADEPT_LEVEL` (3 = first mech upgrade, the old 능숙 threshold 60), not only the natural rider; seat order, max 5.
 - **Enemy** — over the art's top-right: the enemy's Lv3+ pilots, highest mastery first (ties by
   seat), max `ENEMY_DOTS_MAX` (2); only while analysis reveals mastery (`_show_enemy_likely`,
-  `StaffSystem.analysis_tier >= 2`).
+  the enemy team's reveal tier >= 2 — `OpponentIntel.tier_for`, per-team analysis rank §16).
 - **Highlight** — my pick turn → my badges (accent ring, full opacity), my ban turn → the enemy
   badges; otherwise (the other row / opponent's turns) side-colour ring, dimmed.
 - Replaces the old cell tags: `예상 픽` / `추천 밴` (top-right) and my rider's tier (bottom-left) are

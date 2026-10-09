@@ -149,7 +149,7 @@ func open_team_detail(tid: int, rank: int) -> HubSheet:
 			{"rank": rank, "win": int(rec.get("wins", 0)), "loss": int(rec.get("losses", 0))})
 	return LeagueTeamDetail.open(self, "%s  (%s)" % [
 			_league.team_name(tid), _league.team_short_name(tid)], record,
-			OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), is_own))
+			OpponentIntel.build(state, OpponentIntel.team_roster(state, tid), is_own, tid))
 
 
 ## F6 단독 실행 미리보기 — 메모리 런 + 몇 주 치른 리그(`resources/UiPreview.gd`).

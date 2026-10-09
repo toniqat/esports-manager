@@ -158,3 +158,21 @@ own prefix.
 `new_keys` in the kind's domain (never `extract data`). A code key in a `research_*` domain must not have the shape
 `research_<x>.<y>.name|desc` (that is a data alias and gets no `L` constant) — use e.g. `research_mech.note.done`.
 Other agents' existing domains (`training`, `mastery`, `finance`, `staff`, `match` …) stay with their owners.
+
+## IntelResearch (`research/IntelResearch.gd` · `research/IntelResearchBody.gd` · `research/UI_Comp_IntelResearchBody.tscn`) — agent E
+- **Field** (`field(state)`): the teams of the competition I play in now, without my team — the INTL bracket
+  teams while I am in that bracket (`current_tournament.type == "INTL"`), else every league team
+  (`GameManager.TEAM_COUNT`; playoffs use the league too). My next opponent (`next_opponent`: first unplayed
+  match with me in `current_tournament.bracket`, then `match_schedule`) is moved to the front.
+- `targets`: the field's teams below `MAX_RANK` (3), id = team id string, label `research_intel.target`
+  (`<short> · 분석 r/3`) or `research_intel.target_next` (`… · 다음 상대`). `row_available` blocks
+  (`research_intel.block.no_target`) once every field team is at 3. Rank-3 teams are not offered, so a
+  repeatable row goes idle when its target reaches 3.
+- `on_complete`: `intel_rank["<team>"] = min(3, rank + 1)`, note `research_intel.note.rank_up` (`<short> 분석 n단계`).
+- `rank(state, team_id)`: 0..3 from `intel_rank`, own team 3. Read by `OpponentIntel.tier_for` (PREP · ban/pick ·
+  league team detail; + the `analysis_tier` traits) — `features/match_flow/match_prep/README.md` "Reveal tiers".
+- `make_body` → `IntelResearchBody` (VBox, parent width): caption + one `Card` row per field team
+  (full name (short) · `다음 상대` AccentChip on the next opponent · reveal label `match.intel.tier.*` · `분석 r/3`,
+  `AccentLabel` at 3). Row = the scene sample `Rows/Row`, duplicated per team (children read by path).
+  F6 alone: in-memory run + preview league, a few teams given ranks 1..3.
+- Rows (`research.csv`, facility `intel`): `in_scout` (2 weeks, Lv1+) and `in_deep` (1 week, Lv3+), both repeatable.

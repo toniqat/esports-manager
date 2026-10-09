@@ -30,7 +30,7 @@ static func init_run(state: Dictionary) -> void:
 
 ## A level-1 entry with an empty bar.
 static func fresh_entry() -> Dictionary:
-	return {"level": 1, "exp": 0, "goal": {}, "offer": [], "event_week": "", "event_day": -1,
+	return {"level": 1, "exp": 0, "goal": {}, "offer": [], "event": "", "event_week": "", "event_day": -1,
 			"note": {}}
 
 

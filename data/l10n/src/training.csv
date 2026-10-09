@@ -75,14 +75,6 @@ tx_5FXPMDAP4K,training.level.full,active,"Pilot detail sheet — bar full, no go
 tx_800W06DJMX,training.level.max,active,Pilot detail sheet — level cap reached,,,최고 레벨,Max level,draft,d037e2a6
 tx_17R6TM4FN4,training.pilot_detail.title,active,UI_View_SeasonPilotDetail.tscn TrainingTitle text,,,훈련 레벨,Training Level,draft,17051154
 tx_KGSV1ERB23,training.limit_break.title,active,Limit-break dialogue header (VnDialogueView sub),,,한계돌파,Limit Break,draft,1715ca89
-tx_01DAV37D2Z,training.limit_break.narration,active,Limit-break dialogue — narration line,,,훈련 성과가 며칠째 제자리걸음이다.,Training results have been stuck for days.,draft,ea31055a
-tx_MZBFA52D24,training.limit_break.worry_1,active,Limit-break dialogue — pilot worry (one drawn),,,요즘 아무리 훈련해도 늘지가 않아요. 벽에 막힌 느낌이에요.,"No matter how much I train, I'm not improving. It feels like I hit a wall.",draft,c906bdde
-tx_NQ84D0EDRV,training.limit_break.worry_2,active,Limit-break dialogue — pilot worry (one drawn),,,"감독님, 솔직히… 제가 여기까지인 걸까요? 기록이 꿈쩍도 안 해요.","Coach, honestly... is this my limit? My numbers won't budge.",draft,85642c80
-tx_ZQ1XD6AWDA,training.limit_break.worry_3,active,Limit-break dialogue — pilot worry (one drawn),,,연습량은 그대로인데 손이 안 따라와요. 뭔가 바꿔야 할 것 같아요.,"I practice as much as ever, but my hands won't follow. Something has to change.",draft,5cfc4f98
-tx_GJHDX2XFXR,training.limit_break.ask,active,Limit-break dialogue — pilot line before the manager answers,,,뭘 붙잡고 넘어서야 할지 모르겠어요.,"I don't know what to hold on to, to get past this.",draft,fc725bd4
-tx_DE0T0PSCS7,training.limit_break.manager,active,Limit-break dialogue — manager line before the choices,,,연습만으로는 이제 한계야. 실전에서 벽을 넘어 보자. 목표를 하나 정하지.,Practice alone won't cut it now. Let's break through in real matches. Pick a goal.,draft,77d672d5
-tx_9NWPDW9M64,training.limit_break.reply_1,active,Limit-break dialogue — pilot reply after the goal is picked (one drawn),,,알겠습니다. 꼭 해내 볼게요!,Got it. I'll make it happen!,draft,0a42f9b5
-tx_VTEPB66NN7,training.limit_break.reply_2,active,Limit-break dialogue — pilot reply after the goal is picked (one drawn),,,"좋아요, 목표가 생기니 좀 보이는 것 같아요.","Okay. With a goal, I think I can see the way.",draft,0b3001e2
 tx_P90CMSBJP0,training.limit_break.goal.kda,active,"Limit-break goal (choice text and goal line). {n}=matches, {kda}=need",,,다음 {n}경기 합산 KDA {kda} 이상,KDA {kda}+ over the next {n} matches,draft,8940d676
 tx_6GXZRX4SPP,training.limit_break.goal.kills,active,Limit-break goal. {n}=matches,,,{n}경기 연속 경기 내 처치 1위,"Most kills in the game, {n} matches in a row",draft,e62c0453
 tx_1BSCN8N7FE,training.limit_break.goal.obj,active,"Limit-break goal. {n}=matches, {turn}=turn limit, {need}=count",,,{n}경기 동안 {turn}턴 안에 오브젝트 {need}회 획득,Take {need} objectives by turn {turn} over {n} matches,draft,b02263c0

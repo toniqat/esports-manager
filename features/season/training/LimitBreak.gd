@@ -15,8 +15,13 @@ extends RefCounted
 # Match record (one per my match the pilot played since the goal was set, last
 # `WINDOW` kept): {"k", "d", "a", "obj", "mvp", "top_kills", "top_score", "top_turret", "top_care"}.
 #
-# Dialogue text = l10n keys (`training.limit_break.*`), not Draft flows — the choices are
-# drawn goals with live numbers, which the Draft mental-event pipeline does not model.
+#   event  "" | mental event id of the dialogue lines (drawn once, kept until a pick)
+#
+# Dialogue lines are authored in Draft (`narrative/`, kind `limit_break`, cond `tlevel`) and
+# imported into `mental_events` / `mental_texts` like every mental event: the opening lines
+# are the event's `line` texts, the closing reply is the `say` list of its **single
+# placeholder option** (the Draft convention needs a Select; its option text is never shown).
+# The 3 choices are UI text — the drawn goals with live numbers (`training.limit_break.goal.*`).
 
 ## Overlay / session kind the week screen uses (`VnDialogueView`).
 const KIND: String = "limit_break"
@@ -47,14 +52,6 @@ const GOALS: Array = [
 			"not": [GameEnums.Role.SUPPORT, GameEnums.Role.ASSASSIN]},
 	{"id": GOAL_CARE, "key": L.TRAINING_LIMIT_BREAK_GOAL_CARE, "rank": "care",
 			"only": [GameEnums.Role.SUPPORT]},
-]
-
-## Pilot worry lines (one drawn per dialogue) and pilot replies after the pick.
-const WORRY_KEYS: Array = [  # l10n-keys: training.limit_break.worry_*
-	L.TRAINING_LIMIT_BREAK_WORRY_1, L.TRAINING_LIMIT_BREAK_WORRY_2, L.TRAINING_LIMIT_BREAK_WORRY_3,
-]
-const REPLY_KEYS: Array = [  # l10n-keys: training.limit_break.reply_*
-	L.TRAINING_LIMIT_BREAK_REPLY_1, L.TRAINING_LIMIT_BREAK_REPLY_2,
 ]
 
 static var STAT_GAIN: int = ConstTable.int_of("LIMIT_BREAK_STAT_GAIN")
@@ -92,13 +89,12 @@ static func session(state: Dictionary, pid: int) -> Dictionary:
 	var offer: Array = offer_of(state, pid)
 	if offer.is_empty():
 		return {}
-	var rng := _rng(state, pid, "lines")
-	var lines: Array = [
-		"*" + Loc.t(L.TRAINING_LIMIT_BREAK_NARRATION),
-		Loc.t(String(WORRY_KEYS[rng.randi_range(0, WORRY_KEYS.size() - 1)])),  # l10n-dynamic: training.limit_break.worry_*
-		Loc.t(L.TRAINING_LIMIT_BREAK_ASK),
-		">" + Loc.t(L.TRAINING_LIMIT_BREAK_MANAGER),
-	]
+	var r: Dictionary = event_row(state, pid)
+	var lines: Array = []
+	for k in (r.get("lines", []) as Array):
+		var t: String = MentalEvents.text(state, String(k), pid).strip_edges()
+		if t != "" and not t.begins_with("@"):
+			lines.append(t)
 	var choices: Array = []
 	var previews: Array = []
 	var preview: String = Loc.t(L.TRAINING_LIMIT_BREAK_PREVIEW,
@@ -107,7 +103,7 @@ static func session(state: Dictionary, pid: int) -> Dictionary:
 		choices.append(goal_name(String(raw)))
 		previews.append(preview)
 	var title: String = Loc.t(L.TRAINING_LIMIT_BREAK_TITLE)
-	return {"kind": KIND, "event": KIND, "pilot_id": pid, "partner_id": -1, "tag": title,
+	return {"kind": KIND, "event": String(r.get("id", KIND)), "pilot_id": pid, "partner_id": -1, "tag": title,
 			"sub": title, "title": MentalEvents.pilot_name(state, pid),
 			"lines": lines, "choices": choices, "previews": previews}
 
@@ -129,10 +125,36 @@ static func choose_goal(state: Dictionary, pid: int, idx: int) -> Dictionary:
 				"recs": []}
 		e["goal"] = goal
 		e["offer"] = []
-	var rng := _rng(state, pid, "reply")
-	return {"checked": false, "ok": true,
-			"say": [Loc.t(String(REPLY_KEYS[rng.randi_range(0, REPLY_KEYS.size() - 1)]))],  # l10n-dynamic: training.limit_break.reply_*
+	# Closing reply = the says of the Draft row's single placeholder option.
+	var say: Array = []
+	var says: Array = event_row(state, pid).get("says", [])
+	for sv in (says[0] if not says.is_empty() else []):
+		if String((sv as Dictionary).get("branch", "")) == "":
+			say.append(MentalEvents.text(state, String((sv as Dictionary)["key"]), pid))
+	return {"checked": false, "ok": true, "say": say,
 			"notes": [Loc.t(L.TRAINING_LIMIT_BREAK_NOTE_GOAL, {"goal": goal_name(String(goal["id"]))})]}
+
+
+## The Draft dialogue row (`MentalEvents`, kind `limit_break`) for this limit break: drawn once
+## among the rows whose cond holds for the pilot (`tlevel=N` …), weighted and seeded like
+## `MentalSystem._draw`, then kept in the entry (`event`) until the goal is picked. {} = none
+## imported (the dialogue then shows only the choices).
+static func event_row(state: Dictionary, pid: int) -> Dictionary:
+	var e: Dictionary = TrainingLevel.entry(state, pid)
+	var have: String = String(e.get("event", ""))
+	if have != "":
+		var kept: Dictionary = MentalEvents.row(have)
+		if not kept.is_empty():
+			return kept
+	var cands: Array = []
+	for r_raw in MentalEvents.rows_of(MentalEvents.KIND_LIMIT_BREAK):
+		var r: Dictionary = r_raw
+		if MentalEvents.type_ok(state, r) and MentalEvents.cond_ok(state, r, pid):
+			cands.append(r)
+	var picked: Dictionary = MentalEvents.weighted_pick(state, cands, _rng(state, pid, "lines"))
+	if not picked.is_empty() and not e.is_empty():
+		e["event"] = String(picked["id"])
+	return picked
 
 
 ## The 3 offered goal ids — drawn once per limit break (seeded by run · pilot · level) from
@@ -272,6 +294,7 @@ static func complete(state: Dictionary, pid: int, source: String = SOURCE_FOCUS)
 			pd.set(key, maxi(PlayerData.STAT_MIN, int(pd.get(key)) + STAT_GAIN))
 	e["goal"] = {}
 	e["offer"] = []
+	e["event"] = ""
 	var note: Dictionary = {"pilot_id": pid, "level": lv, "goal": goal_id, "source": source,
 			"gain": STAT_GAIN, "week": MentalSystem.week_key(state),
 			"day": int(state.get("week_day", -1)), "seen": false}

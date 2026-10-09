@@ -45,6 +45,7 @@ entry = {"level": 1..TLEVEL_MAX, "exp": int (inside the level),
          "offer": [goal id ×LIMIT_BREAK_OFFER],          # drawn once per limit break, kept until a pick
          "goal":  {} | {"id", "since_match", "set_week", "set_day", "recs": [match record…]},
          "event_week": MentalSystem.week_key, "event_day": 0..6 (-1 = none),   # when the bar filled
+         "event": "" | Draft dialogue row id (mental_events, kind limit_break),
          "note":  {} | {"pilot_id", "level", "goal", "source": "goal"|"focus", "gain", "week", "day", "seen"}}
 match record = {"k", "d", "a", "obj" (objectives within LIMIT_BREAK_OBJ_TURN), "mvp",
                 "top_kills", "top_score", "top_turret", "top_care"}   # last LIMIT_BREAK_WINDOW kept
@@ -63,12 +64,19 @@ answered (`choose_goal`), then the next due pilot. Lv `TLEVEL_MAX` = no EXP, no 
 
 **Dialogue** — `session(state, pid)` → `{kind: "limit_break", event, pilot_id, partner_id: -1, tag, sub, title,
 lines, choices, previews}` (the `MentalSystem.session_view` shape + `sub` / `title` for `VnDialogueView.open`).
-Lines = narration (`*`), one drawn pilot worry, the pilot's ask, the manager (`>`); choices = the 3 offered goal
-names; previews = "달성 시 훈련 Lv{n+1} · 모든 스탯 +gain". `choose_goal(state, pid, idx)` stores the goal and returns
-the `show_result` view (`{checked: false, ok: true, say: [pilot reply], notes: ["새 목표: …"]}`); idempotent.
-Text = l10n keys `training.limit_break.*` (not Draft flows: the choices are drawn goals with live numbers,
-which the Draft mental-event pipeline does not model). Draws (offer, worry / reply line) are seeded by
-`run_seed` · pilot · level · purpose, like `MentalSystem._seed`.
+- **Lines** are authored in **Draft** (`narrative/`, kind `limit_break`, flows `LB01` (cond `tlevel=1`) and
+  `LB02` (`tlevel>=2`); convention in `narrative/README.md`) and imported like every mental event.
+  `event_row(state, pid)` draws one row among those whose cond holds (`MentalEvents.cond_ok`, new cond token
+  `tlevel`), weighted and seeded, and keeps its id in `entry.event` until the limit break completes. Lines =
+  that row's `line` texts (`MentalEvents.text`, markers `*` / `>` kept). The flow's Select has **one
+  placeholder option** (never shown); its replies are the pilot's **closing reply** after the pick.
+- **Choices** are UI text, not Draft: the 3 offered goal names with live numbers (`training.limit_break.goal.*`,
+  placeholders `{n}` window · `{kda}` `LIMIT_BREAK_KDA` · `{turn}` `LIMIT_BREAK_OBJ_TURN` · `{need}`
+  `LIMIT_BREAK_OBJ_NEED`); previews = "달성 시 훈련 Lv{n+1} · 모든 스탯 +gain".
+- `choose_goal(state, pid, idx)` stores the goal and returns the `show_result` view (`{checked: false, ok: true,
+  say: [closing reply lines], notes: ["새 목표: …"]}`); idempotent. No Draft row imported → no lines / reply,
+  the choices still work.
+- Draws (offer, dialogue row) are seeded by `run_seed` · pilot · level · purpose, like `MentalSystem._seed`.
 
 Week-screen call sequence (agent D, `WeekProgressView` evening, before the incident; `LimitBreakDemo.play`
 is the reference):
@@ -659,5 +667,6 @@ that doc when adding these.
 Screen text is l10n keys (`training` domain: `training.view.*` code templates, `training.training_view.*` scene
 captions, `training.level.*` training-level chip / detail rows, `training.pilot_detail.title` (the detail sheet's
 section title, a scene literal in `features/season/UI_View_SeasonPilotDetail.tscn`), `training.limit_break.*` the
-limit-break dialogue · goals · progress · notes). The effect-line part labels in `TrainingView._shared_parts` are keys translated in `_effect_text`;
+limit-break header · goal choices · previews · progress · notes). The limit-break **dialogue lines** are Draft
+events (kind `limit_break`, domain `mental`, see "Training level · limit break"). The effect-line part labels in `TrainingView._shared_parts` are keys translated in `_effect_text`;
 the staff line translates `StaffSystem.STAT_LABELS` through `Loc.t` (staff module's table).

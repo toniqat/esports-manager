@@ -196,6 +196,10 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `train=X` / `train=X,Y` | the target's training cell colour today (week log row `color`; basic course = `W`) is one of them (`MentalEvents.today_row`, day = `season_state.week_day`) |
 | `ups>=N` / `ups<N` | stat points the target gained in today's training |
 | `stress>=N` / `stress<N` | the target's current stress |
+| `tlevel=N` / `tlevel>=N` / `tlevel<N` | the target's run training level (`TrainingLevel.level`, §15 B) |
+
+Kind `limit_break` (§15 B) rows hold only the limit-break **dialogue lines**; `LimitBreak` draws and plays them
+(never `MentalSystem`) — `features/season/training/README.md` "Training level · limit break".
 
 - **Trait `trust_gain`** (M8): `add_trust` adjusts only a rise — `max(0, delta + Σp1)` — so a
   rise never becomes a loss; drops pass through untouched.

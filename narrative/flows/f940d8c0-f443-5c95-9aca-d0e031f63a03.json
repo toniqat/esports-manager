@@ -1,0 +1,355 @@
+{
+  "id": "f940d8c0-f443-5c95-9aca-d0e031f63a03",
+  "name": "LB02",
+  "parentNodeId": null,
+  "folderId": null,
+  "defaultAttrs": {
+    "speakerWikiTargetId": "dd665e10-0059-53d3-a1c2-b806960e315d"
+  },
+  "sharedAttributes": {
+    "Comment": [
+      {
+        "id": "eb96e7a4-fc67-5fbc-8b76-2663fe60d8bc",
+        "name": "kind",
+        "type": "enum",
+        "enumValues": [
+          "interview",
+          "outing",
+          "incident",
+          "press",
+          "talk",
+          "talk_pair",
+          "limit_break"
+        ],
+        "default": "",
+        "description": "이벤트 종류"
+      },
+      {
+        "id": "327f505d-7979-519f-974a-dd00c77f2d1a",
+        "name": "manager_type",
+        "type": "integer",
+        "default": -1,
+        "description": "-1 공통 · 0 운영형 · 1 실전형"
+      },
+      {
+        "id": "bec25a7a-a011-56ef-9dbf-75934457cfb7",
+        "name": "stage",
+        "type": "integer",
+        "default": 0,
+        "description": "외출 단계 (1..N), 그 밖 0"
+      },
+      {
+        "id": "4260c608-3c73-5089-b1f2-c4261638f856",
+        "name": "cond",
+        "type": "text",
+        "default": "",
+        "description": "조건 (; 로 이음) — features/season/mental/README.md"
+      },
+      {
+        "id": "8ece3b0b-7695-5187-b2fb-0416d72b16cf",
+        "name": "weight",
+        "type": "integer",
+        "default": 1,
+        "description": "뽑기 가중치"
+      }
+    ],
+    "Select": [
+      {
+        "id": "8773fb44-a705-528a-9020-ee053093e9c7",
+        "name": "effects",
+        "type": "text",
+        "default": "",
+        "description": "선택지 효과 절 (; 로 이음, ok> / ng> 판정 게이트)"
+      }
+    ],
+    "Dialog": [
+      {
+        "id": "0c4ac82a-7478-50ec-9744-2c62c85ad902",
+        "name": "branch",
+        "type": "enum",
+        "enumValues": [
+          "ok",
+          "ng"
+        ],
+        "default": "",
+        "description": "답 뒤 대사만: 판정 성공(ok) / 실패(ng) 때만. 비우면 항상"
+      }
+    ]
+  },
+  "labels": [],
+  "nodes": [
+    {
+      "id": "ee737d07-8fef-5536-9f60-cf9d459336db",
+      "type": "Start",
+      "name": "Start",
+      "localId": 1,
+      "x": 40,
+      "y": 40
+    },
+    {
+      "id": "91338525-78cf-5f91-8c73-467aced90dac",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 2,
+      "x": 340,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": null,
+      "content": "{name}의 연습 화면이 꺼지지 않은 채 새벽까지 켜져 있다.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "{name}'s practice screen is still on at dawn.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "4c2aefa5-9c5a-5d33-92ba-42e5df946331",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 3,
+      "x": 640,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "또 막혔어요. 지난번엔 넘었는데, 이번엔 더 높은 것 같아요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I'm stuck again. I got past it last time, but this wall feels higher.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "bbb98f14-7c67-5e21-9b1b-c6c0fb3c61e8",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 4,
+      "x": 940,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "연습량은 그대로인데 손이 안 따라와요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I practice as much as ever, but my hands won't follow.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "84466fd4-bcda-5d1e-b8d3-6c4b181d9cff",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 5,
+      "x": 1240,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+      "content": "벽이 높아졌다는 건 그만큼 올라왔다는 뜻이야. 이번에도 실전에서 깨 보자.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "A higher wall means you've climbed that far. Let's break it in real matches again.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "3528ce34-56ce-5b0a-9dce-edec4d2b852b",
+      "type": "Select",
+      "name": "Select",
+      "localId": 6,
+      "x": 1540,
+      "y": 40,
+      "color": "#64748b",
+      "options": [
+        {
+          "id": "698c201f-0ab7-5226-a8b2-c60de71159a0",
+          "text": "(목표 고르기 — 게임이 목표 셋으로 바꾼다)",
+          "sharedValues": {
+            "8773fb44-a705-528a-9020-ee053093e9c7": ""
+          }
+        }
+      ],
+      "translations": {
+        "opt:698c201f-0ab7-5226-a8b2-c60de71159a0": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "(Goal pick — the game replaces it with three goals)",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "3dc2c8cb-3790-512a-99da-802a1629aab6",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 7,
+      "x": 1840,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "좋아요. 목표가 생기니 좀 보이는 것 같아요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "Okay. With a goal, I think I can see the way.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "666ea78a-31f0-58b7-a80a-1edbef3eb39d",
+      "type": "Dialog",
+      "name": "Dialog",
+      "localId": 8,
+      "x": 2140,
+      "y": 40,
+      "color": "#64748b",
+      "speakerId": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+      "content": "이번에도 넘어 보일게요.",
+      "statements": [],
+      "childFlowId": null,
+      "labelIds": [],
+      "translations": {
+        "content": {
+          "1fc639b5-44de-55c2-9e8c-9a9a525ac8d4": {
+            "text": "I'll get past this one too.",
+            "status": "progress"
+          }
+        }
+      }
+    },
+    {
+      "id": "4817e32d-0160-5e61-bef9-567544e68abb",
+      "type": "End",
+      "name": "End",
+      "localId": 9,
+      "x": 2440,
+      "y": 40
+    },
+    {
+      "id": "93146f71-cb13-5c20-8513-43f576a81921",
+      "type": "Comment",
+      "name": "Comment",
+      "localId": 10,
+      "x": 340,
+      "y": -220,
+      "color": "#64748b",
+      "text": "한계돌파 이벤트 설정 — 다시 찾아온 벽 (Lv2 이상)",
+      "width": 260,
+      "height": 110,
+      "attachments": [
+        {
+          "nodeId": "91338525-78cf-5f91-8c73-467aced90dac"
+        }
+      ],
+      "sharedValues": {
+        "eb96e7a4-fc67-5fbc-8b76-2663fe60d8bc": "limit_break",
+        "327f505d-7979-519f-974a-dd00c77f2d1a": -1,
+        "bec25a7a-a011-56ef-9dbf-75934457cfb7": 0,
+        "4260c608-3c73-5089-b1f2-c4261638f856": "tlevel>=2",
+        "8ece3b0b-7695-5187-b2fb-0416d72b16cf": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "17217152-9bb2-51b8-80e0-4b146477add7",
+      "source": "ee737d07-8fef-5536-9f60-cf9d459336db",
+      "target": "91338525-78cf-5f91-8c73-467aced90dac",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "532f19bf-e777-5599-a10e-f64b7856a95b",
+      "source": "91338525-78cf-5f91-8c73-467aced90dac",
+      "target": "4c2aefa5-9c5a-5d33-92ba-42e5df946331",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "e334aefa-4774-597c-86bf-9587f0397a26",
+      "source": "4c2aefa5-9c5a-5d33-92ba-42e5df946331",
+      "target": "bbb98f14-7c67-5e21-9b1b-c6c0fb3c61e8",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "20bde039-5c2c-5de5-8b1d-580f53768f40",
+      "source": "bbb98f14-7c67-5e21-9b1b-c6c0fb3c61e8",
+      "target": "84466fd4-bcda-5d1e-b8d3-6c4b181d9cff",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "04273539-3e69-5a00-b7a3-9ab0e9f76ec0",
+      "source": "84466fd4-bcda-5d1e-b8d3-6c4b181d9cff",
+      "target": "3528ce34-56ce-5b0a-9dce-edec4d2b852b",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "12d3a273-8264-5136-b89f-884242cfa638",
+      "source": "3528ce34-56ce-5b0a-9dce-edec4d2b852b",
+      "target": "3dc2c8cb-3790-512a-99da-802a1629aab6",
+      "sourcePort": "opt:698c201f-0ab7-5226-a8b2-c60de71159a0",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "6ce5071e-a9e2-5c62-9390-cf12d8282067",
+      "source": "3dc2c8cb-3790-512a-99da-802a1629aab6",
+      "target": "666ea78a-31f0-58b7-a80a-1edbef3eb39d",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    },
+    {
+      "id": "401092cd-e8f3-59c0-9260-bfdec4ebe4b3",
+      "source": "666ea78a-31f0-58b7-a80a-1edbef3eb39d",
+      "target": "4817e32d-0160-5e61-bef9-567544e68abb",
+      "sourcePort": "out",
+      "targetPort": "in",
+      "sourceSide": "right",
+      "targetSide": "left"
+    }
+  ],
+  "nextLocalId": 11
+}

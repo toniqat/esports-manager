@@ -45,3 +45,8 @@ afternoon after the match — `cond` `last=win` / `last=loss` puts a question in
 `talk` (morning talk right after training) · `talk_pair` (morning talk with the pilot who trained in the same
 tile — both appear, single-pilot clauses hit both). Morning-talk conds: `train=<colour>[,<colour>…]`,
 `ups>=N` / `ups<N` (stat points gained today), `stress>=N` / `stress<N`.
+`limit_break` (§15 B, forced evening dialogue when a pilot's training bar is full — `LB01`, `LB02` …, no folder):
+opening Dialogs (pilot worries, the manager's last line) → a Select with **one placeholder option** (its text is
+never shown: the game puts the 3 drawn goals there, UI text `training.limit_break.goal.*`; `effects` empty) → the
+pilot's closing reply Dialogs → End. Pick the variant with `cond` `tlevel=N` / `tlevel>=N` (run training level);
+several rows that hold are drawn by `weight`. Rules: `features/season/training/README.md` "Training level · limit break".

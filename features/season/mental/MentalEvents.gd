@@ -31,7 +31,10 @@ const KIND_PRESS: String = "press"
 ## every single-pilot clause (`trust` · `stress` · `pmod`) applies to **both**.
 const KIND_TALK: String = "talk"
 const KIND_TALK_PAIR: String = "talk_pair"
-const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR]
+## Limit-break dialogue lines (§15 B) — drawn and played by `LimitBreak`, never by `MentalSystem`.
+const KIND_LIMIT_BREAK: String = "limit_break"
+const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR,
+		KIND_LIMIT_BREAK]
 
 ## `staff_mods` / `pilot_mods` `source` written by an event clause: `mental:<event id>` —
 ## an id, not text (D7). `mod_source_text` turns it into the event kind's label.
@@ -46,7 +49,8 @@ const KIND_LABELS: Dictionary = {
 }
 
 ## Cond keys (clause types are listed in `parse_clause` and the README).
-const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week", "train", "ups", "stress"]
+const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week", "train", "ups", "stress",
+		"tlevel"]
 
 static var _rows: Array = []            # parsed rows, CSV order
 static var _by_id: Dictionary = {}      # id → parsed row
@@ -264,6 +268,10 @@ static func cond_ok(state: Dictionary, r: Dictionary, pilot_id: int) -> bool:
 					return false
 			"stress":
 				if pilot_id < 0 or not _cmp(StressSystem.value(state, pilot_id), String(c["op"]), int(value)):
+					return false
+			"tlevel":
+				# §15 B run training level of the pilot (`TrainingLevel.level`, 1 outside a run).
+				if pilot_id < 0 or not _cmp(TrainingLevel.level(state, pilot_id), String(c["op"]), int(value)):
 					return false
 			_:
 				return false

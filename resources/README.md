@@ -607,8 +607,11 @@ effect, **never shared between the two tables**; the rest are spare. A new
 key without a row returns null and the panel just omits the icon.
 
 ### TeamLogos.gd · StaffImages.gd (temporary pictograms)
-`TeamLogos.texture(team_id)` → `images/team_logos/team_<id>.svg` (placeholder shield emblems for league teams
-0..7; INTL teams 100.. borrow `team_<id % 8>.svg`). **Team art comes from data**: `teams.csv` / `intl_teams.csv` columns
+`TeamLogos.texture(team_id)` → `images/team_logos/team_<id>.svg` (placeholder emblems, one per team 0..7 · 100..103:
+a different backdrop shape each — 0 circle · 1 three horizontal bars · 2 hexagon · 3 shield · 4 octagon · 5 rounded square · 6 diamond ·
+7 three vertical bars · 100 star badge · 101 split diagonal · 102 swallowtail pennant · 103 chevron badge — in `color_main`, the team's glyph in
+`color_sub`; on the bar emblems the glyph inverts to `color_main` over the gaps (clipPath). Logos and banner watermarks are generated together
+from the csv colours by agent W's script — regenerate both if a colour changes). **Team art comes from data**: `teams.csv` / `intl_teams.csv` columns
 `color_main` · `color_sub` · `logo_path` · `banner_path` (static cache over game.db `teams` + `intl_teams`). `TeamLogos.texture(id)` (logo) ·
 `banner(id)` (`images/team_banners/banner_<id>.svg`, 1000×320: main field, sub stripes / edge bands, faint logo watermark; PREP card-row banner) ·
 `color(id)` / `color_sub(id)`. Fallback: missing row / file → `team_<id % 8>.svg` / `banner_<id % 8>.svg`, colours `FALLBACK_MAIN` / `FALLBACK_SUB` (slate). `StaffImages.portrait(who)` → `images/staff/manager_bust.svg`

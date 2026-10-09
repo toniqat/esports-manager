@@ -3,9 +3,10 @@ extends RefCounted
 
 # Team art lookup — only this file knows where a team's logo, banner and signature colours come
 # from. **The data is `teams.csv` / `intl_teams.csv`** (game.db `teams` · `intl_teams`):
-#   color_main / color_sub — the two signature colours (`#RRGGBB`; main = the shield fill, sub =
+#   color_main / color_sub — the two signature colours (`#RRGGBB`; main = the emblem fill, sub =
 #       its glyph / accent). Main colours are distinct across all 12 teams.
-#   logo_path   — `res://resources/images/team_logos/team_<id>.svg` (**temporary** shield emblems)
+#   logo_path   — `res://resources/images/team_logos/team_<id>.svg` (**temporary** emblems: a different
+#       backdrop shape per team + its glyph, generated — see resources/README.md)
 #   banner_path — `res://resources/images/team_banners/banner_<id>.svg` (main field, sub stripes /
 #       edge bands, faint logo watermark; PREP card-row banner, 1000×320)
 # Read once per run of the game (static cache, both tables). Safe fallback when the table, the row

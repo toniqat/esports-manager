@@ -129,3 +129,21 @@ tx_1B1ZHR2JX6,name.staff.57,active,staff.csv name (id=57),,,하예린,Ha Ye-rin,
 tx_J8VCATJ5GB,name.outlet.esports_daily,active,언론사 이름(고유명사). 기자회견 이벤트 첫 줄 @태그 · 미리보기가 key 참조로 쓴다,,,e스포츠 데일리,Esports Daily,draft,635bba70
 tx_576HKVWRTP,name.outlet.league_weekly,active,언론사 이름(고유명사). 기자회견 이벤트 첫 줄 @태그가 key 참조로 쓴다,,,리그 위클리,League Weekly,draft,c669ab82
 tx_MH87R5EDPY,name.outlet.game_today,active,언론사 이름(고유명사). 기자회견 이벤트 첫 줄 @태그가 key 참조로 쓴다,,,게임 투데이,Game Today,draft,7f1ebfc6
+tx_4TZJ9Q0G4G,name.staff.101,active,staff.csv name (id=101),,,이수민,Lee Su-min,draft,a3f34732
+tx_THE6R4CQ6E,name.staff.102,active,staff.csv name (id=102),,,정다솜,Jung Da-som,draft,3b5eb262
+tx_BC21PAPGSB,name.staff.103,active,staff.csv name (id=103),,,오준혁,Oh Jun-hyuk,draft,50ff32cc
+tx_B51JC1CE6P,name.staff.104,active,staff.csv name (id=104),,,윤채원,Yoon Chae-won,draft,d2cf7dd0
+tx_39P1DAPENB,name.staff.105,active,staff.csv name (id=105),,,장태양,Jang Tae-yang,draft,84c78bce
+tx_MM1KDPB7HD,name.staff.106,active,staff.csv name (id=106),,,서지원,Seo Ji-won,draft,61962010
+tx_31Y6PBHHBN,name.staff.107,active,staff.csv name (id=107),,,엄다온,Eom Da-on,draft,770640c5
+tx_MZ9AT1W8VN,name.staff.108,active,staff.csv name (id=108),,,임건호,Lim Geon-ho,draft,b8de3582
+tx_13Z86ZG39Q,name.staff.109,active,staff.csv name (id=109),,,한별,Han Byul,draft,429a88ef
+tx_GJ2STBMZ72,name.staff.110,active,staff.csv name (id=110),,,배준서,Bae Jun-seo,draft,6e7e3a19
+tx_5N22GECH68,name.staff.111,active,staff.csv name (id=111),,,송민재,Song Min-jae,draft,0f6b925e
+tx_D6P585S32D,name.staff.112,active,staff.csv name (id=112),,,권소율,Kwon So-yul,draft,b9e254f7
+tx_VNM0MTM188,name.staff.113,active,staff.csv name (id=113),,,황인성,Hwang In-sung,draft,eda56be5
+tx_TV2BGMCWJH,name.staff.114,active,staff.csv name (id=114),,,노유진,Noh Yu-jin,draft,74a695d1
+tx_SD9YWPYDJP,name.staff.115,active,staff.csv name (id=115),,,신동욱,Shin Dong-wook,draft,64b7710e
+tx_BF8HV59Q7R,name.staff.116,active,staff.csv name (id=116),,,조아라,Jo A-ra,draft,e2a87f39
+tx_M4JWE3CTDD,name.staff.117,active,staff.csv name (id=117),,,김바다,Kim Ba-da,draft,7da73c10
+tx_77DSWSBQCW,name.staff.118,active,staff.csv name (id=118),,,류시온,Ryu Si-on,draft,f7979f5e

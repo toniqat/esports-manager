@@ -158,3 +158,18 @@ own prefix.
 `new_keys` in the kind's domain (never `extract data`). A code key in a `research_*` domain must not have the shape
 `research_<x>.<y>.name|desc` (that is a data alias and gets no `L` constant) — use e.g. `research_mech.note.done`.
 Other agents' existing domains (`training`, `mastery`, `finance`, `staff`, `match` …) stay with their owners.
+
+## PersonnelResearch (`research/PersonnelResearch.gd`, agent G)
+Rows (`research.csv`, facility `personnel`, both repeatable): `scout` (Lv1+) and `scout_wide` (Lv3+, longer);
+`p1 = scout`, `p2` = extra candidates ("" = 0).
+- `targets` → none. `row_available` → `research_personnel.block.no_pool` while the scouting pool is empty.
+- `on_complete` → `scout.candidates` = `draw(state, candidate_count(state, row), seed)` — a new list replaces an
+  unanswered one; `scout.week = MentalSystem.week_key`. Note `research_personnel.note.candidates` {n}
+  (or `.note.none`). `candidate_count = SCOUT_BASE + level(personnel) × SCOUT_PER_LEVEL + p2`; pool =
+  `StaffSystem.free_agent_ids()` (staff.csv rows on no team) minus the run team; seed =
+  `hash("run_seed|week_key|rid|done_count")` (the drawn list itself is saved).
+- Helpers: `candidate_count` · `pool` · `draw(state, n, seed)` · `candidates(state)` (ints, hired ones skipped) ·
+  `hire_candidate(state, id)` (`StaffSystem.hire`, then the list is consumed) · `pass_all(state)`.
+- `make_body` → `staff/PersonnelBody` (staff list with two-step dismiss, candidates with two-step hire / pass on
+  all). It emits **`changed`** after any action — the facility sheet should connect it and refresh its occupant
+  picker / stat values. Details: `features/season/staff/README.md` "Personnel body".

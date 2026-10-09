@@ -3,7 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="StaffStatRow" type="Panel"]
-editor_description = "One 능력치 row (StaffPanel): stat · effective value · 1..20 bar · who covers it · cover-rule candidates. The lead-bar card style and the bar / owner colours are data (delegated = POSITIVE, manager = ACCENT)."
+editor_description = "One 능력치 row (StaffPanel): stat · effective value · 1..20 bar · the facility seat that supplies it (§16) · every seat of the stat with occupant + value. The lead-bar card style and the bar / owner colours are data (staff = POSITIVE, manager = ACCENT, nobody seated = TEXT_FAINT)."
 custom_minimum_size = Vector2(0, 116)
 offset_right = 912.0
 offset_bottom = 116.0
@@ -73,7 +73,7 @@ offset_right = -22.0
 offset_bottom = 72.0
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 21
-text = "담당 훈련 코치 강민호"
+text = "담당 전장 훈련장 · 강민호"
 
 [node name="Compare" type="Label" parent="."]
 auto_translate_mode = 2
@@ -88,4 +88,4 @@ offset_right = -22.0
 offset_bottom = 102.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 18
-text = "감독 5 · 어시 15 · 훈련 코치 17"
+text = "전장 훈련장 강민호 17 · 교전 훈련장 최유나 7 · 체력 단련실 비어 있음"

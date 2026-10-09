@@ -98,7 +98,7 @@ static func team_staff_ids(team_id: int) -> Array:
 ## The piece merged into `run_setup` at run start. Manager stats = `manager_stats`
 ## when given (M9 — the preset's stats incl. trait bonuses, `GameManager.start_run`),
 ## else the type's initial values; staff = the team's initial staff as-is
-## (nobody leaves during a run).
+## (§16: changed later only by `hire` / `dismiss`).
 ## → `{manager_type, manager_stats{stat: int}, staff: [{id, name_key, job, stats{}, salary}]}`
 static func snapshot_for_run(team_id: int, manager_type: int, manager_stats: Dictionary = {}) -> Dictionary:
 	var row: Dictionary = manager_type_row(manager_type)
@@ -120,6 +120,76 @@ static func snapshot_for_run(team_id: int, manager_type: int, manager_stats: Dic
 		"manager_stats": mstats,
 		"staff": staff,
 	}
+
+
+# ── Hire · dismiss (§16 personnel) ───────────────────────────────────────────
+## Staff rows on no team's `staff_ids` (free agents), id order — the scouting pool
+## (`PersonnelResearch` also drops those already on the run team).
+static func free_agent_ids() -> Array:
+	_ensure_loaded()
+	var taken: Dictionary = {}
+	for ids in _team_staff.values():
+		for sid in (ids as Array):
+			taken[int(sid)] = true
+	var out: Array = []
+	for sid in _staff.keys():
+		if not taken.has(int(sid)):
+			out.append(int(sid))
+	out.sort()
+	return out
+
+
+## Is this staff id on the run team (`run_setup.staff`)?
+static func is_hired(state: Dictionary, staff_id: int) -> bool:
+	return not FacilitySystem.run_staff(state, staff_id).is_empty()
+
+
+## "" when `staff_id` can join the run team, else the reason (current locale).
+static func hire_block_reason(state: Dictionary, staff_id: int) -> String:
+	if staff_row(staff_id).is_empty():
+		return Loc.t(L.STAFF_BLOCK_UNKNOWN)
+	if is_hired(state, staff_id):
+		return Loc.t(L.STAFF_BLOCK_ALREADY_HIRED)
+	return ""
+
+
+## Adds the staff row to `run_setup.staff` (same shape as `snapshot_for_run`: a copy of
+## `staff_row`), unseated. The weekly salary joins `weekly_salary_total` from the next
+## settlement on. "" on success, else the reason (nothing changed).
+static func hire(state: Dictionary, staff_id: int) -> String:
+	var why: String = hire_block_reason(state, staff_id)
+	if why != "":
+		return why
+	var setup: Dictionary = state.get("run_setup", {})
+	var staff: Array = setup.get("staff", [])
+	staff.append(staff_row(staff_id).duplicate(true))
+	setup["staff"] = staff
+	state["run_setup"] = setup
+	return ""
+
+
+## "" when `staff_id` is on the run team and can be dismissed, else the reason.
+static func dismiss_block_reason(state: Dictionary, staff_id: int) -> String:
+	if not is_hired(state, staff_id):
+		return Loc.t(L.STAFF_BLOCK_NOT_ON_TEAM)
+	return ""
+
+
+## Removes the staffer from the run team. A seated staffer is unseated first
+## (`FacilitySystem.unassign` — that facility's research pauses until someone sits).
+## "" on success, else the reason (nothing changed).
+static func dismiss(state: Dictionary, staff_id: int) -> String:
+	var why: String = dismiss_block_reason(state, staff_id)
+	if why != "":
+		return why
+	var fid: String = FacilitySystem.facility_of_staff(state, staff_id)
+	if fid != "":
+		FacilitySystem.unassign(state, fid)
+	var staff: Array = _run_staff(state)
+	for i in range(staff.size() - 1, -1, -1):
+		if int((staff[i] as Dictionary).get("id", -1)) == staff_id:
+			staff.remove_at(i)
+	return ""
 
 
 # ── Judgement ────────────────────────────────────────────────────────────────

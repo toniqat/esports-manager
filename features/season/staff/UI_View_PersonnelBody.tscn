@@ -1,0 +1,127 @@
+[gd_scene load_steps=4 format=3 uid="uid://doq17k1bj6ur"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" uid="uid://0q7cd2lmrxa5" path="res://features/season/staff/PersonnelBody.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://c133frsnedlc7" path="res://features/season/staff/UI_Comp_PersonnelStaffRow.tscn" id="3_row"]
+
+[node name="PersonnelBody" type="VBoxContainer"]
+editor_description = "Personnel section of the 인사팀 facility sheet (PersonnelResearch.make_body → FacilitySheet). Top-wide; list samples are replaced at runtime."
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 0
+script = ExtResource("2_script")
+
+[node name="StaffSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="StaffSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_W0X6SW7323"
+
+[node name="StaffSub" type="Label" parent="StaffSection"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "4명 · 주급 합계 250"
+
+[node name="StaffEmpty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 22
+text = "tx_CZ4VNDDER3"
+
+[node name="StaffList" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="PersonnelStaffRow" parent="StaffList" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="GapCandSection" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CandSection" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CandSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_XVA01HKA07"
+
+[node name="CandSub" type="Label" parent="CandSection"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "3명 — 한 명을 영입하거나 모두 보냅니다"
+
+[node name="CandEmpty" type="Label" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 22
+text = "tx_FG29WZFWYV"
+autowrap_mode = 3
+
+[node name="CandList" type="VBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="PersonnelStaffRow" parent="CandList" instance=ExtResource("3_row")]
+layout_mode = 2
+
+[node name="PassRow" type="HBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates() (hidden without candidates)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+mouse_filter = 2
+alignment = 2
+
+[node name="PassAll" type="Button" parent="PassRow"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd (two-step 모두 보내기)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 56)
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 22
+text = "모두 보내기"
+
+[node name="Tail" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2

@@ -5,11 +5,11 @@ extends VBoxContainer
 # (`hub_summary` / `open`). Everything is read through `StaffSystem` — this file
 # only fills the sheet.
 #
-# Card : delegated count (n/6), weakest area, assistant (or 감독) as owner,
-#        alert dot while a negative temporary mod is active.
-# Sheet: six stat rows (effective value, who covers it, manager vs staff
-#        values — cover rule = max), active `staff_mods`, equipped manager
-#        traits + bonus points (M8), staff list with job
+# Card : manager seats used (n/MANAGER_SLOTS), weakest area, assistant (or 감독) as
+#        owner, alert dot while a negative temporary mod is active.
+# Sheet: six stat rows (§16: effective value, the facility seat that supplies it
+#        and every seat of that stat with occupant + value), active `staff_mods`,
+#        equipped manager traits + bonus points (M8), staff list with job, seat
 #        and weekly salary, and the areas the manager handles personally.
 #
 # **The sheet body's layout lives in `UI_View_StaffPanel.tscn`** (+ item scenes `StaffStatRow` ·
@@ -38,12 +38,9 @@ var _sheet: HubSheet = null
 
 ## Card summary — `{title, value, sub, owner, alert}`.
 static func hub_summary(state: Dictionary) -> Dictionary:
-	var delegated: int = 0
 	var weakest: String = ""
 	var weakest_v: int = StaffSystem.STAT_MAX + 1
 	for s in StaffSystem.STATS:
-		if StaffSystem.is_delegated(state, s):
-			delegated += 1
 		var v: int = StaffSystem.effective(state, s)
 		if v < weakest_v:
 			weakest_v = v
@@ -55,7 +52,8 @@ static func hub_summary(state: Dictionary) -> Dictionary:
 			alert = true
 	return {
 		"title": Loc.t(L.TERM_PERSON_STAFF),
-		"value": Loc.t(L.STAFF_HUB_DELEGATED, {"n": delegated, "total": StaffSystem.STATS.size()}),
+		"value": Loc.t(L.STAFF_HUB_MANAGER_SLOTS,
+				{"n": FacilitySystem.manager_slots_used(state), "max": FacilitySystem.manager_slots()}),
 		"sub": Loc.t(L.STAFF_HUB_WEAKEST, {"stat": StaffSystem.stat_label(weakest), "value": weakest_v}),
 		"owner": StaffSystem.staff_name(asst) if not asst.is_empty() else Loc.t(L.TERM_PERSON_MANAGER),
 		"alert": alert,
@@ -97,53 +95,80 @@ func _fit_sheet() -> void:
 
 
 # ── Sheet pieces ──────────────────────────────────────────────────────────────
+## §16 — a stat is read from whoever sits in its facility (`FacilitySystem`): the lead line
+## names the best seat, the caption lists every seat of the stat with its value.
+## Colours: staff seat = POSITIVE, manager = ACCENT, nobody seated = TEXT_FAINT.
 func _fill_stats(state: Dictionary) -> void:
 	var rows: Array = _rows(%StatRows, STAT_ROW_SCENE, StaffSystem.STATS.size())
 	for i in rows.size():
 		var row: Panel = rows[i]
 		var s: String = String(StaffSystem.STATS[i])
-		var delegated: bool = StaffSystem.owner(state, s) != StaffSystem.OWNER_MANAGER
-		var col: Color = OutgameTheme.POSITIVE if delegated else OutgameTheme.ACCENT
+		var own: String = StaffSystem.owner(state, s)
+		var col: Color = OutgameTheme.ACCENT
+		var text_col: Color = OutgameTheme.ACCENT_TEXT
+		if StaffSystem.is_delegated(state, s):
+			col = OutgameTheme.POSITIVE
+			text_col = OutgameTheme.POSITIVE
+		elif own == StaffSystem.OWNER_NONE:
+			col = OutgameTheme.TEXT_FAINT
+			text_col = OutgameTheme.TEXT_SUB
 		row.add_theme_stylebox_override(&"panel", OutgameTheme.lead_bar_style(col, 14))
 		var eff: int = StaffSystem.effective(state, s)
 		row.get_node("%Stat").text = StaffSystem.stat_label(s)
 		row.get_node("%Value").text = "%d" % eff
 		_set_fill(row.get_node("%Fill"), float(eff) / float(StaffSystem.STAT_MAX), col)
 		var owner_l: Label = row.get_node("%Owner")
-		owner_l.text = Loc.t(L.STAFF_PANEL_OWNER, {"owner": _owner_text(state, s)})
-		owner_l.add_theme_color_override("font_color",
-				OutgameTheme.POSITIVE if delegated else OutgameTheme.ACCENT_TEXT)
-		row.get_node("%Compare").text = _compare_text(state, s)
+		owner_l.text = _owner_text(state, s)
+		owner_l.add_theme_color_override("font_color", text_col)
+		row.get_node("%Compare").text = _seats_text(state, s)
 
 
-## "감독 (직접)" / "어시스턴트 매니저 한서준" / "훈련 코치 강민호".
+## Lead line: "담당 전장 훈련장 · 강민호" / "배치된 사람 없음 — 기본값 1" /
+## "담당 시설 없음 — 감독 값" (`tactics`).
 static func _owner_text(state: Dictionary, s: String) -> String:
-	match StaffSystem.owner(state, s):
-		StaffSystem.OWNER_ASSISTANT:
-			return "%s %s" % [StaffSystem.job_label(StaffSystem.JOB_ASSISTANT), StaffSystem.owner_name(state, s)]
-		StaffSystem.OWNER_STAFF:
-			var st: Dictionary = StaffSystem.staff_for(state, s)
-			return "%s %s" % [StaffSystem.job_label(String(st.get("job", ""))), StaffSystem.staff_name(st)]
-	return Loc.t(L.STAFF_PANEL_OWNER_MANAGER_DIRECT)
+	var fids: Array = FacilitySystem.facilities_for_stat(s)
+	if fids.is_empty():
+		return Loc.t(L.STAFF_PANEL_NO_FACILITY)
+	if StaffSystem.owner(state, s) == StaffSystem.OWNER_NONE:
+		return Loc.t(L.STAFF_PANEL_OWNER_NONE, {"value": StaffSystem.STAT_MIN})
+	var best: String = ""
+	for raw in fids:
+		var fid: String = String(raw)
+		if FacilitySystem.occupant(state, fid) == FacilitySystem.OCC_NONE:
+			continue
+		if best == "" or FacilitySystem.stat_value(state, fid) > FacilitySystem.stat_value(state, best):
+			best = fid
+	return Loc.t(L.STAFF_PANEL_OWNER, {"owner": "%s · %s" % [FacilitySystem.facility_name(best),
+			FacilitySystem.occupant_name(state, best)]})
 
 
-## "감독 6 (+2) · 어시 14 · 분석가 16" — every candidate of the cover rule.
-static func _compare_text(state: Dictionary, s: String) -> String:
+## Caption: every seat of the stat — "전장 훈련장 강민호 17 · 교전 훈련장 감독 6 (+2) ·
+## 성장 훈련장 비어 있음"; `tactics` (no facility) → "감독 6 (+2)".
+static func _seats_text(state: Dictionary, s: String) -> String:
+	var fids: Array = FacilitySystem.facilities_for_stat(s)
+	if fids.is_empty():
+		return Loc.t(L.STAFF_PANEL_COMPARE_MANAGER, {"value": _manager_value_text(state, s)})
 	var parts: Array = []
-	var mod: int = StaffSystem.mod_total(state, s)
-	var mgr: String = Loc.t(L.STAFF_PANEL_COMPARE_MANAGER, {"value": StaffSystem.manager_value(state, s)})
-	if mod != 0:
-		mgr += " (%+d)" % mod
-	parts.append(mgr)
-	var asst: Dictionary = StaffSystem.assistant(state)
-	if not asst.is_empty():
-		parts.append(Loc.t(L.STAFF_PANEL_COMPARE_ASSISTANT,
-				{"value": int((asst.get("stats", {}) as Dictionary).get(s, 0))}))
-	var st: Dictionary = StaffSystem.staff_for(state, s)
-	if not st.is_empty():
-		parts.append("%s %d" % [StaffSystem.job_label(String(st.get("job", ""))),
-				int((st.get("stats", {}) as Dictionary).get(s, 0))])
+	for raw in fids:
+		var fid: String = String(raw)
+		var occ: String = FacilitySystem.occupant(state, fid)
+		if occ == FacilitySystem.OCC_NONE:
+			parts.append(Loc.t(L.STAFF_PANEL_SEAT_EMPTY, {"facility": FacilitySystem.facility_name(fid)}))
+			continue
+		var value: String = _manager_value_text(state, s) if occ == FacilitySystem.OCC_MANAGER \
+				else "%d" % FacilitySystem.stat_value(state, fid)
+		parts.append(Loc.t(L.STAFF_PANEL_SEAT_LINE, {"facility": FacilitySystem.facility_name(fid),
+				"name": FacilitySystem.occupant_name(state, fid), "value": value}))
 	return " · ".join(parts)
+
+
+## "6" or "6 (+2)" — the manager's value with the active temporary mods.
+static func _manager_value_text(state: Dictionary, s: String) -> String:
+	var mod: int = StaffSystem.mod_total(state, s)
+	var text: String = "%d" % StaffSystem.manager_value(state, s)
+	if mod != 0:
+		text += " (%+d)" % mod
+	return text
 
 
 func _fill_mods(state: Dictionary) -> void:
@@ -207,7 +232,11 @@ func _fill_staff(state: Dictionary) -> void:
 		var e: Dictionary = staff[i]
 		var job: String = String(e.get("job", ""))
 		row.get_node("%Name").text = StaffSystem.staff_name(e)
-		row.get_node("%Job").text = "%s · %s" % [StaffSystem.job_label(job), _best_stats_text(e)]
+		var parts: Array = [StaffSystem.job_label(job), _best_stats_text(e)]
+		var fid: String = FacilitySystem.facility_of_staff(state, int(e.get("id", -1)))
+		if fid != "":
+			parts.append(FacilitySystem.facility_name(fid))
+		row.get_node("%Job").text = " · ".join(parts)
 		row.get_node("%Salary").text = Loc.t(L.STAFF_PANEL_SALARY, {"amount": int(e.get("salary", 0))})
 
 
@@ -226,7 +255,7 @@ static func _best_stats_text(e: Dictionary) -> String:
 func _fill_direct(state: Dictionary) -> void:
 	var lines: Array = []
 	for s in StaffSystem.STATS:
-		if not StaffSystem.is_delegated(state, s):
+		if StaffSystem.owner(state, s) == StaffSystem.OWNER_MANAGER:
 			lines.append(UiHelpers.keep_words(Loc.t(L.STAFF_PANEL_DIRECT_LINE, {
 					"stat": StaffSystem.stat_label(s),
 					"task": Loc.t(String(DIRECT_TASKS[s])),  # l10n-dynamic: staff.direct.*

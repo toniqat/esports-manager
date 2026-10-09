@@ -1,3 +1,23 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_40KE8V9E9S,research_personnel.scout.name,active,research.csv name_key (id=scout),,,스태프 스카우트,Staff Scouting,draft,4d047d51
 tx_SKS0NQX6X5,research_personnel.scout.desc,active,research.csv desc_key (id=scout),,,영입할 수 있는 스태프 후보를 찾습니다.,Finds staff candidates you can hire.,draft,4193f5dc
+tx_Q81FF70898,research_personnel.note.candidates,active,research toast note — scout completed,,,영입 후보 {n}명,{n} staff candidates,draft,de842668
+tx_S481RSG7HB,research_personnel.note.none,active,research toast note — scout found nobody,,,찾은 후보 없음,No candidates found,draft,43d42938
+tx_VRDNVZ10PA,research_personnel.block.no_pool,active,research row block reason,,,더 찾을 수 있는 스태프가 없습니다,No more staff to scout,draft,fb01bb0c
+tx_W0X6SW7323,research_personnel.body.staff_title,active,personnel sheet section title,,,스태프 목록,Staff,draft,74e48eff
+tx_D6VFEA8FS2,research_personnel.body.staff_sub,active,personnel sheet staff caption,,,{n}명 · 주급 합계 {amount},{n} staff · weekly salary {amount},draft,62ab06b4
+tx_CZ4VNDDER3,research_personnel.body.staff_empty,active,personnel sheet empty staff list,,,고용된 스태프가 없습니다,No staff hired,draft,d6f67276
+tx_XVA01HKA07,research_personnel.body.cand_title,active,personnel sheet section title,,,영입 후보,Candidates,draft,27e9707f
+tx_A8KAFWVEB1,research_personnel.body.cand_sub,active,personnel sheet candidates caption,,,{n}명 — 한 명을 영입하거나 모두 보냅니다,{n} — hire one or pass on all,draft,fa2a77c8
+tx_FG29WZFWYV,research_personnel.body.cand_empty,active,personnel sheet empty candidate list,,,스태프 스카우트를 마치면 후보가 여기에 나옵니다,Candidates appear here after Staff Scouting,draft,dba80909
+tx_ZER9Z0CY1W,research_personnel.body.seat,active,staff row — facility the staffer sits in,,,배치 · {facility},Seat · {facility},draft,bbedec08
+tx_DWJ2YS43HN,research_personnel.body.seat_none,active,staff row — not seated,,,배치 없음,Unseated,draft,9ff58fa9
+tx_BNEQQWKNPV,research_personnel.body.dismiss,active,button,,,해고,Dismiss,draft,e25486b9
+tx_T5J3D3WBYB,research_personnel.body.dismiss_confirm,active,"button, second press of dismiss",,,해고 확정,Confirm,draft,34fffd02
+tx_PAZY3K1HKC,research_personnel.body.dismiss_seated_confirm,active,"button, second press of dismiss for a seated staffer",,,자리 비우고 해고,Unseat & dismiss,draft,a6322cf1
+tx_1ZDA977HGZ,research_personnel.body.hire,active,button,,,영입,Hire,draft,7994e59f
+tx_FQ2QYR4GMT,research_personnel.body.hire_confirm,active,"button, second press of hire",,,영입 확정,Confirm,draft,73b19faf
+tx_FJHYNYQ0XK,research_personnel.body.pass_all,active,button,,,모두 보내기,Pass on all,draft,eaf55103
+tx_M6054BQ9PK,research_personnel.body.pass_confirm,active,"button, second press of pass on all",,,정말 보내기,Confirm pass,draft,9e2f5619
+tx_QHRV737GJ3,research_personnel.scout_wide.name,active,research.csv name_key (id=scout_wide),,,광역 스카우트,Wide Scouting,draft,1978e9e8
+tx_ETVM4T4SYH,research_personnel.scout_wide.desc,active,research.csv desc_key (id=scout_wide); extra candidates = p2,,,더 넓게 수소문해 스태프 스카우트보다 많은 후보를 찾습니다.,Searches wider and finds more candidates than Staff Scouting.,draft,8e174bb3

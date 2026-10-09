@@ -8,9 +8,11 @@ names) are also referenced as `{tx_…}` by finance specials, manager type descs
 
 | File | Role |
 |---|---|
-| `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule **§16: facility occupants** — `effective(state, stat)` = max over the stat's facilities (`FacilitySystem.facilities_for_stat`) of the occupant's value (manager + staff_mods / staff stat / `STAT_MIN` when empty; `tactics` = manager); `owner` (`manager` / `assistant` / `staff` / `none`) / `owner_name` / `is_delegated` (staff or assistant seated); `staff_for` = the staff whose seat supplies the stat; `staff_name(e)` — staff rows (`staff_row`, `run_setup.staff[]`) hold the l10n key `name_key` (`name.staff.*`) only, never the text (D7); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`, **deprecated §16** — replaced by `IntelResearch.rank`, removed by agent E); temporary mods `add_mod` / `decay_mods` (week end); coach points `coach_points_grant` / `grant_coach_points` / `coach_points` / `spend_coach_points` (§15 D). |
+| `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule **§16: facility occupants** — `effective(state, stat)` = max over the stat's facilities (`FacilitySystem.facilities_for_stat`) of the occupant's value (manager + staff_mods / staff stat / `STAT_MIN` when empty; `tactics` = manager); `owner` (`manager` / `assistant` / `staff` / `none`) / `owner_name` / `is_delegated` (staff or assistant seated); `staff_for` = the staff whose seat supplies the stat; **hire / dismiss (§16)** — `free_agent_ids()` (staff on no team's `staff_ids` = the scouting pool), `is_hired`, `hire_block_reason` / `hire(state, id)` (appends a copy of `staff_row` to `run_setup.staff`, the `snapshot_for_run` shape, unseated), `dismiss_block_reason` / `dismiss(state, id)` (a seated staffer is `FacilitySystem.unassign`ed first, then removed); salary totals follow from `run_setup.staff`; `staff_name(e)` — staff rows (`staff_row`, `run_setup.staff[]`) hold the l10n key `name_key` (`name.staff.*`) only, never the text (D7); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`, **deprecated §16** — replaced by `IntelResearch.rank`, removed by agent E); temporary mods `add_mod` / `decay_mods` (week end); coach points `coach_points_grant` / `grant_coach_points` / `coach_points` / `spend_coach_points` (§15 D). |
 | `StaffPanel.gd` + `UI_View_StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
 | `UI_Comp_StaffStatRow.tscn` · `UI_Comp_StaffTraitRow.tscn` · `UI_Comp_StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
+| `PersonnelBody.gd` + `UI_View_PersonnelBody.tscn` | §16 personnel section of the 인사팀 (`personnel`) facility sheet, built by `facility/research/PersonnelResearch.make_body` — see "Personnel body" below. |
+| `UI_Comp_PersonnelStaffRow.tscn` | Item scene (no script) of the personnel body: name · salary · job · six stats · seat · two-step action button. |
 
 Rules
 - Stats are 1..20 (`STAT_MIN` / `STAT_MAX`), six keys `StaffSystem.STATS`.
@@ -30,6 +32,25 @@ Rules
   Spent by `features/season/mental/FocusTraining.gd`; shown on the week screen's afternoon card and the visit popup.
 - `manager_types()` rows hold l10n keys `name_key` / `desc_key` (`manager.type.{id}.name/desc`); screens `Loc.t` them.
 
+## Staff pool (`data/csv/staff.csv`)
+Ids 1–57 are the teams' initial staff (`teams.staff_ids`); ids 101+ are **free agents** (on no team) — the only
+rows personnel scouting can draw (`free_agent_ids`). Names are data aliases `name.staff.{id}` in
+`data/l10n/src/name.csv` (domain `name`, issued with `new_keys`). Jobs are specialty labels only (§16).
+
+## Personnel body (`PersonnelBody.gd`)
+The kind-specific section of the `personnel` facility sheet (`PersonnelResearch.make_body(state, fid)` →
+`PersonnelBody.create()` + `bind(state)`; the host adds it under its research list). Text keys:
+`research_personnel.body.*` (domain file `data/l10n/src/research_personnel.csv`).
+
+| Section | Shows / does |
+|---|---|
+| 스태프 목록 | Every `run_setup.staff` entry: name, weekly salary, job label, six stats (`STATS` order), seat (`배치 · <facility>` / `배치 없음`). `해고` is two-step: the first press arms the row (button → `PrimaryButton`, `해고 확정` / `자리 비우고 해고` when seated), the second calls `StaffSystem.dismiss`. |
+| 영입 후보 | `PersonnelResearch.candidates(state)` (the last scout's unanswered list): same row, no seat line. `영입` two-step → `PersonnelResearch.hire_candidate` (hires, list consumed). `모두 보내기` two-step → `pass_all`. Empty → hint to run 스태프 스카우트. |
+
+Arming another button disarms the previous one. After any change the body refills itself and emits
+**`changed`** — the host (facility sheet) connects it to refresh what reads staff (occupant picker, stats,
+salary). F6: `UI_View_PersonnelBody.tscn` alone fills the in-memory run + three drawn candidates.
+
 ## Hub card + sheet (`StaffPanel.gd`)
 Contract §11.2 — static `hub_summary(state)` / `open(host)`; fills only, every value comes from `StaffSystem`.
 `open` = `HubSheet.open_on` + `StaffPanel.create()` added to `sheet.body` (read-only, filled once).
@@ -38,12 +59,12 @@ run + two temporary `add_mod`s, bound without a sheet.
 
 | Where | Shows |
 |---|---|
-| Card | `위임 n/6` (stats whose `owner` is not the manager), `약점 <stat> <value>` (lowest effective), owner badge = assistant name or `감독`, alert dot while any negative `staff_mods` entry is active |
-| Sheet · 능력치 | Six rows: effective value + 1..20 bar, who covers it (`감독 (직접)` / job label + name), and every cover-rule candidate (`감독 v (±mod) · 어시 v · <job> v`). Green lead bar = delegated, amber = manager |
+| Card | `감독 n/3` (manager seats used / `MANAGER_SLOTS`, `FacilitySystem.manager_slots_used`), `약점 <stat> <value>` (lowest effective), owner badge = assistant name or `감독`, alert dot while any negative `staff_mods` entry is active |
+| Sheet · 능력치 | Six rows (§16, all reads via `FacilitySystem`): effective value + 1..20 bar; lead line = the best seat (`담당 <facility> · <occupant>`, `배치된 사람 없음 — 기본값 1`, or `담당 시설 없음 — 감독 값` for `tactics`); caption = every seat of the stat (`<facility> <occupant> <value>` / `<facility> 비어 있음`; the manager's value shows its mod `6 (+2)`). Lead bar green = staff, amber = manager, faint = nobody seated |
 | Sheet · 일시 보정 | Active `staff_mods` (stat, delta, weeks left, source) |
 | Sheet · 장착 특성 | Run's equipped manager traits (`TraitSystem.run_traits`, M8): +/− chip and lead bar (green / red), name, `desc_of`, rarity chip (`TraitUi.rarity_color` fill); header = `run_setup.bonus_points` and `n/TRAIT_SLOTS`. Empty → `장착한 특성 없음` |
-| Sheet · 스태프 | Run staff list — name, job label, field value (assistant: top two stats), weekly salary; header shows `weekly_salary_total` |
-| Sheet · 직접 해야 하는 일 | One line per non-delegated stat (`DIRECT_TASKS`), plus interviews / outings, which always read the manager's own mental |
+| Sheet · 스태프 | Run staff list — name, job label, field value (assistant: top two stats), seat facility, weekly salary; header shows `weekly_salary_total` (hire / dismiss live in the personnel body) |
+| Sheet · 직접 해야 하는 일 | One line per stat the manager supplies (`owner == manager`, `DIRECT_TASKS`), plus interviews / outings, which always read the manager's own mental |
 
 **Sheet scene** (`UI_View_StaffPanel.tscn`, root `VBoxContainer` top-wide 16 short of the body width — scroll-bar room;
 theme `OutgameTheme.tres`). The sheet's scroll height follows the root's height (`resized`); `Tail` is the bottom gap.

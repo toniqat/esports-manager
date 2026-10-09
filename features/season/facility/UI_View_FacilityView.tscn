@@ -208,27 +208,45 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Toast" type="Label" parent="SafeBottom"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — FacilityView.gd toast()"
+[node name="Toast" type="Panel" parent="SafeBottom"]
+editor_description = "[필수] 지우면 오류 — FacilityView.gd toast()
+Dark pill above the bottom bar (FacilityViewToast) so the line reads over the body; hidden while empty."
 unique_name_in_owner = true
+visible = false
+z_index = 5
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = -196.0
+offset_top = -220.0
 offset_right = -40.0
-offset_bottom = -140.0
+offset_bottom = -152.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
-theme_type_variation = &"AccentLabel"
+theme_type_variation = &"FacilityViewToast"
+
+[node name="ToastText" type="Label" parent="SafeBottom/Toast"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — FacilityView.gd toast()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_right = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
 theme_override_font_sizes/font_size = 26
 text = "토스트 미리보기"
 horizontal_alignment = 1
 vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="BottomBar" type="HBoxContainer" parent="SafeBottom"]
 unique_name_in_owner = true

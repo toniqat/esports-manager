@@ -162,7 +162,8 @@ read-only, mouse ignored.
   `FacilitySystem.can_upgrade`, else `GhostButton` whose tap toasts `upgrade_block_reason`; lit tap →
   `ConfirmPopup` (Lv n → n+1, cost, available funds) → `FacilitySystem.upgrade`.
 - `%BodySlot` (1000 wide, header bottom → just above the bar) holds `ResearchSystem.make_body(state, fid)`.
-- Bottom bar: the body's action (left, hidden when none) · `허브로 돌아가기` (right, primary). Toast above the bar.
+- Bottom bar: the body's action (left, hidden when none) · `허브로 돌아가기` (right, primary). Toast above the bar =
+  a dark pill (`FacilityViewToast`, white `OnFillLabel`) so it reads over the body; hidden while empty.
 
 ### Body contract (`ResearchSystem.make_body` → `FacilityView`)
 The body is added under `%BodySlot` with **full-rect anchors** and must fit it: lists / grids scroll **inside** the

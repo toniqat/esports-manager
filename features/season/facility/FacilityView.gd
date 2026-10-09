@@ -52,7 +52,7 @@ func _bind() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
 	OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)
-	%Toast.text = ""
+	%Toast.visible = false
 	%Occupant.pressed.connect(_on_occupant)
 	%Upgrade.pressed.connect(_on_upgrade)
 	%Action.pressed.connect(_on_action)
@@ -64,7 +64,7 @@ func show_facility(state: Dictionary, fid: String) -> void:
 	_bind()
 	_state = state
 	_fid = fid
-	%Toast.text = ""
+	%Toast.visible = false
 	_set_body(ResearchSystem.make_body(state, fid))
 	refresh()
 
@@ -85,13 +85,15 @@ func refresh() -> void:
 
 ## A short line above the bottom bar for a few seconds (block reasons, body messages).
 func toast(msg: String) -> void:
-	var t: Label = %Toast
+	var box: Control = %Toast
+	var t: Label = %ToastText
 	t.text = msg
+	box.visible = true
 	var tween := create_tween()
 	tween.tween_interval(TOAST_SECONDS)
 	tween.tween_callback(func() -> void:
 		if t.text == msg:
-			t.text = "")
+			box.visible = false)
 
 
 # ── Fill ─────────────────────────────────────────────────────────────────────

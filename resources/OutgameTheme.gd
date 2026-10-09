@@ -969,6 +969,8 @@ static func _add_screen_variations(th: Theme) -> void:
 
 	# season/calendar — 페이즈 시작 타이틀 카드 (`UI_View_PhaseIntro`): 화면 전체를 덮는 어두운 판.
 	_add_derived(th, "PhaseIntroBackdrop", &"ScreenBackground", flat_style(RAIL, 0))
+	# season/facility — 시설 화면 토스트(업그레이드 불가 사유 등): 본문 위에 떠도 읽히는 어두운 알약.
+	_add_derived(th, "FacilityViewToast", &"SurfaceChip", flat_style(RAIL, 34))
 
 	# meta/lobby — 로비
 	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))

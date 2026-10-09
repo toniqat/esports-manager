@@ -16,7 +16,7 @@ extends Control
 # `features/season/training/README.md`); `Dorm` and `Entrance` are the afternoon
 # away spots. Which map a team uses is data (`teams.csv` `map_id` → `SCENES`).
 # Tokens that share a spot are fanned out in rows (`place_tokens`) so they never
-# overlap, and every token is kept inside the map rect.
+# overlap, and every token is kept inside the on-screen part of the map (`visible_rect`).
 
 ## Map scale against the art's authored 1000 × 634 frame (`ART_BASE_SIZE`). The scenes are
 ## already authored at this scale — root size, art rect and every `Spot_*` marker — so
@@ -179,11 +179,10 @@ func facility_layer() -> Control:
 
 
 ## Puts `node` so that its local point `anchor` stands on the facility's spot, clamped
-## inside the map rect (a bubble near the top edge slides down over its spot).
+## inside the on-screen part of the map (`visible_rect`; a bubble near the top edge slides
+## down over its spot).
 func place_at_facility(node: Control, fid: String, anchor: Vector2) -> void:
-	var area: Vector2 = size if size.x > 0.0 else DESIGN_SIZE
-	var at: Vector2 = facility_point(fid) - anchor
-	node.position = at.clamp(Vector2.ZERO, (area - node.size).max(Vector2.ZERO))
+	node.position = clamp_into(facility_point(fid) - anchor, node.size, visible_rect())
 
 
 func clear_tokens() -> void:
@@ -201,7 +200,7 @@ func add_token(node: Control) -> void:
 ## `anchor` = the token-local point that stands on the spot (the portrait centre).
 ## Tokens sharing a spot fan out in rows of `TOKENS_PER_ROW`, centred on the spot,
 ## in `entries` order; tokens of nearby spots are then pushed apart (`_separate`), and
-## every token is clamped inside the map rect.
+## every token is clamped inside the on-screen part of the map (`visible_rect`).
 func place_tokens(entries: Array) -> void:
 	var groups: Dictionary = {}
 	var order: Array = []
@@ -212,7 +211,7 @@ func place_tokens(entries: Array) -> void:
 			groups[spot] = []
 			order.append(spot)
 		(groups[spot] as Array).append(e)
-	var area: Vector2 = size if size.x > 0.0 else DESIGN_SIZE
+	var area: Rect2 = visible_rect()
 	var nodes: Array = []
 	for spot in order:
 		var group: Array = groups[spot]
@@ -226,7 +225,7 @@ func place_tokens(entries: Array) -> void:
 			var off := Vector2((float(col) - float(in_row - 1) * 0.5) * TOKEN_STEP.x,
 					float(row) * TOKEN_STEP.y)
 			var at: Vector2 = base + off - (e2.get("anchor", Vector2.ZERO) as Vector2)
-			node.position = at.clamp(Vector2.ZERO, (area - node.size).max(Vector2.ZERO))
+			node.position = clamp_into(at, node.size, area)
 			nodes.append(node)
 	_separate(nodes, area)
 
@@ -234,7 +233,7 @@ func place_tokens(entries: Array) -> void:
 ## Pushes overlapping token footprints (`TOKEN_STEP`, centred on each token) apart along
 ## the axis of least overlap, half each, clamped inside `area`. Tokens fanned out on one
 ## spot already sit a footprint apart, so this only moves tokens of nearby spots.
-static func _separate(nodes: Array, area: Vector2) -> void:
+static func _separate(nodes: Array, area: Rect2) -> void:
 	for _pass in SEPARATE_PASSES:
 		var moved: bool = false
 		for i in nodes.size():
@@ -250,11 +249,17 @@ static func _separate(nodes: Array, area: Vector2) -> void:
 					push.x = over.x * 0.5 * (1.0 if d.x >= 0.0 else -1.0)
 				else:
 					push.y = over.y * 0.5 * (1.0 if d.y >= 0.0 else -1.0)
-				a.position = (a.position - push).clamp(Vector2.ZERO, (area - a.size).max(Vector2.ZERO))
-				b.position = (b.position + push).clamp(Vector2.ZERO, (area - b.size).max(Vector2.ZERO))
+				a.position = clamp_into(a.position - push, a.size, area)
+				b.position = clamp_into(b.position + push, b.size, area)
 				moved = true
 		if not moved:
 			return
+
+
+## Top-left `at` of a box of `box` size moved inside `area` (a box larger than the area
+## sticks to its top-left corner).
+static func clamp_into(at: Vector2, box: Vector2, area: Rect2) -> Vector2:
+	return at.clamp(area.position, (area.end - box).max(area.position))
 
 
 ## F6 preview: one token per spot named after it (spot check), plus two more on the

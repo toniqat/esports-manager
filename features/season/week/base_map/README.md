@@ -84,7 +84,7 @@ BaseMap_<Name> (Control DESIGN_SIZE 1200 × 761, mouse Ignore, script BaseMap.gd
   `features/season/mental/README.md` "Afternoon away states").
 * **No overlap**: tokens sharing a spot fan out in rows of `TOKENS_PER_ROW`, a `TOKEN_STEP` (160 × 160; the
   token is 152 × 152 = portrait + three gauge panels) apart, centred on the spot. Tokens of different spots that land too close are pushed apart along the axis of least overlap
-  (`_separate`, `TOKEN_STEP` = footprint), then everything is clamped inside the map. So spots may sit near
+  (`_separate`, `TOKEN_STEP` = footprint), then everything is clamped inside the on-screen part of the map (`visible_rect`, `clamp_into`; the research bubbles of `place_at_facility` too). So spots may sit near
   each other; tokens simply step aside.
 * Spot positions were first placed by eye on plausible buildings of each picture; tune them in the editor.
 * **Facility spots** (`Spot_Fac_*`, names = `facility_defs.csv` `spot`, team maps only — the stadium has none and no

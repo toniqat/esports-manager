@@ -138,6 +138,9 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   **the day's stress change** (`_day_stress_delta` = training row `stress` + self-outing relief + `stress` notes of the
   day's incident / afternoon outcomes), red `+N` / green `-N`, hidden at 0. Tap = `SeasonPilotDetail` sheet.
 * A reload between the settlement and the afternoon lands on `RESULT`: the FX plays again, then the afternoon starts.
+* **Autosave** (`_save` → `SeasonHub.autosave`): after the settlement, the talk opening, the afternoon, the incident roll,
+  opening a talk / interview / outing and every answer — closing the game mid-week resumes on this screen at
+  the same stage (`features/save_load/README.md`).
 * **Afternoon away states** (rules and record: `features/season/mental/README.md` "Afternoon away states"):
   a stressed pilot may go out alone, otherwise any pilot may stay in the dorm by chance (rolled once, recorded).
   An empty training cell is the basic course, not a rest.

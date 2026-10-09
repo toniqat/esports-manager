@@ -11,7 +11,7 @@ extends Node
 # one CSV row per run (raw counts, so the score formula can be re-solved offline).
 #
 # **Never writes user://.** Runs are test runs and `season_state.run_over` is set
-# right after `start_run`, so every `SeasonHub._autosave` is skipped and
+# right after `start_run`, so every `SeasonHub.autosave` is skipped and
 # `RunResult.settle_current_run` (profile write + run file delete) is never
 # called — the sim does its own `RunStats.finalize_phase` + `build_result`.
 #

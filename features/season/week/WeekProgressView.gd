@@ -212,6 +212,13 @@ func _settle_day() -> void:
 		return
 	var board: TrainingBoard = _board()
 	log[_day] = board.apply_day_training(_day) if board != null else []
+	_save("training_settled")
+
+
+## Autosave after a stage change / answer (`SeasonHub.autosave`). No hub (F6 preview) = no save.
+func _save(reason: String) -> void:
+	if _hub != null:
+		_hub.autosave(reason)
 
 
 ## The training board: the hub's, or the F6 preview's own child.
@@ -227,6 +234,7 @@ func _board() -> TrainingBoard:
 func _begin_afternoon() -> void:
 	MentalSystem.pass_talk(_gm.season_state, _day)
 	AfternoonAway.begin(_gm.season_state, _day)
+	_save("afternoon")
 
 
 ## 저녁으로 넘어간다 (오후의 "다음"): 오후 행동이 없었으면 패스로 기록하고 사건을 한 번 굴린다.
@@ -238,6 +246,7 @@ func _begin_evening() -> void:
 	if MentalSystem.begin_dusk(s, _day).is_empty():
 		_leave_day()
 		return
+	_save("incident")
 	refresh()
 
 
@@ -542,6 +551,7 @@ func _finish_result_fx() -> void:
 	if _stage() != Stage.RESULT:
 		return
 	MentalSystem.begin_morning(_gm.season_state, _day)
+	_save("morning_talk")
 	refresh()
 
 
@@ -1086,6 +1096,7 @@ func _on_talk_pressed() -> void:
 	if session.is_empty():
 		_rebuild_list()
 		return
+	_save("talk_open")
 	_open_talk_session(session)
 
 
@@ -1148,6 +1159,7 @@ func _on_afternoon_action(action: String) -> void:
 	if session.is_empty():
 		_rebuild_list()
 		return
+	_save("afternoon_open")
 	_open_evening_session(session)
 
 
@@ -1202,6 +1214,7 @@ func _on_overlay_choice(idx: int) -> void:
 		out = MentalSystem.finish_talk(s, _day, idx)
 	else:
 		out = MentalSystem.finish_evening(s, _day, idx)
+	_save("choice")
 	if _overlay != null:
 		_overlay.show_result(MentalEvents.outcome_view(s, out))
 

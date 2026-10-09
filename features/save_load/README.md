@@ -16,7 +16,7 @@ the hidden `user://run_test.save`. The lobby sets it to `false` in `_ready`, so 
 normal boot (Lobby is `run/main_scene`) always uses `user://run.save`. The lobby
 never shows the test run.
 
-Auto-save fires at four discrete points (no manual save UI):
+Auto-save fires at discrete points (no manual save UI):
 
 1. **Post-run-start** — first HUB entry of a fresh run (`SeasonHub._is_run_start`).
 2. **Pre-ban-pick** — MatchFlow `_ready()`, right before BAN_PICK starts.
@@ -24,6 +24,11 @@ Auto-save fires at four discrete points (no manual save UI):
    mech (메크) assignment finishes and just before BattleSim launches.
 4. **Post-match** — SeasonHub `_ready()` after `_consume_pending_match_result`
    applies the result and clears `match_resume`.
+5. **Weekly flow** — every step of the week (`SeasonHub.autosave(reason)`, public so the
+   press / week screens call it): press answer, week start (training confirmed), each
+   training-day stage change (settlement → morning talk → afternoon → evening incident roll),
+   a talk / interview / outing opened (record with `choice = -1`), every answer picked, next day,
+   end of week. See the table below.
 
 No save fires while BattleSim is running — closing mid-battle resumes from
 the post-ban-pick snapshot and replays the battle (the jungle start screen shows again too).
@@ -177,6 +182,11 @@ Resource-typed entries:
 | 2 | Pre-ban-pick (MatchFlow entry, before BAN_PICK starts) | `MatchFlow._ready()` | `{phase: BAN_PICK, ...}` |
 | 3 | Post-ban-pick (after mech assignment is done, before BattleSim) | `MatchFlow._on_ban_pick_finished()` | `{phase: LAUNCH, ...}` |
 | 4 | Post-match (return from BattleSim, result applied) | `SeasonHub._ready()` | null (cleared by `_consume_pending_match_result`) |
+| 5 | Press answer (`press_answer`) | `PressConferenceView._on_answer_picked` | null |
+| 6 | Week start (`week_start`, `week_day = 0`) | `SeasonHub.on_training_confirmed` | null |
+| 7 | Training settled (`training_settled`) · talk opens (`morning_talk`) · afternoon (`afternoon`) · incident rolled (`incident`) | `WeekProgressView._settle_day` · `_finish_result_fx` · `_begin_afternoon` · `_begin_evening` | null |
+| 8 | Dialog opened (`talk_open` / `afternoon_open`) · answer picked (`choice`) | `WeekProgressView._on_talk_pressed` · `_on_afternoon_action` · `_on_overlay_choice` | null |
+| 9 | Next day (`next_day`) · end of week (`post_week`) | `SeasonHub.on_week_day_confirmed` · `_end_week` | null |
 
 Both `_autosave` helpers call `SaveSystem.save_run()` unconditionally — which file
 it lands in is decided by `use_test_run` (above).
@@ -208,6 +218,11 @@ leaves `match_resume` non-null on disk. On `이어하기` (Continue) in the lobb
   `delete_run()` and a new run without settlement. Cancel / tapping the dim closes it.
 - **이어하기**: `SaveSystem.load_run()` overwrites `season_state` (active=true) →
   MatchFlow.tscn if `match_resume != null`, else Season.tscn (skips `init_season()`).
+  Season.tscn then picks the screen from the state (`SeasonHub._resume_screen`): **WEEK** when a week
+  is running (`week_day >= 0` — the week screen reads its training-day stage and any open dialog back
+  from the records), **TRAINING** when this week's press question is answered
+  (`MentalSystem.press_answered`), else HUB. A non-HUB entry runs the schedule / tournament
+  bootstrap (`_ensure_schedule`) that `_show_hub` normally does.
 
 ---
 

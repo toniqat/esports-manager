@@ -25,7 +25,7 @@ ENDING / GAME_OVER entry, the lobby on abandon. `SCENE_PATH` is the screen to op
 
 Order:
 1. Guard — `season_state.run_over == true` → returns `last_run_result` unchanged (one settlement per run).
-2. `run_over = true` first (so `SeasonHub._autosave` can't revive `run.save`), then
+2. `run_over = true` first (so `SeasonHub.autosave` can't revive `run.save`), then
    `RunStats.finalize_phase(state, current_phase)`.
 3. `build_result(state, outcome, use_test_run)` — pure, touches nothing.
 4. Not a test run → `ProfileManager.apply_run_result(result)`. Always → `SaveSystem.delete_run()`
@@ -136,7 +136,7 @@ Args (after `--`): `--runs`, `--edge` (player win-odds multiplier), `--seed`,
 How a run is driven:
 - Setup = random team / scenario, one random starter (`players.starter`) per role at
   `--level`, test run (`use_test_run`, no traits). `GameManager.start_run` as usual.
-- `season_state.run_over` is set **right after** `start_run`: every `SeasonHub._autosave`
+- `season_state.run_over` is set **right after** `start_run`: every `SeasonHub.autosave`
   is skipped and `RunResult.settle_current_run` (profile write, run-file delete) never runs —
   the sim calls `RunStats.finalize_phase` + `RunResult.build_result(state, outcome, true)`
   itself. **user:// is never written** (profile, `run.save`, `run_test.save` untouched).

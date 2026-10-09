@@ -448,6 +448,12 @@ static func press_session(state: Dictionary) -> Dictionary:
 	return {"kind": MentalEvents.KIND_PRESS, "event": String(pick["id"]), "pilot_id": pid}
 
 
+## This week's press question has been answered (the week's training plan is next).
+static func press_answered(state: Dictionary) -> bool:
+	var p: Dictionary = _mental(state).get("press", {})
+	return String(p.get("week", "")) == week_key(state) and int(p.get("choice", -1)) >= 0
+
+
 ## Answer this week's press question. Idempotent per week. Checks (if the entry
 ## has gated clauses) use the manager's own mental.
 static func resolve_press(state: Dictionary, choice: int) -> Dictionary:

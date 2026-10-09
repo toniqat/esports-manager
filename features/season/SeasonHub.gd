@@ -113,10 +113,27 @@ func _ready() -> void:
 		# Post-match save: results are now applied to standings/bracket. Save
 		# before any cascade (ENDING/GAME_OVER routing or just sitting on the
 		# standings view) so closing here preserves the outcome.
-		_autosave("post_match")
+		autosave("post_match")
 		_route()
 		return
+	current_screen = _resume_screen()
 	_route()
+
+
+## Where a freshly loaded run continues: the week screen when a week is running
+## (`week_day` ≥ 0 — training-day stages and dialogs are read back from the records),
+## the training plan when this week's press question is answered, else the hub.
+## Entering a screen other than HUB skips `_show_hub`, so the schedule / tournament
+## bootstrap it does runs here first.
+func _resume_screen() -> int:
+	var s: Dictionary = _gm.season_state
+	if week_day() >= 0:
+		_ensure_schedule()
+		return Screen.WEEK
+	if MentalSystem.press_answered(s):
+		_ensure_schedule()
+		return Screen.TRAINING
+	return Screen.HUB
 
 
 # Switch the active screen.
@@ -177,18 +194,7 @@ func _show_hub() -> void:
 	_ensure_hub_view()
 	# 런 시작 직후의 첫 HUB 인지는 일정을 깔기 **전에** 잰다(아래 참고).
 	var run_start: bool = _is_run_start()
-	# First-time HUB entry (post-run-start) seeds the PRESEASON schedule. Idempotent
-	# afterwards. Also bootstraps any pending tournament that should be active
-	# this week (covers the "load a save mid-INTL or mid-playoff" path).
-	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
-	if league != null:
-		league.ensure_phase_scheduled()
-	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
-	if tm != null and tm.has_method("ensure_active"):
-		tm.ensure_active()
-	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
-	if intl != null and intl.has_method("ensure_active"):
-		intl.ensure_active()
+	_ensure_schedule()
 	_hide_all_screens()
 	if _hub_view:
 		_hub_view.ensure_view()
@@ -199,7 +205,22 @@ func _show_hub() -> void:
 	# 자동 저장 1번 — 런 시작 후. 런 준비(`RunSetupScreen` → `start_run`)든
 	# 에디터 직접 실행(`init_season`)이든 새 런의 첫 HUB 에서 한 번.
 	if run_start:
-		_autosave("run_start")
+		autosave("run_start")
+
+
+## First-time HUB entry (post-run-start) seeds the PRESEASON schedule. Idempotent
+## afterwards. Also bootstraps any pending tournament that should be active
+## this week (covers the "load a save mid-INTL or mid-playoff" path).
+func _ensure_schedule() -> void:
+	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
+	if league != null:
+		league.ensure_phase_scheduled()
+	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
+	if tm != null and tm.has_method("ensure_active"):
+		tm.ensure_active()
+	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
+	if intl != null and intl.has_method("ensure_active"):
+		intl.ensure_active()
 
 
 ## 새 런의 첫 HUB 인가 — **저장 키를 늘리지 않고 상태에서 읽는다.** PRESEASON
@@ -371,6 +392,7 @@ func on_training_confirmed() -> void:
 	if board != null:
 		board.reset_week_progress()
 	_gm.season_state["week_day"] = 0
+	autosave("week_start")
 	goto(Screen.WEEK)
 
 
@@ -436,6 +458,7 @@ func on_week_day_confirmed() -> void:
 		_end_week()
 		return
 	_gm.season_state["week_day"] = day + 1
+	autosave("next_day")
 	goto(Screen.WEEK)
 
 
@@ -475,7 +498,7 @@ func _end_week() -> void:
 		_gm.season_state["week_day"] = -1
 	current_screen = Screen.HUB
 	_route()
-	_autosave("post_week")
+	autosave("post_week")
 
 
 # ── Player-match handoff ─────────────────────────────────────
@@ -715,7 +738,7 @@ func _on_intl_failed_campaign(_phase: int) -> void:
 
 
 ## 런의 결론(GAME_OVER / ENDING)을 정한다. 결론은 처음 것 하나로 고정되고,
-## 정산은 **지금 바로**(뒤따르는 `_autosave` 가 쓰지 않게), 화면 전환은
+## 정산은 **지금 바로**(뒤따르는 `autosave` 가 쓰지 않게), 화면 전환은
 ## **프레임 끝에** 한다 — 시그널은 `_end_week` 의 달력 굴리기나 `_show_hub` 의
 ## `ensure_active()` 한가운데서 터질 수 있고, 거기서 바로 그리면 그 함수의
 ## 나머지가 허브를 다시 세워 결론 화면을 덮는다.
@@ -736,7 +759,7 @@ func _show_run_end() -> void:
 
 
 ## 런 정산은 한 런에 한 번 — GAME_OVER / ENDING 에 처음 들어설 때.
-## 정산이 `run.save` 를 지우고 `run_over` 를 세우면 그 뒤 `_autosave` 는 쓰지 않는다.
+## 정산이 `run.save` 를 지우고 `run_over` 를 세우면 그 뒤 `autosave` 는 쓰지 않는다.
 func _settle_run(outcome: String) -> void:
 	if bool(_gm.season_state.get("run_over", false)):
 		return
@@ -745,7 +768,9 @@ func _settle_run(outcome: String) -> void:
 
 
 # ── Save system — autosave helper ──────────────────────────────────────────
-func _autosave(reason: String) -> void:
+## Writes the run file. Also called by the press / week screens after every stage change
+## and answer (`features/save_load/README.md` "Auto-save trigger points").
+func autosave(reason: String) -> void:
 	# 정산이 끝난 런은 저장하지 않는다 — 경기 직후 저장(`_ready`)이나 주 마감
 	# 저장이 결과 처리 뒤에 와도 지워진 run.save 가 되살아나지 않게.
 	if bool(_gm.season_state.get("run_over", false)):

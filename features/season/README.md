@@ -351,7 +351,7 @@ palette once would mean combing through a dozen-plus files.
 4. **Post-week-end** — `SeasonHub._end_week` after `advance_week` (the
    Sunday close). Captures both post-match weeks and no-match weeks.
 
-**No autosave after the run ends** — `SeasonHub._autosave` is a no-op while
+**No autosave after the run ends** — `SeasonHub.autosave` is a no-op while
 `season_state.run_over` is true, so the post-match / post-week saves that
 follow a game-over / ending result never resurrect the deleted `run.save`.
 
@@ -534,7 +534,7 @@ Contract: `docs/outgame_dev_plan.md` §10.1 / §10.3.
   (`ensure_active()`), whose remaining code would otherwise redraw the hub over
   the end screen. `_show_game_over` / `_show_ending` also call `_settle_run`
   as a backstop.
-- Settlement deletes `run.save`; with `run_over` set `_autosave` does nothing, so a
+- Settlement deletes `run.save`; with `run_over` set `autosave` does nothing, so a
   run file can never be left pointing at a GAME_OVER / ENDING state (continue
   always resumes from the last pre-end save, or there is no run).
 - GameOverView / EndingView keep their presentation; their single bottom-bar

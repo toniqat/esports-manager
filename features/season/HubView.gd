@@ -141,8 +141,8 @@ func _refresh_map() -> void:
 	if _map == null:
 		_map = BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
 		_map.name = "BaseMap_Team"
-		(%MapHolder as Control).add_child(_map)
-		_map.size = BaseMap.DESIGN_SIZE
+		# 1200 폭 맵을 화면 가운데에 — 좌우 60 씩 화면 밖으로 잘린다 (`BaseMap.mount`).
+		BaseMap.mount(_map, %MapHolder as Control)
 	for raw in ResearchBubble.populate(_map, s, true):
 		var b: ResearchBubble = raw
 		if not b.pressed.is_connected(_on_facility_pressed):

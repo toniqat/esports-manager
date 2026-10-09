@@ -212,7 +212,7 @@ HubView (Control · HubView.gd)
 │ ├ GapManage (12)
 │ ├ %Manage HBox (sep 16, 176) ─ HubManageCard_Card0..1  HubManageCard instances, `_manage_panels()` order (StaffPanel · FinancePanel; the 메크 연구 card left in §16)
 │ ├ GapMap (16)
-│ └ %MapHolder CenterContainer (min h 634) ─ code: BaseMap_Team (team `BaseMap`, built once) + ResearchBubble per facility spot (`ResearchBubble.populate(map, state, true)` every refresh; `pressed(fid)` → `SeasonHub.open_facility(fid)`)
+│ └ %MapHolder Control (min h 761, not a container) ─ code: BaseMap_Team (team `BaseMap`, built once, `BaseMap.mount`: 1200 × 761 centred, 60 px cropped each side on a 1080 screen) + ResearchBubble per facility spot (`ResearchBubble.populate(map, state, true)` every refresh; `pressed(fid)` → `SeasonHub.open_facility(fid)`)
 └ %SafeBottom   full rect; code lifts its bottom by the bottom inset
   ├ %Toast      Accent label, 40 above the bar
   └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (BarGhost 32, ratio 1, + Sep BarSeparator) · %Start (BarPrimary, ratio 2)

@@ -18,7 +18,19 @@ extends Control
 # Tokens that share a spot are fanned out in rows (`place_tokens`) so they never
 # overlap, and every token is kept inside the map rect.
 
-const DESIGN_SIZE: Vector2 = Vector2(1000, 634)
+## Map scale against the art's authored 1000 × 634 frame (`ART_BASE_SIZE`). The scenes are
+## already authored at this scale — root size, art rect and every `Spot_*` marker — so
+## `spot_point` / `facility_point` / `size` are in **scaled map pixels**. Overlays put on the
+## map (pilot tokens, research bubbles) are NOT scaled: only their positions follow the spots.
+const MAP_SCALE: float = 1.2
+const ART_BASE_SIZE: Vector2 = Vector2(1000, 634)
+## Root size of every map scene (= ART_BASE_SIZE × MAP_SCALE, rounded). Wider than the
+## 1080 screen: hosts centre it horizontally (`mount`) and the overflow is cropped equally
+## on both sides; `visible_rect()` is the part on screen.
+const DESIGN_SIZE: Vector2 = Vector2(1200, 761)
+## Phone viewport width (`docs/mobile_safe_area.md` §1) — the fallback of `visible_rect`
+## outside the tree.
+const VIEW_WIDTH: float = 1080.0
 
 ## `map_id` → scene. The order is the image numbering in `resources/images/base_map/`.
 const SCENES: Array = [
@@ -100,6 +112,36 @@ static func spot_of_facility(facility: String) -> String:
 func _ready() -> void:
 	if UiPreview.is_standalone(self):
 		_fill_preview()
+
+
+## Adds `map` to `holder` (a plain Control, not a container — a container would take the
+## map's 1200 minimum width and widen the page) at `DESIGN_SIZE`, centred horizontally on
+## the holder, top-aligned, and keeps it centred when the holder resizes. Hosts give the
+## holder a screen-centred rect, so the overflow is cropped equally left / right.
+static func mount(map: BaseMap, holder: Control) -> void:
+	holder.add_child(map)
+	map.size = DESIGN_SIZE
+	map._center_in(holder)
+	var cb: Callable = map._center_in.bind(holder)
+	if not holder.resized.is_connected(cb):
+		holder.resized.connect(cb)
+
+
+func _center_in(holder: Control) -> void:
+	if not is_instance_valid(holder) or get_parent() != holder:
+		return
+	var w: float = holder.size.x if holder.size.x > 0.0 else VIEW_WIDTH
+	position = Vector2(roundf((w - DESIGN_SIZE.x) * 0.5), 0.0)
+
+
+## Map-local rect that is on screen: the map is centred on the viewport (`mount`), so the
+## crop is `(DESIGN_SIZE.x − viewport width) / 2` on each side (none on a viewport wider
+## than the map, e.g. a tablet). Full height. Tokens / bubbles that must stay visible
+## clamp to this instead of the whole map rect.
+func visible_rect() -> Rect2:
+	var vw: float = get_viewport_rect().size.x if is_inside_tree() else VIEW_WIDTH
+	var crop: float = maxf(0.0, (DESIGN_SIZE.x - vw) * 0.5)
+	return Rect2(crop, 0.0, DESIGN_SIZE.x - crop * 2.0, DESIGN_SIZE.y)
 
 
 ## Map-local point of a spot. A missing marker falls back to the neutral spot, then

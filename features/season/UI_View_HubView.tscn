@@ -156,11 +156,11 @@ custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="MapHolder" type="CenterContainer" parent="Body"]
+[node name="MapHolder" type="Control" parent="Body"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — HubView.gd _refresh_map()
-Code adds the team's BaseMap (BaseMap.create(RunRules.team_map_id), DESIGN_SIZE 1000×634) here, centred, and one ResearchBubble per facility spot (ResearchBubble.populate). Tap a bubble / facility → SeasonHub.open_facility (FacilityView)."
-custom_minimum_size = Vector2(0, 634)
+Plain Control (not a container: the 1200-wide map must not widen Body). Code mounts the team's BaseMap (BaseMap.create(RunRules.team_map_id), DESIGN_SIZE 1200×761) here with BaseMap.mount — centred on this screen-centred slot, 60 px cropped each side on a 1080 screen — and one ResearchBubble per facility spot (ResearchBubble.populate). Tap a bubble / facility → SeasonHub.open_facility (FacilityView)."
+custom_minimum_size = Vector2(0, 761)
 layout_mode = 2
 mouse_filter = 2
 

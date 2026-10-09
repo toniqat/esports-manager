@@ -4,38 +4,25 @@
 
 [node name="WeekMapSection" type="Control"]
 auto_translate_mode = 2
-editor_description = "Training day (Mon–Fri): the first list item. A caption (%Hint, what Next does now) over the team base map; code instances the team's BaseMap scene (base_map/, teams.csv map_id) into %MapHolder and adds the pilot tokens."
-custom_minimum_size = Vector2(1000, 680)
+editor_description = "Training day / weekend map slot (fills %MapPin, full screen width). Code instances the team's BaseMap scene (base_map/, teams.csv map_id) or the stadium into %MapHolder (BaseMap.mount: DESIGN_SIZE 1200 x 761, centred, the overflow past the screen edges is cropped) and adds the pilot tokens."
+custom_minimum_size = Vector2(0, 761)
 layout_mode = 3
-anchors_preset = 0
-offset_right = 1000.0
-offset_bottom = 680.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("1_theme")
 
-[node name="Hint" type="Label" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_section()"
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 4.0
-offset_right = -4.0
-offset_bottom = 34.0
-grow_horizontal = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 22
-text = "오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다"
-clip_text = true
-
-[node name="MapHolder" type="CenterContainer" parent="."]
+[node name="MapHolder" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_section()
-Code adds the team's BaseMap (BaseMap.create(map_id), DESIGN_SIZE) here, centred."
+Plain Control (not a container, so the 1200-wide map does not widen the page): BaseMap.mount centres the map on it horizontally."
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_top = 42.0
-offset_bottom = 676.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2

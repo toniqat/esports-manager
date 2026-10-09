@@ -293,3 +293,5 @@ STRESS_SELF_OUTING_MIN,60,AfternoonAway.gd,오후 혼자 외출 - 스트레스�
 STRESS_SELF_OUTING_CHANCE,0.3,AfternoonAway.gd,오후 혼자 외출 - 월~금 오후마다 대상 선수가 혼자 외출할 확률 (확률)
 STRESS_SELF_OUTING_RELIEF,8,AfternoonAway.gd,오후 혼자 외출 - 혼자 외출한 선수의 스트레스 감소 (점)
 AFTERNOON_DORM_CHANCE,0.15,AfternoonAway.gd,오후 숙소 휴식 - 혼자 외출하지 않은 선수가 월~금 오후마다 숙소에 머물러 면담 · 외출이 안 될 확률 (확률)
+MECH_BARRAGE_MAX_TARGETS,3,MechSkillSystem.gd,전탄 발사: 교전 공격 한 차례가 존재감 가중 무작위로 나눠 맞히는 최대 적 수 (명)
+MECH_BARRAGE_DMG_MULT,0.6,MechSkillSystem.gd,전탄 발사: 그 각 대상에게 들어가는 공격력 배율 (배율)

@@ -71,7 +71,8 @@ func open(pilot_name: String, portrait_id: int, mood: int) -> void:
 	%Result.text = StressSystem.mood_label(mood)
 	%Result.theme_type_variation = mood_variation(mood)
 	%Effect.text = Loc.t(L.BATTLE_STRESS_EFFECT_AWAKEN if awaken else L.BATTLE_STRESS_EFFECT_PANIC)
-	%Effect.theme_type_variation = &"BattlePositiveLabel" if awaken else &"BattleNegativeLabel"
+	# 딤 위에 바로 서는 줄 — 외곽선 두른 밝은 변형.
+	%Effect.theme_type_variation = &"BattleOutlinedPositiveLabel" if awaken else &"BattleOutlinedNegativeLabel"
 
 	# 처음엔 토스트만 — 딤 · 전신 · 결과는 숨겨 둔다.
 	var dim: Control = %Dim

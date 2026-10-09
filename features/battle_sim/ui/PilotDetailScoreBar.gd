@@ -32,10 +32,10 @@ func setup(score: float, step: float, max_score: float) -> void:
 func _draw() -> void:
 	var w: float = size.x
 	var track := Rect2(0.0, TRACK_Y, w, TRACK_H)
-	draw_style_box(_bar_box(BattleTheme.CHIP_BG), track)
+	draw_style_box(_bar_box(BattleTheme.DESC_CHIP_BG), track)
 	var fill_w: float = w * clampf(_score / _max, 0.0, 1.0)
 	if fill_w > 1.0:
-		draw_style_box(_bar_box(BattleTheme.TEXT_GROWTH), Rect2(0.0, TRACK_Y, fill_w, TRACK_H))
+		draw_style_box(_bar_box(BattleTheme.DESC_GROWTH), Rect2(0.0, TRACK_Y, fill_w, TRACK_H))
 	var font: Font = get_theme_default_font()
 	var cy: float = TRACK_Y + TRACK_H * 0.5
 	_draw_label(font, "0", 0.0, w)
@@ -46,17 +46,17 @@ func _draw() -> void:
 		var v: float = _step * float(i)
 		var x: float = w * v / _max
 		var reached: bool = _score + 0.000001 >= v
-		var col: Color = BattleTheme.GOLD if reached else BattleTheme.TEXT_KEY
+		var col: Color = BattleTheme.DESC_GOLD if reached else BattleTheme.DESC_KEY
 		# Dim ticks get a dark core so they read as "not yet".
 		draw_circle(Vector2(x, cy), TICK_R, col)
 		if not reached:
-			draw_circle(Vector2(x, cy), TICK_R - 3.0, BattleTheme.MENU_BG)
+			draw_circle(Vector2(x, cy), TICK_R - 3.0, BattleTheme.DESC_BG)
 		_draw_label(font, "%dk" % roundi(v), x, w, col)
 
 
 ## Label centred under `x`, kept inside the bar.
 func _draw_label(font: Font, text: String, x: float, w: float,
-		col: Color = BattleTheme.TEXT_KEY) -> void:
+		col: Color = BattleTheme.DESC_KEY) -> void:
 	var tw: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT).x
 	var lx: float = clampf(x - tw * 0.5, 0.0, maxf(0.0, w - tw))
 	var base_y: float = TRACK_Y + TRACK_H + LABEL_GAP + font.get_ascent(LABEL_FONT)

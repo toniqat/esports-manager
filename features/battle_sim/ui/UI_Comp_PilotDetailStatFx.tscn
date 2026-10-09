@@ -20,6 +20,7 @@ editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _make_st
 layout_mode = 2
 size_flags_horizontal = 4
 mouse_filter = 2
+theme_type_variation = &"PilotDetailMenuFxButton"
 
 [node name="Short" parent="PilotDetailFxThumb_Icon" index="3"]
 offset_top = 21.0
@@ -44,7 +45,7 @@ unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _make_stat_fx()
 배율 +N% — 고정치만 있는 효과면 숨긴다. 색 변형(BattlePositiveLabel / BattleNegativeLabel)은 코드가."
 layout_mode = 2
-theme_type_variation = &"BattlePositiveLabel"
+theme_type_variation = &"PilotDetailMenuPositiveLabel"
 theme_override_font_sizes/font_size = 18
 text = "+20%"
 horizontal_alignment = 1
@@ -55,7 +56,7 @@ unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _make_stat_fx()
 고정치 +N — 배율 효과는 (기본 + 성장) × 배율로 환산한 값."
 layout_mode = 2
-theme_type_variation = &"BattlePositiveLabel"
+theme_type_variation = &"PilotDetailMenuPositiveLabel"
 theme_override_font_sizes/font_size = 18
 text = "+5"
 horizontal_alignment = 1

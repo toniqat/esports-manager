@@ -521,10 +521,30 @@ animation clock is also that side's (`anim_time()`).
   along it), `attack` (the portion of the HP ring about to be cut · shield first, `명중 N%` (Hit N%) ·
   `-damage`), `restore` (HP green / shield grey portion about to fill — measured on the post-apply ring
   layout).
-- **Buff banner** `spawn_buff_banner(p, card)` — one line above the marker: rounded-rect card art
-  (`draw_textured_rounded_rect` — one `draw_colored_polygon` call on a rounded polygon with UVs) + card
-  name. 1.9s; banners on the same pilot stack upward. Drawn last, after `_draw_pilot_popups`. The art is
-  uploaded to the GPU first via `BattleSim.prime_texture`.
+- **Effect banners** — one line above the marker when an effect *actually lands* on a pilot:
+  a rounded chip on the left + the name on the right. **No panel**: the line floats over the field, so
+  the name is light text (`BANNER_TEXT`) with a `BattleTheme.OUTLINE` / `OUTLINE_SIZE` outline, and the
+  chip gets a thin dark rim (`BANNER_CHIP_RIM`). Three entry points, one list (`banners`):
+  - `spawn_buff_banner(p, card, key = "")` — card art chip (`draw_textured_rounded_rect` — one
+    `draw_colored_polygon` call on a rounded polygon with UVs) + card name. Called by
+    `CardPhaseManager._announce_buff` (buff cards) and by `MechSkillSystem` for the hand-held
+    passive cards 약자 멸시 / 계시 (`key = "hand:<key>"`).
+  - `spawn_skill_banner(p)` — the pilot's own skill glyph (`SkillImages.icon_for`) on a dark chip
+    (`BANNER_GLYPH_BG`) + skill name. Called by `PilotSkillSystem._banner`.
+  - `spawn_mech_passive_banner(p, passive_key = "")` — mech passive glyph (`SkillImages.mech_icon_for`)
+    + passive name; an explicit `passive_key` names **someone else's** passive landing on `p` (불굴,
+    반응 장갑 from a card), resolved from `GameManager.mech_passives`. Called by `MechSkillSystem._banner`.
+  Which skills / passives fire a banner (conditional triggers only) is listed in `../skill/README.md`
+  → "Effect banners".
+  **Coalescing**: a non-empty `key` (`skill:<key>` / `mech:<key>` / `hand:<key>`) already up on the
+  same pilot is not stacked again — its life is stretched to `t + BANNER_REFRESH_HOLD` (per-hit passives
+  such as 고통과 쾌감 would otherwise build a tower). Card buff banners pass no key (the card phase
+  already dedups per card). Life `BANNER_DUR` 1.9s (fade in / out), banners on the same pilot stack
+  upward (`stack` fixed at spawn). Drawn last, after `_draw_pilot_popups`; textures are uploaded via
+  `BattleSim.prime_texture` at spawn.
+  **Engage**: while `engage_phase.is_active()` the battlefield skips them and `EngageArena` draws the
+  same list over its stage portraits — both go through the static `draw_banner(ci, e, base, s)` (rise,
+  stacking, fade computed from the entry), so the two never diverge. Time is always advanced here.
 
 ### Attack card hit FX
 One hit of an attack card (`attack:N`) draws on two portraits at once. Both are at the **very end** of

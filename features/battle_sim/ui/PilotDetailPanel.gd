@@ -155,7 +155,7 @@ const MENU_W: float = 372.0
 const MENU_PAD := Vector2(20.0, 16.0)
 const MENU_GAP_X: float = 16.0
 ## 설명 글 속 아이콘이 파내는 판 바탕색 = 판 색.
-const MENU_BG := BattleTheme.MENU_BG
+const MENU_BG := BattleTheme.DESC_BG
 ## 설명 글의 `{attack}` · `{engage}` · `{atk_growth}` · `{hp_growth}` 자리에 서는 아이콘.
 const MENU_NOTE_ICON: Dictionary = {
 	"attack": KeywordIcon.ATTACK, "engage": KeywordIcon.ENGAGE,
@@ -650,15 +650,19 @@ func _rebuild_body() -> void:
 	if dead:
 		(_view.get_node("%DeadLabel") as Label).text = \
 				Loc.t(L.HUD_PILOT_DETAIL_REVIVE_IN, {"n": _bs.turns_until_return(_pilot)})
-	# 파일럿 스킬은 스탯 판 아래 **자기 판** — 인게임 탭에만 선다. 지속 효과는 칼럼
-	# 밖(일러스트 좌측 하단)에 산다.
-	_view.get_node("%SkillPanel").visible = ingame
+	# 파일럿 스킬은 스탯 판 아래 **자기 판** — 인게임 탭에 선다. 메크 탭에서는 같은
+	# 판이 메크 패시브를 든다(`_build_passive_panel`). 지속 효과는 칼럼 밖(일러스트
+	# 좌측 하단)에 산다.
+	var mech_tab: bool = _tab == Tab.MECH
+	_view.get_node("%SkillPanel").visible = ingame or mech_tab
 	_skill_status = null
 	_skill_use_btn = null
 	_skill_status_shown = _skill_status_visible()
 	if ingame:
 		_build_skill_panel()
 		_build_effect_thumbs()
+	elif mech_tab:
+		_build_passive_panel()
 	# 카드 밴드 · 딤은 탭을 따른다. `_targets` 를 방금 비웠으므로 카드 키도 다시 싣는다.
 	_rebuild_fan_hits()
 
@@ -944,7 +948,7 @@ func _effect_defs() -> Array:
 			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_LANE_SHORT),
 			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_LANE_TITLE),
 			"value": "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0),
-			"color": Color(1.00, 0.62, 0.48) if up else Color(0.55, 0.82, 1.00),
+			"color": BattleTheme.FX_WARM if up else BattleTheme.FX_COOL,
 		})
 	if not is_zero_approx(_pilot.eva_card_mod):
 		out.append({
@@ -953,7 +957,7 @@ func _effect_defs() -> Array:
 			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_EVA_SHORT),
 			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_EVA_TITLE),
 			"value": "%+d%%" % roundi(_pilot.eva_card_mod * 100.0),
-			"color": Color(0.55, 0.82, 1.00),
+			"color": BattleTheme.FX_COOL,
 		})
 	if _pilot.ambush_hold:
 		out.append({
@@ -962,7 +966,7 @@ func _effect_defs() -> Array:
 			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_AMBUSH_NAME),
 			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_AMBUSH_NAME),
 			"value": Loc.t(L.HUD_PILOT_DETAIL_FX_AMBUSH_VALUE),
-			"color": Color(0.62, 0.90, 0.55),
+			"color": BattleTheme.FX_GREEN,
 		})
 	if not is_equal_approx(_pilot.growth_rate_mult, 1.0):
 		out.append({
@@ -971,7 +975,7 @@ func _effect_defs() -> Array:
 			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_RATE_SHORT),
 			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_RATE_TITLE),
 			"value": "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0),
-			"color": Color(0.72, 1.00, 0.80),
+			"color": BattleTheme.FX_MINT,
 		})
 	if _pilot.atk_buff != 0:
 		out.append({
@@ -979,7 +983,7 @@ func _effect_defs() -> Array:
 			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_ATK_SHORT),
 			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_ATK_TITLE),
 			"value": "%+d" % _pilot.atk_buff,
-			"color": Color(1.00, 0.82, 0.42),
+			"color": BattleTheme.FX_GOLD,
 		})
 	if _pilot.shield > 0:
 		out.append({
@@ -988,21 +992,56 @@ func _effect_defs() -> Array:
 			"short": Loc.t(L.HUD_PILOT_DETAIL_FX_SHIELD_SHORT),
 			"title": Loc.t(L.TERM_COMBAT_SHIELD),
 			"value": str(_pilot.shield),
-			"color": Color(0.92, 0.92, 0.42),
+			"color": BattleTheme.FX_SHIELD,
 		})
+	_append_link_fx(out)
 	_append_card_fx(out)
 	_append_residual_fx(out)
 	return out
 
 
+## 결속(메크 카드 `LINK_CARD_UID`, 효과 `link_engage`)의 상대들. 기록은 시전자 쪽
+## `engage_link` 하나뿐이라 반대 방향(이 파일럿을 대상으로 건 시전자)은 전원을 훑어
+## 찾는다 — 그래서 **양쪽 모두**에 썸네일이 선다. 이탈하면 `MechSkillSystem.
+## clear_field_effects` 가 양쪽을 걷으므로 여기서는 기록만 읽는다.
+func _link_partners() -> Array:
+	var out: Array = []
+	if _pilot.engage_link != null:
+		out.append(_pilot.engage_link)
+	for raw in _bs.pilots:
+		var q := raw as PilotData
+		if q != _pilot and q.engage_link == _pilot and not out.has(q):
+			out.append(q)
+	return out
+
+
+## 결속 칸 — 카드 아트(다른 카드 지속 효과와 같은 얼굴), 띠 값 = 상대 이름.
+## 상대가 여럿이면(서로 다른 시전자 둘이 이 파일럿에게 걸었을 때) 상대마다 한 칸.
+func _append_link_fx(out: Array) -> void:
+	var card_name: String = CardData.name_of_uid(LINK_CARD_UID)
+	for raw in _link_partners():
+		var q := raw as PilotData
+		out.append({
+			"key": "fx:link:%d" % _bs.pilots.find(q),
+			"src": LINK_CARD_UID,
+			"short": _fx_short(card_name),
+			"title": card_name,
+			"value": MvpView.display_name(_bs, q),
+			"color": BattleTheme.FX_COOL,
+		})
+
+
+## 결속 카드(메크 카드 12, `link_engage`)의 식별자 — 썸네일 아트 · 제목.
+const LINK_CARD_UID: String = "mech:12"
+
 ## 종류별 색 / 잔여분 칸의 이름. 카드 칸과 잔여분 칸이 같은 표를 읽으므로
 ## 같은 종류의 효과는 어디에 뜨든 같은 색이다.
 const FX_KIND_COLOR := {
-	PilotData.FX_GROWTH_RATE: Color(1.00, 0.55, 0.28),
-	PilotData.FX_MAX_HP:      Color(0.55, 0.95, 0.62),
-	PilotData.FX_ATK:         Color(1.00, 0.72, 0.36),
-	PilotData.FX_ATK_PCT:     Color(1.00, 0.72, 0.36),
-	PilotData.FX_HP_PCT:      Color(0.55, 0.95, 0.62),
+	PilotData.FX_GROWTH_RATE: BattleTheme.FX_WARM,
+	PilotData.FX_MAX_HP:      BattleTheme.FX_GREEN,
+	PilotData.FX_ATK:         BattleTheme.FX_GOLD,
+	PilotData.FX_ATK_PCT:     BattleTheme.FX_GOLD,
+	PilotData.FX_HP_PCT:      BattleTheme.FX_GREEN,
 }
 ## 값은 l10n key — `Loc.t` 로 푼다.
 const FX_KIND_NAME := {  # l10n-keys: hud.pilot_detail.fx.kind.*
@@ -1036,7 +1075,7 @@ func _append_card_fx(out: Array) -> void:
 			"short": _fx_short(src_name),
 			"title": src_name,
 			"value": _fx_value(kind, amount),
-			"color": FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color,
+			"color": FX_KIND_COLOR.get(kind, BattleTheme.FX_NEUTRAL) as Color,
 		})
 
 
@@ -1062,7 +1101,7 @@ func _append_residual_fx(out: Array) -> void:
 			"title": Loc.t(L.HUD_PILOT_DETAIL_FX_REST_TITLE,
 					{"kind": Loc.t(String(FX_KIND_NAME.get(kind, kind)))}),  # l10n-dynamic: hud.pilot_detail.fx.kind.*
 			"value": _fx_value(kind, rest),
-			"color": FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color,
+			"color": FX_KIND_COLOR.get(kind, BattleTheme.FX_NEUTRAL) as Color,
 		})
 
 
@@ -1413,6 +1452,7 @@ func _build_skill_panel() -> void:
 	var has_skill: bool = sk != null and sk.has_skill(_pilot)
 	_view.get_node("%SkillTop").visible = has_skill
 	_view.get_node("%NoSkillBox").visible = not has_skill
+	(_view.get_node("%NoSkill") as Label).text = Loc.t(L.HUD_SKILL_NONE)
 	# 패시브에는 버튼이 없다 — 누를 수 없는 것에 비활성 버튼을 두면 "언젠가는
 	# 눌리는 것"으로 읽힌다.
 	var show_use: bool = has_skill and sk.skill_type(_pilot) != PilotSkillSystem.TYPE_PASSIVE
@@ -1436,7 +1476,7 @@ func _build_skill_panel() -> void:
 	var desc := StrategyIcon.make_rich_label(desc_text, SKILL_DESC_FONT,
 			BattleTheme.TEXT_DESC, BattleTheme.SKILL_KW_ICON, BattleTheme.SKILL_KNOCK,
 			KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
-			KeywordIcon.SPECIAL_COLOR_DARK, refs, true)
+			BattleTheme.SPECIAL_KW, refs, true)
 	desc.position = Vector2.ZERO
 	desc.size = Vector2(SKILL_DESC_W, desc_h)
 	desc_slot.custom_minimum_size = Vector2(0.0, desc_h)
@@ -1453,8 +1493,69 @@ func _build_skill_panel() -> void:
 		_skill_use_btn = _view.get_node("%SkillUse")
 	_refresh_skill_block()
 
+## 메크 패시브 판(메크 탭) — 파일럿 스킬 판(`%SkillPanel`)을 그대로 빌려 쓴다:
+##   [아이콘 타일]  이름
+##                  설명문
+##                  상태 한 줄 (패시브 · 토큰 n / 최대 · 상시 적용)
+## 누를 것이 없으니 사용 버튼은 없다. 패시브가 없는 기체(21대 중 6대)도 판은
+## 선다 — "패시브 없음" 한 줄(스킬 판과 같은 이유).
+func _build_passive_panel() -> void:
+	var ms: MechSkillSystem = _bs.mech_skill
+	var icon_slot: Control = _view.get_node("%SkillIconSlot")
+	var desc_slot: Control = _view.get_node("%SkillDescSlot")
+	_clear_children(icon_slot)
+	_clear_children(desc_slot)
+	var def: Dictionary = ms.passive_def(_pilot) if ms != null else {}
+	var has_passive: bool = not def.is_empty()
+	_view.get_node("%SkillTop").visible = has_passive
+	_view.get_node("%NoSkillBox").visible = not has_passive
+	(_view.get_node("%NoSkill") as Label).text = Loc.t(L.HUD_PILOT_DETAIL_NO_PASSIVE)
+	_view.get_node("%SkillUseGap").visible = false
+	_view.get_node("%SkillUse").visible = false
+	if not has_passive:
+		return
+
+	icon_slot.add_child(SkillImages.make_mech_icon_tile(
+			String(def.get("key", "")), SKILL_TILE_PX,
+			BattleTheme.SKILL_TILE_BG, BattleTheme.SKILL_TILE_ICON,
+			BattleTheme.SKILL_TILE_SHADOW))
+	(_view.get_node("%SkillName") as Label).text = 			Loc.t(String(def.get("name_key", "")))  # l10n-dynamic: mech_passive.*.name
+
+	var refs: Array = CardData.ref_entries(String(def.get("description_key", "")))
+	var desc_text: String = MechSkillSystem.passive_description(def)
+	var desc_h: float = StrategyIcon.rich_height(desc_text, SKILL_DESC_W, SKILL_DESC_FONT,
+			refs, true)
+	var desc := StrategyIcon.make_rich_label(desc_text, SKILL_DESC_FONT,
+			BattleTheme.TEXT_DESC, BattleTheme.SKILL_KW_ICON, BattleTheme.SKILL_KNOCK,
+			KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
+			BattleTheme.SPECIAL_KW, refs, true)
+	desc.position = Vector2.ZERO
+	desc.size = Vector2(SKILL_DESC_W, desc_h)
+	desc_slot.custom_minimum_size = Vector2(0.0, desc_h)
+	desc_slot.add_child(desc)
+
+	_view.get_node("%SkillStatusGap").visible = _skill_status_shown
+	_view.get_node("%SkillStatusBox").visible = _skill_status_shown
+	if _skill_status_shown:
+		_skill_status = _view.get_node("%SkillStatus")
+	_refresh_skill_block()
+
+
+## 메크 패시브의 상태 한 줄 — 파일럿 패시브와 같은 문구(토큰이 있으면 n / 최대).
+func _passive_status_text() -> String:
+	var ms: MechSkillSystem = _bs.mech_skill
+	var mx: int = ms.max_charge_of(_pilot)
+	if mx > 0:
+		return Loc.t(L.BATTLE_SKILL_STATUS_PASSIVE_CHARGE,
+				{"cur": ms.charge_of(_pilot), "max": mx})
+	return Loc.t(L.BATTLE_SKILL_STATUS_PASSIVE)
+
+
 ## 상태 줄을 보일 것인가 — 쿨타임형이 준비된 상태("사용 가능")만 아니다.
+## 메크 탭에서는 패시브가 있으면 늘 보인다.
 func _skill_status_visible() -> bool:
+	if _tab == Tab.MECH:
+		return _bs != null and _bs.mech_skill != null and _pilot != null 				and not _bs.mech_skill.passive_def(_pilot).is_empty()
 	var sk: PilotSkillSystem = _bs.skill if _bs != null else null
 	if sk == null or _pilot == null or not sk.has_skill(_pilot):
 		return false
@@ -1464,6 +1565,10 @@ func _skill_status_visible() -> bool:
 
 ## 상태 줄과 버튼 활성만 다시 쓴다 — 트리는 건드리지 않는다.
 func _refresh_skill_block() -> void:
+	if _tab == Tab.MECH:
+		if _skill_status != null and is_instance_valid(_skill_status) 				and _bs.mech_skill != null and _pilot != null:
+			_skill_status.text = _passive_status_text()
+		return
 	var sk: PilotSkillSystem = _bs.skill
 	if sk == null or _pilot == null:
 		return
@@ -1645,7 +1750,7 @@ func _fill_note(rtl: RichTextLabel, text: String) -> void:
 			var tag: String = part.substr(0, close_at) if close_at >= 0 else ""
 			if MENU_NOTE_ICON.has(tag):
 				rtl.add_image(KeywordIcon.texture(String(MENU_NOTE_ICON[tag]), icon_px * 2,
-						BattleTheme.SKILL_KW_ICON, MENU_BG), icon_px, icon_px,
+						BattleTheme.DESC_KW, MENU_BG), icon_px, icon_px,
 						Color.WHITE, INLINE_ALIGNMENT_CENTER)
 				part = part.substr(close_at + 1)
 				# 아이콘 뒤 빈칸은 줄바꿈하지 않는 빈칸 — 아이콘만 줄 끝에 남지 않게.
@@ -1813,14 +1918,12 @@ func _menu_rows(key: String) -> Array:
 					[Loc.t(L.HUD_PILOT_DETAIL_ROW_VS_EQUAL), "%d%%" % roundi(
 							PilotData.hit_chance(_pilot.engage_eva, _pilot.engage_eva) * 100.0)]]
 		"m_hp":
-			var rows_mh: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_HP), str(mech.hp) if mech != null else "—"],
-					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_MAX_HP), str(_pilot.base_max_hp)]]
+			var rows_mh: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_HP), str(mech.hp) if mech != null else "—"]]
 			_append_gain_row(rows_mh, "hp")
 			rows_mh.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_CURRENT_HP), str(_pilot.hp)])
 			return rows_mh
 		"m_atk":
-			var rows_ma: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_ATK), str(mech.atk) if mech != null else "—"],
-					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_ATK), str(_pilot.base_atk)]]
+			var rows_ma: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_ATK), str(mech.atk) if mech != null else "—"]]
 			_append_gain_row(rows_ma, "atk")
 			return rows_ma
 		"m_presence":
@@ -1838,9 +1941,9 @@ const STAT_FX_KEY := {
 	"hp": "hp", "m_hp": "hp", "atk": "atk", "m_atk": "atk",
 	"presence": "presence", "m_presence": "presence", "hit": "hit", "eva": "eva",
 }
-const FX_LANE_UP_COLOR := Color(1.00, 0.62, 0.48)
-const FX_LANE_DOWN_COLOR := Color(0.55, 0.82, 1.00)
-const FX_PASSIVE_COLOR := Color(0.72, 0.84, 1.00)
+const FX_LANE_UP_COLOR := BattleTheme.FX_WARM
+const FX_LANE_DOWN_COLOR := BattleTheme.FX_COOL
+const FX_PASSIVE_COLOR := BattleTheme.FX_COOL
 ## Kind → l10n key of its two-character label (residual cells, `_append_residual_fx` too).
 const FX_KIND_SHORT := {
 	PilotData.FX_MAX_HP: L.HUD_PILOT_DETAIL_FX_HP_SHORT,
@@ -1976,7 +2079,7 @@ func _stat_effects_of(stat: String) -> Array:
 ## residual the ledger does not explain (mech passives pushing `bonus_*` directly).
 func _add_ledger_fx(out: Array, kind: String, total: float, basis: float) -> void:
 	var is_pct: bool = kind in FX_PCT_KINDS
-	var color: Color = FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color
+	var color: Color = FX_KIND_COLOR.get(kind, BattleTheme.FX_NEUTRAL) as Color
 	for raw in _pilot.persistent_fx:
 		var e: Dictionary = raw as Dictionary
 		if String(e["kind"]) != kind:
@@ -2033,17 +2136,19 @@ func _card_src(uid: String, fallback_short: String, color: Color) -> Dictionary:
 func _skill_src() -> Dictionary:
 	var sk: PilotSkillSystem = _bs.skill
 	var src: Dictionary = {"art": null, "short": _fx_short(sk.skill_name(_pilot)),
-			"color": BattleTheme.SKILL_TILE_ICON}
+			"color": BattleTheme.FX_ICON}
 	src["icon"] = SkillImages.icon_for(String(sk.def_for(_pilot).get("key", "")))
 	return src
 
 
-## Cell look for the mech passive — two characters of its name (no passive art yet).
+## Cell look for the mech passive — its icon glyph (`SkillImages.mech_icon_for`),
+## else two characters of its name.
 func _passive_src() -> Dictionary:
 	var def: Dictionary = _bs.mech_skill.passive_def(_pilot)
 	var name_key: String = String(def.get("name_key", ""))
 	var passive_name: String = Loc.t(name_key) if name_key != "" else ""  # l10n-dynamic: mech_passive.*.name
-	return {"art": null, "icon": null, "short": _fx_short(passive_name), "color": FX_PASSIVE_COLOR}
+	return {"art": null, "icon": SkillImages.mech_icon_for(String(def.get("key", ""))),
+			"short": _fx_short(passive_name), "color": FX_PASSIVE_COLOR}
 
 
 func _text_src(short_key: String, color: Color) -> Dictionary:
@@ -2067,11 +2172,12 @@ func _make_stat_fx(grid: Control, d: Dictionary) -> void:
 	var icon_rect: TextureRect = cell.get_node("%Icon")
 	icon_rect.visible = art == null and icon != null
 	icon_rect.texture = icon
-	icon_rect.modulate = BattleTheme.SKILL_TILE_ICON
+	icon_rect.modulate = BattleTheme.DESC_ICON
 	var short_lbl: Label = thumb.get_node("%Short")
 	short_lbl.visible = art == null and icon == null
 	short_lbl.text = String(d["short"])
-	short_lbl.add_theme_color_override("font_color", d["color"] as Color)
+	# 이 칸은 어두운 칸 설명 판 안이다 — 약칭 색도 그 판의 예전 색으로.
+	short_lbl.add_theme_color_override("font_color", BattleTheme.desc_fx_color(d["color"] as Color))
 
 	var pct_lbl: Label = cell.get_node("%Pct")
 	pct_lbl.visible = bool(d["has_pct"])
@@ -2083,7 +2189,7 @@ func _make_stat_fx(grid: Control, d: Dictionary) -> void:
 
 
 static func _sign_variation(v: float) -> StringName:
-	return &"BattleNegativeLabel" if v < 0.0 else &"BattlePositiveLabel"
+	return &"PilotDetailMenuNegativeLabel" if v < 0.0 else &"PilotDetailMenuPositiveLabel"
 
 
 ## Growth-points plate rows (the bar above them is `%ScoreBar`).
@@ -2099,6 +2205,11 @@ func _score_rows() -> Array:
 func _fx_rows(key: String) -> Array:
 	if key.begins_with("fx:src:") or key.begins_with("fx:rest:"):
 		return _fx_card_rows(key)
+	if key.begins_with("fx:link:"):
+		var d: Dictionary = _fx_entry(key)
+		return [] if d.is_empty() else [
+			[Loc.t(L.HUD_PILOT_DETAIL_ROW_LINK_PARTNER), String(d["value"])],
+			[Loc.t(L.UI_WORD_TIME_LEFT), Loc.t(L.HUD_PILOT_DETAIL_REMAIN_PERMANENT)]]
 	match key:
 		"fx:lane":
 			return [
@@ -2206,6 +2317,8 @@ func _menu_note(key: String) -> String:
 		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_CARD)
 	if key.begins_with("fx:rest:"):
 		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_REST)
+	if key.begins_with("fx:link:"):
+		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_LINK)
 	match key:
 		"fx:lane":
 			return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_LANE)

@@ -464,8 +464,6 @@ func _contempt_opening() -> void:
 		var n: int = mech.take_contempt_charges(u.pilot)
 		if n <= 0:
 			continue
-		popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_PREY, {"n": n}),
-				"color": Color(1.0, 0.72, 0.35)})
 		for _i in n:
 			var weak: EUnit = _weakest_enemy(u)
 			if weak == null:
@@ -1232,7 +1230,7 @@ func _pick_target(u: EUnit) -> EUnit:
 	return best
 
 
-## 아직 살아 있는 적 유닛 전부. 전탄 발사가 한 차례에 훑는 명단이다.
+## 아직 살아 있는 적 유닛 전부. 전탄 발사가 대상을 뽑는 모집단이다.
 func _living_enemies(u: EUnit) -> Array:
 	var out: Array = []
 	for raw in units:
@@ -1272,15 +1270,41 @@ func _unit_for(p: PilotData) -> EUnit:
 func _resolve_attack(u: EUnit, target: EUnit) -> void:
 	u.swing_t = 0.22
 	var mech: MechSkillSystem = _bs.mech_skill
-	# 전탄 발사(원딜 I) — 이 한 차례의 공격이 **적 전원**에게 간다. 대가는
-	# 기체 공격력 절반이고 그건 데이터(mechs.csv 의 `atk`)에 이미 들어가 있다.
-	var victims: Array = [target]
-	if mech != null and mech.engage_targets_all(u.pilot):
-		var all_foes: Array = _living_enemies(u)
-		if not all_foes.is_empty():
-			victims = all_foes
-	for raw in victims:
-		_strike_one(u, raw as EUnit)
+	# 전탄 발사(원딜 I) — 평소의 한 대 대신 **존재감 가중 무작위로 고른 최대
+	# `BARRAGE_MAX_TARGETS` 명**에게 공격력 `BARRAGE_DMG_MULT` 배로 나눠 쏜다.
+	# 교전 무대 전용이다 — 전장 카드 공격은 이 함수를 지나지 않는다.
+	if mech != null and mech.barrage_active(u.pilot):
+		var volley: Array = _barrage_targets(u)
+		if not volley.is_empty():
+			for raw in volley:
+				_strike_one(u, raw as EUnit, true, MechSkillSystem.BARRAGE_DMG_MULT)
+			return
+	_strike_one(u, target)
+
+
+## 전탄 발사의 대상 — 살아 있는 적 중 `BARRAGE_MAX_TARGETS` 명을 **존재감
+## 가중치로 무작위**(비복원) 뽑는다. 그 수 이하만 남았으면 전원이다. 존재감이
+## 0 이하인 적도 1 로 쳐서 뽑힐 길은 남긴다(`_pick_target` 의 `max(1, presence)` 와 같다).
+func _barrage_targets(u: EUnit) -> Array:
+	var pool: Array = _living_enemies(u)
+	var cap: int = maxi(1, MechSkillSystem.BARRAGE_MAX_TARGETS)
+	if pool.size() <= cap:
+		return pool
+	var picked: Array = []
+	while picked.size() < cap and not pool.is_empty():
+		var total: float = 0.0
+		for raw in pool:
+			total += float(maxi(1, (raw as EUnit).pilot.presence))
+		var roll: float = randf() * total
+		var idx: int = pool.size() - 1
+		for i in pool.size():
+			roll -= float(maxi(1, (pool[i] as EUnit).pilot.presence))
+			if roll < 0.0:
+				idx = i
+				break
+		picked.append(pool[idx])
+		pool.remove_at(idx)
+	return picked
 
 
 ## 한 대상에게 들어가는 타격 한 번. `_resolve_attack` 이 대상 집합을 정하고
@@ -1347,8 +1371,6 @@ func _strike_one(u: EUnit, target: EUnit, allow_extra: bool = true,
 	# `MechSkillSystem.OVERCLOCK_EXTRA_ATTACKS` 번 더 때리고 충전 절반이 날아간다(소모는 질의 함수가 한다).
 	if allow_extra and mech != null and target.is_active() \
 			and mech.overclock_extra_attack(a):
-		popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_OVERCLOCK),
-				"color": Color(0.65, 0.95, 1.0)})
 		for _i in MechSkillSystem.OVERCLOCK_EXTRA_ATTACKS:
 			if not target.is_active():
 				break
@@ -1387,10 +1409,6 @@ func _apply_damage(d: PilotData, amount: int) -> int:
 		d.hp = 1
 		hp_dmg = maxi(0, hp_dmg - 1)   # 실제로 깎인 만큼만 센다
 		d.dmg_taken = maxi(0, d.dmg_taken - 1)   # 경기 기록도 같은 1 을 돌려놓는다
-		var u: EUnit = _unit_for(d)
-		if u != null:
-			popups.append({"pos": u.pos, "text": Loc.t(L.BATTLE_ENGAGE_POPUP_INDOMITABLE),
-					"color": Color(1.0, 0.92, 0.55)})
 	return absorbed + hp_dmg
 
 

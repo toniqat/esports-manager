@@ -41,10 +41,14 @@ const ICON_TEXT_GAP: float = 4.0
 ## **"턴" 글자는 삭제됐다.** 아이콘 옆에 붙은 숫자가 남은 턴 수 말고 무엇일
 ## 수는 없고, 101px 칸에서는 그 두 글자가 숫자를 밀어내기만 했다.
 const TURN_FONT_SIZE: int = 32
-const TURN_COLOR: Color = Color(1.00, 0.98, 0.92)
+## **판이 없다**(사용자 결정) — 아이콘과 숫자가 전장 위에 바로 뜬다. 그래서 숫자는 밝은
+## 글자 + 검은 외곽선(`_outlined`), 글리프는 밝은 판 색(`OBJ_*_FIELD`).
+const TURN_COLOR: Color = BattleTheme.TEXT_BRIGHT
+const TURN_OUTLINE: Color = BattleTheme.OUTLINE_SOFT
 ## 오브젝트별 색. 전령은 보랏빛, 용은 주홍 — 위치(좌/우)와 색이 함께 말한다.
-const HERALD_COLOR: Color = Color(0.74, 0.62, 0.99)
-const DRAGON_COLOR: Color = Color(1.00, 0.55, 0.28)
+## 시계(전장 위)는 밝은 판, `kind_color`(킬 로그 · 보상 팝업의 흰 판 위)는 진한 판.
+const HERALD_COLOR: Color = BattleTheme.OBJ_HERALD_FIELD
+const DRAGON_COLOR: Color = BattleTheme.OBJ_DRAGON_FIELD
 
 
 func setup(bs: BattleSim, kind: int) -> void:
@@ -86,21 +90,20 @@ func _draw() -> void:
 	_outlined(font, Vector2(x, baseline), num, TURN_FONT_SIZE, TURN_COLOR)
 
 
-## 어느 칸의 시계인가. `ObjectiveSystem` 이 그 좌표로 상태를 찾는다.
-func _cell() -> Vector2i:
-	return SimulationCore.NEUTRAL_LEFT if _kind == ObjectiveSystem.Kind.HERALD \
-			else SimulationCore.NEUTRAL_RIGHT
-
-
-## 상단 패널 배경이 짙은 남색이라 얇은 글자는 그냥 묻힌다. 타일 위에 찍던
-## 시절과 같은 규칙 — 검은 외곽선을 먼저 깔고 그 위에 본 색.
+## 판 없이 전장 위에 뜨는 숫자 — 검은 외곽선을 먼저 깔고 그 위에 본 색.
 func _outlined(font: Font, at: Vector2, text: String, fsize: int,
 		color: Color) -> void:
 	for ox in [-1.5, 1.5]:
 		for oy in [-1.5, 1.5]:
 			draw_string(font, at + Vector2(ox, oy), text,
-					HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, Color(0, 0, 0, 0.85))
+					HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, TURN_OUTLINE)
 	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize, color)
+
+
+## 어느 칸의 시계인가. `ObjectiveSystem` 이 그 좌표로 상태를 찾는다.
+func _cell() -> Vector2i:
+	return SimulationCore.NEUTRAL_LEFT if _kind == ObjectiveSystem.Kind.HERALD \
+			else SimulationCore.NEUTRAL_RIGHT
 
 
 # ─── 글리프 ──────────────────────────────────────────────────────────────────
@@ -125,7 +128,7 @@ static func draw_kind_glyph(ci: CanvasItem, kind: int, origin: Vector2,
 
 ## 그 오브젝트의 색. 전령은 보랏빛, 용은 주홍.
 static func kind_color(kind: int) -> Color:
-	return HERALD_COLOR if kind == ObjectiveSystem.Kind.HERALD else DRAGON_COLOR
+	return BattleTheme.OBJ_HERALD if kind == ObjectiveSystem.Kind.HERALD else BattleTheme.OBJ_DRAGON
 
 
 func _draw_glyph(origin: Vector2, color: Color) -> void:

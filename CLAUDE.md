@@ -27,7 +27,7 @@ Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub
 | State | **Profile** (meta, `user://profile.save`, `ProfileManager`) · **run** (`GameManager.season_state`, `user://run.save`) · **match** (`GameManager.match_ctx`, handoff MatchFlow → BattleSim, never saved) | `autoloads/`, `features/save_load/` |
 | Rules | Static `class_name` systems per feature (`*System.gd`, `RunRules`, …) — screens draw, systems decide | each feature folder |
 | Data | `data/csv/*.csv` → `data/game.db` (SQLite) → `GameDb` / `ConstTable`; tuning numbers only in `const.csv` | `data/`, `resources/` |
-| UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = dark theme via `BattleTheme` | `resources/`, `docs/mobile_safe_area.md` |
+| UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = the same white paper via `BattleTheme` (only plate-less text over the field keeps outlines) | `resources/`, `docs/mobile_safe_area.md` |
 
 Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`), one week at a time, days 월~금 training /
 토·일 matches; rules in `features/season/README.md` + `calendar/README.md`.

@@ -1,0 +1,50 @@
+[gd_scene load_steps=3 format=3 uid="uid://l1mh0vribx8n"]
+
+[ext_resource type="Script" path="res://features/battle_sim/ui/TurnEndPanel.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
+
+[node name="TurnEndPanel" type="Control"]
+editor_description = "턴 넘기기 판 — 도넛을 탭하면 왼쪽에서 밀려 들어오고, 0.5초 꾹 누르면 턴을 넘긴다(TurnEndPanel.gd). 자리는 HudBuilder 가 도넛 중심에서 정한다."
+layout_mode = 3
+anchors_preset = 0
+offset_right = 300.0
+offset_bottom = 96.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="Plate" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TurnEndPanel.gd _plate: 판 바탕(게이지 폭의 기준)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"TurnEndPanelPlate"
+
+[node name="Gauge" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TurnEndPanel.gd _gauge: 누르는 동안 왼쪽 → 오른쪽으로 차는 게이지. 왼쪽 여백(offset_left)이 사방 여백이다; 폭은 코드가 채운다."
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 8.0
+offset_bottom = 88.0
+mouse_filter = 2
+theme_type_variation = &"TurnEndGauge"
+
+[node name="Label" type="Label" parent="."]
+editor_description = "판 글자(꾹 눌러 턴 넘기기) — 씬 텍스트, 코드는 건드리지 않는다."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"TurnEndLabel"
+text = "tx_JMNJNMYGN8"
+horizontal_alignment = 1
+vertical_alignment = 1

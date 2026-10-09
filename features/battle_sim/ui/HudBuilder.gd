@@ -145,8 +145,8 @@ const AI_HAND_FAN_MAX_SPREAD_DEG := 28.0
 # The old bottom cell-bar stack and the rectangular 단계 넘기기 button are gone.
 # Both sides now read out on a ring gauge in the **left-hand** gutter (the
 # targeting overlay's 확인 / 취소 row owns the bottom-right corner):
-#   player — above the Deck counter, top-left of the hand row; doubles as
-#            the 턴 넘기기 button once tapped (see CostDonut).
+#   player — above the Deck counter, top-left of the hand row; tapping it
+#            swaps in the 턴 넘기기 hold panel (CostDonut + TurnEndPanel).
 #   enemy  — top-left of the screen, just under the AI hand peek.
 const DONUT_FILL_PLAYER: Color = BattleTheme.TEAM_DONUT[0]
 const DONUT_FILL_ENEMY: Color = BattleTheme.TEAM_DONUT[1]
@@ -156,6 +156,9 @@ const DONUT_FILL_ENEMY: Color = BattleTheme.TEAM_DONUT[1]
 const DONUT_HAND_GAP    := 24.0
 ## Vertical gap between the AI hand peek's bottom edge and the enemy donut.
 const DONUT_AI_HAND_GAP := 20.0
+## Left edge of the 턴 넘기기 panel (`TurnEndPanel`) at rest — it stands where the
+## player donut was, vertically centred on the donut.
+const TURN_END_PANEL_LEFT := 12.0
 # ── 파일럿 스트립 refs ────────────────────────────────────────────────────────
 var _enemy_strip:  PilotStrip = null   # team 1, 화면 상단
 var _player_strip: PilotStrip = null   # team 0, 핸드 행 아래
@@ -662,8 +665,9 @@ func _layout_ai_hand() -> void:
 # "당신의 차례" / "상대 차례", holds briefly, then fades out. Caller awaits
 # play_turn_announce(...) so input gating can re-enable on completion.
 # The bar (`%TurnBar`, 110 tall, vertically centred) and the label (`%TurnLabel`)
-# live in the scene; the bar colour is data (`TURN_BAR[team]`) put into a copy of
-# the `HudTurnBar` theme box.
+# live in the scene. The bar is a white plate with a side-coloured line above and
+# below — that colour is data (`TURN_BAR[team]`) put into the `border_color` of a copy
+# of the `HudTurnBar` theme box; the label takes the side text colour (`SIDE_TEXT[team]`).
 const TURN_ANNOUNCE_IN_DUR       := 0.32
 const TURN_ANNOUNCE_HOLD_DUR     := 0.55
 const TURN_ANNOUNCE_OUT_DUR      := 0.32
@@ -688,8 +692,10 @@ func play_turn_announce(is_player: bool) -> void:
 	if _announce_tween != null and _announce_tween.is_valid():
 		_announce_tween.kill()
 	var sb := BattleTheme.variation_box(&"HudTurnBar")
-	sb.bg_color = TURN_ANNOUNCE_PLAYER_COLOR if is_player else TURN_ANNOUNCE_ENEMY_COLOR
+	sb.border_color = TURN_ANNOUNCE_PLAYER_COLOR if is_player else TURN_ANNOUNCE_ENEMY_COLOR
 	_turn_bar.add_theme_stylebox_override("panel", sb)
+	_turn_label.add_theme_color_override("font_color",
+			BattleTheme.SIDE_TEXT[0 if is_player else 1] as Color)
 	_turn_label.text = Loc.t(L.HUD_TURN_PLAYER if is_player else L.HUD_TURN_ENEMY)
 	# 띠는 화면 가운데의 폭 0 에서 좌우로 펼쳐진다 — 높이 · 세로 자리는 씬 값.
 	var vp := ScreenMetrics.viewport_size()
@@ -731,8 +737,8 @@ func play_turn_announce(is_player: bool) -> void:
 # 전략 포인트 도넛 두 개를 화면 **좌측** 거터에 놓는다. 대상 지정 확인/취소
 # 버튼이 우하단으로 옮겨 갔으므로 도넛 열은 반대편(좌측)을 차지한다. 중심은 다른
 # 모듈의 기하(상대 손패 peek · 대상 지정 버튼 띠 · 손패 행)에서 나오므로 여기서 정한다.
-#  - player: 핸드 좌측 상단 (Deck 카운터 바로 위). 탭하면 뒤집혀 턴 넘기기
-#    원형 버튼이 되고, 바깥을 탭하면 다시 도넛으로 돌아온다.
+#  - player: 핸드 좌측 상단 (Deck 카운터 바로 위). 탭하면 도넛이 왼쪽으로 빠지고
+#    턴 넘기기 판(꾹 눌러 넘기기)이 들어오며, 바깥을 누르면 다시 도넛으로 돌아온다.
 #  - enemy: 화면 좌측 상단 (상대 핸드 peek 바로 아래). 표시 전용.
 func _bind_cost_donuts(root: Node) -> void:
 	var cx: float = _bs.BS_HAND_AREA_MARGIN * 0.5
@@ -752,13 +758,16 @@ func _bind_cost_donuts(root: Node) -> void:
 	_bs.cost_donut.set_center(Vector2(cx, _bs.BS_HAND_CENTER.y
 			- targeting_btn_band - DONUT_HAND_GAP - CostDonut.RADIUS))
 	_bs.cost_donut.end_turn_pressed.connect(_bs.card_phase.end_card_phase)
+	# 턴 넘기기 판 — 도넛을 탭하면 도넛 자리에 왼쪽에서 밀려 들어온다(`TurnEndPanel`).
+	var turn_end := root.get_node("%TurnEndPanel_Player") as TurnEndPanel
+	turn_end.place(TURN_END_PANEL_LEFT, _bs.cost_donut.rest_center().y)
+	_bs.cost_donut.attach_turn_end_panel(turn_end)
 
 	# 예약 칩 — 아군 도넛 위로 쌓인다(`ReservationChips`). 적 쪽은 두지 않는다:
 	# 적 도넛 아래는 전장 왼쪽 위 타일과 겹치고, 상대의 예약은 킬로그 · 결과로
 	# 드러난다.
 	_reserve_chips = root.get_node("%ReservationChipsP") as ReservationChips
-	_reserve_chips.setup(_bs, true, _bs.cost_donut.position
-			+ Vector2(CostDonut.RADIUS, CostDonut.RADIUS))
+	_reserve_chips.setup(_bs, true, _bs.cost_donut.rest_center())
 
 
 ## 결과 화면 — `VictoryLayer`(층 50: HUD 캔버스와 전장 위, MVP 뷰

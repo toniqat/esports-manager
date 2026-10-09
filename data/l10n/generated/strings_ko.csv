@@ -138,14 +138,14 @@ tx_8830YJ0Y2M,무모한 돌격
 tx_559D68SDYX,자신감
 tx_H4X8Y1CT0H,맑은 정신
 tx_4RNAZ0XM3Z,준비 태세
-tx_39VBTD21YR,{engage}턴 간 교전. 범위 내 모두 참여
-tx_V2PKK7NWT2,{engage}턴 간 교전. 범위 내 모두 참여
+tx_39VBTD21YR,{engage}턴 간 교전\n범위 내 모두 참여
+tx_V2PKK7NWT2,{engage}턴 간 교전\n범위 내 모두 참여
 tx_EC3YQQ5Z38,대상과 한 명이 처치될 때까지 교전 (최대 {engage_duel_max_rounds}턴)
-tx_408F44KGGS,이동. 다음 교전 카드 비용 -{cost_reduce_engage}
-tx_NXCKS533Z5,이동. 이 게임 동안 비용 +{self_cost}
+tx_408F44KGGS,이동\n다음 교전 카드 비용 -{cost_reduce_engage}
+tx_NXCKS533Z5,이동\n이 게임 동안 비용 +{self_cost}
 tx_ER4EDPVYGB,공격
 tx_RVEDFKNMDP,필중 공격
-tx_D517G4R707,공격. 명중 시 이 카드 효과를 반복
+tx_D517G4R707,공격\n명중 시 이 카드 효과를 반복
 tx_G0C3P5140E,전진 {advance}
 tx_W35E68ZQBW,"뽑기 {draw}장, 버리기 {discard}장"
 tx_SGE785HBXQ,"뽑기 {draw}장, 전략 점수 +{strategy}"
@@ -153,31 +153,31 @@ tx_6YQZCE1XNJ,찾기 {search}장
 tx_QRCN458YD0,뽑기 {draw}장
 tx_2QKZF6AP0E,이번 작전 단계에서 뽑는 카드 비용 -{cost_reduce_draw_phase}
 tx_Q0E6A1NV2N,손의 모든 카드 비용 -{cost_reduce_hand}
-tx_K66VVKXS4N,전략 점수 +{strategy}. 다음 작전 단계 시작 시 전략 점수 -{strategy_next_phase_abs}
+tx_K66VVKXS4N,전략 점수 +{strategy}\n다음 작전 단계 시작 시 전략 점수 -{strategy_next_phase_abs}
 tx_5N1FY5QTXY,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수 +{strategy_on_kill}"
 tx_VTBGJF968E,대상을 본진으로 귀환
 tx_3BNP4XNPK9,대상 체력 {shield_pct}%의 보호막 부여
 tx_4FMSTMSTRG,대상 타일에 남은 성장 점수{eul} 가로챈다
-tx_232ZDZ7E24,"가장 가까운 아군 포탑으로 이동. {eva_buff_turns}턴 동안 전장 회피 +{eva_buff}%, 성장 +{growth}%"
+tx_232ZDZ7E24,"가장 가까운 아군 포탑으로 이동\n{eva_buff_turns}턴 동안 전장 회피 +{eva_buff}%, 성장 +{growth}%"
 tx_TCT401KX2S,{lane_stat_turns}턴 동안 라인전 능력치 +{lane_stat}%
-tx_P5PQ376FBE,손{eul} 전부 버리기. 버린 수만큼 뽑기
-tx_F7AA153FS9,손{eul} 전부 버리기. 다음 작전 단계까지 아군 전원 성장 +{growth_until_phase}%. 작전 단계 종료
+tx_P5PQ376FBE,손{eul} 전부 버리기\n버린 수만큼 뽑기
+tx_F7AA153FS9,손{eul} 전부 버리기\n다음 작전 단계까지 아군 전원 성장 +{growth_until_phase}%\n작전 단계 종료
 tx_M1Z6RYGV59,손의 카드 {preserve}장을 다음 작전 단계까지 보존
 tx_38HZVJYJCF,"손 오른쪽 {discard_right}장 버리기, 뽑기 {draw}장"
 tx_8H6EH36EGS,"다른 파일럿 카드 모두 버린 후, 뽑기 +{draw}\n버린 카드 1장마다 전략 점수 +{strategy_each}"
 tx_2NQ79Z541T,이동
-tx_5S3Y4PZWTS,지정한 최외곽 적 포탑에 피해 {turret_damage}. 그 레인 전선에 적이 한 명도 없으면 피해 {card_herald_unopposed_dmg_mult}배. 입힌 피해만큼의 성장 점수{eul} 그 레인 아군이 나눠 받는다
+tx_5S3Y4PZWTS,지정한 최외곽 적 포탑에 피해 {turret_damage}\n그 레인 전선에 적이 한 명도 없으면 피해 {card_herald_unopposed_dmg_mult}배\n입힌 피해만큼의 성장 점수{eul} 그 레인 아군이 나눠 받는다
 tx_078XVRBVH0,"뽑기 {draw}장, 대상의 성장 효율 +{growth_perm}%"
 tx_J9JA1A653S,"뽑기 {draw}장, 이 파일럿의 성장 적립 +{growth_perm}%"
 tx_VYBKRVFG20,이동
 tx_88Z8A3NC37,"소지 중: 성장 +{charge*{card_gold_rush_growth_per_token_pct}|토큰 수×{card_gold_rush_growth_per_token_pct}}%\n사용: 이 게임 동안 비용 +{self_cost}, 토큰 +{token}"
 tx_M56XC3K4QE,"공격력 +{atk_pct}%, 성장 +{growth_perm}%"
-tx_TF7GKXEQ30,"공격력 +{atk_pct}%, 체력 +{hp_pct}%. 뽑기 {draw}장"
-tx_PPCM4J5N6A,{growth_turns}턴 동안 성장 +{growth}%. 작전 단계 중 손에 들어오면 그 작전 단계 동안 비용 0
+tx_TF7GKXEQ30,"공격력 +{atk_pct}%, 체력 +{hp_pct}%\n뽑기 {draw}장"
+tx_PPCM4J5N6A,{growth_turns}턴 동안 성장 +{growth}%\n작전 단계 중 손에 들어오면 그 작전 단계 동안 비용 0
 tx_Z818WEC9V2,토큰{eul} 모두 소모해 {growth_turns}턴 동안 성장 +{charge*{growth}|충전 횟수×{growth}}%
-tx_R0XZSX92HN,{engage}턴 간 교전. 대상 범위 내 모두 참여
-tx_TMRSQNE9TF,이동해 다음 작전 단계까지 그 자리에 머문다. 다음 작전 단계에 시전자의 교전 카드 찾기 {ambush_search}장
-tx_ZHFXJ9NS53,공격 {attack}회. 대상이 시전자{eul} {retaliate}회 공격
+tx_R0XZSX92HN,{engage}턴 간 교전\n대상 범위 내 모두 참여
+tx_TMRSQNE9TF,이동해 다음 작전 단계까지 그 자리에 머문다\n다음 작전 단계에 시전자의 교전 카드 찾기 {ambush_search}장
+tx_ZHFXJ9NS53,공격 {attack}회\n대상이 시전자{eul} {retaliate}회 공격
 tx_XPV2PXPJM8,소지 중: 전장 명중 +{card_confidence_hit_bonus_pct}%
 tx_697BZYWAQZ,소지 중: 양 옆 카드 비용 -{card_clear_mind_cost_cut}
 tx_5SCQTRV4MR,"다음 작전 단계 시작 시 전략 점수 +{strategy_next_phase}, 뽑기 {draw_next_phase}장"
@@ -247,68 +247,68 @@ tx_Y7VQ3CF1M8,확신
 tx_VADKXBYWKY,사형 선고
 tx_JNPQN78JF0,전장 내 모든 적 공격
 tx_2EM7FR668Z,공격
-tx_8J7JZK60VJ,아군 HQ 부터 대상 포탑 타일까지 모든 적과 포탑 공격. 적 포탑 파괴 시마다 덱에 {mech_turret_kill_deck_cards}장 생성
+tx_8J7JZK60VJ,아군 HQ 부터 대상 포탑 타일까지 모든 적과 포탑 공격\n적 포탑 파괴 시마다 덱에 {mech_turret_kill_deck_cards}장 생성
 tx_688W5MT4FK,소지 중: 아무 카드나 사용할 때마다 시전자{i} 보유한 성장 점수의 {mech_cash_rate_pct}%만큼 성장 점수 획득
 tx_G8M4271EMY,버린 더미에서 찾기 {search_discard}장
-tx_V7VRGW4E2A,"공격. 명중 시 전략 점수 +{strategy}, [캐시] 찾기 {search_card_count}장"
+tx_V7VRGW4E2A,"공격\n명중 시 전략 점수 +{strategy}, [캐시] 찾기 {search_card_count}장"
 tx_EBV4NATSF5,토큰{eul} 모두 소모해 대상 타일의 모든 적 공격 {charge|충전 횟수}회
 tx_SMQK1K7KVW,[미사일] 찾기 {search_card_count}장
-tx_2HPG2AS40R,대상 범위 내 모든 적과 포탑 공격. 명중 1회마다 손에 소멸·휘발성 [미사일] {gen_hand_count}장 생성
+tx_2HPG2AS40R,대상 범위 내 모든 적과 포탑 공격\n명중 1회마다 손에 소멸·휘발성 [미사일] {gen_hand_count}장 생성
 tx_6X4HNDCZ2C,토큰{eul} 모두 소모해 전장 내 무작위 적 공격 {charge+{attack_base}|충전 횟수+{attack_base}}회
 tx_YWSFNSENS1,소지 중: 적이 카드로 피해를 입을 때마다 그 적을 공격 (이 카드로 인한 피해 제외)
-tx_Z2YW81TPE6,시전자{i} 교전에 참여할 때 대상도 함께 참여
+tx_Z2YW81TPE6,"시전자 및 대상이 전투 이탈 시까지 서로 [추적]\n대상 변경 시, 이전 효과는 사라짐"
 tx_C4VPQGSWCK,이번 작전 단계 동안 이 메크가 피해를 입힌 적 모두 공격
-tx_448B4T57NE,범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
-tx_EPR6SV4YCM,대상 범위 내 모든 적 공격. 1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
+tx_448B4T57NE,범위 내 모든 적 공격\n1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
+tx_EPR6SV4YCM,대상 범위 내 모든 적 공격\n1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
 tx_FH052PHKSD,"뽑기 {draw}장, 전략 점수 +{strategy}"
-tx_NVNVNRV9CV,대상의 타일로 이동. {engage}턴 간 교전
+tx_NVNVNRV9CV,대상의 타일로 이동\n{engage}턴 간 교전
 tx_DA9WK7H4XT,이동
 tx_NNZJRNHF9P,공격
-tx_CGVRKSDCVG,{engage}턴 간 교전. 범위 내 모두 참여. 교전에서 생존할 시 처치한 적 1명마다 손에 [철거] {gen_hand_count}장 생성
-tx_GNVN8SF4TQ,밀기 {push}. 도중에 적이 없을 경우 추가 밀기 {push_bonus_clear}
-tx_YQZZ1NX7CW,토큰 {execute_charge} 미만일 때 이 카드 제거. 토큰{eul} 모두 소모해 최대 체력 {execute}% 이하인 대상 처치
-tx_A7SQ01XZXJ,"공격. 명중 시 뽑기 {draw}장, 토큰 +{charge}"
-tx_49DTSHJHEX,이동. 이후 범위 내 모든 적 또는 포탑 공격. 명중 1회마다 토큰 +{charge}
+tx_CGVRKSDCVG,{engage}턴 간 교전\n범위 내 모두 참여\n교전에서 생존할 시 처치한 적 1명마다 손에 [철거] {gen_hand_count}장 생성
+tx_GNVN8SF4TQ,밀기 {push}\n도중에 적이 없을 경우 추가 밀기 {push_bonus_clear}
+tx_YQZZ1NX7CW,토큰 {execute_charge} 미만일 때 이 카드 제거\n토큰{eul} 모두 소모해 최대 체력 {execute}% 이하인 대상 처치
+tx_A7SQ01XZXJ,"공격\n명중 시 뽑기 {draw}장, 토큰 +{charge}"
+tx_49DTSHJHEX,이동\n이후 범위 내 모든 적 또는 포탑 공격\n명중 1회마다 토큰 +{charge}
 tx_2V3BT9STT6,공격 {attack}회
 tx_DKVGQXAXNA,"대상과 {max(1, chain)|영혼 포식 명중 수}턴 간 교전"
-tx_WTZJ53SNH7,범위 내 모든 적 공격. 명중 1회마다 토큰 +{charge} 및 시전자 체력 {heal_pct}% 회복. 토큰 수만큼 [전쟁의 사슬]의 교전 턴{i} 증가
+tx_WTZJ53SNH7,범위 내 모든 적 공격\n명중 1회마다 토큰 +{charge} 및 시전자 체력 {heal_pct}% 회복\n토큰 수만큼 [전쟁의 사슬]의 교전 턴{i} 증가
 tx_YPM1FF88MR,최대 체력 +{max_hp}
-tx_D33QNEYP5R,공격. 명중 시 {track}턴 간 [추적]
-tx_4DX9VJS0JB,대상의 타일로 이동. {engage}턴 간 교전
+tx_D33QNEYP5R,공격\n명중 시 {track}턴 간 [추적]
+tx_4DX9VJS0JB,대상의 타일로 이동\n{engage}턴 간 교전
 tx_QTKR6R244D,대상 최대 체력의 {heal_pct}% 회복 및 [반응 장갑] {reactive_armor} 부여
-tx_B49ZJVCFRB,범위 내 모든 적 및 포탑 필중 공격. 명중 1회마다 자신에게 [반응 장갑] {reactive_armor} 부여
-tx_0RC6TG6RCS,{engage}턴 간 교전. 범위 내 모두 참여
-tx_9H6E53W0EW,대상과 자신이 {mutual_attack}회씩 서로 공격. 대상의 공격은 필중
-tx_AX7SP29R5Z,전장 내 모든 적이 시전자{eul} 필중 공격. 전략 점수 +{strategy}
-tx_4RPBKVD2TC,{engage}턴 간 교전. 범위 내 모두 참여
-tx_YT04HJAVXS,토큰 +{charge}. [단계 A] 찾기 {search_card_count}장
-tx_K2W48C2P3K,덱에 [단계 B] {gen_deck_count}장 생성. 대상에게 [목표] 부여
-tx_JCFDKSCVXT,"[목표]가 부여된 적 주변 {engage_self_range}칸 이내 {engage}턴 간 교전. 교전에서 적이 처치되면 덱에 [단계 C] {phase_b_count}장 생성, 아니면 [단계 A] {phase_b_count}장 생성"
-tx_5198GDXGZX,덱에 [단계 A] {gen_deck_count}장 생성. 강화 하나 선택\n알파: 다음 [단계 A] 사용 시 덱{i} 아닌 손에 [단계 B] 생성\n베타: 다음 [단계 B] 사용 시 토큰 +{mech_phase_boon_beta_charge}\n감마: 다음 [단계 C] 사용 시 성장 점수 +{mech_phase_boon_gamma_rate_pct}%
-tx_R3NMXP56CN,소지 중: 교전 시작 시 토큰{eul} 모두 소모해 체력{i} 가장 적은 적을 공격력 {engage_contempt_dmg_mult_pct}%로 공격 {charge|충전 횟수}회
-tx_BCN9HQ1Y7D,[약자 멸시] 찾기 {search_card_count}장. 이동. 이후 {engage}턴 간 교전. 범위 내 모두 참여
-tx_8FMSQ09F35,이동. 이후 범위 내 모든 적 공격
-tx_FRGPH6CYX7,손에서 이 카드보다 왼쪽의 모든 카드 버리기. 버린 수만큼 뽑기
-tx_HBEZ5EBKC0,"손의 가장 오른쪽 카드 {discard_right}장 버리기, 뽑기 {draw}장. 대상 위치로 이동해 대상 공격. 이번 작전 단계{i} 끝나면 이전 위치로 복귀"
-tx_FVZW5PXN3H,손의 가장 오른쪽 카드 {discard_right}장 버리기. 이번 작전 단계에서 피해를 입힌 적들을 다시 공격
+tx_B49ZJVCFRB,범위 내 모든 적 및 포탑 필중 공격\n명중 1회마다 자신에게 [반응 장갑] {reactive_armor} 부여
+tx_0RC6TG6RCS,{engage}턴 간 교전\n범위 내 모두 참여
+tx_9H6E53W0EW,대상과 자신이 {mutual_attack}회씩 서로 공격\n대상의 공격은 필중
+tx_AX7SP29R5Z,전장 내 모든 적이 시전자{eul} 필중 공격\n전략 점수 +{strategy}
+tx_4RPBKVD2TC,{engage}턴 간 교전\n범위 내 모두 참여
+tx_YT04HJAVXS,토큰 +{charge}\n[단계 A] 찾기 {search_card_count}장
+tx_K2W48C2P3K,덱에 [단계 B] {gen_deck_count}장 생성\n대상에게 [목표] 부여
+tx_JCFDKSCVXT,"[목표]가 부여된 적 주변 {engage_self_range}칸 이내 {engage}턴 간 교전\n교전에서 적이 처치되면 덱에 [단계 C] {phase_b_count}장 생성, 아니면 [단계 A] {phase_b_count}장 생성"
+tx_5198GDXGZX,덱에 [단계 A] {gen_deck_count}장 생성\n강화 하나 선택\n알파: 다음 [단계 A] 사용 시 덱{i} 아닌 손에 [단계 B] 생성\n베타: 다음 [단계 B] 사용 시 토큰 +{mech_phase_boon_beta_charge}\n감마: 다음 [단계 C] 사용 시 성장 점수 +{mech_phase_boon_gamma_rate_pct}%
+tx_R3NMXP56CN,소지 중: 교전 시작 시 토큰{eul} 모두 소모해 체력{i} 가장 적은 적을 공격력 {engage_contempt_dmg_mult_pct}%로 공격 {charge|충전 횟수}회\n그 교전이 끝나면 이 카드를 버린다
+tx_BCN9HQ1Y7D,[약자 멸시] 찾기 {search_card_count}장\n이동\n이후 {engage}턴 간 교전\n범위 내 모두 참여
+tx_8FMSQ09F35,이동\n이후 범위 내 모든 적 공격
+tx_FRGPH6CYX7,손에서 이 카드보다 왼쪽의 모든 카드 버리기\n버린 수만큼 뽑기
+tx_HBEZ5EBKC0,"손의 가장 오른쪽 카드 {discard_right}장 버리기, 뽑기 {draw}장\n대상 위치로 이동해 대상 공격\n이번 작전 단계{i} 끝나면 이전 위치로 복귀"
+tx_FVZW5PXN3H,손의 가장 오른쪽 카드 {discard_right}장 버리기\n이번 작전 단계에서 피해를 입힌 적들을 다시 공격
 tx_HP6SF4N2PN,대상 {move_target}칸 이동
-tx_PKYA2BZD4J,범위 내 모든 적을 시전자 타일로 이동. {engage}턴 간 교전. 시전자 주변 {engage_self_range}칸 모두 참여
+tx_PKYA2BZD4J,범위 내 모든 적을 시전자 타일로 이동\n{engage}턴 간 교전\n시전자 주변 {engage_self_range}칸 모두 참여
 tx_52YX26E4KK,{growth_link}턴 동안 대상이 얻는 성장 점수{wa} 동일한 성장 점수 획득
-tx_77KHMP4PZV,아군 또는 적이 처치될 때마다 이 카드를 손에 {mech_death_hand_cards}장 생성. 대상 체력 {heal_pct}% 회복 및 대상 범위 내 모든 적 공격
-tx_ZS7CFWQ0VS,버리기 {discard}장. 덱에 [공격 명령] {gen_deck_count}장 생성
-tx_FYQ04QVGFD,"공격. 명중 시 대상 범위 내 {engage}턴 간 교전, 빗나갈 시 전략 점수 +{strategy}"
+tx_77KHMP4PZV,아군 또는 적이 처치될 때마다 이 카드를 손에 {mech_death_hand_cards}장 생성\n대상 체력 {heal_pct}% 회복 및 대상 범위 내 모든 적 공격
+tx_ZS7CFWQ0VS,버리기 {discard}장\n덱에 [공격 명령] {gen_deck_count}장 생성
+tx_FYQ04QVGFD,"공격\n명중 시 대상 범위 내 {engage}턴 간 교전, 빗나갈 시 전략 점수 +{strategy}"
 tx_71ZZ55QRCS,대상에게 시전자 공격력의 {shield_atk}% 보호막 부여
 tx_GC8TZWVVQ1,전장 내 모든 아군에게 시전자 공격력의 {shield_atk}% 보호막 부여
-tx_JCJTQREPN3,대상이 다음 교전에서 적에게 피해를 주면 그 적을 [기절]. 한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
-tx_3EM1YTK1F0,공격. 명중 시 대상은 이번 작전 단계 동안 교전 참여 불가
-tx_HNMHMDJQAW,버린 더미에서 뽑기 {draw_discard}장. 이번 작전 단계 동안 해당 카드들 비용 -{draw_discard_cost_reduce}
+tx_JCJTQREPN3,대상이 다음 교전에서 적에게 피해를 주면 그 적을 [기절]\n한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
+tx_3EM1YTK1F0,공격\n명중 시 대상은 이번 작전 단계 동안 교전 참여 불가
+tx_HNMHMDJQAW,버린 더미에서 뽑기 {draw_discard}장\n이번 작전 단계 동안 해당 카드들 비용 -{draw_discard_cost_reduce}
 tx_P31PSDYTQK,소지 중: 이 메크의 다른 카드가 성장 점수{eul} 소모하지 않음
 tx_XW6K7VHSXD,시전자의 성장 점수 {score_cost} 소모 및 대상이 전장 이탈까지 성장 효율 +{growth_eff}%
 tx_3X4DE25KTY,시전자의 성장 점수 {score_cost} 소모 및 대상 최대 체력 +{max_hp}
 tx_EPJQNJA7F7,시전자의 성장 점수 {score_cost} 소모 및 대상 공격력 +{atk_add}
-tx_RHE0637Z32,"대상은 전장 이탈까지 받는 피해 +{dmg_taken}%, 대상의 성장 점수 {bounty}%만큼 [현상금] 지정. 중첩되지 않음"
-tx_70N6FJ3FJ0,공격. 대상의 [현상금] {attack_bounty}%만큼 피해
-tx_1MFHFCFRJE,대상을 시전자의 타일로 이동. {engage}턴 간 교전. 범위 내 모두 참여
+tx_RHE0637Z32,"대상은 전장 이탈까지 받는 피해 +{dmg_taken}%, 대상의 성장 점수 {bounty}%만큼 [현상금] 지정\n중첩되지 않음"
+tx_70N6FJ3FJ0,공격\n대상의 [현상금] {attack_bounty}%만큼 피해
+tx_1MFHFCFRJE,대상을 시전자의 타일로 이동\n{engage}턴 간 교전\n범위 내 모두 참여
 tx_XJ3733JBC4,능력치
 tx_YD2EQQHJ2J,샐러리
 tx_DWRZXTZQ0S,성장
@@ -557,6 +557,18 @@ tx_ECA0V7N5CG,공격력 증가
 tx_9BD5WJRJ16,최대 체력 증가
 tx_92JKM782CD,"성장치에 따라 공격력과 최대 체력이 증가합니다. {step}k마다 크게 성장합니다.\n파일럿의 {atk_growth} 공격 성장과 {hp_growth} 체력 성장이 높을수록, 성장치에 따른 공격력과 최대 체력 상승량이 증가합니다."
 tx_33SA211TC1,증가
+tx_HPQYQXRZVF,패시브 없음
+tx_JMNJNMYGN8,꾹 눌러 턴 넘기기
+tx_58ZB0FCDG2,예약 효과
+tx_91R4BR8YQ3,다음 작전 단계 시작 시 전략 점수 {n}
+tx_7HEDWPJ892,다음 작전 단계 시작 시 {n}장 뽑기
+tx_DNVZMCXYYS,이번 작전 단계에 적을 처치하면 전략 점수 +{n}
+tx_S2AKX3F5ZR,다음 작전 단계 시작 시 교전 카드 {n}장 찾기
+tx_JT1Q4AR9BB,뽑기 {n}
+tx_8J4PMYV3RW,처치 +{n}
+tx_FRNWGED1N8,찾기 {n}
+tx_HY8TH99C2E,결속 상대
+tx_6NND6G12EN,결속한 둘 중 하나가 교전에 참여하면 다른 하나도 함께 참여한다. 둘 중 하나가 전장을 떠나면 풀린다.
 tx_Q2YD01V4X9,대상이 교전에 참여하면 시전자도 함께 참여한다
 tx_8224R3117V,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다
 tx_M9AXFZ0YJD,시전자에게 받는 피해 +{mark_target}%. 새 목표{eul} 정하면 이전 목표{eun} 풀린다
@@ -843,7 +855,7 @@ tx_9J4RSF40T1,이 메크의 보호막{eul} 받은 아군{i} 전장에서 적에�
 tx_JWM1NSSZC2,교전 시 모든 아군{i} 한 번에 한해 공격 받아도 체력 1 이하로 내려가지 않음
 tx_D3R65NAFJ7,이번 작전 단계 동안 공격 명중 시마다 대상에게 취약 {p1} 부여. 취약: 1마다 받는 피해 {mech_vulnerable_per_stack_pct}% 증가
 tx_5SM31D1TN4,자신 레인의 포탑이 파괴될 때마다 덱에 [미사일] {mech_missile_stock_cards}장 생성
-tx_EZ2X9YFAAV,교전 중 공격이 모든 적을 대상으로 함 (이 메크의 공격력{eun} 다른 원딜 메크의 절반)
+tx_EZ2X9YFAAV,"교전 중 공격할 때, 대신 존재감에 따라 무작위로 고른 적 최대 {mech_barrage_max_targets}명을 공격력의 {mech_barrage_dmg_mult_pct}%로 공격"
 tx_8F16MH3WCH,전장 공격 명중 시 공격력 +{p1}
 tx_6B0387STJ7,요즘 훈련이 조금 버거워요.
 tx_AM70RNN3NK,감독님은 어떻게 생각하세요?

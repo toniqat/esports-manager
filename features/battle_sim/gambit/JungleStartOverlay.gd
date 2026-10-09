@@ -265,7 +265,7 @@ func _build() -> void:
 	_confirm = Button.new()
 	_confirm.text = Loc.t(L.BATTLE_JUNGLE_START_START)
 	_confirm.focus_mode = Control.FOCUS_NONE
-	_confirm.add_theme_font_size_override("font_size", 34)
+	BattleTheme.style_button(_confirm, "primary", 34)
 	_confirm.position = Vector2((vp.x - BTN_W) * 0.5, band_y)
 	_confirm.size = Vector2(BTN_W, BAND_H)
 	_confirm.visible = false

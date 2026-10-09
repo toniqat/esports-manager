@@ -470,7 +470,7 @@ func _draw_pilot_cast_fx() -> void:
 func clear_popups() -> void:
 	_popups.clear()
 	_bursts.clear()
-	_banners.clear()
+	banners.clear()
 	_hp_chips.clear()
 	_hp_seen.clear()
 	_press_now.clear()
@@ -2852,107 +2852,202 @@ func _draw_preview_text(bottom_center: Vector2, txt: String, col: Color) -> void
 	draw_string(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, col)
 
 
-# ─── 버프 배너 (시전 확정 뒤) ────────────────────────────────────────────────
-# 대상에게 효과를 거는 카드(몸집 불리기 · 붉은 가루 · 보호 …)가 **실제로 걸린
-# 순간** 그 파일럿의 전장 초상 위에 한 줄짜리 배너가 뜬다 — 왼쪽은 둥근 사각형으로
-# 깎은 카드 아트, 오른쪽은 카드 이름. 진입점은 `CardPhaseManager` 의 효과
-# 디스패치(`_announce_buff`) 하나다.
+# ─── 효과 배너 (카드 버프 · 조건부 패시브 발동) ──────────────────────────────
+# 파일럿에게 효과가 **실제로 걸린 순간** 그 파일럿의 초상 위에 한 줄짜리 배너가
+# 뜬다 — 왼쪽은 둥근 사각형 칩(카드 아트, 또는 어두운 칩 위의 스킬 / 패시브
+# 글리프), 오른쪽은 이름. **판은 없다**: 전장 위에 떠 있으므로 밝은 글자 +
+# `BattleTheme.OUTLINE` 외곽선만으로 읽히게 한다.
+#
+# 진입점은 셋이다.
+#   • `spawn_buff_banner(p, card)`       — 대상에게 효과를 거는 카드
+#     (`CardPhaseManager._announce_buff`), 손패 상주 카드(약자 멸시 · 계시)
+#   • `spawn_skill_banner(p)`            — 조건부 파일럿 스킬 발동 (`PilotSkillSystem`)
+#   • `spawn_mech_passive_banner(p, key)` — 조건부 메크 패시브 발동 (`MechSkillSystem`)
+# 같은 파일럿 · 같은 `key` 의 배너가 아직 떠 있으면 새로 쌓지 않고 그 배너의
+# 수명만 늘린다(`BANNER_REFRESH_HOLD`) — 피해 한 대마다 걸리는 패시브(고통과 쾌감 ·
+# 영혼 수확)가 배너 탑을 쌓지 않게 하는 장치다.
+#
+# 목록(`banners`)은 이 렌더러 하나가 들고 시간도 여기서 민다. 교전 무대가 열려
+# 있는 동안에는 전장 쪽은 그리지 않고 `EngageArena` 가 같은 목록을 읽어 무대
+# 초상 위에 그린다(`draw_banner` 공용) — 교전 중에 걸린 패시브도 같은 배너다.
 
 const BANNER_DUR: float = 1.9
 const BANNER_FADE_IN: float = 0.15
 const BANNER_FADE_OUT: float = 0.35
+## 같은 배너가 다시 걸렸을 때 그 순간부터 더 떠 있는 시간.
+const BANNER_REFRESH_HOLD: float = 1.2
 const BANNER_RISE_PX: float = 14.0
-const BANNER_H: float = 46.0
-const BANNER_ART: float = 38.0
-const BANNER_PAD: float = 5.0
-const BANNER_FONT: int = 22
-const BANNER_BG := Color(0.06, 0.06, 0.10, 0.88)
-const BANNER_BORDER := Color(1.0, 1.0, 1.0, 0.55)
-var _banners: Array = []
+const BANNER_ART: float = 40.0
+const BANNER_GAP: float = 8.0
+const BANNER_STACK_GAP: float = 6.0
+const BANNER_FONT: int = 24
+const BANNER_TEXT := Color(1.0, 0.96, 0.84)
+## 글리프 칩(흰 글리프)의 바탕 — 카드 아트는 바탕 없이 그 자체가 칩이다.
+const BANNER_GLYPH_BG := Color(0.10, 0.11, 0.16, 0.92)
+const BANNER_GLYPH_INSET: float = 0.16
+## 칩 둘레의 어두운 테 — 글자 외곽선과 같은 역할(밝은 타일 위에서도 칩 경계가 읽힌다).
+const BANNER_CHIP_RIM: float = 2.0
+## 활성 배너 `{p, tex, glyph, title, key, t, dur, stack}`. `EngageArena` 가 읽는다.
+var banners: Array = []
 
 
-func spawn_buff_banner(p: PilotData, cd: CardData) -> void:
+func spawn_buff_banner(p: PilotData, cd: CardData, key: String = "") -> void:
 	if p == null or cd == null:
 		return
+	_push_banner(p, CardImages.art_for(cd.card_uid()), false, cd.card_name, key)
+
+
+## 조건부 파일럿 스킬이 발동했다 — 그 파일럿 자신의 스킬 아이콘 + 이름.
+func spawn_skill_banner(p: PilotData) -> void:
+	if p == null or _bs == null or _bs.skill == null or not _bs.skill.has_skill(p):
+		return
+	var key: String = String(_bs.skill.def_for(p).get("key", ""))
+	_push_banner(p, SkillImages.icon_for(key), true, _bs.skill.skill_name(p),
+			"skill:" + key)
+
+
+## 조건부 메크 패시브가 발동했다. `passive_key` 를 비우면 `p` 자신의 패시브이고,
+## 주면 그 패시브다 — 불굴처럼 **남의 패시브**가 이 파일럿에게 걸리는 경우.
+func spawn_mech_passive_banner(p: PilotData, passive_key: String = "") -> void:
+	if p == null:
+		return
+	var def: Dictionary = _mech_passive_row(p, passive_key)
+	if def.is_empty():
+		return
+	var key: String = String(def.get("key", ""))
+	var title: String = Loc.t(String(def.get("name_key", "")))  # l10n-dynamic: mech_passive.*.name
+	_push_banner(p, SkillImages.mech_icon_for(key), true, title, "mech:" + key)
+
+
+func _mech_passive_row(p: PilotData, passive_key: String) -> Dictionary:
+	if _bs == null:
+		return {}
+	if _bs.mech_skill != null:
+		var own: Dictionary = _bs.mech_skill.passive_def(p)
+		if passive_key.is_empty() or String(own.get("key", "")) == passive_key:
+			return own
+	if passive_key.is_empty() or _bs.gm == null:
+		return {}
+	for raw in (_bs.gm.mech_passives as Dictionary).values():
+		var row: Dictionary = raw
+		if String(row.get("key", "")) == passive_key:
+			return row
+	return {}
+
+
+## 지금 떠 있는 배너 목록(읽기 전용으로 쓴다). 교전 무대가 자기 초상 위에 그린다.
+func active_banners() -> Array:
+	return banners
+
+
+func _push_banner(p: PilotData, tex: Texture2D, glyph: bool, title: String,
+		key: String) -> void:
+	if not key.is_empty():
+		for raw in banners:
+			var e: Dictionary = raw
+			if e["p"] == p and String(e["key"]) == key:
+				e["dur"] = maxf(float(e["dur"]), float(e["t"]) + BANNER_REFRESH_HOLD)
+				queue_redraw()
+				return
 	# 같은 파일럿 위에 이미 떠 있는 배너 수만큼 한 줄씩 위로 쌓는다.
 	var stack: int = 0
-	for raw in _banners:
+	for raw in banners:
 		if (raw as Dictionary)["p"] == p:
 			stack += 1
-	var tex: Texture2D = CardImages.art_for(cd.card_uid())
-	_bs.prime_texture(tex)
-	_banners.append({
+	if tex != null and _bs != null:
+		_bs.prime_texture(tex)
+	banners.append({
 		"p": p,
 		"tex": tex,
-		"title": cd.card_name,
+		"glyph": glyph,
+		"title": title,
+		"key": key,
 		"t": 0.0,
+		"dur": BANNER_DUR,
 		"stack": stack,
 	})
 	queue_redraw()
 
 
 func _advance_banners(delta: float) -> bool:
-	if _banners.is_empty():
+	if banners.is_empty():
 		return false
 	var keep: Array = []
-	for raw in _banners:
+	for raw in banners:
 		var e: Dictionary = raw
 		e["t"] = float(e["t"]) + delta
-		if float(e["t"]) < BANNER_DUR:
+		if float(e["t"]) < float(e["dur"]):
 			keep.append(e)
-	_banners = keep
+	banners = keep
 	return true
 
 
 func _draw_buff_banners() -> void:
-	if _banners.is_empty():
+	if banners.is_empty():
 		return
-	var font := ThemeDB.fallback_font
+	# 교전 무대가 열려 있으면 배너는 무대 초상 위에 뜬다(`EngageArena`).
+	if _bs != null and _bs.engage_phase != null and _bs.engage_phase.is_active():
+		return
 	var s: float = HexGrid.DISPLAY_SCALE
-	var fsz: int = int(round(BANNER_FONT * s))
-	for raw in _banners:
+	for raw in banners:
 		var e: Dictionary = raw
 		var p := e["p"] as PilotData
 		if p == null or not _is_renderable(p):
 			continue
-		var t: float = float(e["t"])
-		var alpha: float = clampf(t / BANNER_FADE_IN, 0.0, 1.0)
-		if t > BANNER_DUR - BANNER_FADE_OUT:
-			alpha = clampf((BANNER_DUR - t) / BANNER_FADE_OUT, 0.0, 1.0)
-		var rise: float = BANNER_RISE_PX * s * (1.0 - pow(1.0 - clampf(t / BANNER_DUR, 0.0, 1.0), 2.0))
 		var pos: Vector2 = _pilot_marker_pos(p) + _pilot_anim_offset(p)
-		var h: float = BANNER_H * s
-		var title: String = String(e["title"])
-		var tsz: Vector2 = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
-		var art: float = BANNER_ART * s
-		var pad: float = BANNER_PAD * s
-		var w: float = pad + art + pad * 1.6 + tsz.x + pad * 2.0
-		var bottom: float = pos.y - marker_outer_radius(pilot_marker_radius(p)) - 8.0 * s \
-				- float(int(e["stack"])) * (h + 4.0 * s) - rise
-		var box := Rect2(pos.x - w * 0.5, bottom - h, w, h)
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = _alpha_mul(BANNER_BG, alpha)
-		sb.border_color = _alpha_mul(BANNER_BORDER, alpha)
-		sb.set_border_width_all(maxi(1, int(round(2.0 * s))))
-		sb.set_corner_radius_all(int(round(10.0 * s)))
-		sb.anti_aliasing = true
-		draw_style_box(sb, box)
-		var art_rect := Rect2(box.position.x + pad, box.position.y + (h - art) * 0.5, art, art)
-		var tex := e["tex"] as Texture2D
+		var base := Vector2(pos.x,
+				pos.y - marker_outer_radius(pilot_marker_radius(p)) - 8.0 * s)
+		draw_banner(self, e, base, s)
+
+
+## 배너 한 줄. `base` = 배너 밑변의 가운데(초상 바로 위), `s` = 화면 배율.
+## 쌓임 · 떠오름 · 페이드는 `e` 의 값으로 여기서 계산한다 — 전장과 교전 무대가
+## 같은 함수를 부르므로 두 자리의 배너가 갈라지지 않는다.
+static func draw_banner(ci: CanvasItem, e: Dictionary, base: Vector2, s: float) -> void:
+	var t: float = float(e["t"])
+	var dur: float = float(e["dur"])
+	var alpha: float = clampf(t / BANNER_FADE_IN, 0.0, 1.0)
+	if t > dur - BANNER_FADE_OUT:
+		alpha = minf(alpha, clampf((dur - t) / BANNER_FADE_OUT, 0.0, 1.0))
+	if alpha <= 0.0:
+		return
+	var font := ThemeDB.fallback_font
+	var fsz: int = int(round(BANNER_FONT * s))
+	var title: String = String(e["title"])
+	var tsz: Vector2 = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz)
+	var art: float = BANNER_ART * s
+	var gap: float = BANNER_GAP * s
+	var w: float = art + gap + tsz.x
+	var rise: float = BANNER_RISE_PX * s * (1.0 - pow(1.0 - clampf(t / BANNER_DUR, 0.0, 1.0), 2.0))
+	var bottom: float = base.y - float(int(e["stack"])) * (art + BANNER_STACK_GAP * s) - rise
+	var art_rect := Rect2(base.x - w * 0.5, bottom - art, art, art)
+	var radius: float = 8.0 * s
+	# 칩 둘레의 어두운 테 → 칩.
+	var rim: float = BANNER_CHIP_RIM * s
+	var oc: Color = BattleTheme.OUTLINE
+	ci.draw_colored_polygon(rounded_rect_points(art_rect.grow(rim), radius + rim),
+			Color(oc.r, oc.g, oc.b, oc.a * alpha))
+	var tex := e["tex"] as Texture2D
+	if bool(e["glyph"]):
+		ci.draw_colored_polygon(rounded_rect_points(art_rect, radius),
+				Color(BANNER_GLYPH_BG.r, BANNER_GLYPH_BG.g, BANNER_GLYPH_BG.b,
+						BANNER_GLYPH_BG.a * alpha))
 		if tex != null:
-			draw_textured_rounded_rect(self, tex, art_rect, 7.0 * s,
+			ci.draw_texture_rect(tex, art_rect.grow(-art * BANNER_GLYPH_INSET), false,
 					Color(1, 1, 1, alpha))
-		else:
-			var ph := StyleBoxFlat.new()
-			ph.bg_color = _alpha_mul(Color(0.25, 0.25, 0.32), alpha)
-			ph.set_corner_radius_all(int(round(7.0 * s)))
-			draw_style_box(ph, art_rect)
-		var text_at := Vector2(art_rect.end.x + pad * 1.6,
-				box.position.y + h * 0.5 + font.get_ascent(fsz) * 0.5 - 2.0 * s)
-		draw_string_outline(font, text_at, title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
-				maxi(1, int(round(4.0 * s))), _alpha_mul(Color(0, 0, 0), alpha))
-		draw_string(font, text_at, title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
-				_alpha_mul(Color(1.0, 0.95, 0.80), alpha))
+	elif tex != null:
+		draw_textured_rounded_rect(ci, tex, art_rect, radius, Color(1, 1, 1, alpha))
+	else:
+		ci.draw_colored_polygon(rounded_rect_points(art_rect, radius),
+				Color(0.25, 0.25, 0.32, alpha))
+	# 이름 — 판 없이 외곽선만.
+	var text_at := Vector2(art_rect.end.x + gap,
+			art_rect.position.y + art * 0.5 + font.get_ascent(fsz) * 0.5 - 2.0 * s)
+	ci.draw_string_outline(font, text_at, title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+			maxi(2, int(round(float(BattleTheme.OUTLINE_SIZE) * s))),
+			Color(oc.r, oc.g, oc.b, oc.a * alpha))
+	ci.draw_string(font, text_at, title, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz,
+			Color(BANNER_TEXT.r, BANNER_TEXT.g, BANNER_TEXT.b, alpha))
 
 
 ## 텍스처를 **둥근 사각형**으로 깎아 그린다 — 셰이더 없이, 둥근 모서리 폴리곤에

@@ -24,7 +24,9 @@ var _bs: BattleSim = null
 # (알파 · 베타 · 감마의 순서 자체가 정보다), 취소 버튼이 없다.
 enum Mode { NONE, DISCARD, SEARCH, PRESERVE, CHOICE }
 
-const DIM_COLOR             := Color(0.0, 0.0, 0.0, 0.55)
+## 손패 픽은 전장만 누른다(`DIM_FIELD`), 그리드는 화면 전체를 아웃게임 모달 딤으로 덮는다.
+const DIM_COLOR             := BattleTheme.DIM_FIELD
+const FULL_DIM_COLOR        := BattleTheme.DIM_LIGHT
 const SEARCH_GRID_TOP_Y     := 220.0
 # Bottom of the search grid sits above where the 확인 / 취소 buttons land
 # (top-of-hand area). Keeps the deck-pick scroll list from sliding under the
@@ -439,7 +441,7 @@ func _build_full_dim() -> void:
 	# Search mode dims everything; the full-screen rect lives on the high-layer
 	# overlay so it sits above the hand and HUD too.
 	_full_dim = ColorRect.new()
-	_full_dim.color = DIM_COLOR
+	_full_dim.color = FULL_DIM_COLOR
 	_full_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_full_dim.position = Vector2.ZERO
 	_full_dim.size = ScreenMetrics.viewport_size()
@@ -447,7 +449,7 @@ func _build_full_dim() -> void:
 
 
 func _build_buttons(is_discard: bool) -> void:
-	_btn_hide = _make_btn(Loc.t(L.BATTLE_SELECT_HIDE))
+	_btn_hide = _make_btn(Loc.t(L.BATTLE_SELECT_HIDE), "ghost")
 	_btn_hide.position = Vector2(BTN_SIDE_MARGIN,
 			ScreenMetrics.bottom_y() - BTN_BOTTOM_GAP - BTN_H)
 	_btn_hide.pressed.connect(_on_hide_pressed)
@@ -472,7 +474,7 @@ func _build_buttons(is_discard: bool) -> void:
 		_btn_confirm.disabled = true
 		_overlay_layer.add_child(_btn_confirm)
 	else:
-		_btn_cancel = _make_btn(Loc.t(L.BATTLE_SELECT_CANCEL_PRESERVE) if mode == Mode.PRESERVE else Loc.t(L.BATTLE_SELECT_CANCEL_SEARCH))
+		_btn_cancel = _make_btn(Loc.t(L.BATTLE_SELECT_CANCEL_PRESERVE) if mode == Mode.PRESERVE else Loc.t(L.BATTLE_SELECT_CANCEL_SEARCH), "ghost")
 		_btn_cancel.position = Vector2(right_x, top_y)
 		_btn_cancel.pressed.connect(_on_cancel_pressed)
 		_overlay_layer.add_child(_btn_cancel)
@@ -487,10 +489,12 @@ func _build_buttons(is_discard: bool) -> void:
 		_overlay_layer.add_child(_btn_confirm)
 
 
-func _make_btn(label: String) -> Button:
+## `kind` — 아웃게임 버튼 종류(`BattleTheme.style_button`): 확인 = primary(앰버), 숨김 · 취소 = ghost.
+func _make_btn(label: String, kind: String = "primary") -> Button:
 	var b := Button.new()
 	b.text = label
-	b.add_theme_font_size_override("font_size", 22)
+	b.focus_mode = Control.FOCUS_NONE
+	BattleTheme.style_button(b, kind, 22)
 	b.size = Vector2(BTN_W, BTN_H)
 	return b
 

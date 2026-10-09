@@ -1,5 +1,5 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
-tx_S8GB2PQJET,hud.cost_donut.end_turn,active,player donut button (two lines),,,"{tx_H89Y7GFPWP}
+tx_S8GB2PQJET,hud.cost_donut.end_turn,deprecated,player donut button (two lines),,,"{tx_H89Y7GFPWP}
 넘기기","End
 Turn",draft,ab90a484
 tx_5R34V4TK24,hud.turn.player,active,turn banner,,,당신의 차례,Your Turn,draft,8137fcf4
@@ -18,10 +18,10 @@ tx_TQ6125AMEJ,hud.objective_reward.open_now,active,objective reward popup,,,지�
 tx_6DZPWWFA96,hud.objective_reward.no_card,active,objective reward popup,,,보상 카드를 찾지 못했다,Reward card not found,draft,c5a544ee
 tx_QPYR19J6FG,hud.objective_reward.to_hand,active,objective reward popup,,,획득 즉시 {tx_SVRFJDH55K}으로 들어온다,Goes straight to your {tx_SVRFJDH55K},draft,c790a8a2
 tx_VF1A5H49TP,hud.objective_reward.to_deck,active,objective reward popup,,,획득 시 덱에 섞여 들어간다,Shuffled into your deck when taken,draft,9a1cb3b1
-tx_0D83B3BXPJ,hud.reservation.strategy,active,reservation chip: next strategy points (n is signed),,,다음 {n},Next {n},draft,bddf6597
-tx_AXVQDH455A,hud.reservation.draw,active,reservation chip,,,다음 {tx_6VVGYKXZSK} {n},Next {tx_6VVGYKXZSK} {n},draft,10d85e34
-tx_K2TW9E6P0S,hud.reservation.bounty,active,reservation chip,,,처치 +{n},Kill +{n},draft,50f70bcb
-tx_PZ3FF17CJS,hud.reservation.search,active,reservation chip,,,{tx_VPV5JM208F} {n},Search {n},draft,f5b1dd6e
+tx_0D83B3BXPJ,hud.reservation.strategy,deprecated,reservation chip: next strategy points (n is signed),,,다음 {n},Next {n},draft,bddf6597
+tx_AXVQDH455A,hud.reservation.draw,deprecated,reservation chip,,,다음 {tx_6VVGYKXZSK} {n},Next {tx_6VVGYKXZSK} {n},draft,10d85e34
+tx_K2TW9E6P0S,hud.reservation.bounty,deprecated,reservation chip,,,처치 +{n},Kill +{n},draft,50f70bcb
+tx_PZ3FF17CJS,hud.reservation.search,deprecated,reservation chip,,,{tx_VPV5JM208F} {n},Search {n},draft,f5b1dd6e
 tx_QTZR66E1TH,hud.skill.none,active,pilot without a skill,,,스킬 없음,No skill,draft,54ea2947
 tx_D6RF6A0BB1,hud.pilot_detail.no_portrait,active,art placeholder,,,초상화 없음,No portrait,draft,0951fa86
 tx_R7705DVY0V,hud.pilot_detail.no_mech,active,art placeholder / header,,,메크 미배정,No mech assigned,draft,c2ba46f3
@@ -55,9 +55,9 @@ tx_50MCWKXH27,hud.pilot_detail.row.special,deprecated,pilot detail info row labe
 tx_9CFJV5MVD2,hud.pilot_detail.row.ingame_gain,active,pilot detail info row label,,,인게임 증가,In-game Gain,draft,8f79b36e
 tx_HEAG7E5FVG,hud.pilot_detail.row.vs_equal,active,pilot detail info row label,,,대등한 상대에게,Vs. an equal opponent,draft,526f30fe
 tx_2383X7Y4A3,hud.pilot_detail.row.mech_hp,active,pilot detail info row label,,,기체 {tx_0KSNX63V29},Mech {tx_0KSNX63V29},draft,033eed31
-tx_MQ6WNXCW2R,hud.pilot_detail.row.pilot_base_max_hp,active,pilot detail info row label,,,파일럿 {tx_JB2XA9GEHD},Pilot {tx_JB2XA9GEHD},draft,1ef1229e
+tx_MQ6WNXCW2R,hud.pilot_detail.row.pilot_base_max_hp,deprecated,pilot detail info row label,,,파일럿 {tx_JB2XA9GEHD},Pilot {tx_JB2XA9GEHD},draft,1ef1229e
 tx_XBRHV1EABJ,hud.pilot_detail.row.mech_atk,active,pilot detail info row label,,,기체 {tx_DM2CD6EQG8},Mech {tx_DM2CD6EQG8},draft,a262e1a3
-tx_56C8HB8TXC,hud.pilot_detail.row.pilot_base_atk,active,pilot detail info row label,,,파일럿 {tx_07SNADVFZF},Pilot {tx_07SNADVFZF},draft,a856d224
+tx_56C8HB8TXC,hud.pilot_detail.row.pilot_base_atk,deprecated,pilot detail info row label,,,파일럿 {tx_07SNADVFZF},Pilot {tx_07SNADVFZF},draft,a856d224
 tx_CYWJYN11E6,hud.pilot_detail.row.mech_presence,active,pilot detail info row label,,,기체 {tx_VP2WZCKCPR},Mech {tx_VP2WZCKCPR},draft,a8c42ed6
 tx_YSYYDDQGVQ,hud.pilot_detail.row.hit_eva,active,pilot detail info row label,,,명중 / 회피,Hit / Evasion,draft,50c97270
 tx_QYWSRHHVJD,hud.pilot_detail.row.final_hit,active,pilot detail info row label,,,{tx_205QKFD76D} 명중,{tx_205QKFD76D} Hit,draft,8d54468d
@@ -102,3 +102,15 @@ tx_ECA0V7N5CG,hud.pilot_detail.row.atk_gain,deprecated,pilot detail info row lab
 tx_9BD5WJRJ16,hud.pilot_detail.row.max_hp_gain,deprecated,pilot detail info row label (value +N%),,,{tx_CT45F83FMW} 증가,{tx_CT45F83FMW} Increase,draft,d1272ca2
 tx_92JKM782CD,hud.pilot_detail.note.score,active,pilot detail growth-points plate note; {atk_growth} / {hp_growth} = keyword icon,,,"성장치에 따라 {tx_DM2CD6EQG8}과 {tx_CT45F83FMW}이 증가합니다. {step}k마다 크게 성장합니다.\n파일럿의 {atk_growth} {tx_NZ8J811NK6}과 {hp_growth} {tx_9SGTNE082E}이 높을수록, 성장치에 따른 {tx_DM2CD6EQG8}과 {tx_CT45F83FMW} 상승량이 증가합니다.","{tx_DM2CD6EQG8} and {tx_CT45F83FMW} rise with growth points, with a big jump every {step}k.\nThe higher the pilot's {atk_growth} {tx_NZ8J811NK6} and {hp_growth} {tx_9SGTNE082E}, the more {tx_DM2CD6EQG8} and {tx_CT45F83FMW} each growth point gives.",draft,e345e64d
 tx_33SA211TC1,hud.pilot_detail.row.effect_gain,active,pilot detail stat plate row under growth: total added by skill / passive / card effects (value +N),,,증가,Bonus,draft,887d85fa
+tx_HPQYQXRZVF,hud.pilot_detail.no_passive,active,"in-match pilot detail, mech tab: mech without a passive",,,패시브 없음,No passive,draft,82b11fd7
+tx_JMNJNMYGN8,hud.turn_end.hold,active,turn-end panel (TurnEndPanel): press and hold 0.5 s to end the operation phase,,,꾹 눌러 {tx_H89Y7GFPWP} 넘기기,Hold to end {tx_H89Y7GFPWP},draft,67a0ab7e
+tx_58ZB0FCDG2,hud.reserve.title,active,reservation chip info popup title (ReserveInfo),,,예약 효과,Reserved effects,draft,81791f65
+tx_91R4BR8YQ3,hud.reserve.strategy,active,reservation info line; n is signed (+3 / -2),,,다음 {tx_2T8RX9PWGV} 시작 시 {tx_F597JS5T37} {n},Start of next {tx_2T8RX9PWGV}: {tx_F597JS5T37} {n},draft,6dada6c0
+tx_7HEDWPJ892,hud.reserve.draw,active,reservation info line,,,다음 {tx_2T8RX9PWGV} 시작 시 {n}{tx_VD4SPQQEES} {tx_6VVGYKXZSK},Start of next {tx_2T8RX9PWGV}: {tx_6VVGYKXZSK} {n} {plural:n|{tx_VD4SPQQEES}|{tx_5V4VYG9XPE}},draft,d987c8a8
+tx_DNVZMCXYYS,hud.reserve.bounty,active,reservation info line,,,이번 {tx_2T8RX9PWGV}에 적을 처치하면 {tx_F597JS5T37} +{n},Kill an enemy this {tx_2T8RX9PWGV}: {tx_F597JS5T37} +{n},draft,1a18f177
+tx_S2AKX3F5ZR,hud.reserve.search,active,reservation info line,,,다음 {tx_2T8RX9PWGV} 시작 시 교전 카드 {n}{tx_VD4SPQQEES} {tx_VPV5JM208F},Start of next {tx_2T8RX9PWGV}: {tx_VPV5JM208F} {n} engage {plural:n|{tx_VD4SPQQEES}|{tx_5V4VYG9XPE}},draft,024f2800
+tx_JT1Q4AR9BB,hud.reserve.chip_draw,active,reservation chip compact part (next-phase draw),,,{tx_6VVGYKXZSK} {n},Draw {n},draft,a6873769
+tx_8J4PMYV3RW,hud.reserve.chip_bounty,active,reservation chip compact part (kill bounty strategy points),,,처치 +{n},Kill +{n},draft,50f70bcb
+tx_FRNWGED1N8,hud.reserve.chip_search,active,reservation chip compact part (engage card search),,,{tx_VPV5JM208F} {n},Search {n},draft,f5b1dd6e
+tx_HY8TH99C2E,hud.pilot_detail.row.link_partner,active,pilot detail info row label: the pilot this pilot is bonded to (Bond card),,,결속 상대,Bonded with,draft,41c26bcd
+tx_6NND6G12EN,hud.pilot_detail.note.fx_link,active,pilot detail info plate note for the Bond lasting effect,,,결속한 둘 중 하나가 교전에 참여하면 다른 하나도 함께 참여한다. 둘 중 하나가 전장을 떠나면 풀린다.,"When either bonded pilot joins an engage, the other joins too. Ends when either leaves the field.",draft,95eede79

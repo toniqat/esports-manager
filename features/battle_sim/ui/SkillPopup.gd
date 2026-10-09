@@ -294,7 +294,7 @@ func _show(d: Dictionary, anchor: Vector2, strip_top: float) -> void:
 				PilotDetailPanel.SKILL_DESC_FONT, BattleTheme.TEXT_DESC,
 				BattleTheme.SKILL_KW_ICON, BattleTheme.POPUP_BG,
 				KeywordIcon.TARGET_ANY_COLOR, KeywordIcon.TARGET,
-				KeywordIcon.SPECIAL_COLOR_DARK, refs, true, true)
+				BattleTheme.SPECIAL_KW, refs, true, true)
 		desc.position = Vector2.ZERO
 		desc.size = Vector2(inner_w, desc_h)
 		# 카드 이름 누름을 받는다 — 그 밖의 글자를 눌러도 판이 닫히지 않는 건 같다.
@@ -454,7 +454,7 @@ func _hide_preview() -> void:
 ## 판만 연다(`resources/UiPreview.gd`). 사용 · 상태 갱신 · 카드 이름 미리보기는 전투가
 ## 있어야 움직인다.
 func _fill_preview() -> void:  # l10n-ignore
-	RenderingServer.set_default_clear_color(BattleTheme.MODAL_BG)
+	RenderingServer.set_default_clear_color(BattleTheme.PREVIEW_FIELD)
 	var vp := ScreenMetrics.viewport_size()
 	_show({
 		"has_skill": true, "key": "roam", "name": "배회",

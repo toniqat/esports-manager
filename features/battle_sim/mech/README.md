@@ -65,8 +65,9 @@ Passive and card names below are the Korean data strings (as in the CSVs), gloss
 | I | 27 | Barrage | ADC | 전탄 발사 (Full Barrage) | 전장 강타 (Battlefield Smash) · 계시 (Revelation) · 결속 (Bond) |
 | J | 28 | Deadeye | ADC | 조준 보정 (Aim Assist) | 락온 (Lock-on) · 테러 (Terror) · 파괴 (Destroy) |
 
-**Barrage (I)'s attack was deliberately lowered** — the sheet pinned it as "half the attack of the
-other sniper mechs", the price paid for 전탄 발사 (engage attacks target all enemies).
+**Barrage (I)'s 전탄 발사 (Full Barrage)** splits each engage attack over up to `MECH_BARRAGE_MAX_TARGETS`
+presence-weighted random enemies at `MECH_BARRAGE_DMG_MULT` × attack — the per-hit cut is the price, so its
+`atk` in `mechs.csv` is a normal ADC value (the old "half attack" baked into the data was removed).
 
 **Deck size** — mech cards are the assigned machine's cards spread out `count` times (the sum of
 its rows' `count`, mech_cards.csv), and pilot cards are a fixed 3 per player. Machines differ in how
@@ -141,7 +142,7 @@ card would wipe a whole turret in the late game when growth multiplies attack se
 | `pull_to_caster` | Pull the enemy to the caster's cell | `self_range:N` |
 | `mark_target:N` | Mark — damage taken from the caster +N% | |
 | `track:N` | Track for N turns | |
-| `link_engage` | 결속 (Bond) | |
+| `link_engage` | 결속 (Bond) — caster ↔ target, **both directions** (see `engage_link` below) | |
 | `stun_next` | 강타 (Smash) | |
 | `no_engage_phase` | 탈진 (Exhaust) | |
 | `dmg_taken:N` | Damage taken +N% (doesn't stack) | |
@@ -186,7 +187,7 @@ Every state a mech applies lives in `PilotData`, and this module turns it on and
 | `bounty` | Bounty | `attack_bounty` |
 | `marked_by` / `marked_bonus` | Mark (only against that caster) | `damage_taken_mult` |
 | `tracked_by` | Track — the people who get pulled in when this enemy fights | `_gather_participants` |
-| `engage_link` | 결속 (Bond) | `_gather_participants` |
+| `engage_link` | 결속 (Bond) — stored **only on the caster** (one target per caster; re-casting on another ally overwrites it, which drops the old pair in both directions). The reverse direction is read by scanning `engage_link == p` (`EngagePhaseManager._bond_mates`): when either joins an engage the other is pulled in if alive and not 탈진 (`engage_locked`). One pilot may be the target of several casters — each pair is independent. Pulls are one level only (a pulled pilot's own bonds are not followed, same as 추적). `clear_field_effects` clears the leaving pilot's own link **and every link pointing at it**. Battle state is not in the mid-match save (resume replays from the start), so nothing to persist | `_gather_participants` |
 | `engage_locked` | 탈진 (Exhaust) | `_gather_participants` |
 | `stun_charge` / `stunned_rounds` | 강타 (Smash) / stun | `TurnEngageSim` |
 | `growth_link_to` | 매혹 (Charm) | `BattleSim.add_score` |
@@ -220,10 +221,28 @@ Charge, Charge is **the condition of the effect**, not fuel for activation.
 | V 22 | `last_stand` | On engage, **the whole team** can't drop below 1 HP, once each |
 | A 24 | `vulnerability_mark` | During this operation phase, Vulnerable `p1` on the target per card hit |
 | C 26 | `missile_stock` | Each time a turret **in its own lane** falls, whichever team it belongs to, [미사일] into the deck |
-| I 27 | `barrage` | During engage, attacks target all enemies (price: half attack) |
+| I 27 | `barrage` | During engage, each attack hits up to `MECH_BARRAGE_MAX_TARGETS` presence-weighted random enemies at `MECH_BARRAGE_DMG_MULT` × attack |
 | J 28 | `calibration` | Attack +`p1` per battlefield card hit |
 
 The six without passives: **B(25) · K(18) · R(13) · S(20) · U(21) · W(15)** — they play with cards only.
+
+### Icons
+Each passive shows an icon tile like a pilot skill — `MECH_ICON` in `resources/SkillImages.gd`
+maps `key` → a Deadlock ability icon in `resources/images/skill/` (none shared with the pilot
+`ICON` table). Shown by `SkillImages.make_mech_icon_tile` in the ban/pick `MechDetailPanel` and
+sheet, and in the in-match pilot detail's mech tab (+ the passive's lasting-effect thumb,
+`mech_icon_for`). A new passive needs a row there too (missing → no icon, no error).
+
+| Key | Icon | Key | Icon |
+|---|---|---|---|
+| `bulk_power` | Puddle_Punch | `overclock` | Power_Surge |
+| `reactive_plating` | Plot_Armor | `zen_charge` | Singularity |
+| `pain_pleasure` | Bloodletting | `guardian_link` | Kudzu_Connection |
+| `victory_report` | Call_Bell | `last_stand` | Last_Stand |
+| `demolition_order` | Sticky_Bomb | `vulnerability_mark` | Djinn's_Mark |
+| `execution_charge` | Killing_Blow | `missile_stock` | Gloom_Bombs |
+| `soul_harvest` | Siphon_Life | `barrage` | Barrage |
+| | | `calibration` | Kinetic_Carbine |
 
 **Event hooks attached to cards** (`mech_cards.trigger`) are not passives but conditions under which
 that card comes into existence, so they live on the card side — `turret_kill_deck` (꿰뚫는 번개:
@@ -246,7 +265,7 @@ calculation stays where it always was:
 |---|---|
 | `atk_mult` / `bulk_power_atk` | `BattleSim.refresh_growth_stats` |
 | `damage_taken_mult` / `consume_reactive_armor` | `SimulationCore._pilot_hit_damage`, `CardPhaseManager._apply_attack_damage` |
-| `engage_targets_all` / `overclock_extra_attack` / `last_stand_available` | `TurnEngageSim` |
+| `barrage_active` / `overclock_extra_attack` / `last_stand_available` | `TurnEngageSim` |
 | `contempt_active` / `consume_contempt` | `TurnEngageSim._pick_target` (약자 멸시) |
 | `try_stun` / `consume_stun_turn` | `TurnEngageSim` (강타 / stun) |
 | `consume_phase_boon` | `CardPhaseManager._effect_gen_card` · `_effect_phase_b` · `_phase_c_payout` |
@@ -277,6 +296,14 @@ Pushing `atk` / `max_hp` here would be wiped by a single growth recalculation
 | `clear_field_effects(p)` | `RecallSystem.return_to_hq`, `on_kill` |
 | `tick_expiries(turn)` | `SimulationCore.tick_growth_and_expiries` |
 
+### Effect banners
+Conditional passives (and the hand-held 약자 멸시 / 계시 cards) announce the moment they fire with a
+banner over the portrait — `_banner(p, key = "")` at the end of `MechSkillSystem.gd` →
+`_bs.renderer.spawn_mech_passive_banner`; hand cards use `spawn_buff_banner(p, cd, "hand:<key>")`.
+Always-on passives (과적재 · 전탄 발사) and 캐시 / 밸런스 stay silent. The per-passive table (which hook,
+on whom) is in `../skill/README.md` → "Effect banners"; adding a conditional passive = add a
+`_banner(...)` call at its trigger point and a row there.
+
 ## Charge
 
 It rises only in `add_charge`, and the reward **at the moment it hits the cap** (`_on_charge_full`)
@@ -293,10 +320,10 @@ functions**. Five places.
 
 | What | Where | Rule |
 |---|---|---|
-| 전탄 발사 (I) | `_resolve_attack` | If `engage_targets_all` is true, the target set becomes **all enemies**. The price (half attack) is already baked into its `atk` in `mechs.csv` |
+| 전탄 발사 (I) | `_resolve_attack` → `_barrage_targets` | If `barrage_active` is true: Instead of the normal single attack, each engage attack hits up to `MECH_BARRAGE_MAX_TARGETS` enemies at `MECH_BARRAGE_DMG_MULT` × attack (`_strike_one`'s `dmg_mult`). The targets are drawn by `_barrage_targets` — **random without replacement, weighted by each enemy's `presence`** (`max(1, presence)`, the same aggro stat `_pick_target` reads); with that many or fewer enemies active, all of them. Battlefield card attacks are untouched, and Barrage's `atk` in `mechs.csv` is a normal ADC value again (the old "half attack" price is gone) |
 | 오버클럭 (P) | `_strike_one` | Right after damage, roll `overclock_extra_attack` for one more hit **on the same target**. The extra attack isn't rolled again (`allow_extra = false`) — otherwise one turn could grow indefinitely by chance |
 | 불굴 (V) | `_apply_damage` | The moment HP drops to 0 or below, hold it at 1 and consume. **Turret fire goes through the same function too**, so applying it only to pilot attacks would leave a hole where one turret shot kills |
-| 약자 멸시 (R) | `setup` → `_contempt_opening` | **Before round 1 runs**, `take_contempt_charges` burns all Charge of the [약자 멸시] cards in hand, and hits **the enemy with the lowest HP** (absolute value, not ratio) that many times at `ENGAGE_CONTEMPT_DMG_MULT` (const.csv) of attack. The old "force targeting while stacks remain" was deleted because its value hung on the engage round count |
+| 약자 멸시 (R) | `setup` → `_contempt_opening` | **Before round 1 runs**, `take_contempt_charges` burns all Charge of the [약자 멸시] cards in hand, and hits **the enemy with the lowest HP** (absolute value, not ratio) that many times at `ENGAGE_CONTEMPT_DMG_MULT` (const.csv) of attack. The old "force targeting while stacks remain" was deleted because its value hung on the engage round count. Cards whose Charge was burned are recorded (`_contempt_spent`) and, once the arena closes, `CardPhaseManager.discard_spent_contempt` (called from `EngagePhaseManager._on_dashboard_confirmed`) discards those still in hand at 0 tokens — a held 약자 멸시 is one engage's worth |
 | 강타 ([강타] card) | `_strike_one` | If the attacker is loaded, the hit enemy loses its entire next turn. `_stun_applied` prevents **the same enemy twice**; without it, one melee unit could keep one enemy asleep for the whole engage |
 
 Single-engage state (`_stun_applied` · `_last_stand_*`) is turned on by `on_engage_start` and cleared
@@ -418,4 +445,4 @@ within 60 turns, so targeted checks are called separately.
 
 | System | Description |
 |---|---|
-| Mech skills | **A unique ability and a unique card set attached to one machine.** If a pilot skill is a move attached to the player, this is what the machine that player rides does, so **the moment a machine is picked in ban/pick, half of that pilot's deck and one permanent ability are decided along with it**. The tables are `data/csv/mech_passives.csv` (**15 rows**) and `data/csv/mech_cards.csv` (**64 rows**), paired by `mechs.id` — there's no pointer column like `players.skill_id` because one machine wholly owns its one passive and its card set. **There are 21 mechs** (ADC 5 · Fighter 4 · Tank 3 · Support 5 · Assassin 4), of which only 15 have passives. **Deck composition changed** — the old "draw 3 from the shared mech card pool" is gone, and the assigned machine's card list spread out `count` times fills that space entirely (machines bring different numbers of cards, so **deck size itself is part of choosing a machine**). Its fallback (`MECH_CARDS_PER_PILOT` — the 3 "공용 메크 카드" (shared mech cards) in cards.csv) **was deleted too** — with all the mech rows in cards.csv now being pilot cards, a standalone-run deck with no machine gets only pilot cards. Mech card descriptions dropped their keyword prefixes ("소멸." (Exhaust.) · "충전. …" (Charge. …)), and the internal counters of passives · cards are **tokens (토큰)** on screen. Passive modifiers are exported **only via query functions**, and the calculation stays where it always was (`BattleSim.refresh_growth_stats` / `SimulationCore._pilot_hit_damage` / `CardPhaseManager._apply_attack_damage`) — because pushing stats directly would be wiped by a single growth recalculation; permanent increases live separately in `PilotData.bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp`. **Mechs gained a `role` column** — because card sets came to presuppose a role class, but **assignment is still free** (any machine can sit in any role slot — it's for classification and data validation). **Everything is wired up to the engage stage** — 전탄 발사 (attacks hit all enemies) · 오버클럭 (one more hit right after damage) · 불굴 (whole team, one death prevention each) · 약자 멸시 (**before round 1**, hit the lowest-HP enemy at `ENGAGE_CONTEMPT_DMG_MULT` of attack as many times as the Charge count) · 강타/stun (the hit enemy loses its next turn) actually apply in `TurnEngageSim`, and all five go through `MechSkillSystem`'s query functions. **수호 연계** (when an ally wearing this mech's shield hits, the mech piles on) is rolled in battlefield auto-combat **after application finishes, not at judgement** (`SimulationCore._flush_guardian_rides`) — hitting immediately at the judgement stage would let the ride-along hit drop the opponent before damage not yet applied, so the rest of that turn's judgements would run against a corpse. **The Phase A→B→C chain** and the 3 boons are in place too — see the "Phase A → B → C chain" section above. The list of 21 machines · keywords · clause grammar · code-side conventions are all in the sections above in this README. |
+| Mech skills | **A unique ability and a unique card set attached to one machine.** If a pilot skill is a move attached to the player, this is what the machine that player rides does, so **the moment a machine is picked in ban/pick, half of that pilot's deck and one permanent ability are decided along with it**. The tables are `data/csv/mech_passives.csv` (**15 rows**) and `data/csv/mech_cards.csv` (**64 rows**), paired by `mechs.id` — there's no pointer column like `players.skill_id` because one machine wholly owns its one passive and its card set. **There are 21 mechs** (ADC 5 · Fighter 4 · Tank 3 · Support 5 · Assassin 4), of which only 15 have passives. **Deck composition changed** — the old "draw 3 from the shared mech card pool" is gone, and the assigned machine's card list spread out `count` times fills that space entirely (machines bring different numbers of cards, so **deck size itself is part of choosing a machine**). Its fallback (`MECH_CARDS_PER_PILOT` — the 3 "공용 메크 카드" (shared mech cards) in cards.csv) **was deleted too** — with all the mech rows in cards.csv now being pilot cards, a standalone-run deck with no machine gets only pilot cards. Mech card descriptions dropped their keyword prefixes ("소멸." (Exhaust.) · "충전. …" (Charge. …)), and the internal counters of passives · cards are **tokens (토큰)** on screen. Passive modifiers are exported **only via query functions**, and the calculation stays where it always was (`BattleSim.refresh_growth_stats` / `SimulationCore._pilot_hit_damage` / `CardPhaseManager._apply_attack_damage`) — because pushing stats directly would be wiped by a single growth recalculation; permanent increases live separately in `PilotData.bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp`. **Mechs gained a `role` column** — because card sets came to presuppose a role class, but **assignment is still free** (any machine can sit in any role slot — it's for classification and data validation). **Everything is wired up to the engage stage** — 전탄 발사 (each attack hits up to `MECH_BARRAGE_MAX_TARGETS` presence-weighted random enemies at `MECH_BARRAGE_DMG_MULT` × attack) · 오버클럭 (one more hit right after damage) · 불굴 (whole team, one death prevention each) · 약자 멸시 (**before round 1**, hit the lowest-HP enemy at `ENGAGE_CONTEMPT_DMG_MULT` of attack as many times as the Charge count) · 강타/stun (the hit enemy loses its next turn) actually apply in `TurnEngageSim`, and all five go through `MechSkillSystem`'s query functions. **수호 연계** (when an ally wearing this mech's shield hits, the mech piles on) is rolled in battlefield auto-combat **after application finishes, not at judgement** (`SimulationCore._flush_guardian_rides`) — hitting immediately at the judgement stage would let the ride-along hit drop the opponent before damage not yet applied, so the rest of that turn's judgements would run against a corpse. **The Phase A→B→C chain** and the 3 boons are in place too — see the "Phase A → B → C chain" section above. The list of 21 machines · keywords · clause grammar · code-side conventions are all in the sections above in this README. |

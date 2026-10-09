@@ -16,9 +16,9 @@ extends RefCounted
 # 부르는 쪽이 정한다**(판의 크기는 내용이 정하므로 `build` 가 돌려준 `size` 를
 # 보고 아랫변을 맞춘다).
 #
-# 두 벌의 색이 있다 — 인게임(어두운 전장 위) / 아웃게임(흰 배경, `OutgameTheme`).
-# 아웃게임 화면이 인게임 색을 쓰면 흰 화면 한가운데에 검은 판이 뜨고, 그 반대면
-# 전장 위에 흰 판이 뜬다.
+# 두 벌의 색이 있다 — 인게임(`light = false`, 어두운 판: `BattleTheme.DESC_*` 토큰) / 아웃게임
+# (`light = true`, `OutgameTheme`). 전투 UI 의 다른 판은 흰 종이지만 **설명판은 사용자 결정으로
+# 예전 어두운 판 그대로**다 — 인게임 쪽 색은 `BattleTheme.DESC_*` 만 읽는다.
 
 const PAD := 14.0
 const HEADER_H := 36.0
@@ -62,8 +62,8 @@ static var _formula_re: RegEx = null
 static var live_vars: Callable = Callable()
 
 
-## 판 배경 — 테두리 없는 둥근 판. 아웃게임은 흰 판 + 그림자, 인게임은 어두운 판 +
-## 아래로 흐릿한 드롭 섀도. 파일럿 상세 패널의 스탯 설명판도 이 판을 쓴다.
+## 판 배경 — 테두리 없는 둥근 판. 아웃게임은 흰 카드 + 그림자, 인게임은 `BattleTheme.desc_box()`
+## (어두운 판 + 아래로 흐릿한 드롭 섀도). 파일럿 상세 패널의 스탯 설명판도 이 판을 쓴다.
 static func panel_style(light: bool) -> StyleBoxFlat:
 	var style: StyleBoxFlat
 	if light:
@@ -93,8 +93,8 @@ static func build(data: CardData, width: float, light: bool = false,
 		box.size = Vector2(width, min_h)
 		return box
 
-	var name_col: Color = OutgameTheme.TEXT if light else Color(1.0, 0.95, 0.55)
-	var desc_col: Color = OutgameTheme.TEXT_SUB if light else Color(0.92, 0.92, 0.92)
+	var name_col: Color = OutgameTheme.TEXT if light else BattleTheme.DESC_NAME
+	var desc_col: Color = OutgameTheme.TEXT_SUB if light else BattleTheme.DESC_TEXT
 	var inner_w: float = width - PAD * 2.0
 
 	if cost_text == "":
@@ -108,7 +108,7 @@ static func build(data: CardData, width: float, light: bool = false,
 	CostRibbon.make_badge(box,
 			Rect2(Vector2(group_x, PAD + (HEADER_H - COST_RIBBON_SIZE.y) * 0.5),
 					COST_RIBBON_SIZE),
-			cost_text, COST_FONT, cost_col, CostRibbon.FILL, light)
+			cost_text, COST_FONT, cost_col, CostRibbon.FILL, _ribbon_shadow(light))
 	var name_lbl := UiHelpers.mk_label(box, data.card_name, NAME_FONT, name_col,
 			Vector2(group_x + COST_RIBBON_SIZE.x + COST_RIBBON_GAP, PAD),
 			Vector2(name_w, HEADER_H))
@@ -186,7 +186,7 @@ static func build(data: CardData, width: float, light: bool = false,
 		var sp_refs: Array = [n["ref"]]
 		var sp_h: float = _text_height(StrategyIcon.measure_text(sp, sp_refs), inner_w, NOTE_FONT)
 		var sp_lbl := StrategyIcon.make_rich_label(sp, NOTE_FONT,
-				OutgameTheme.TEXT_SUB if light else Color(0.70, 0.70, 0.74),
+				OutgameTheme.TEXT_SUB if light else BattleTheme.DESC_NOTE,
 				_kw_color(light), _knock_color(light), KeywordIcon.TARGET_ANY_COLOR,
 				KeywordIcon.TARGET, _special_color(light), sp_refs)
 		sp_lbl.position = Vector2(PAD, bottom + GAP)
@@ -318,22 +318,29 @@ static func special_terms(data: CardData) -> Array:
 ## 판 안에 끼운 카드 설명판 — 바깥 판과 바탕이 같으면 경계가 안 보이므로 한 톤 띄운다.
 static func _tint_nested(sub: Panel, light: bool) -> void:
 	var st := (sub.get_theme_stylebox("panel") as StyleBoxFlat).duplicate() as StyleBoxFlat
-	st.bg_color = st.bg_color.darkened(0.05) if light else st.bg_color.lightened(0.07)
+	# 밝은 판이면 한 톤 어둡게, 어두운 판이면 한 톤 밝게(판 색은 팔레트가 정한다).
+	var bright: bool = light or st.bg_color.get_luminance() > 0.5
+	st.bg_color = st.bg_color.darkened(0.05) if bright else st.bg_color.lightened(0.07)
 	st.shadow_size = 0
 	sub.add_theme_stylebox_override("panel", st)
 
 
+## 비용 리본의 그림자 — 흰 판 위에서만 깐다(어두운 판에서는 아랫변 밑 검은 테두리로만 보였다).
+static func _ribbon_shadow(light: bool) -> bool:
+	return light or BattleTheme.DESC_BG.get_luminance() > 0.5
+
+
 static func _special_color(light: bool) -> Color:
-	return KeywordIcon.SPECIAL_COLOR_LIGHT if light else KeywordIcon.SPECIAL_COLOR_DARK
+	return KeywordIcon.SPECIAL_COLOR_LIGHT if light else BattleTheme.DESC_SPECIAL
 
 
 static func _kw_color(light: bool) -> Color:
-	return OutgameTheme.ACCENT_TEXT if light else Color(0.55, 0.85, 1.0)
+	return OutgameTheme.ACCENT_TEXT if light else BattleTheme.DESC_KW
 
 
 ## 판 바탕색 — 필중 아이콘이 원 위의 활을 이 색으로 파낸다.
 static func _knock_color(light: bool) -> Color:
-	return OutgameTheme.SURFACE if light else Color(0.08, 0.08, 0.12)
+	return OutgameTheme.SURFACE if light else BattleTheme.DESC_KNOCK
 
 
 ## 설명문에 계산식을 채운 글 — `{식|문구}` 를 전투 중에는 값으로, 밖에서는
@@ -490,7 +497,7 @@ static func _attr_label(attrs: Array, light: bool, target_col: Color) -> RichTex
 	rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rtl.add_theme_font_size_override("normal_font_size", KW_FONT)
 	rtl.add_theme_color_override("default_color",
-			OutgameTheme.TEXT if light else Color(0.92, 0.92, 0.92))
+			OutgameTheme.TEXT if light else BattleTheme.DESC_TEXT)
 	var icon_px: int = int(round(float(KW_FONT) * 1.25))
 	rtl.push_paragraph(HORIZONTAL_ALIGNMENT_CENTER)
 	for i in attrs.size():
@@ -527,7 +534,7 @@ static func _note_label(text: String, light: bool) -> Label:
 	note_lbl.text = UiHelpers.keep_words(text)
 	note_lbl.add_theme_font_size_override("font_size", NOTE_FONT)
 	note_lbl.add_theme_color_override("font_color",
-			OutgameTheme.TEXT_SUB if light else Color(0.70, 0.70, 0.74))
+			OutgameTheme.TEXT_SUB if light else BattleTheme.DESC_NOTE)
 	note_lbl.add_theme_constant_override("line_spacing", 0)
 	note_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -14,6 +14,10 @@ extends RefCounted
 # reads closest to the skill. One ability per skill. Add a skill → add a row
 # here (a missing key just returns null and the caller draws no icon).
 #
+# `MECH_ICON` does the same for mech passives (`mech_passives.csv` `key`) —
+# same folder, same tile, so a mech skill reads like a pilot skill. No icon is
+# shared between the two tables (or between two passives).
+#
 # Never `load()` blindly — check `ResourceLoader.exists()` first (`MechImages`).
 
 const DIR: String = "res://resources/images/skill/"
@@ -45,11 +49,37 @@ const ICON: Dictionary = {
 	"aggressive_push": "Flawless_Advance",
 	"rivalry":         "Riposte",
 }
+## mech_passives.key → icon file name (without `skill_` and `.png`).
+const MECH_ICON: Dictionary = {
+	"bulk_power":         "Puddle_Punch",
+	"reactive_plating":   "Plot_Armor",
+	"pain_pleasure":      "Bloodletting",
+	"victory_report":     "Call_Bell",
+	"demolition_order":   "Sticky_Bomb",
+	"execution_charge":   "Killing_Blow",
+	"soul_harvest":       "Siphon_Life",
+	"overclock":          "Power_Surge",
+	"zen_charge":         "Singularity",
+	"guardian_link":      "Kudzu_Connection",
+	"last_stand":         "Last_Stand",
+	"vulnerability_mark": "Djinn's_Mark",
+	"missile_stock":      "Gloom_Bombs",
+	"barrage":            "Barrage",
+	"calibration":        "Kinetic_Carbine",
+}
 
 
 ## Icon for a skill key (`pilot_skills.key`). null when unmapped or missing.
 static func icon_for(skill_key: String) -> Texture2D:
-	var file: String = String(ICON.get(skill_key, ""))
+	return _load_icon(String(ICON.get(skill_key, "")))
+
+
+## Icon for a mech passive key (`mech_passives.key`). null when unmapped or missing.
+static func mech_icon_for(passive_key: String) -> Texture2D:
+	return _load_icon(String(MECH_ICON.get(passive_key, "")))
+
+
+static func _load_icon(file: String) -> Texture2D:
 	if file.is_empty():
 		return null
 	var path: String = DIR + "skill_" + file + ".png"
@@ -71,6 +101,19 @@ const TILE_INSET_FRAC: float = 0.16
 ## The shadow draws outside the rect; leave ~shadow_px room around it.
 static func make_icon_tile(skill_key: String, px: float, bg: Color,
 		icon_color: Color, shadow_color: Color, shadow_px: float = 14.0) -> Control:
+	return make_texture_tile(icon_for(skill_key), px, bg, icon_color, shadow_color, shadow_px)
+
+
+## `make_icon_tile` for a mech passive (`mech_passives.key`).
+static func make_mech_icon_tile(passive_key: String, px: float, bg: Color,
+		icon_color: Color, shadow_color: Color, shadow_px: float = 14.0) -> Control:
+	return make_texture_tile(mech_icon_for(passive_key), px, bg, icon_color, shadow_color,
+			shadow_px)
+
+
+## The tile itself, around any glyph texture (null → the empty tile).
+static func make_texture_tile(tex: Texture2D, px: float, bg: Color,
+		icon_color: Color, shadow_color: Color, shadow_px: float = 14.0) -> Control:
 	var tile := Panel.new()
 	tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tile.size = Vector2(px, px)
@@ -88,7 +131,6 @@ static func make_icon_tile(skill_key: String, px: float, bg: Color,
 	sty.shadow_offset = Vector2(0.0, shadow_px * 0.4)
 	tile.add_theme_stylebox_override("panel", sty)
 
-	var tex: Texture2D = icon_for(skill_key)
 	if tex == null:
 		return tile
 	var inset: float = px * TILE_INSET_FRAC

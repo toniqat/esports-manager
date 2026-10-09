@@ -17,10 +17,12 @@ extends Control
 # 부채꼴은 셰이더가 아니라 **아이콘 사각형과 교차시킨 다각형에 텍스처 UV** 를
 # 붙여 그린다 — 밝은 쪽 / 어두운 쪽 두 장이 겹치지 않아 경계에 알파가 쌓이지 않는다.
 
-const BG_COLOR := Color(0.03, 0.04, 0.08, 0.92)
-const ICON_LIT := Color(1.0, 0.96, 0.86)
+# 배지는 스킬 아이콘 타일(`SkillImages.make_icon_tile`)과 같은 얼굴이다 — 진한 원
+# (`BattleTheme.SKILL_TILE_BG`) 위 크림색 글리프, 스택은 앰버.
+const BG_COLOR := BattleTheme.SKILL_TILE_BG
+const ICON_LIT := BattleTheme.SKILL_TILE_ICON
 const ICON_DIM := Color(0.36, 0.37, 0.42)
-const STACK_ON := Color(1.0, 0.84, 0.32)
+const STACK_ON := BattleTheme.GOLD
 const STACK_OFF := Color(1.0, 1.0, 1.0, 0.18)
 const NUMBER_COLOR := Color(1.0, 1.0, 1.0)
 const NUMBER_OUTLINE := Color(0, 0, 0, 0.95)

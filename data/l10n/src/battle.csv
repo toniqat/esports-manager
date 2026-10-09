@@ -42,11 +42,11 @@ tx_DEJKT3AEGZ,battle.engage.over_both_wiped,active,Engage end banner,,,{tx_58VCZ
 tx_AP1NR7N7JF,battle.engage.over_enemy_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: {tx_4HQK9Q9T8J} 전멸,{tx_58VCZ43AB8}: enemy wiped out,draft,ab46a55a
 tx_N96FRD4BSV,battle.engage.over_ally_wiped,active,Engage end banner,,,{tx_58VCZ43AB8}: {tx_16H8JD32NR} 전멸,{tx_58VCZ43AB8}: allies wiped out,draft,81b5dfd3
 tx_0A0WCRAVBT,battle.engage.over_turns,active,Engage end banner,,,{tx_58VCZ43AB8}: {n}{tx_H89Y7GFPWP} 완료,{tx_58VCZ43AB8}: {n} {plural:n|{tx_H89Y7GFPWP}|{tx_3PES5W2PRP}} complete,draft,e22994b9
-tx_ZGTQ8FD03J,battle.engage.popup.prey,active,Engage popup: mech passive stack,,,{tx_17WNW2JVNR} x{n},{tx_17WNW2JVNR} x{n},draft,4b38e616
+tx_ZGTQ8FD03J,battle.engage.popup.prey,deprecated,Engage popup: mech passive stack,,,{tx_17WNW2JVNR} x{n},{tx_17WNW2JVNR} x{n},draft,4b38e616
 tx_H9SA47D3DE,battle.engage.popup.stun,deprecated,Engage popup: unit skips its action,,,기절,Stun,draft,8d7ad8b7
 tx_PB324TP8B1,battle.engage.popup.stunned,active,Engage popup: unit got stunned,,,{tx_EQ77MGHTT1}!,Stunned!,draft,b8a7d87b
-tx_043E3Z38C6,battle.engage.popup.overclock,active,Engage popup: mech passive triggered,,,{tx_2E4NTSV8ET},{tx_2E4NTSV8ET},draft,59480663
-tx_SSD270N1SF,battle.engage.popup.indomitable,active,Engage popup: mech passive triggered,,,{tx_Y5NA1D3VMR}!,{tx_Y5NA1D3VMR}!,draft,d653ca18
+tx_043E3Z38C6,battle.engage.popup.overclock,deprecated,Engage popup: mech passive triggered,,,{tx_2E4NTSV8ET},{tx_2E4NTSV8ET},draft,59480663
+tx_SSD270N1SF,battle.engage.popup.indomitable,deprecated,Engage popup: mech passive triggered,,,{tx_Y5NA1D3VMR}!,{tx_Y5NA1D3VMR}!,draft,d653ca18
 tx_FC0GG3J6N4,battle.engage.popup.turret_kill,active,Engage popup: damage that destroyed a turret,,,-{n}  포탑 처치,-{n}  Turret destroyed,draft,13f376c8
 tx_V589CQ8M6Z,battle.engage.turret_label,active,Engage header actor name for a turret,,,포탑 T{tier} ({lane}),Turret T{tier} ({lane}),draft,ad93a69f
 tx_JKTA5KTT90,battle.jungle_start.hint,active,Jungle start overlay hint,,,정글러를 끌어다 시작할 정글 타일에 놓는다,Drag the jungler onto the jungle tile to start from,draft,7a5d0d88

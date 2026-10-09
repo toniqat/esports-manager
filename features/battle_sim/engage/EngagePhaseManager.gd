@@ -436,14 +436,36 @@ func _gather_participants(caster: PilotData, exclude_lane: bool,
 	var pulled: Array = []
 	for raw in out:
 		var p := raw as PilotData
-		if p.engage_link != null and p.engage_link.alive 				and not out.has(p.engage_link) and not pulled.has(p.engage_link):
-			pulled.append(p.engage_link)
+		# 결속은 양방향이다 — p 가 건 짝(시전자 → 대상)과 p 를 짝으로 건
+		# 시전자들(대상 → 시전자)을 함께 끌어온다. 한 대상에 여러 시전자가
+		# 걸 수 있고 각 짝은 따로 산다. 끌려 들어온 사람의 결속은 다시
+		# 따라가지 않는다(한 단계만 — 추적과 같다).
+		for mate in _bond_mates(p):
+			if not out.has(mate) and not pulled.has(mate):
+				pulled.append(mate)
 		for entry_raw in p.tracked_by:
 			var tracker: PilotData = (entry_raw as Dictionary).get("pilot", null)
 			if tracker != null and tracker.alive 					and not out.has(tracker) and not pulled.has(tracker):
 				pulled.append(tracker)
 	out.append_array(pulled)
 	return out
+
+
+## 결속 짝 — `p` 가 건 대상과 `p` 를 대상으로 건 시전자들 중 **살아 있고 전장에
+## 있는** 사람. 이탈 시 `clear_field_effects` 가 양쪽을 걷으므로 보통은 살아
+## 있기만 보면 되지만, 탈진(`engage_locked`)은 끌려 들어오지도 못한다.
+func _bond_mates(p: PilotData) -> Array:
+	var mates: Array = []
+	var linked: PilotData = p.engage_link
+	if linked != null and linked.alive and not linked.engage_locked:
+		mates.append(linked)
+	for raw in _bs.pilots:
+		var q := raw as PilotData
+		if q == p or q.engage_link != p or mates.has(q):
+			continue
+		if q.alive and not q.engage_locked:
+			mates.append(q)
+	return mates
 
 
 # exclude_lane 의미: 자기 lane 위에서 정상적으로 push 중인 lane 파일럿은 제외.
@@ -547,6 +569,9 @@ func _on_dashboard_confirmed() -> void:
 	# (player can keep playing cards or press 턴 넘기기), BATTLE for an AI card
 	# played during 상대 차례 (the tick stays held by is_ai_turn_active()).
 	_bs.game_phase = _phase_before
+	# 개시 타격에 토큰을 다 쓴 [약자 멸시]는 무대가 치워진 지금 손패에서 버린다.
+	if _bs.card_phase != null:
+		_bs.card_phase.discard_spent_contempt()
 	if _on_done.is_valid():
 		_on_done.call()
 		_on_done = Callable()

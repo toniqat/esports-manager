@@ -39,7 +39,7 @@ signal pilot_long_pressed(pilot: PilotData)
 const SLOT_COUNT: int = 5
 
 ## 원 바탕색 — 팀색. [아군, 적]. 성장치 탭도 같은 색이라 원에서 이어져 내려온
-## 한 덩어리로 읽힌다.
+## 한 덩어리로 읽힌다(흰 판 팔레트에서도 일부러 팀색 그대로 — `BattleTheme` PilotStripScoreTab).
 const DISC_COLOR := BattleTheme.TEAM_DISC
 ## 스킬 배지의 (스택이 없을 때) 테두리색. (초상 원 자체의 테두리는 삭제됐다 —
 ## 씬의 셰이더 재질이 `rim_width = 0` 이다.)
@@ -341,7 +341,7 @@ func _apply_skill_state(cell: Dictionary, p: PilotData) -> void:
 ## 스킬 배지 하나(쿨타임 2턴 남음). 바탕은 전장 회색.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
-	RenderingServer.set_default_clear_color(Color(0.30, 0.30, 0.30))
+	RenderingServer.set_default_clear_color(BattleTheme.PREVIEW_FIELD)
 	setup(null, 0)
 	var list: Array = []
 	for i in SLOT_COUNT:

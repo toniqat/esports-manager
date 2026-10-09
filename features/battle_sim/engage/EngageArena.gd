@@ -52,11 +52,16 @@ const TEAM_COLORS := [
 	Color(0.32, 0.62, 0.95),   # team 0 (player)
 	Color(0.95, 0.40, 0.32),   # team 1 (enemy)
 ]
-const TITLE_COLOR   := Color(1.0, 0.95, 0.55, 1.0)
-const TIME_COLOR    := Color(0.92, 0.96, 1.0, 1.0)
-const TIME_LOW      := Color(1.0, 0.55, 0.40, 1.0)
+## 무대 밖은 옅은 검은 딤(`DIM_COLOR`) 너머 전장이라 제목 · 라운드 · 팀 이름 · 결과 숫자는
+## 전장 위 글자와 같은 규칙 — 밝은 글자 + 검은 외곽선(`_make_label`). 무대(밴드) 안은 어두운 바닥.
+const TITLE_COLOR   := BattleTheme.TITLE_ON_DIM
+const TIME_COLOR    := BattleTheme.TEXT_BRIGHT
+const TIME_LOW      := BattleTheme.NEGATIVE_ON_DIM
+const PHASE_COLOR   := BattleTheme.SUB_ON_DIM
+## 무대 밖 팀 이름 줄의 글자색 (인덱스 = team).
+const SIDE_TEXT     := BattleTheme.TEAM_RIM
 ## 결과 화면의 남은 체력 바(교전 중에는 그리지 않는다 — 무대 초상의 HP 링이 말한다).
-const HP_BAR_BG     := Color(0.06, 0.06, 0.08, 1.0)
+const HP_BAR_BG     := BattleTheme.SUNK
 const HP_BAR_FILL   := Color(0.30, 0.85, 0.45, 1.0)
 
 # ─── 무대 (밴드) ───────────────────────────────────────────────
@@ -67,9 +72,11 @@ const HP_BAR_FILL   := Color(0.30, 0.85, 0.45, 1.0)
 ## 들어가야 배치가 전장과 같은 모양으로 읽힌다. 높이를 벌어놓은 만큼 하단
 ## 스트립은 세로 300짜리 tall 크롭을 포기하고 **90×90 정사각 썸네일**로 내려앉는다.
 const BAND_RECT := Rect2(24.0, 406.0, 1032.0, 1000.0)
-const BAND_FRAME    := Color(0.45, 0.53, 0.72, 0.90)
-## 무대 밖 화면(전장 · 핸드 행 등)을 덮는 딜.
-const DIM_COLOR     := Color(0.0, 0.0, 0.0, 0.86)
+const BAND_FRAME    := BattleTheme.LINE_STRONG
+## 무대 테두리 바깥의 옅은 그림자 줄.
+const BAND_SHADOW   := BattleTheme.SHADOW
+## 무대 밖 화면(전장 · 핸드 행 등)을 덮는 딤 — 전투 공용 `DIM_BLACK`(검정 α 0.30).
+const DIM_COLOR     := BattleTheme.DIM_BLACK
 
 # ─── 바닥면 ────────────────────────────────────────────────────
 # 위(먼 쪽)에서 아래(가까운 쪽)로 갈수록 밝아진다 — 탑뷰라도 약간 누워 보는
@@ -190,11 +197,11 @@ const RES_BAR_MAX_H: float = 560.0
 ## 막대가 자랄 자리(0 피해도 밑동은 남는다) / 처치 배지 높이.
 const RES_BAR_STUB_H: float = 6.0
 const RES_KILL_H: float = 26.0
-const RES_BAR_BG := Color(0.13, 0.15, 0.22, 0.85)
+const RES_BAR_BG := BattleTheme.SUNK
 ## 결과 화면의 딤 — 무대가 걷힌 뒤라 **더 어둡다**. 교전 중에는 밴드가 화면
 ## 한가운데를 덮고 있어 0.86 으로도 전장이 안 읽혔지만, 그 밴드가 사라지면
 ## 그 자리로 격자와 초상화가 그대로 올라와 막대와 자리를 다툰다.
-const RES_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.945)
+const RES_DIM_COLOR := BattleTheme.DIM_BLACK
 
 ## 결과 한 줄의 세 가지. 판정은 매니저가 하고(오브젝트 교전인지를 아는 것이
 ## 그쪽이다) 이 중 하나를 넘겨 받는다 — 문자열을 여기 두는 것은 그 글자에
@@ -203,9 +210,9 @@ const RES_DIM_COLOR := Color(0.0, 0.0, 0.0, 0.945)
 const RESULT_WIN: String     = L.BATTLE_ENGAGE_RESULT_WIN
 const RESULT_LOSE: String    = L.BATTLE_ENGAGE_RESULT_LOSE
 const RESULT_NEUTRAL: String = L.BATTLE_ENGAGE_RESULT_NEUTRAL
-const RESULT_WIN_COLOR     := Color(1.00, 0.90, 0.45)
-const RESULT_LOSE_COLOR    := Color(1.00, 0.48, 0.42)
-const RESULT_NEUTRAL_COLOR := Color(0.86, 0.88, 0.94)
+const RESULT_WIN_COLOR     := BattleTheme.TITLE_ON_DIM
+const RESULT_LOSE_COLOR    := BattleTheme.NEGATIVE_ON_DIM
+const RESULT_NEUTRAL_COLOR := BattleTheme.TEXT_BRIGHT
 
 var _bs: BattleSim = null
 var _sim: TurnEngageSim = null
@@ -382,7 +389,7 @@ func _build_ui(title_text: String) -> void:
 	_round_lbl.size = Vector2(ScreenMetrics.vp_w(), 56)
 	add_child(_round_lbl)
 
-	_phase_lbl = _make_label("", 24, Color(0.85, 0.85, 0.9),
+	_phase_lbl = _make_label("", 24, PHASE_COLOR,
 			HORIZONTAL_ALIGNMENT_CENTER)
 	_phase_lbl.position = Vector2(0, PHASE_Y)
 	_phase_lbl.size = Vector2(ScreenMetrics.vp_w(), 32)
@@ -399,7 +406,7 @@ func _build_ui(title_text: String) -> void:
 		var team_units: Array = _sim.units_of(t)
 		# 팀 이름은 그 팀 초상화 무리 **위**에 온다 — 좌우가 곧 팀이므로
 		# 라벨도 그 자리에 있어야 한다.
-		var hdr := _make_label(Loc.t(L.TERM_SIDE_ALLY) if t == 0 else Loc.t(L.TERM_SIDE_ENEMY), 24, TEAM_COLORS[t],
+		var hdr := _make_label(Loc.t(L.TERM_SIDE_ALLY) if t == 0 else Loc.t(L.TERM_SIDE_ENEMY), 24, SIDE_TEXT[t],
 				HORIZONTAL_ALIGNMENT_CENTER)
 		var group_w: float = _strip_group_width(team_units.size())
 		hdr.position = Vector2(
@@ -675,6 +682,7 @@ func draw_world(c: CanvasItem) -> void:
 	_draw_turrets(c)
 	_draw_projectiles(c)
 	_draw_units(c)
+	_draw_effect_banners(c)
 
 
 # 먼 배경 — 바닥면을 사방으로 `BG_BLEED` 만큼 더 그려 둔다. 카메라가 가장자리를
@@ -793,6 +801,33 @@ static func _shot_impact(p: Dictionary) -> Vector2:
 
 # 탑뷰라 **깊이(y) 순으로 정렬**해서 그린다 — 아래쪽(가까운) 유닛이 위에 겹친다.
 # 시뮬레이터의 units 배열 순서는 팀별이라 그대로 그리면 원근이 깨진다.
+## 효과 배너 — 전장과 같은 목록(`BattleRenderer.banners`)을 읽어, 이 무대에 선
+## 파일럿의 초상 위에 같은 모양(`BattleRenderer.draw_banner`: 판 없음 · 외곽선 글자)
+## 으로 그린다. 월드 배율을 1/zoom 으로 되먹여 화면상 크기를 고정한다(팝업과 같은 이유).
+const ENGAGE_BANNER_SCALE: float = 1.15
+
+func _draw_effect_banners(c: CanvasItem) -> void:
+	if _bs == null or _bs.renderer == null:
+		return
+	var list: Array = _bs.renderer.active_banners()
+	if list.is_empty():
+		return
+	var inv: float = 1.0 / maxf(0.01, _cam_zoom)
+	var r: float = TurnEngageSim.UNIT_RADIUS
+	for raw in list:
+		var e: Dictionary = raw
+		for u_raw in _sim.units:
+			var u := u_raw as TurnEngageSim.EUnit
+			if u.pilot != e["p"] or u.state == TurnEngageSim.State.DEAD:
+				continue
+			var top := Vector2(u.pos.x,
+					u.pos.y - UNIT_LIFT - BattleRenderer.marker_outer_radius(r))
+			c.draw_set_transform(top, 0.0, Vector2(inv, inv))
+			BattleRenderer.draw_banner(c, e, Vector2(0.0, -8.0), ENGAGE_BANNER_SCALE)
+			break
+	c.draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
 func _draw_units(c: CanvasItem) -> void:
 	var order: Array = _sim.units.duplicate()
 	order.sort_custom(func(a, b):
@@ -933,7 +968,7 @@ func draw_hud(c: CanvasItem) -> void:
 	if _sim == null:
 		return
 	# 무대 테두리 — "여기까지가 무대, 밖은 잘려 있다"를 명시한다.
-	c.draw_rect(BAND_RECT.grow(2.0), Color(0.0, 0.0, 0.0, 0.55), false, 6.0)
+	c.draw_rect(BAND_RECT.grow(2.0), BAND_SHADOW, false, 6.0)
 	c.draw_rect(BAND_RECT, BAND_FRAME, false, 2.0)
 	_draw_round_pips(c)
 
@@ -954,7 +989,7 @@ func _draw_round_pips(c: CanvasItem) -> void:
 		return
 	var x0: float = (ScreenMetrics.vp_w() - ROUND_BAR_W) * 0.5
 	c.draw_rect(Rect2(x0, ROUND_BAR_Y, ROUND_BAR_W, ROUND_BAR_H),
-			Color(0.10, 0.11, 0.16, 0.95), true)
+			BattleTheme.SUNK, true)
 	var n: int = max(1, _sim.total_rounds)
 	var done: int = clampi(_sim.round_index, 0, n)
 	if n <= ROUND_PIP_MAX:
@@ -962,14 +997,14 @@ func _draw_round_pips(c: CanvasItem) -> void:
 		for i in n:
 			var px: float = x0 + (pip_w + ROUND_PIP_GAP) * float(i)
 			c.draw_rect(Rect2(px, ROUND_BAR_Y, pip_w, ROUND_BAR_H),
-					Color(0.45, 0.80, 0.95) if i < done
-							else Color(0.20, 0.23, 0.32, 0.95), true)
+					BattleTheme.GOLD if i < done
+							else BattleTheme.LINE_STRONG, true)
 	else:
 		c.draw_rect(Rect2(x0, ROUND_BAR_Y,
 				ROUND_BAR_W * float(done) / float(n), ROUND_BAR_H),
-				Color(0.45, 0.80, 0.95), true)
+				BattleTheme.GOLD, true)
 	c.draw_rect(Rect2(x0, ROUND_BAR_Y, ROUND_BAR_W, ROUND_BAR_H),
-			Color(0.4, 0.45, 0.6, 0.8), false, 1.5)
+			BattleTheme.LINE_STRONG, false, 1.5)
 
 
 # ─── 하단 초상화 스트립 (_roster 에 그린다) ──────────────────────────────────
@@ -1002,7 +1037,7 @@ func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
 	# 초상 뒤판 — 죽으면 붉게 가라앉는다. 얼굴 크롭은 모브 실루엣처럼 알파가
 	# 뚫리는 경우가 있어 뒤판이 없으면 딤드된 화면이 그대로 비친다.
 	c.draw_rect(rect,
-			Color(0.18, 0.09, 0.09, 0.95) if dead else Color(0.09, 0.11, 0.17, 0.95),
+			BattleTheme.DEAD_SLOT if dead else BattleTheme.SUNK,
 			true)
 
 	# 얼굴 위주 **정사각** 썸네일(256×256). 칸도 정사각이라 비율이 안 깨진다.
@@ -1034,7 +1069,7 @@ func _draw_roster_cell(c: CanvasItem, u: TurnEngageSim.EUnit, cx: float,
 		c.draw_rect(Rect2(bar_x + hp_w, bar_y, sh_w, STRIP_HP_H),
 				BattleRenderer.SHIELD_RING_COLOR, true)
 	c.draw_rect(Rect2(bar_x, bar_y, STRIP_HP_W, STRIP_HP_H),
-			Color(0.4, 0.45, 0.6, 0.8), false, 1.5)
+			BattleTheme.LINE_STRONG, false, 1.5)
 
 
 # ─── 결과 화면 ──────────────────────────────────────────
@@ -1141,7 +1176,7 @@ func _build_result_labels() -> void:
 			var h: float = _bar_height(_dealt_of(u.pilot))
 			# ① 막대 위 — 준 피해.
 			var dmg := _make_label(fmt_damage(_dealt_of(u.pilot)), 24,
-					Color(0.96, 0.97, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
+					BattleTheme.TEXT_BRIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 			dmg.position = Vector2(cx - STRIP_PORTRAIT_W * 0.5,
 					RES_BAR_BOTTOM - h - 32.0)
 			dmg.size = Vector2(STRIP_PORTRAIT_W, 30)
@@ -1152,7 +1187,7 @@ func _build_result_labels() -> void:
 			var kills: int = int(s.get("kills", 0))
 			if kills > 0 and h >= RES_KILL_H:
 				var kl := _make_label(Loc.t(L.BATTLE_ENGAGE_KILLS, {"n": kills}), 17,
-						Color(1.0, 0.95, 0.70), HORIZONTAL_ALIGNMENT_CENTER)
+						BattleTheme.TEXT_ON_FILL, HORIZONTAL_ALIGNMENT_CENTER)
 				kl.position = Vector2(cx - RES_BAR_W * 0.5,
 						RES_BAR_BOTTOM - RES_KILL_H)
 				kl.size = Vector2(RES_BAR_W, RES_KILL_H)
@@ -1161,9 +1196,9 @@ func _build_result_labels() -> void:
 			add_child(_growth_label(u.pilot, cx))
 
 
-## 성장 줄 — 소울 아이콘 + `+2150`(`fmt_score_gain`). 전장 성장치 팝업과 같은
-## 얼굴이다: 흰 글자 · 굵은 검은 외곽선 · 외곽선 두른 아이콘(`BattleRenderer.
-## draw_outlined_icon`). 못 벌었으면 회색 `—` 한 글자다.
+## 성장 줄 — 소울 아이콘 + `+2150`(`fmt_score_gain`). 아이콘은 전장 성장치 팝업과 같은
+## 외곽선 두른 그림(`BattleRenderer.draw_outlined_icon`), 글자는 종이 위라 외곽선 없는
+## 앰버(`GROWTH_COLOR`). 못 벌었으면 옅은 `—` 한 글자다.
 func _growth_label(p: PilotData, cx: float) -> Control:
 	var s: Dictionary = _sim.stats.get(p, {})
 	var delta: float = p.score - float(s.get("score0", p.score))
@@ -1183,10 +1218,9 @@ func _growth_label(p: PilotData, cx: float) -> Control:
 	box.size = Vector2(STRIP_PORTRAIT_W, GROWTH_BOX_H)
 	# 90px 칸 — 큰 값이 옆 칸을 침범하지 않게 자른다.
 	box.clip_contents = true
-	var lbl := _make_label(text, GROWTH_FONT_SIZE, BattleSim.SCORE_POPUP_COLOR,
+	# 딤 위라 밝은 앰버 + 외곽선(`_make_label`), 아이콘은 전장 팝업과 같은 외곽선 두른 그림.
+	var lbl := _make_label(text, GROWTH_FONT_SIZE, GROWTH_COLOR,
 			HORIZONTAL_ALIGNMENT_LEFT)
-	lbl.add_theme_constant_override("outline_size", GROWTH_OUTLINE_PX)
-	lbl.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0))
 	var font: Font = lbl.get_theme_font("font")
 	# 다섯 자리(`+12300`)부터는 90px 칸을 넘는다 — 그때만 글자를 줄여 맞춘다.
 	var avail: float = STRIP_PORTRAIT_W - GROWTH_ICON_SZ - GROWTH_ICON_GAP \
@@ -1214,7 +1248,8 @@ func _growth_label(p: PilotData, cx: float) -> Control:
 func _build_confirm_button(on_confirm: Callable) -> void:
 	var btn := Button.new()
 	btn.text = Loc.t(L.UI_BUTTON_CONFIRM)
-	btn.add_theme_font_size_override("font_size", 28)
+	btn.focus_mode = Control.FOCUS_NONE
+	BattleTheme.style_button(btn, "primary", 28)
 	btn.size = Vector2(RES_BTN_W, RES_BTN_H)
 	btn.position = Vector2((ScreenMetrics.vp_w() - RES_BTN_W) * 0.5, RES_BTN_Y)
 	btn.pressed.connect(on_confirm)
@@ -1229,9 +1264,9 @@ static func fmt_damage(v: float) -> String:
 	return str(int(round(v)))
 
 
-## 성장 줄 — 번 성장치는 흰 글자(`BattleSim.SCORE_POPUP_COLOR`) + 소울 아이콘,
-## 못 벌었으면 회색 `—`.
-const GROWTH_FLAT_COLOR: Color = Color(0.62, 0.64, 0.70)
+## 성장 줄 — 번 성장치는 밝은 앰버 글자(`GROWTH_COLOR`) + 소울 아이콘, 못 벌었으면 옅은 `—`.
+const GROWTH_COLOR: Color = BattleTheme.GROWTH_ON_DIM
+const GROWTH_FLAT_COLOR: Color = BattleTheme.SUB_ON_DIM
 const GROWTH_FONT_SIZE: int = 20
 ## 글자 외곽선 두께(Label `outline_size`).
 const GROWTH_OUTLINE_PX: int = 6
@@ -1256,7 +1291,14 @@ func _make_label(text: String, font_size: int, color: Color,
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lbl.add_theme_font_size_override("font_size", font_size)
 	lbl.add_theme_color_override("font_color", color)
+	# 판 없이 딤 · 무대 위에 바로 서는 글자 — 전장 위 글자와 같은 검은 외곽선.
+	lbl.add_theme_color_override("font_outline_color", BattleTheme.OUTLINE)
+	lbl.add_theme_constant_override("outline_size", LABEL_OUTLINE_PX)
 	return lbl
+
+
+## `_make_label` 글자의 외곽선 두께.
+const LABEL_OUTLINE_PX: int = 5
 
 
 # _draw 를 바깥으로 위임하기만 하는 껍데기 노드. draw_* 는 그 CanvasItem 이

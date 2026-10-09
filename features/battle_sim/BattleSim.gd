@@ -332,10 +332,13 @@ var ambush_search_ai: Array = []
 # 심어 두고, `mark_pilot_dead` 가 상대 팀 파일럿의 사망을 볼 때 한 번 지급하고
 # 소모한다. 그 작전 단계가 끝나면 미사용분은 사라진다.
 var kill_bounty_p:  int = 0
-## 예약 효과의 출처 카드 — `"<strategy|draw|bounty|ambush>_<p|ai>"` → 카드 식별자(`CardData.card_uid`).
-## 예약 칩(`ui/ReservationChips.gd`)의 썸네일 전용이고 계산에는 쓰이지 않는다.
-var reserve_src: Dictionary = {}
 var kill_bounty_ai: int = 0
+# ── 예약 효과 출처 장부 (표시 전용 — 계산은 위 장부들만 읽는다) ─────────────
+## 예약 효과 하나 = `{side: "p"|"ai", kind: "strategy"|"draw"|"bounty"|"ambush",
+## uid: CardData.card_uid() ("" = 모름), card: CardData|null, n: int}`.
+## 예약 칩(`ui/ReservationChips.gd`)이 카드 한 장당 칩 하나로 묶어 그린다.
+## 정산된 종류(장부 값 0)의 줄은 `prune_reserve_log` 가 지운다.
+var reserve_log: Array = []
 
 # Gambit state — gambit_lanes is filled by GambitPhaseManager.auto_assign_lanes()
 var gambit_lanes: Array   = [-1, -1, -1, -1, -1]
@@ -1927,6 +1930,47 @@ func end_match(winner_side: int) -> void:
 	mvp_view.open(self, mvp, mvp_row)
 
 
+## 카드 효과가 예약을 걸 때 그 출처를 적는다(`CardPhaseManager._note_reserve`).
+## 계획 살인(bounty)은 큰 값 하나만 남으므로 출처도 그 하나만 남긴다.
+func note_reserve(kind: String, is_player: bool, card: CardData, n: int) -> void:
+	var side: String = "p" if is_player else "ai"
+	if kind == "bounty":
+		for i in range(reserve_log.size() - 1, -1, -1):
+			var e: Dictionary = reserve_log[i]
+			if e["side"] != side or e["kind"] != "bounty":
+				continue
+			if int(e["n"]) >= n:
+				return
+			reserve_log.remove_at(i)
+	reserve_log.append({"side": side, "kind": kind,
+			"uid": card.card_uid() if card != null else "", "card": card, "n": n})
+
+
+## 예약 장부의 현재 값 — 매복 탐색은 장수 합.
+func reserve_ledger(kind: String, is_player: bool) -> int:
+	match kind:
+		"strategy":
+			return next_phase_strategy_p if is_player else next_phase_strategy_ai
+		"draw":
+			return next_phase_draw_p if is_player else next_phase_draw_ai
+		"bounty":
+			return kill_bounty_p if is_player else kill_bounty_ai
+		"ambush":
+			var n: int = 0
+			for raw in (ambush_search_p if is_player else ambush_search_ai):
+				n += int((raw as Dictionary).get("n", 0))
+			return n
+	return 0
+
+
+## 정산되어 장부가 0 이 된 종류의 출처 줄을 지운다(예약 칩이 매 프레임 부른다).
+func prune_reserve_log() -> void:
+	for i in range(reserve_log.size() - 1, -1, -1):
+		var e: Dictionary = reserve_log[i]
+		if reserve_ledger(String(e["kind"]), e["side"] == "p") == 0:
+			reserve_log.remove_at(i)
+
+
 ## MVP 뷰의 "계속" — 뷰를 치우고 기존 결과 화면을 연다.
 func _on_mvp_view_closed() -> void:
 	if mvp_view != null:
@@ -1971,6 +2015,7 @@ func _on_restart_pressed() -> void:
 	phase_draw_discount_p = 0; phase_draw_discount_ai = 0
 	preserved_cards_p.clear(); preserved_cards_ai.clear()
 	next_phase_strategy_p = 0; next_phase_strategy_ai = 0
+	reserve_log.clear()
 	next_phase_draw_p = 0; next_phase_draw_ai = 0
 	ambush_search_p.clear(); ambush_search_ai.clear()
 	kill_bounty_p = 0; kill_bounty_ai = 0

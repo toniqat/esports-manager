@@ -64,7 +64,7 @@ const FLY_SEC: float = 0.42
 ## 목적지에 도착했을 때의 배율 — 빨려 들어가는 만큼 작아진다.
 const FLY_END_SCALE := Vector2(0.34, 0.34)
 
-const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.55)
+const DIM_COLOR := BattleTheme.DIM_FIELD
 const DIM_FADE_SEC: float = 0.20
 
 var _bs: BattleSim = null

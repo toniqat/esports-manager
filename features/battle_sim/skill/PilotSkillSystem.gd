@@ -605,6 +605,13 @@ func _refresh_hand() -> void:
 	_bs.card_phase.highlight_affordable_cards()
 
 
+## 조건부 패시브가 **실제로 발동한** 순간의 초상 위 배너(`BattleRenderer.spawn_skill_banner`).
+## 상시 스탯 패시브 · 충전만 쌓이는 사건은 부르지 않는다 — 목록은 skill/README.md.
+func _banner(p: PilotData) -> void:
+	if _bs != null and _bs.renderer != null:
+		_bs.renderer.spawn_skill_banner(p)
+
+
 func _log(p: PilotData, msg: String) -> void:
 	if _bs.blog != null:
 		_bs.blog.log_event("SKILL", "%-4s [%s] %s" % [
@@ -670,6 +677,7 @@ func _spawn_hot_hand(p: PilotData) -> void:
 	deck.shuffle()
 	_bs.card_phase.update_deck_discard_labels()
 	_log(p, "[핫핸드] 를 덱에 생성")  # l10n-ignore
+	_banner(p)
 
 
 ## 카드 한 장이 실제로 나갔을 때. 퍼포먼스가 이 박자로 충전한다.
@@ -737,6 +745,7 @@ func on_kill(victim: PilotData, killer: PilotData) -> void:
 		match _key_of(p):
 			KEY_HUNT_REWARD:
 				st["farm_until"] = _bs.turn_count + HUNT_REWARD_TURNS
+				_banner(p)
 			KEY_PLUNDERER:
 				st["charge"] = mini(int(st["def"]["p2"]), int(st["charge"]) + PLUNDERER_CHARGE_GAIN)
 			KEY_LOOT_COLLECTOR:
@@ -746,6 +755,7 @@ func on_kill(victim: PilotData, killer: PilotData) -> void:
 					roles[victim.role] = true
 					st["charge"] = roles.size()
 					_bs.refresh_growth_stats(p)
+					_banner(p)
 	# 기회주의자 — 교전이 도는 중의 처치만 라운드를 연장한다.
 	if killer != null and _bs.engage_phase != null \
 			and _bs.engage_phase.is_active():
@@ -954,11 +964,13 @@ func engage_round_delta(team: int, consume: bool = false) -> int:
 
 
 ## 기회주의자 — 이번 교전에서 처치를 낸 파일럿이 이 스킬을 갖고 있으면 라운드가
-## 하나 늘어난다. `TurnEngageSim` 이 라운드 경계마다 묻는다.
+## 하나 늘어난다. `TurnEngageSim` 이 마지막 라운드 끝에 **한 교전에 한 번** 묻고,
+## 0 이 아닌 답이 곧 연장이라 발동 배너도 여기서 띄운다.
 func engage_bonus_rounds_from_kills() -> int:
 	for raw in _engage_killers.keys():
 		var p := raw as PilotData
 		if _key_of(p) == KEY_OPPORTUNIST:
+			_banner(p)
 			return OPPORTUNIST_ROUNDS
 	return 0
 
@@ -971,9 +983,13 @@ func engage_focus_role(p: PilotData) -> int:
 	return GameEnums.Role.SNIPER
 
 
-## 원딜 사냥꾼이 그 첫 공격에 얹는 공격력 배율.
+## 원딜 사냥꾼이 그 첫 공격에 얹는 공격력 배율. `TurnEngageSim._strike_one` 이 첫
+## 공격이 적 원딜에게 **명중했을 때만** 부르므로 발동 배너도 여기서 띄운다.
 func engage_focus_atk_mult(p: PilotData) -> float:
-	return 1.0 + ADC_HUNTER_ATK if _key_of(p) == KEY_ADC_HUNTER else 1.0
+	if _key_of(p) != KEY_ADC_HUNTER:
+		return 1.0
+	_banner(p)
+	return 1.0 + ADC_HUNTER_ATK
 
 
 # ─── 판정 도우미 ─────────────────────────────────────────────────────────────

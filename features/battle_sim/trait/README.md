@@ -10,7 +10,7 @@ the AI never has traits.
 | File | Class | Role |
 |---|---|---|
 | `TraitHooks.gd` | `TraitHooks` (Node, `_bs.trait_hooks`) | Parses `match_ctx.traits` into `KEY_*` sums, exposes query functions, holds the tiny per-match runtime state (first draw done, first card of the phase used) |
-| `TraitBanner.gd` | `TraitBanner` (CanvasLayer) | "감독 특성" card shown once at the opening (GAMBIT → BATTLE), fades out after ~3.7s, never takes input |
+| `TraitBanner.gd` | `TraitBanner` (CanvasLayer) | "감독 특성" card shown once at the opening (GAMBIT → BATTLE), fades out after ~3.7s, never takes input; white `BattleTheme.gold_box()` plate, amber title, dark lines |
 
 ## Input
 `GameManager.match_ctx.traits = [{id, key, p1, p2}]`, written by

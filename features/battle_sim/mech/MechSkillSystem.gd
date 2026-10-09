@@ -22,7 +22,7 @@ extends Node
 # 패시브 보정은 **질의 함수로만** 내보내고 계산은 원래 하던 자리가 그대로 한다:
 #   • `BattleSim.refresh_growth_stats` — `atk_mult` / `bulk_power_atk`
 #   • `SimulationCore` 의 피해 계산     — `damage_taken_mult` / `consume_reactive_armor`
-#   • `TurnEngageSim`                   — `engage_targets_all` / `overclock_extra_attack`
+#   • `TurnEngageSim`                   — `barrage_active` / `overclock_extra_attack`
 # 스탯을 직접 밀면 성장 재계산 한 번에 지워지기 때문이다 — 카드의 일시 공격력이
 # `PilotData.atk_buff` 로 따로 사는 것과 같은 이유이고, 영구 몫은
 # `PilotData.bonus_atk_flat` / `bonus_atk_mult` / `bonus_max_hp` 로 산다.
@@ -46,7 +46,7 @@ const KEY_GUARDIAN_LINK      := "guardian_link"       # 지원 Q — 보호막 �
 const KEY_LAST_STAND         := "last_stand"          # 지원 V — 교전 1회 사망 방지
 const KEY_VULNERABILITY_MARK := "vulnerability_mark"  # 원딜 A — 명중 → 취약
 const KEY_MISSILE_STOCK      := "missile_stock"       # 원딜 C — 레인 포탑 파괴 → [미사일]
-const KEY_BARRAGE            := "barrage"             # 원딜 I — 교전 공격이 전체 대상
+const KEY_BARRAGE            := "barrage"             # 원딜 I — 교전 공격이 존재감 가중 무작위 최대 N명에게 분산
 const KEY_CALIBRATION        := "calibration"         # 원딜 J — 전장 명중 → 공격력 +`p1`
 
 # ─── 카드 자신에게 붙는 사건 훅 (`mech_cards.trigger`) ───────────────────────
@@ -116,6 +116,10 @@ static var EXECUTION_CARDS: int = ConstTable.int_of("MECH_EXECUTION_CARDS")
 static var MISSILE_STOCK_CARDS: int = ConstTable.int_of("MECH_MISSILE_STOCK_CARDS")
 ## 오버클럭: 발동 한 번에 더 하는 교전 공격 횟수.
 static var OVERCLOCK_EXTRA_ATTACKS: int = ConstTable.int_of("MECH_OVERCLOCK_EXTRA_ATTACKS")
+## 전탄 발사: 교전 공격 한 차례가 나눠 맞히는 최대 적 수.
+static var BARRAGE_MAX_TARGETS: int = ConstTable.int_of("MECH_BARRAGE_MAX_TARGETS")
+## 전탄 발사: 그 각 대상에게 들어가는 공격력 배율.
+static var BARRAGE_DMG_MULT: float = ConstTable.num("MECH_BARRAGE_DMG_MULT")
 # ─── 단계 C 의 강화 3택 ──────────────────────────────────────────────────────
 # [단계 C] 를 낼 때 하나를 고르고, 그 다음 한 번에만 쓰인다. 세 값이 서로 다른
 # 카드에 걸리므로(알파 = 단계 A, 베타 = 단계 B, 감마 = 단계 C) 파일럿당 하나만
@@ -270,10 +274,12 @@ func _on_charge_full(p: PilotData) -> void:
 			# 않는다(보존 키워드라 안 버려지고 쌓이기만 한다).
 			if not _hand_has_card(p, CARD_EXECUTE):
 				_grant_card_to_hand(p, CARD_EXECUTE, EXECUTION_CARDS)
+				_banner(p)
 		KEY_ZEN_CHARGE:
 			# 무념: 충전을 전부 태워 사거리 `ZEN_RANGE` 안의 모든 적을 친다. 카드가 아니라
 			# 패시브가 직접 때리는 유일한 자리다.
 			spend_charge(p, max_charge_of(p))
+			_banner(p)
 			_zen_sweep(p)
 
 
@@ -319,11 +325,14 @@ func consume_reactive_armor(victim: PilotData) -> bool:
 		return false
 	victim.reactive_armor -= 1
 	mech_state_changed.emit()
+	_banner(victim, KEY_REACTIVE_PLATING)
 	return true
 
 
-## 전탄 발사(원딜 I) — 교전 중 이 파일럿의 공격이 적 전원을 대상으로 하는가.
-func engage_targets_all(p: PilotData) -> bool:
+## 전탄 발사(원딜 I) — 교전 중 이 파일럿의 공격이 평소 한 대 대신 최대
+## `BARRAGE_MAX_TARGETS` 명에게 `BARRAGE_DMG_MULT` 배율로 나뉘는가. 대상 고르기는
+## `TurnEngageSim._barrage_targets` 가 한다(존재감 가중 무작위). 전장 공격은 그대로다.
+func barrage_active(p: PilotData) -> bool:
 	return has_passive(p, KEY_BARRAGE)
 
 
@@ -338,6 +347,7 @@ func overclock_extra_attack(p: PilotData) -> bool:
 	if randf() >= float(c) * OVERCLOCK_PROC_PER_CHARGE:
 		return false
 	spend_charge(p, c / 2)
+	_banner(p)
 	return true
 
 
@@ -351,6 +361,7 @@ func last_stand_available(p: PilotData) -> bool:
 
 func consume_last_stand(p: PilotData) -> void:
 	_last_stand_used[p] = true
+	_banner(p, KEY_LAST_STAND)
 
 
 ## 이번 교전에 불굴이 걸린 팀들과 이미 소모한 파일럿. 교전 개시마다 새로 잡는다.
@@ -359,6 +370,9 @@ var _last_stand_used: Dictionary = {}
 ## 강타([강타] 카드) — 이번 교전에 **이미 기절시킨 적**. `PilotData → true`.
 ## "한 교전 내에 같은 적에게 두 번 이상 적용되지 않음"이 이 표의 전부다.
 var _stun_applied: Dictionary = {}
+## 약자 멸시 — 이번 교전 개시에 충전을 태운 [약자 멸시] 카드들. 무대가 닫힌 뒤
+## `CardPhaseManager.discard_spent_contempt` 가 걷어 가 손패에서 버린다.
+var _contempt_spent: Array = []
 ## 수호 연계(지원 Q)의 편승 공격이 지금 도는 중인가. 편승 공격이 다시 피해를
 ## 만들어 같은 훅으로 되돌아오는 고리를 끊는다 — 두 메크가 서로에게 보호막을
 ## 걸어 두면 그 고리가 실제로 닫힌다.
@@ -399,9 +413,11 @@ func on_card_attack_hit(attacker: PilotData, target: PilotData, dealt: int) -> v
 		KEY_VULNERABILITY_MARK:
 			if target != null:
 				target.vulnerable += _param(attacker, "p1", 10)
+				_banner(attacker)
 		KEY_CALIBRATION:
 			attacker.bonus_atk_flat += _param(attacker, "p1", 1)
 			_bs.refresh_growth_stats(attacker)
+			_banner(attacker)
 		KEY_SOUL_HARVEST:
 			_soul_harvest_gain(attacker)
 	if target != null:
@@ -430,6 +446,7 @@ func on_damage_dealt(attacker: PilotData, amount: int) -> void:
 		return
 	attacker.bonus_max_hp += int(float(amount) * float(_param(attacker, "p1", 20)) / 100.0)
 	_bs.refresh_growth_stats(attacker)
+	_banner(attacker)
 
 
 func on_damage_taken(victim: PilotData, amount: int) -> void:
@@ -439,6 +456,7 @@ func on_damage_taken(victim: PilotData, amount: int) -> void:
 		return
 	victim.bonus_max_hp += int(float(amount) * float(_param(victim, "p1", 20)) / 100.0)
 	_bs.refresh_growth_stats(victim)
+	_banner(victim)
 
 
 ## 누가 쓰러졌다. `BattleSim.mark_pilot_dead` 가 파일럿 스킬 바로 뒤에 부른다.
@@ -473,10 +491,12 @@ func on_turret_destroyed(killer: PilotData, td: TurretData = null) -> void:
 				# 것이든 무너질 때마다 덱에 [미사일] `MISSILE_STOCK_CARDS` 장. 밀리는 쪽도
 				# 미는 쪽도 탄약이 는다.
 				_grant_card_to_deck(p, CARD_MISSILE, MISSILE_STOCK_CARDS)
+				_banner(p)
 			KEY_PAIN_PLEASURE:
 				# 고통과 쾌감(탱커 N) — 자기 레인 포탑을 **자기가** 부쉈을 때만.
 				if p == killer:
 					_grant_card_to_deck(p, CARD_PAIN_PLEASURE, PAIN_PLEASURE_CARDS)
+					_banner(p)
 
 
 ## 용 / 전령 싸움을 한 팀이 가져갔다. `ObjectiveSystem` 이 정산 직후 부른다.
@@ -486,8 +506,12 @@ func on_objective_win(team: int) -> void:
 		if p.team != team:
 			continue
 		match passive_key(p):
-			KEY_VICTORY_REPORT:  _grant_card_to_hand(p, CARD_VICTORY, VICTORY_REPORT_CARDS)
-			KEY_DEMOLITION_ORDER: _grant_card_to_hand(p, CARD_DEMOLISH, DEMOLITION_ORDER_CARDS)
+			KEY_VICTORY_REPORT:
+				_grant_card_to_hand(p, CARD_VICTORY, VICTORY_REPORT_CARDS)
+				_banner(p)
+			KEY_DEMOLITION_ORDER:
+				_grant_card_to_hand(p, CARD_DEMOLISH, DEMOLITION_ORDER_CARDS)
+				_banner(p)
 
 
 ## 교전 무대가 열렸다. 참가자 명단이 확정된 직후 `EngagePhaseManager` 가 부른다.
@@ -547,10 +571,21 @@ func take_contempt_charges(p: PilotData) -> int:
 			continue
 		if not cd.effect.begins_with("hand_passive:" + HAND_CONTEMPT):
 			continue
-		total += cd.spend_charge()
+		var spent: int = cd.spend_charge()
+		total += spent
+		if spent > 0 and not _contempt_spent.has(cd):
+			_contempt_spent.append(cd)
+		if spent > 0 and _bs.renderer != null: _bs.renderer.spawn_buff_banner(p, cd, "hand:" + HAND_CONTEMPT)
 		if p.team == 0 and _bs.card_phase != null:
 			_bs.card_phase.refresh_charge_node(cd)
 	return total
+
+
+## 이번 교전에서 충전을 태운 [약자 멸시] 카드들을 넘기고 장부를 비운다.
+func take_spent_contempt_cards() -> Array:
+	var out: Array = _contempt_spent
+	_contempt_spent = []
+	return out
 
 
 ## 강타 — `attacker` 가 방금 때린 `victim` 을 기절시킨다. 실제로 걸었으면 true.
@@ -636,7 +671,13 @@ func clear_field_effects(p: PilotData) -> void:
 	p.marked_by = null
 	p.marked_bonus = 0.0
 	p.tracked_by.clear()
+	# 결속은 양방향이라 걷는 것도 양쪽이다 — 떠나는 사람이 건 결속과, 떠나는
+	# 사람을 대상으로 건 시전자들의 결속을 함께 끊는다.
 	p.engage_link = null
+	for raw in _bs.pilots:
+		var q := raw as PilotData
+		if q.engage_link == p:
+			q.engage_link = null
 	p.stun_charge = false
 	p.stunned_rounds = 0
 	# [질풍]의 자리 되돌리기 예약 — 사망 / 복귀는 이미 자리를 옮긴 뒤라,
@@ -723,6 +764,7 @@ func on_card_damage_for_revelation(target: PilotData, source: PilotData) -> void
 		if owner == null or owner == source or not owner.alive:
 			continue
 		if _bs.card_phase != null:
+			if _bs.renderer != null: _bs.renderer.spawn_buff_banner(owner, cd, "hand:" + HAND_REVELATION)
 			_bs.card_phase.deal_simple_attack(owner, target, 1)
 
 
@@ -752,6 +794,7 @@ func on_shielded_ally_damage(attacker: PilotData, target: PilotData) -> void:
 	if _bs.card_phase == null:
 		return
 	_guardian_busy = true
+	_banner(guard)
 	_bs.card_phase.deal_simple_attack(guard, target, 1)
 	_guardian_busy = false
 
@@ -881,6 +924,7 @@ func _soul_harvest_gain(p: PilotData) -> void:
 	p.bonus_atk_mult += float(_param(p, "p1", 1)) / 100.0
 	p.bonus_max_hp   += _param(p, "p2", 5)
 	_bs.refresh_growth_stats(p)
+	_banner(p)
 
 
 ## 무념(암살 T) 최대 충전: 사거리 `ZEN_RANGE` 안의 모든 적을 한 번씩 친다.
@@ -894,3 +938,11 @@ func _zen_sweep(p: PilotData) -> void:
 		if _bs.hex_grid.hex_distance(p.grid_pos, t.grid_pos) > ZEN_RANGE:
 			continue
 		_bs.card_phase.deal_simple_attack(p, t, 1)
+
+
+## 조건부 패시브가 **실제로 발동한** 순간의 초상 위 배너(`BattleRenderer.spawn_mech_passive_banner`).
+## `key` 를 비우면 `p` 자신의 패시브. 상시 패시브(과적재 · 전탄 발사)는 부르지 않는다 —
+## 목록은 skill/README.md "Effect banners". 같은 패시브의 연타는 렌더러가 한 장으로 합친다.
+func _banner(p: PilotData, key: String = "") -> void:
+	if _bs != null and _bs.renderer != null:
+		_bs.renderer.spawn_mech_passive_banner(p, key)

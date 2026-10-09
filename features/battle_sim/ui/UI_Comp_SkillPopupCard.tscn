@@ -170,5 +170,5 @@ text = "tx_G4ST94AS6V"
 [node name="Arrow" type="Polygon2D" parent="."]
 editor_description = "[필수] 지우면 오류 — SkillPopup.gd _show()"
 unique_name_in_owner = true
-color = Color(0.05, 0.06, 0.11, 0.97)
+color = Color(1, 1, 1, 1)
 polygon = PackedVector2Array(520, 1578, 560, 1578, 540, 1600)

@@ -80,13 +80,14 @@ const SLIDE_LAMBDA: float = 18.0
 const FLUSH_STAGGER: float = 0.25
 
 # ─── 색 ──────────────────────────────────────────────────────────────────────
-const ROW_BG        := Color(0.05, 0.05, 0.08, 0.72)
-const TEAM_RIM      := [Color(0.32, 0.62, 0.95), Color(0.95, 0.40, 0.32)]
-const SLOT_BG       := Color(0.12, 0.13, 0.19)
-const ICON_DARK     := Color(0.0, 0.0, 0.0, 0.85)
-const KILL_ICON     := Color(0.96, 0.96, 1.0)
-const TURRET_ICON   := Color(1.0, 0.72, 0.30)
-const TURRET_LABEL  := Color(0.88, 0.88, 0.92)
+# 한 줄 = 흰 판(`BattleTheme.row_box`, 그림자) 위에 칸들. 칸 뒤판은 눌린 칸색, 아이콘은
+# 진한 획 + 흰 테두리 획(밝은 초상화 옆에서도 형태가 남게).
+const TEAM_RIM      := BattleTheme.TEAM_RIM
+const SLOT_BG       := BattleTheme.SUNK
+const ICON_HALO     := BattleTheme.PANEL_BG
+const KILL_ICON     := BattleTheme.TEXT
+const TURRET_ICON   := BattleTheme.FX_WARM
+const TURRET_LABEL  := BattleTheme.TEXT
 ## 포탑 줄의 레인 표기. `LANE_NAMES` 는 "Left/Center/Right" 라 좁은 칸에 넣기엔
 ## 길다 — 한 글자로 줄인다.
 const LANE_SHORT: Array = [  # l10n-keys: hud.kill_feed.lane.*
@@ -255,10 +256,10 @@ class Row extends Control:
 		# 오른쪽 정렬 — 피해자 칸이 어시스트 수와 무관하게 같은 x 에 온다.
 		position = Vector2(KillFeed.feed_width() - w, 0.0)
 
-		var bg := ColorRect.new()
+		var bg := Panel.new()
 		bg.position = Vector2.ZERO
 		bg.size = size
-		bg.color = KillFeed.ROW_BG
+		bg.add_theme_stylebox_override("panel", BattleTheme.row_box())
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(bg)
 
@@ -313,8 +314,6 @@ class Row extends Control:
 			var lbl := Label.new()
 			lbl.add_theme_font_size_override("font_size", 17)
 			lbl.add_theme_color_override("font_color", KillFeed.TURRET_LABEL)
-			lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-			lbl.add_theme_constant_override("outline_size", 4)
 			lbl.text = "T%d %s" % [turret.tier, lane_tag]
 			lbl.clip_text = true
 			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -350,8 +349,6 @@ class Row extends Control:
 		var lbl := Label.new()
 		lbl.add_theme_font_size_override("font_size", 17)
 		lbl.add_theme_color_override("font_color", KillFeed.TURRET_LABEL)
-		lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-		lbl.add_theme_constant_override("outline_size", 4)
 		lbl.text = ObjectiveSystem.kind_name(kind)
 		lbl.clip_text = true
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -389,7 +386,7 @@ class Row extends Control:
 		rim.size = of_size
 		rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0, 0, 0, 0)
+		sb.bg_color = Color.TRANSPARENT
 		sb.border_color = KillFeed.TEAM_RIM[clampi(team, 0, 1)]
 		sb.border_width_top = 2
 		sb.border_width_bottom = 2
@@ -456,16 +453,16 @@ class Glyph extends Control:
 			Kind.BURST:  _draw_burst(size * 0.5)
 			Kind.TURRET: _draw_turret()
 
-	# 교차한 칼. 어두운 획을 먼저 깔고 그 위에 밝은 획을 얹어, 밝은 초상화
-	# 옆에서도 형태가 남게 한다.
+	# 교차한 칼. 흰 테두리 획(`ICON_HALO`)을 먼저 깔고 그 위에 진한 획을 얹어,
+	# 어두운 초상화 옆에서도 형태가 남게 한다.
 	func _draw_swords(c: Vector2) -> void:
 		var r: float = 11.0
 		var a0: Vector2 = c + Vector2(-r, r)
 		var a1: Vector2 = c + Vector2(r, -r)
 		var b0: Vector2 = c + Vector2(-r, -r)
 		var b1: Vector2 = c + Vector2(r, r)
-		draw_line(a0, a1, KillFeed.ICON_DARK, 8.0, true)
-		draw_line(b0, b1, KillFeed.ICON_DARK, 8.0, true)
+		draw_line(a0, a1, KillFeed.ICON_HALO, 8.0, true)
+		draw_line(b0, b1, KillFeed.ICON_HALO, 8.0, true)
 		draw_line(a0, a1, col, 3.5, true)
 		draw_line(b0, b1, col, 3.5, true)
 		# 손잡이 — 아래쪽 두 끝에 짧은 획을 얹어 X 가 아니라 칼로 읽히게 한다.
@@ -479,7 +476,7 @@ class Glyph extends Control:
 			var inner: float = 5.0
 			var outer: float = 13.0 if i % 2 == 0 else 9.0
 			draw_line(c + dir * inner, c + dir * outer,
-					KillFeed.ICON_DARK, 7.0, true)
+					KillFeed.ICON_HALO, 7.0, true)
 			draw_line(c + dir * inner, c + dir * outer, col, 3.0, true)
 		draw_circle(c, 4.0, col)
 

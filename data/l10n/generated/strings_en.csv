@@ -138,14 +138,14 @@ tx_8830YJ0Y2M,Reckless Dive
 tx_559D68SDYX,Confidence
 tx_H4X8Y1CT0H,Clear Mind
 tx_4RNAZ0XM3Z,Ready Stance
-tx_39VBTD21YR,Engage for {engage} {plural:engage|turn|turns}. Everyone in range joins
-tx_V2PKK7NWT2,Engage for {engage} {plural:engage|turn|turns}. Everyone in range joins
+tx_39VBTD21YR,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_V2PKK7NWT2,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
 tx_EC3YQQ5Z38,Engage the target until one of you is killed (max {engage_duel_max_rounds} {plural:engage_duel_max_rounds|turn|turns})
-tx_408F44KGGS,Move. Next engage card cost -{cost_reduce_engage}
-tx_NXCKS533Z5,Move. Cost +{self_cost} for the rest of this game
+tx_408F44KGGS,Move\nNext engage card cost -{cost_reduce_engage}
+tx_NXCKS533Z5,Move\nCost +{self_cost} for the rest of this game
 tx_ER4EDPVYGB,Attack
 tx_RVEDFKNMDP,Sure-hit attack
-tx_D517G4R707,"Attack. On hit, repeat this card's effect"
+tx_D517G4R707,"Attack\nOn hit, repeat this card's effect"
 tx_G0C3P5140E,Advance {advance}
 tx_W35E68ZQBW,"Draw {draw} {plural:draw|card|cards}, discard {discard} {plural:discard|card|cards}"
 tx_SGE785HBXQ,"Draw {draw} {plural:draw|card|cards}, strategy points +{strategy}"
@@ -153,31 +153,31 @@ tx_6YQZCE1XNJ,Search {search} {plural:search|card|cards}
 tx_QRCN458YD0,Draw {draw} {plural:draw|card|cards}
 tx_2QKZF6AP0E,Cards drawn this operation phase cost -{cost_reduce_draw_phase}
 tx_Q0E6A1NV2N,All cards in hand cost -{cost_reduce_hand}
-tx_K66VVKXS4N,"Strategy points +{strategy}. At the start of the next operation phase, strategy points -{strategy_next_phase_abs}"
+tx_K66VVKXS4N,"Strategy points +{strategy}\nAt the start of the next operation phase, strategy points -{strategy_next_phase_abs}"
 tx_5N1FY5QTXY,"After use, if you killed an enemy this operation phase, strategy points +{strategy_on_kill}"
 tx_VTBGJF968E,Return the target to base
 tx_3BNP4XNPK9,Grant the target a shield equal to {shield_pct}% of its HP
 tx_4FMSTMSTRG,Steal the growth points left on the target tile
-tx_232ZDZ7E24,"Move to the nearest allied turret. For {eva_buff_turns} {plural:eva_buff_turns|turn|turns}, battlefield evasion +{eva_buff}%, growth +{growth}%"
+tx_232ZDZ7E24,"Move to the nearest allied turret\nFor {eva_buff_turns} {plural:eva_buff_turns|turn|turns}, battlefield evasion +{eva_buff}%, growth +{growth}%"
 tx_TCT401KX2S,Laning stats +{lane_stat}% for {lane_stat_turns} {plural:lane_stat_turns|turn|turns}
-tx_P5PQ376FBE,Discard your whole hand. Draw as many as discarded
-tx_F7AA153FS9,Discard your whole hand. All allies growth +{growth_until_phase}% until the next operation phase. End the operation phase
+tx_P5PQ376FBE,Discard your whole hand\nDraw as many as discarded
+tx_F7AA153FS9,Discard your whole hand\nAll allies growth +{growth_until_phase}% until the next operation phase\nEnd the operation phase
 tx_M1Z6RYGV59,Preserve {preserve} {plural:preserve|card|cards} in hand until the next operation phase
 tx_38HZVJYJCF,"Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand, draw {draw} {plural:draw|card|cards}"
 tx_8H6EH36EGS,"Discard all other pilot cards, then draw {draw} more {plural:draw|card|cards}\nStrategy points +{strategy_each} per card discarded"
 tx_2NQ79Z541T,Move
-tx_5S3Y4PZWTS,Deal {turret_damage} damage to the chosen outermost enemy turret. Damage ×{card_herald_unopposed_dmg_mult} if no enemy is on that lane's front line. Allies in that lane share growth points equal to the damage dealt
+tx_5S3Y4PZWTS,Deal {turret_damage} damage to the chosen outermost enemy turret\nDamage ×{card_herald_unopposed_dmg_mult} if no enemy is on that lane's front line\nAllies in that lane share growth points equal to the damage dealt
 tx_078XVRBVH0,"Draw {draw} {plural:draw|card|cards}, target's growth efficiency +{growth_perm}%"
 tx_J9JA1A653S,"Draw {draw} {plural:draw|card|cards}, this pilot's growth gain +{growth_perm}%"
 tx_VYBKRVFG20,Move
 tx_88Z8A3NC37,"While held: growth +{charge*{card_gold_rush_growth_per_token_pct}|tokens×{card_gold_rush_growth_per_token_pct}}%\nUse: cost +{self_cost} for the rest of this game, +{token} {plural:token|token|tokens}"
 tx_M56XC3K4QE,"ATK +{atk_pct}%, growth +{growth_perm}%"
-tx_TF7GKXEQ30,"ATK +{atk_pct}%, HP +{hp_pct}%. Draw {draw} {plural:draw|card|cards}"
-tx_PPCM4J5N6A,"Growth +{growth}% for {growth_turns} {plural:growth_turns|turn|turns}. If it enters your hand during an operation phase, it costs 0 for that operation phase"
+tx_TF7GKXEQ30,"ATK +{atk_pct}%, HP +{hp_pct}%\nDraw {draw} {plural:draw|card|cards}"
+tx_PPCM4J5N6A,"Growth +{growth}% for {growth_turns} {plural:growth_turns|turn|turns}\nIf it enters your hand during an operation phase, it costs 0 for that operation phase"
 tx_Z818WEC9V2,Spend all tokens: growth +{charge*{growth}|charges×{growth}}% for {growth_turns} {plural:growth_turns|turn|turns}
-tx_R0XZSX92HN,Engage for {engage} {plural:engage|turn|turns}. Everyone in range of the target joins
-tx_TMRSQNE9TF,"Move and stay there until the next operation phase. Next operation phase, search {ambush_search} of the caster's engage {plural:ambush_search|card|cards}"
-tx_ZHFXJ9NS53,Attack {attack} {plural:attack|time|times}. The target attacks the caster {retaliate} {plural:retaliate|time|times}
+tx_R0XZSX92HN,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range of the target joins
+tx_TMRSQNE9TF,"Move and stay there until the next operation phase\nNext operation phase, search {ambush_search} of the caster's engage {plural:ambush_search|card|cards}"
+tx_ZHFXJ9NS53,Attack {attack} {plural:attack|time|times}\nThe target attacks the caster {retaliate} {plural:retaliate|time|times}
 tx_XPV2PXPJM8,While held: battlefield hit +{card_confidence_hit_bonus_pct}%
 tx_697BZYWAQZ,While held: adjacent cards cost -{card_clear_mind_cost_cut}
 tx_5SCQTRV4MR,"At the start of the next operation phase, strategy points +{strategy_next_phase}, draw {draw_next_phase} {plural:draw_next_phase|card|cards}"
@@ -247,68 +247,68 @@ tx_Y7VQ3CF1M8,Conviction
 tx_VADKXBYWKY,Death Sentence
 tx_JNPQN78JF0,Attack all enemies on the battlefield
 tx_2EM7FR668Z,Attack
-tx_8J7JZK60VJ,Attack all enemies and turrets from the allied HQ to the target turret tile. Create {mech_turret_kill_deck_cards} {plural:mech_turret_kill_deck_cards|copy|copies} in the deck each time an enemy turret is destroyed
+tx_8J7JZK60VJ,Attack all enemies and turrets from the allied HQ to the target turret tile\nCreate {mech_turret_kill_deck_cards} {plural:mech_turret_kill_deck_cards|copy|copies} in the deck each time an enemy turret is destroyed
 tx_688W5MT4FK,"While held: each time any card is used, gain growth points equal to {mech_cash_rate_pct}% of the caster's growth points"
 tx_G8M4271EMY,Search {search_discard} {plural:search_discard|card|cards} from the discard pile
-tx_V7VRGW4E2A,"Attack. On hit, strategy points +{strategy}, search {search_card_count} [Cache]"
+tx_V7VRGW4E2A,"Attack\nOn hit, strategy points +{strategy}, search {search_card_count} [Cache]"
 tx_EBV4NATSF5,Spend all tokens: attack all enemies on the target tile {charge|charges} {plural:charge|time|times}
 tx_SMQK1K7KVW,Search {search_card_count} [Missile]
-tx_2HPG2AS40R,"Attack all enemies and turrets in range of the target. Per hit, create {gen_hand_count} Exhaust · Volatile [Missile] in hand"
+tx_2HPG2AS40R,"Attack all enemies and turrets in range of the target\nPer hit, create {gen_hand_count} Exhaust · Volatile [Missile] in hand"
 tx_6X4HNDCZ2C,Spend all tokens: attack random enemies on the battlefield {charge+{attack_base}|charges+{attack_base}} {plural:charge+{attack_base}|time|times}
 tx_YWSFNSENS1,"While held: each time an enemy takes card damage, attack that enemy (except damage from this card)"
-tx_Z2YW81TPE6,"When the caster joins an engage, the target joins too"
+tx_Z2YW81TPE6,The caster and the target [Track] each other until either leaves combat\nChanging the target removes the previous effect
 tx_C4VPQGSWCK,Attack every enemy this mech damaged this operation phase
-tx_448B4T57NE,"Attack all enemies in range. If at least 1 hits, create {gen_hand_count} [Lock-on] in hand"
-tx_EPR6SV4YCM,"Attack all enemies in range of the target. If at least 1 hits, create {gen_hand_count} [Lock-on] in hand"
+tx_448B4T57NE,"Attack all enemies in range\nIf at least 1 hits, create {gen_hand_count} [Lock-on] in hand"
+tx_EPR6SV4YCM,"Attack all enemies in range of the target\nIf at least 1 hits, create {gen_hand_count} [Lock-on] in hand"
 tx_FH052PHKSD,"Draw {draw} {plural:draw|card|cards}, strategy points +{strategy}"
-tx_NVNVNRV9CV,Move to the target's tile. Engage for {engage} {plural:engage|turn|turns}
+tx_NVNVNRV9CV,Move to the target's tile\nEngage for {engage} {plural:engage|turn|turns}
 tx_DA9WK7H4XT,Move
 tx_NNZJRNHF9P,Attack
-tx_CGVRKSDCVG,"Engage for {engage} {plural:engage|turn|turns}. Everyone in range joins. If you survive the engage, create {gen_hand_count} [Demolish] in hand per enemy killed"
-tx_GNVN8SF4TQ,"Push {push}. If no enemy is in the way, push {push_bonus_clear} more"
-tx_YQZZ1NX7CW,Remove this card if under {execute_charge} {plural:execute_charge|token|tokens}. Spend all tokens: kill a target at or below {execute}% max HP
-tx_A7SQ01XZXJ,"Attack. On hit, draw {draw} {plural:draw|card|cards}, +{charge} {plural:charge|token|tokens}"
-tx_49DTSHJHEX,Move. Then attack all enemies or turrets in range. +{charge} {plural:charge|token|tokens} per hit
+tx_CGVRKSDCVG,"Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins\nIf you survive the engage, create {gen_hand_count} [Demolish] in hand per enemy killed"
+tx_GNVN8SF4TQ,"Push {push}\nIf no enemy is in the way, push {push_bonus_clear} more"
+tx_YQZZ1NX7CW,Remove this card if under {execute_charge} {plural:execute_charge|token|tokens}\nSpend all tokens: kill a target at or below {execute}% max HP
+tx_A7SQ01XZXJ,"Attack\nOn hit, draw {draw} {plural:draw|card|cards}, +{charge} {plural:charge|token|tokens}"
+tx_49DTSHJHEX,Move\nThen attack all enemies or turrets in range\n+{charge} {plural:charge|token|tokens} per hit
 tx_2V3BT9STT6,Attack {attack} {plural:attack|time|times}
 tx_DKVGQXAXNA,"Engage the target for {max(1, chain)|Soul Devour hits} {plural:max(1, chain)|turn|turns}"
-tx_WTZJ53SNH7,"Attack all enemies in range. Per hit, +{charge} {plural:charge|token|tokens} and the caster heals {heal_pct}% HP. [Chains of War] engage turns increase by the token count"
+tx_WTZJ53SNH7,"Attack all enemies in range\nPer hit, +{charge} {plural:charge|token|tokens} and the caster heals {heal_pct}% HP\n[Chains of War] engage turns increase by the token count"
 tx_YPM1FF88MR,Max HP +{max_hp}
-tx_D33QNEYP5R,"Attack. On hit, [Track] for {track} {plural:track|turn|turns}"
-tx_4DX9VJS0JB,Move to the target's tile. Engage for {engage} {plural:engage|turn|turns}
+tx_D33QNEYP5R,"Attack\nOn hit, [Track] for {track} {plural:track|turn|turns}"
+tx_4DX9VJS0JB,Move to the target's tile\nEngage for {engage} {plural:engage|turn|turns}
 tx_QTKR6R244D,Heal the target {heal_pct}% of max HP and grant [Reactive Armor] {reactive_armor}
-tx_B49ZJVCFRB,Sure-hit attack on all enemies and turrets in range. Gain [Reactive Armor] {reactive_armor} per hit
-tx_0RC6TG6RCS,Engage for {engage} {plural:engage|turn|turns}. Everyone in range joins
-tx_9H6E53W0EW,You and the target attack each other {mutual_attack} {plural:mutual_attack|time|times}. The target's attacks are sure-hit
-tx_AX7SP29R5Z,All enemies on the battlefield make a sure-hit attack on the caster. Strategy points +{strategy}
-tx_4RPBKVD2TC,Engage for {engage} {plural:engage|turn|turns}. Everyone in range joins
-tx_YT04HJAVXS,+{charge} {plural:charge|token|tokens}. Search {search_card_count} [Stage A]
-tx_K2W48C2P3K,Create {gen_deck_count} [Stage B] in the deck. Give the target [Mark]
-tx_JCFDKSCVXT,"Engage for {engage} {plural:engage|turn|turns} within {engage_self_range} {plural:engage_self_range|tile|tiles} of the enemy with [Mark]. If an enemy is killed in the engage, create {phase_b_count} [Stage C] in the deck, otherwise create {phase_b_count} [Stage A]"
-tx_5198GDXGZX,"Create {gen_deck_count} [Stage A] in the deck. Choose one upgrade\nAlpha: next time [Stage A] is used, create [Stage B] in hand instead of the deck\nBeta: next time [Stage B] is used, +{mech_phase_boon_beta_charge} {plural:mech_phase_boon_beta_charge|token|tokens}\nGamma: next time [Stage C] is used, growth points +{mech_phase_boon_gamma_rate_pct}%"
-tx_R3NMXP56CN,"While held: when an engage starts, spend all tokens to attack the lowest-HP enemy at {engage_contempt_dmg_mult_pct}% ATK {charge|charges} {plural:charge|time|times}"
-tx_BCN9HQ1Y7D,Search {search_card_count} [Prey on the Weak]. Move. Then engage for {engage} {plural:engage|turn|turns}. Everyone in range joins
-tx_8FMSQ09F35,Move. Then attack all enemies in range
-tx_FRGPH6CYX7,Discard all cards left of this one in hand. Draw as many as discarded
-tx_HBEZ5EBKC0,"Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand, draw {draw} {plural:draw|card|cards}. Move to the target's position and attack it. Return to the previous position when this operation phase ends"
-tx_FVZW5PXN3H,Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand. Attack again every enemy damaged this operation phase
+tx_B49ZJVCFRB,Sure-hit attack on all enemies and turrets in range\nGain [Reactive Armor] {reactive_armor} per hit
+tx_0RC6TG6RCS,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_9H6E53W0EW,You and the target attack each other {mutual_attack} {plural:mutual_attack|time|times}\nThe target's attacks are sure-hit
+tx_AX7SP29R5Z,All enemies on the battlefield make a sure-hit attack on the caster\nStrategy points +{strategy}
+tx_4RPBKVD2TC,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_YT04HJAVXS,+{charge} {plural:charge|token|tokens}\nSearch {search_card_count} [Stage A]
+tx_K2W48C2P3K,Create {gen_deck_count} [Stage B] in the deck\nGive the target [Mark]
+tx_JCFDKSCVXT,"Engage for {engage} {plural:engage|turn|turns} within {engage_self_range} {plural:engage_self_range|tile|tiles} of the enemy with [Mark]\nIf an enemy is killed in the engage, create {phase_b_count} [Stage C] in the deck, otherwise create {phase_b_count} [Stage A]"
+tx_5198GDXGZX,"Create {gen_deck_count} [Stage A] in the deck\nChoose one upgrade\nAlpha: next time [Stage A] is used, create [Stage B] in hand instead of the deck\nBeta: next time [Stage B] is used, +{mech_phase_boon_beta_charge} {plural:mech_phase_boon_beta_charge|token|tokens}\nGamma: next time [Stage C] is used, growth points +{mech_phase_boon_gamma_rate_pct}%"
+tx_R3NMXP56CN,"While held: when an engage starts, spend all tokens to attack the lowest-HP enemy at {engage_contempt_dmg_mult_pct}% ATK {charge|charges} {plural:charge|time|times}\nDiscarded after that engage ends"
+tx_BCN9HQ1Y7D,Search {search_card_count} [Prey on the Weak]\nMove\nThen engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_8FMSQ09F35,Move\nThen attack all enemies in range
+tx_FRGPH6CYX7,Discard all cards left of this one in hand\nDraw as many as discarded
+tx_HBEZ5EBKC0,"Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand, draw {draw} {plural:draw|card|cards}\nMove to the target's position and attack it\nReturn to the previous position when this operation phase ends"
+tx_FVZW5PXN3H,Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand\nAttack again every enemy damaged this operation phase
 tx_HP6SF4N2PN,Move the target {move_target} {plural:move_target|tile|tiles}
-tx_PKYA2BZD4J,Pull all enemies in range to the caster's tile. Engage for {engage} {plural:engage|turn|turns}. Everyone within {engage_self_range} {plural:engage_self_range|tile|tiles} of the caster joins
+tx_PKYA2BZD4J,Pull all enemies in range to the caster's tile\nEngage for {engage} {plural:engage|turn|turns}\nEveryone within {engage_self_range} {plural:engage_self_range|tile|tiles} of the caster joins
 tx_52YX26E4KK,"For {growth_link} {plural:growth_link|turn|turns}, gain the same growth points the target gains"
-tx_77KHMP4PZV,"Each time an ally or enemy is killed, create {mech_death_hand_cards} {plural:mech_death_hand_cards|copy|copies} of this card in hand. Heal the target {heal_pct}% HP and attack all enemies in range of the target"
-tx_ZS7CFWQ0VS,Discard {discard} {plural:discard|card|cards}. Create {gen_deck_count} [Attack Order] in the deck
-tx_FYQ04QVGFD,"Attack. On hit, engage for {engage} {plural:engage|turn|turns} in range of the target; on miss, strategy points +{strategy}"
+tx_77KHMP4PZV,"Each time an ally or enemy is killed, create {mech_death_hand_cards} {plural:mech_death_hand_cards|copy|copies} of this card in hand\nHeal the target {heal_pct}% HP and attack all enemies in range of the target"
+tx_ZS7CFWQ0VS,Discard {discard} {plural:discard|card|cards}\nCreate {gen_deck_count} [Attack Order] in the deck
+tx_FYQ04QVGFD,"Attack\nOn hit, engage for {engage} {plural:engage|turn|turns} in range of the target; on miss, strategy points +{strategy}"
 tx_71ZZ55QRCS,Grant the target a shield equal to {shield_atk}% of the caster's ATK
 tx_GC8TZWVVQ1,Grant all allies on the battlefield a shield equal to {shield_atk}% of the caster's ATK
-tx_JCJTQREPN3,"If the target damages an enemy in the next engage, [Stun] that enemy. Applies to the same enemy at most once per engage"
-tx_3EM1YTK1F0,"Attack. On hit, the target cannot join engages this operation phase"
-tx_HNMHMDJQAW,Draw {draw_discard} {plural:draw_discard|card|cards} from the discard pile. Those cards cost -{draw_discard_cost_reduce} this operation phase
+tx_JCJTQREPN3,"If the target damages an enemy in the next engage, [Stun] that enemy\nApplies to the same enemy at most once per engage"
+tx_3EM1YTK1F0,"Attack\nOn hit, the target cannot join engages this operation phase"
+tx_HNMHMDJQAW,Draw {draw_discard} {plural:draw_discard|card|cards} from the discard pile\nThose cards cost -{draw_discard_cost_reduce} this operation phase
 tx_P31PSDYTQK,While held: this mech's other cards don't spend growth points
 tx_XW6K7VHSXD,Spend {score_cost} of the caster's growth points; the target's growth efficiency +{growth_eff}% until it leaves the battlefield
 tx_3X4DE25KTY,Spend {score_cost} of the caster's growth points; the target's max HP +{max_hp}
 tx_EPJQNJA7F7,Spend {score_cost} of the caster's growth points; the target's ATK +{atk_add}
-tx_RHE0637Z32,"Until it leaves the battlefield, the target takes +{dmg_taken}% damage and gets a [Bounty] worth {bounty}% of its growth points. Does not stack"
-tx_70N6FJ3FJ0,Attack. Deals damage equal to {attack_bounty}% of the target's [Bounty]
-tx_1MFHFCFRJE,Pull the target to the caster's tile. Engage for {engage} {plural:engage|turn|turns}. Everyone in range joins
+tx_RHE0637Z32,"Until it leaves the battlefield, the target takes +{dmg_taken}% damage and gets a [Bounty] worth {bounty}% of its growth points\nDoes not stack"
+tx_70N6FJ3FJ0,Attack\nDeals damage equal to {attack_bounty}% of the target's [Bounty]
+tx_1MFHFCFRJE,Pull the target to the caster's tile\nEngage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
 tx_XJ3733JBC4,Stats
 tx_YD2EQQHJ2J,Salary
 tx_DWRZXTZQ0S,Growth
@@ -557,6 +557,18 @@ tx_ECA0V7N5CG,ATK Increase
 tx_9BD5WJRJ16,Max HP Increase
 tx_92JKM782CD,"ATK and Max HP rise with growth points, with a big jump every {step}k.\nThe higher the pilot's {atk_growth} ATK Growth and {hp_growth} HP Growth, the more ATK and Max HP each growth point gives."
 tx_33SA211TC1,Bonus
+tx_HPQYQXRZVF,No passive
+tx_JMNJNMYGN8,Hold to end turn
+tx_58ZB0FCDG2,Reserved effects
+tx_91R4BR8YQ3,Start of next operation phase: strategy points {n}
+tx_7HEDWPJ892,Start of next operation phase: draw {n} {plural:n|card|cards}
+tx_DNVZMCXYYS,Kill an enemy this operation phase: strategy points +{n}
+tx_S2AKX3F5ZR,Start of next operation phase: search {n} engage {plural:n|card|cards}
+tx_JT1Q4AR9BB,Draw {n}
+tx_8J4PMYV3RW,Kill +{n}
+tx_FRNWGED1N8,Search {n}
+tx_HY8TH99C2E,Bonded with
+tx_6NND6G12EN,"When either bonded pilot joins an engage, the other joins too. Ends when either leaves the field."
 tx_Q2YD01V4X9,"When the target joins an engage, the caster joins too"
 tx_8224R3117V,"When attacked, reduce that damage by {mech_reactive_armor_cut_pct}% and lose 1. All of it is lost on leaving the battlefield"
 tx_M9AXFZ0YJD,Damage taken from the caster +{mark_target}%. Setting a new Mark releases the previous one
@@ -843,7 +855,7 @@ tx_9J4RSF40T1,"Each time an ally shielded by this mech damages an enemy on the b
 tx_JWM1NSSZC2,"On engage, each ally once cannot drop below 1 HP when attacked"
 tx_D3R65NAFJ7,"During this operation phase, each attack hit gives the target Vulnerable {p1}. Vulnerable: damage taken +{mech_vulnerable_per_stack_pct}% per 1"
 tx_5SM31D1TN4,"Each time a turret in your lane is destroyed, create {mech_missile_stock_cards} [Missile] {plural:mech_missile_stock_cards|card|cards} in the deck"
-tx_EZ2X9YFAAV,"In engages, attacks hit all enemies (this mech's ATK is half that of other ADC mechs)"
+tx_EZ2X9YFAAV,"In engages, each attack instead hits up to {mech_barrage_max_targets} random enemies (weighted by Presence) at {mech_barrage_dmg_mult_pct}% ATK"
 tx_8F16MH3WCH,ATK +{p1} on a battlefield attack hit
 tx_6B0387STJ7,Training's been kind of rough lately.
 tx_AM70RNN3NK,"What do you think, Coach?"

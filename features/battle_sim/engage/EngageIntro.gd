@@ -83,7 +83,7 @@ func setup(bs: BattleSim, sim: TurnEngageSim, title: String,
 # ─── 구성 ────────────────────────────────────────────────────────────────────
 ## 버튼 바로 위 한 줄. 오브젝트 교전이 보상을 알리는 자리다.
 func _build_subtitle(text: String) -> void:
-	var lbl := _mk_label(text, 30, Color(0.80, 0.86, 0.95))
+	var lbl := _mk_label(text, 30, BattleTheme.TEXT_BRIGHT)
 	lbl.position = Vector2(0.0, SUBTITLE_Y)
 	lbl.size = Vector2(ScreenMetrics.vp_w(), 42.0)
 	add_child(lbl)
@@ -96,9 +96,9 @@ func _build_buttons(allow_cancel: bool, confirm_text: String = "",
 		confirm_text = Loc.t(L.UI_BUTTON_CONFIRM)
 	if cancel_text.is_empty():
 		cancel_text = Loc.t(L.UI_BUTTON_CANCEL)
-	var confirm := _mk_button(confirm_text, Color(0.22, 0.52, 0.34))
+	var confirm := _mk_button(confirm_text, "primary")
 	if allow_cancel:
-		var cancel := _mk_button(cancel_text, Color(0.36, 0.20, 0.22))
+		var cancel := _mk_button(cancel_text, "ghost")
 		cancel.position = Vector2(ScreenMetrics.vp_w() * 0.5 - BTN_W - BTN_GAP * 0.5, BTN_Y)
 		cancel.pressed.connect(func() -> void: _decide(false))
 		add_child(cancel)
@@ -142,34 +142,19 @@ func _mk_label(text: String, font_size: int, color: Color) -> Label:
 	lbl.clip_text = true
 	lbl.add_theme_font_size_override("font_size", font_size)
 	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	# 딤(`BattleTheme.DIM_BLACK`) 너머 전장 위에 바로 서는 줄 — 검은 외곽선.
+	lbl.add_theme_color_override("font_outline_color", BattleTheme.OUTLINE)
 	lbl.add_theme_constant_override("outline_size", 6)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return lbl
 
 
-func _mk_button(text: String, tint: Color) -> Button:
+## 아레나 바깥이 흰 종이라 버튼은 아웃게임 버튼과 같은 옷이다(`BattleTheme.style_button`) —
+## 확인 = primary(앰버), 취소 = ghost.
+func _mk_button(text: String, kind: String) -> Button:
 	var btn := Button.new()
 	btn.text = text
 	btn.size = Vector2(BTN_W, BTN_H)
 	btn.focus_mode = Control.FOCUS_NONE
-	btn.add_theme_font_size_override("font_size", 30)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = tint
-	sb.border_color = Color(1, 1, 1, 0.35)
-	sb.border_width_top    = 2
-	sb.border_width_bottom = 2
-	sb.border_width_left   = 2
-	sb.border_width_right  = 2
-	sb.corner_radius_top_left     = 10
-	sb.corner_radius_top_right    = 10
-	sb.corner_radius_bottom_left  = 10
-	sb.corner_radius_bottom_right = 10
-	btn.add_theme_stylebox_override("normal", sb)
-	var hover := sb.duplicate() as StyleBoxFlat
-	hover.bg_color = tint.lightened(0.16)
-	btn.add_theme_stylebox_override("hover", hover)
-	var pressed := sb.duplicate() as StyleBoxFlat
-	pressed.bg_color = tint.darkened(0.18)
-	btn.add_theme_stylebox_override("pressed", pressed)
+	BattleTheme.style_button(btn, kind, 30)
 	return btn

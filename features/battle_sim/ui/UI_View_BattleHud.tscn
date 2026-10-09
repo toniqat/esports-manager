@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://cglr0vmo7iijt"]
+[gd_scene load_steps=11 format=3 uid="uid://cglr0vmo7iijt"]
 
 [ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
 [ext_resource type="PackedScene" path="res://features/battle_sim/ui/UI_Comp_PilotStrip.tscn" id="2_strip"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://crkio81lkkbjg" path="res://features/battle_sim/ui/ReservationChips.gd" id="7_chips"]
 [ext_resource type="Script" uid="uid://dbcynjr7appqk" path="res://features/battle_sim/card_phase/CardPlayPreview.gd" id="8_preview"]
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="pos_badge"]
+[ext_resource type="PackedScene" path="res://features/battle_sim/ui/UI_Comp_TurnEndPanel.tscn" id="9_turn_end"]
 
 [node name="BattleHud" type="Node"]
 editor_description = "전투 HUD — HudBuilder.build_ui() 가 인스턴스해 BattleSim 아래에 붙인다. 좌표는 1080×1920 디자인 값이고, 기기 안전 영역은 코드가 덩어리째 민다(위 = top_offset, 아래 = 아래 인셋). 같은 층 번호(1)의 두 CanvasLayer 는 형제 순서가 그리는 순서다 — EnemyTopLayer 가 Canvas 앞에 서야 한다."
@@ -66,11 +67,13 @@ editor_description = "[필수] 지우면 오류 — HudBuilder.gd _lbl_time"
 unique_name_in_owner = true
 offset_left = 20.0
 offset_top = 4.0
-offset_right = 240.0
+offset_right = 122.0
 offset_bottom = 38.0
 theme = ExtResource("1_theme")
 theme_type_variation = &"HudClockLabel"
 text = "00:00"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ObjTimer0" type="Control" parent="Canvas"]
 unique_name_in_owner = true
@@ -231,6 +234,15 @@ offset_bottom = 1116.0
 mouse_filter = 2
 script = ExtResource("7_chips")
 
+[node name="TurnEndPanel_Player" parent="Canvas" instance=ExtResource("9_turn_end")]
+unique_name_in_owner = true
+z_index = 5
+editor_description = "[필수] 지우면 오류 — HudBuilder.gd _bind_cost_donuts(): 내 도넛을 탭하면 왼쪽에서 밀려 들어오는 턴 넘기기 판(TurnEndPanel, 0.5초 꾹 누르기). 자리(왼쪽 끝 · 도넛 중심 높이)는 코드가 정하고, 닫혀 있는 동안은 숨는다. z_index 5 = 손패 카드(자식 순서상 뒤) 위에 선다."
+offset_left = 12.0
+offset_top = 1176.0
+offset_right = 312.0
+offset_bottom = 1272.0
+
 [node name="CardPlayPreview" type="Control" parent="Canvas"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — HudBuilder.gd build_ui()
@@ -330,6 +342,7 @@ layout_mode = 0
 offset_top = 80.0
 offset_right = 700.0
 offset_bottom = 160.0
+theme_type_variation = &"BattleTextLabel"
 theme_override_font_sizes/font_size = 48
 text = "Player Team Wins!"
 horizontal_alignment = 1
@@ -373,6 +386,7 @@ offset_left = 256.0
 offset_top = 14.0
 offset_right = 676.0
 offset_bottom = 62.0
+theme_type_variation = &"BattleTextLabel"
 theme_override_font_sizes/font_size = 34
 text = "선수 이름"
 clip_text = true
@@ -407,5 +421,6 @@ offset_left = 200.0
 offset_top = 360.0
 offset_right = 500.0
 offset_bottom = 440.0
+theme_type_variation = &"BattleGoldButton"
 theme_override_font_sizes/font_size = 32
 text = "Play Again"

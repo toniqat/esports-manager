@@ -16,7 +16,7 @@
   기자회견 · MatchFlow)과 **BattleSim HUD**(`BattleHud` · `PilotStrip` · `PilotDetailPanel` · `MvpView` · `SkillPopup`).
   레이아웃 · 스타일 정본은 `.tscn`, 스크립트는 `%노드` 바인딩 + 데이터 + 시그널. 반복 항목은 아이템 씬(§3 규칙 2).
 - **테마 2개** — 아웃게임 흰 테마 `resources/OutgameTheme.tres` (T1, 공용 변형 + 화면 전용 접두사 변형, T7 · §3 규칙 7),
-  전투 다크 테마 `resources/BattleTheme.tres` (웨이브 5, 같은 구조 — `BattleTheme.gd` 가 정본, CLI 빌더로 생성).
+  전투 테마 `resources/BattleTheme.tres` (2026-10 화이트 팔레트로 전환 — 아웃게임 원칙) (웨이브 5, 같은 구조 — `BattleTheme.gd` 가 정본, CLI 빌더로 생성).
   씬에 로컬 StyleBox 0개. 색이 데이터인 곳은 `variation_box()` 사본에 색만 넣는다. 화면 바탕도 변형(`ScreenBackground`).
 - **하단 바** 헬퍼 4갈래 → `Bar*Button` 변형 + `OutgameTheme.fit_bottom_bar` 1개.
 - **안전 영역** — 씬 기반 패턴 B/C (`docs/mobile_safe_area.md`), `MechDetailPanel` · `DraftDetailPanel` `%SafeArea`,
@@ -189,7 +189,7 @@ ConfirmPopup (CanvasLayer 20 — 씬은 visible 로 저장, `create()` 가 숨�
 | 10 | `SeasonHub` / `HubView` · `LeagueView` · `BracketView` · `IntlBracketView` · `WeekProgressView` · `PressConferenceView` · `EndingView` · `GameOverView` · `FinancePanel` · `StaffPanel` · `MasteryPanel` | `season/**` | 화면 / 패널 | ✅ 전환 (웨이브 3) |
 | 11 | `TrainingView` · `MessengerView` | `season/training/`, `press/` | `_draw` 혼합 — 틀만 씬 | ✅ 전환 (웨이브 3) |
 | 12 | `BanPickController` UI · `MechDetailPanel` · `MatchPrep` UI · `MatchCheatMenu` | `match_flow/**` | 화면 | ✅ 전환 (웨이브 3) |
-| 13 | BattleSim `HudBuilder` · `PilotDetailPanel` · `PilotStrip` · `MvpView` · `SkillPopup` | `battle_sim/ui/` | 인게임 HUD | ✅ 전환 (웨이브 5 — `BattleTheme` 다크 테마, `UI_View_BattleHud.tscn` 등) |
+| 13 | BattleSim `HudBuilder` · `PilotDetailPanel` · `PilotStrip` · `MvpView` · `SkillPopup` | `battle_sim/ui/` | 인게임 HUD | ✅ 전환 (웨이브 5 — `BattleTheme` (현재 화이트 팔레트), `UI_View_BattleHud.tscn` 등) |
 
 ---
 

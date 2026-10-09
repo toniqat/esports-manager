@@ -26,22 +26,22 @@ const OVERLAY_LAYER: int = 12
 ## 세로로 긴 기기에서는 높이가 1920 보다 커진다. 딤 · 루트가 뷰포트 전체를
 ## 덮지 않으면 그 차이만큼 화면 끝에 안 덮인 띠가 남는다.
 ## `docs/mobile_safe_area.md` 참고.
-const DIM_COLOR := Color(0.0, 0.0, 0.0, 0.78)
+const DIM_COLOR := BattleTheme.DIM_LIGHT
 
 const PANEL_W: float = 560.0
 const PANEL_PAD: float = 28.0
-const PANEL_BG := Color(0.06, 0.07, 0.12, 0.98)
-const PANEL_BORDER := Color(0.62, 0.80, 1.0, 0.85)
+## 판 = 흰 말풍선 판(`BattleTheme.popup_box`)에 오브젝트 색 테(`ACCENT_BORDER_W`).
+const ACCENT_BORDER_W: int = 3
 
 const TITLE_FONT: int = 40
 const SUB_FONT: int = 24
 const NOTE_FONT: int = 22
 const COUNT_FONT: int = 30
 
-const HERALD_COLOR := Color(0.74, 0.62, 0.99)
-const DRAGON_COLOR := Color(1.00, 0.55, 0.28)
-const SUB_COLOR := Color(0.80, 0.83, 0.90)
-const NOTE_COLOR := Color(0.66, 0.70, 0.80)
+const HERALD_COLOR := BattleTheme.OBJ_HERALD
+const DRAGON_COLOR := BattleTheme.OBJ_DRAGON
+const SUB_COLOR := BattleTheme.TEXT
+const NOTE_COLOR := BattleTheme.TEXT_NOTE
 
 const BTN_W: float = 200.0
 const BTN_H: float = 64.0
@@ -129,17 +129,9 @@ func _build() -> void:
 	panel.size = Vector2(PANEL_W, panel_h)
 	# 판 위 클릭은 닫지 않는다 — 딤까지 이벤트가 내려가지 않게 STOP.
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = PANEL_BG
+	var sb := BattleTheme.popup_box()
 	sb.border_color = accent
-	sb.border_width_top = 2
-	sb.border_width_bottom = 2
-	sb.border_width_left = 2
-	sb.border_width_right = 2
-	sb.corner_radius_top_left = 20
-	sb.corner_radius_top_right = 20
-	sb.corner_radius_bottom_left = 20
-	sb.corner_radius_bottom_right = 20
+	sb.set_border_width_all(ACCENT_BORDER_W)
 	panel.add_theme_stylebox_override("panel", sb)
 	_root.add_child(panel)
 
@@ -170,7 +162,7 @@ func _build() -> void:
 
 	var btn := Button.new()
 	btn.text = Loc.t(L.UI_BUTTON_CLOSE)
-	btn.add_theme_font_size_override("font_size", 26)
+	BattleTheme.style_button(btn, "ghost", 26)
 	btn.position = Vector2(PANEL_PAD + (iw - BTN_W) * 0.5, y)
 	btn.size = Vector2(BTN_W, BTN_H)
 	btn.focus_mode = Control.FOCUS_NONE

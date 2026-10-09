@@ -21,10 +21,10 @@ const FADE_IN     := 0.25
 const HOLD        := 3.0
 const FADE_OUT    := 0.45
 
-const BG_COLOR     := Color(0.06, 0.08, 0.12, 0.88)
-const BORDER_COLOR := Color(0.95, 0.78, 0.35, 0.95)
-const TITLE_COLOR  := Color(0.98, 0.84, 0.45)
-const LINE_COLOR   := Color(0.94, 0.95, 0.98)
+# The card is a white `BattleTheme.gold_box()` plate (amber rim, drop shadow): amber
+# title, dark lines — the in-match white palette (`resources/README.md` → BattleTheme).
+const TITLE_COLOR  := BattleTheme.TEXT_TITLE
+const LINE_COLOR   := BattleTheme.TEXT
 
 
 ## Builds the card for `lines` and plays fade-in → hold → fade-out → free.
@@ -33,11 +33,7 @@ func show_lines(lines: Array) -> void:
 	var vp: Vector2 = ScreenMetrics.viewport_size()
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = BG_COLOR
-	sb.border_color = BORDER_COLOR
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(18)
+	var sb := BattleTheme.gold_box()
 	sb.set_content_margin_all(PAD)
 	panel.add_theme_stylebox_override("panel", sb)
 	add_child(panel)
@@ -75,6 +71,4 @@ func _mk_label(text: String, font_size: int, color: Color) -> Label:
 	lbl.custom_minimum_size = Vector2(WIDTH - PAD * 2.0, 0.0)
 	lbl.add_theme_font_size_override("font_size", font_size)
 	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
-	lbl.add_theme_constant_override("outline_size", 4)
 	return lbl

@@ -18,11 +18,12 @@ enum Pile { NONE, DECK, DISCARD }
 # 버리기(10) / 대상 지정(11) 오버레이보다 위. 열람 중에는 그 둘이 화면에
 # 남아 있어도 전부 딤 아래로 들어간다.
 const OVERLAY_LAYER      := 12
-const DIM_COLOR          := Color(0.0, 0.0, 0.0, 0.72)
+## 화면 전체를 덮는 전투 공용 딤(`DIM_BLACK`) — 제목 · 빈 더미 글자는 그 위의 밝은 글자 + 외곽선.
+const DIM_COLOR          := BattleTheme.DIM_LIGHT
 const TITLE_Y            := 132.0
 const TITLE_H            := 52.0
 const TITLE_FONT         := 34
-const TITLE_COLOR        := Color(0.92, 0.92, 0.96)
+const TITLE_COLOR        := BattleTheme.TEXT_BRIGHT
 const GRID_TOP_Y         := 208.0
 const GRID_BOTTOM_Y      := 1400.0
 const GRID_SIDE_PAD      := 90.0
@@ -31,7 +32,7 @@ const DESC_W             := 560.0
 const COL_GAP            := 12.0
 const ROW_GAP            := 18.0
 const EMPTY_FONT         := 28
-const EMPTY_COLOR        := Color(0.72, 0.72, 0.78)
+const EMPTY_COLOR        := BattleTheme.SUB_ON_DIM
 # 닫기 버튼은 CardSelectOverlay / CardTargetingOverlay 의 확인·취소와 같은
 # 밴드(핸드 행 바로 위 우측)에 앉는다.
 const BTN_W              := 180.0
@@ -117,6 +118,8 @@ func _build_ui() -> void:
 	_title.text = Loc.t(L.BATTLE_PILE_VIEWER_TITLE, {"pile": _pile_label(), "n": cards.size()})
 	_title.add_theme_font_size_override("font_size", TITLE_FONT)
 	_title.add_theme_color_override("font_color", TITLE_COLOR)
+	_title.add_theme_color_override("font_outline_color", BattleTheme.OUTLINE)
+	_title.add_theme_constant_override("outline_size", 6)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -131,7 +134,8 @@ func _build_ui() -> void:
 
 	_btn_close = Button.new()
 	_btn_close.text = Loc.t(L.UI_BUTTON_CLOSE)
-	_btn_close.add_theme_font_size_override("font_size", 22)
+	_btn_close.focus_mode = Control.FOCUS_NONE
+	BattleTheme.style_button(_btn_close, "ghost", 22)
 	_btn_close.size = Vector2(BTN_W, BTN_H)
 	_btn_close.position = Vector2(
 			screen.x - BTN_SIDE_MARGIN - BTN_W,
@@ -145,6 +149,8 @@ func _build_empty_notice(screen: Vector2) -> void:
 	lbl.text = Loc.t(L.BATTLE_PILE_VIEWER_EMPTY)
 	lbl.add_theme_font_size_override("font_size", EMPTY_FONT)
 	lbl.add_theme_color_override("font_color", EMPTY_COLOR)
+	lbl.add_theme_color_override("font_outline_color", BattleTheme.OUTLINE)
+	lbl.add_theme_constant_override("outline_size", 5)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE

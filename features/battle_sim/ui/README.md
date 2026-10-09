@@ -1,26 +1,38 @@
 # UI Module
 
-**표시 텍스트는 l10n key (`hud` 도메인 — `data/l10n/src/hud.csv`; stat / combat words via `PlayerData.stat_label` and `term.combat.*`).** Label tables (`KillFeed.LANE_SHORT`, `SkillPopup.TYPE_LABEL`, `PilotDetailPanel.STAT_NOTES` · `FX_KIND_NAME`, `CostDonut.BUTTON_TEXT`) hold `L.` keys and are resolved with `Loc.t` where drawn; scene nodes the code fills are `auto_translate_mode = 2`. **텍스트는 l10n key — `Loc.t`** (cards / skills): `SkillPopup` · `PilotDetailPanel` pass `CardData.ref_entries(skill_description_key)` to `StrategyIcon` (no name→cost table); fx thumbnails read card uids (`CardData.card_uid` / `name_of_uid`), art via `CardImages.art_for(uid)`.
+**표시 텍스트는 l10n key (`hud` 도메인 — `data/l10n/src/hud.csv`; stat / combat words via `PlayerData.stat_label` and `term.combat.*`).** Label tables (`KillFeed.LANE_SHORT`, `SkillPopup.TYPE_LABEL`, `PilotDetailPanel.STAT_NOTES` · `FX_KIND_NAME`) hold `L.` keys and are resolved with `Loc.t` where drawn; scene nodes the code fills are `auto_translate_mode = 2`. **텍스트는 l10n key — `Loc.t`** (cards / skills): `SkillPopup` · `PilotDetailPanel` pass `CardData.ref_entries(skill_description_key)` to `StrategyIcon` (no name→cost table); fx thumbnails read card uids (`CardData.card_uid` / `name_of_uid`), art via `CardImages.art_for(uid)`.
 
 | File | class_name | Role |
 |---|---|---|
-| `HudBuilder.gd` + `UI_View_BattleHud.tscn` | HudBuilder | Instances the battle HUD scene (`UI_View_BattleHud.tscn` — three CanvasLayers), binds its `%` nodes and updates it. **Scene-authored** since R4 phase 2 — see "Scenes and the dark theme" |
-| `CostDonut.gd`  | CostDonut  | Strategy points (전략 포인트) gauge — a **strategy octagon** (`StrategyIcon`, pointy top/bottom; the inline / cost-ribbon indicator is the flat-top pose), 8 faces = 1 point each, filled clockwise from the upper-right face; 9–16 fill a second, lighter lap (`OVERFLOW_LIGHTEN`), past 16 only the number grows. The player's one doubles as the "턴 넘기기" (End turn) button (flip = counter-clockwise lap) |
+| `HudBuilder.gd` + `UI_View_BattleHud.tscn` | HudBuilder | Instances the battle HUD scene (`UI_View_BattleHud.tscn` — three CanvasLayers), binds its `%` nodes and updates it. **Scene-authored** since R4 phase 2 — see "Scenes and the battle theme" |
+| `CostDonut.gd`  | CostDonut  | Strategy points (전략 포인트) gauge — a **strategy octagon** (`StrategyIcon`, pointy top/bottom; the inline / cost-ribbon indicator is the flat-top pose), 8 faces = 1 point each, filled clockwise from the upper-right face; 9–16 fill a second, lighter lap (`OVERFLOW_LIGHTEN`), past 16 only the number grows. Tapping the player's one slides it out and slides the `TurnEndPanel` in |
+| `TurnEndPanel.gd` + `UI_Comp_TurnEndPanel.tscn` | TurnEndPanel | **턴 넘기기 (End turn) hold panel** — wide plate that slides in from the left in place of the player donut; **hold 0.5 s** (gauge fills left → right, drains on early release) → `hold_completed` → `CostDonut.end_turn_pressed`. See "Strategy point donut" |
+| `PointerPress.gd` | PointerPress | One physical tap = one press for `_input` listeners — reads the mouse stream (real or emulated from touch) and ignores `InputEventScreenTouch` while `emulate_mouse_from_touch` is on (see "Strategy point donut" → mobile double press) |
 | `CardPileStack.gd` | CardPileStack | Deck (덱) / discard pile (버린 더미) — a stack of cards lying face-down, tilted away + card count |
 | `PilotStrip.gd` + `UI_Comp_PilotStrip.tscn` + `UI_Comp_PilotStripCell.tscn` | PilotStrip | 5-pilot (파일럿) strip (스트립) — **circular portrait (team-colour disc + a bust whose head pokes out above the disc, no rim) + a growth points (성장치) tab hanging below the disc**. The backplate is transparent. Two copies, top (enemy (적)) / bottom (ally (아군)). Pressing a portrait scales it up (`BattleRenderer.PRESS_SCALE`, like field markers). **Ally: short tap = skill popup, long press = detail panel. Enemy: tap / long press = detail panel.** Ally cells carry a round **skill badge** (`SkillBadge`) at the disc's lower right. Only a downed pilot's bust is dimmed (the disc stays). While a card is dragged the ally strip dims and drops (`HudBuilder.set_player_strip_dropped`). **Scene-authored**: `UI_Comp_PilotStrip.tscn` (strip + `%Row` of five `UI_Comp_PilotStripCell.tscn` instances) is instanced twice inside `UI_View_BattleHud.tscn`; `setup(bs, team)` only paints the team colours |
 | `SkillBadge.gd` | SkillBadge | Round pilot-skill badge on an ally strip portrait — icon (dimmed icon-only when unusable), cooldown radial + turns left, segmented stack ring |
 | `SkillPopup.gd` + `UI_View_SkillPopup.tscn` + `UI_Comp_SkillPopupCard.tscn` | SkillPopup | Skill popup above a tapped ally portrait — no dim / no border, rises + fades in (0.2s) / out (0.1s), cooldown as clock + turns, hold a card name → card + desc preview, **사용** (Use) button inside. **Scene-authored** (`SkillPopup.create()`): the scene holds the layer + outside-tap catcher, one `SkillPopupCard` (plate + arrow) is instanced per open |
-| `ReservationChips.gd` | ReservationChips | **Reservation chips (예약 칩)** — card effects settled at a later step (next strategy points · next draw · kill bounty · ambush search) stacked above the ally donut as card art + value chips |
+| `ReservationChips.gd` | ReservationChips | **Reservation chips (예약 칩)** — card effects settled at a later step (next strategy points · next draw · kill bounty · ambush search) stacked above the ally donut, **one chip per source card** (card art + its values, outlined text, no plate). Tapping a chip opens `ReserveInfo` |
+| `ReserveInfo.gd` + `UI_View_ReserveInfo.tscn` | ReserveInfo | Reservation chip description — layer 12, beside the tapped chip: plate (`BattlePopup`, "예약 효과" + one `hud.reserve.*` line per reserved effect) + the card's `CardDescBox`. Outside press closes (left unhandled); a chip press is left to the chips (toggle). F6: 준비 태세 (card 46) |
 | `ObjectiveTimer.gd` | ObjectiveTimer | Objective (오브젝트) spawn clock — icon + turns remaining on either side of the enemy strip (left Herald (전령) / right Dragon (용)). **Pressing it opens the reward popup** |
 | `ObjectiveRewardPopup.gd` | ObjectiveRewardPopup | Objective reward preview — pressing a clock shows the actual cards that objective grants |
-| `PilotDetailPanel.gd` + `UI_View_PilotDetailPanel.tscn` + `UI_View_PilotDetailView.tscn` (+ 8 item scenes, `PilotDetailScoreBar.gd`) | PilotDetailPanel | **Scene-authored** (`PilotDetailPanel.create()`; one `PilotDetailView` instanced per open). Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header (name · mech left, growth points + accrual % on the right — pressing it opens the growth-points plate with the 0 ~ 50k spike bar) + 3 tabs + a stat cell plate (full-width rows / rows of two half cells; every cell name is prefixed with a `CHIP_ICONS` icon, HP · attack values are followed by `(+N)` against the base value — + green / − red; presence only when a pilot skill raised it (`PilotSkillSystem.presence_delta`)). Pressing a cell opens a note plate on the left — the same look as the card description box (`CardDescBox.panel_style`: opaque · borderless · drop shadow below); the note is a `RichTextLabel`, so `{attack}` · `{engage}` · `{atk_growth}` · `{hp_growth}` become icons, and its height is measured from the rendered text (`_fill_note` + `get_content_height`). **Stat plates**: the final value sits on the title line's right end (`%TitleValue`, `_title_value`: chip value, HP = max HP); rows are the breakdown — base · growth (`+N% (+N)`, atk / HP) · **`증가`** (`_append_gain_row` = final − base − growth, only when an effect is on) · current HP / shield; at the bottom one cell per effect on that stat (`%FxGrid`, `_stat_effects_of`: pilot skill (icon glyph), mech passive incl. 과적재 (two letters of its name), cards — ledger lines (card art), residual `bonus_*`, temporary attack, lane / evasion card slots, [자신감] in hand) with `+N%` (multipliers) and `+N` under it — a multiplier's `+N` is (base + growth) × pct, compounding / rounding land in `증가`. Mech-tab plates list the in-game stat's effects (`STAT_FX_KEY`); pilot-tab stats and engage hit / evasion have none. Hit / evasion chips show `SimulationCore.effective_hit` / `effective_evasion` (the value the roll uses). Presses that miss within `INFO_ZONE_PAD` (40) around the info column don't close it (`_info_zone`) + **pilot skill plate** (three separate plates) / **held-card fan at the same spot and width as the hand** (6 cards; cards that don't match the tab are dimmed) — pressing a card shows the same description box as the hand. No close button — tapping outside closes it. Open 0.2s / close 0.1s slide + fade |
+| `PilotDetailPanel.gd` + `UI_View_PilotDetailPanel.tscn` + `UI_View_PilotDetailView.tscn` (+ 8 item scenes, `PilotDetailScoreBar.gd`) | PilotDetailPanel | **Scene-authored** (`PilotDetailPanel.create()`; one `PilotDetailView` instanced per open). Pilot detail modal — left: 2 full-body arts (+ lasting effects at bottom-left) / right: header (name · mech left, growth points + accrual % on the right — pressing it opens the growth-points plate with the 0 ~ 50k spike bar) + 3 tabs + a stat cell plate (full-width rows / rows of two half cells; every cell name is prefixed with a `CHIP_ICONS` icon, HP · attack values are followed by `(+N)` against the base value — + green / − red; presence only when a pilot skill raised it (`PilotSkillSystem.presence_delta`)). Pressing a cell opens a note plate on the left — the same look as the card description box (`CardDescBox.panel_style`: opaque · borderless · drop shadow below); the note is a `RichTextLabel`, so `{attack}` · `{engage}` · `{atk_growth}` · `{hp_growth}` become icons, and its height is measured from the rendered text (`_fill_note` + `get_content_height`). **Stat plates**: the final value sits on the title line's right end (`%TitleValue`, `_title_value`: chip value, HP = max HP); rows are the breakdown — base · growth (`+N% (+N)`, atk / HP) · **`증가`** (`_append_gain_row` = final − base − growth, only when an effect is on) · current HP / shield (the mech-tab HP / attack plates are mech value · `증가` · current HP — the "파일럿 기본 최대 체력 / 공격력" rows were removed, keys deprecated); at the bottom one cell per effect on that stat (`%FxGrid`, `_stat_effects_of`: pilot skill (icon glyph), mech passive incl. 과적재 (two letters of its name), cards — ledger lines (card art), residual `bonus_*`, temporary attack, lane / evasion card slots, [자신감] in hand) with `+N%` (multipliers) and `+N` under it — a multiplier's `+N` is (base + growth) × pct, compounding / rounding land in `증가`. Mech-tab plates list the in-game stat's effects (`STAT_FX_KEY`); pilot-tab stats and engage hit / evasion have none. Hit / evasion chips show `SimulationCore.effective_hit` / `effective_evasion` (the value the roll uses). Presses that miss within `INFO_ZONE_PAD` (40) around the info column don't close it (`_info_zone`) + **pilot skill plate** (three separate plates) / **held-card fan at the same spot and width as the hand** (6 cards; cards that don't match the tab are dimmed) — pressing a card shows the same description box as the hand. No close button — tapping outside closes it. Open 0.2s / close 0.1s slide + fade |
 | `MarkerTouch.gd` | MarkerTouch | Pressing a battlefield (전장) portrait — while held it grows to `PRESS_SCALE` and moves to the top (it stays on top after release); **long-press (0.45 s) opens the detail panel** |
 | `KillFeed.gd` | KillFeed | Kill log — top-right, one line per kill (처치) / turret (포탑) demolition / objective capture. Kills during an engage (교전) are flushed together after the arena closes |
 | `MvpView.gd` + `UI_View_MvpView.tscn` | MvpView | **Scene-authored** (`MvpView.create()`). **Match MVP view** — full-screen dark card shown at match end **before** the victory/defeat panel: MVP's full-body art + name · position badge (`PositionBadge`) · K/D/A · key-metric line, "계속" (Continue). Also hosts the shared display strings (`display_name` · `kda_text` · `metric_text`) the result panel's MVP line uses. See "Match end — MVP view → result panel" below |
 
-### Scenes and the dark theme (`docs/ui_scene_migration.md` §4 #13)
+### Scenes and the battle theme (`docs/ui_scene_migration.md` §4 #13)
 The battle UI is moving to `.tscn` like the outgame UI (same rules — `docs/ui_scene_migration.md` §3), on its
-own dark Theme **`resources/BattleTheme.tres`** (palette · variation list: `resources/README.md` → BattleTheme).
+own Theme **`resources/BattleTheme.tres`** (palette · variation list: `resources/README.md` → BattleTheme).
+**White palette (2026-10):** every in-match plate follows the outgame look — white cards with shadows (pilot detail,
+skill popup, card description boxes, objective reward popup, MVP view, victory card; **every dim behind them is
+`BattleTheme.DIM_BLACK` = black α 0.30**, and text sitting directly on a dim is light + outlined like field text;
+card description boxes and the pilot detail info plate stay **dark** — `BattleTheme.DESC_*`, user decision), kill-feed rows, clock pill, turn banner = white bar with side-coloured lines + side-coloured text,
+trait banner, turn-end panel), amber primary buttons (`BattleGoldButton` / `BattleActionButton` / code buttons via
+`BattleTheme.style_button`). Deliberately **not** whitened (user decisions / not plates): the objective clocks (no
+plate, outlined number over the field), the strip growth tab (team-colour `TEAM_DISC` fill + outlined text), the
+skill badge (dark tile face like the skill icon tile), damage popups, portrait banners, marker rings, stress words,
+the strip backdrops (invisible). Colours in code read `BattleTheme` tokens — no literals.
 Done: `MvpView`, `SkillPopup` (+ `SkillPopupCard` item scene), the HUD (`HudBuilder` → `UI_View_BattleHud.tscn`, `PilotStrip`
 → `UI_Comp_PilotStrip.tscn` + `UI_Comp_PilotStripCell.tscn`), `PilotDetailPanel` (+ `PilotDetailView` and item scenes). The whole battle
 UI listed in §4 #13 is scene-authored. Scene ↔ code split:
@@ -28,9 +40,9 @@ UI listed in §4 #13 is scene-authored. Scene ↔ code split:
 | Scene owns | Code owns |
 |---|---|
 | `UI_View_MvpView.tscn`: layer 60, `Root` (theme, taps) → `Dim` · `%SafeArea` → `Title`, `%ArtArea` (from 170 below the safe top to 530 above the safe bottom) → `%Glow` · `%ArtHolder` → `%Art` / `%Slab`(+`%FallbackLabel`), `Info` (`BattleGoldPanel`, 330 tall, 190 above the safe bottom, sides 60) → `%Name` · `%PositionBadge_Position` (`PositionBadge`, text 28, centred) · `%Kda` · `%Metric`, `%Continue` (40 above the safe bottom, 120 tall, sides 120) | safe-area offsets, position badge (`PositionBadge.set_role`), art / slab size from the texture aspect and the area height (`_layout_art`, on `%ArtArea.resized` — `ART_MAX_H` 1000 / `ART_MAX_W` 900), glow colour (`BattleTheme.GLOW`), fade + rise (`%ArtHolder` offset 40 → 0) |
-| `UI_View_BattleHud.tscn` (root `Node`, instanced by `HudBuilder.build_ui()` under BattleSim): **`EnemyTopLayer`** (layer 1) → `%AiHand` (full rect) · `%EnemyStripBackdrop` (`HudStripBackdrop`, 1050×256 centred, y −8..248) · `%EnemyPilotStrip` (1030×244 centred, y 2..246); **`Canvas`** (layer 1, = `_bs.canvas`) → `%TimeLabel` (`HudClockLabel`, (20, 4) 220×34) · `%ObjTimer0` (26, 110, 101×60) · `%ObjTimer1` (right-anchored, 26 from the right) · `%PlayerStripBackdrop` (bottom-anchored, 286..22 above the bottom) · `%PlayerPilotStrip` (bottom-anchored, 276..32 above the bottom) · `%KillFeed` · `%CardPileDeck` · `%CardPileDiscard` · `%DeckButton` · `%DiscardButton` (flat, alpha 0) · `%CostDonutEnemy` · `%CostDonutPlayer` · `%ReservationChipsP` · `%CardPlayPreview` (z 20) · `%TurnAnnounce` → `%TurnBar` (`HudTurnBar`, 110 tall, vertically centred) · `%TurnLabel` (`HudTurnLabel`); **`VictoryLayer`** (50) → `%VictoryBackdrop` (`HudVictoryDimPanel`) · `%VictoryPanel` (`BattleGoldModal`, 700×520 centred) → `%VictoryLabel` (48) · `%MvpRow` → `MvpTag` (`BattleTitleLabel`) · `%MvpPortrait` · `%MvpName` (34) · `%PositionBadge_MvpPosition` (`PositionBadge`, text 20) · `%MvpKda` (`HudVictoryKdaLabel`), `%VictoryButton` (32). **Child order is draw order** — `Canvas`'s children keep the old build order exactly, other modules append hand cards / overlays after them and `move_child` relative to `%PlayerStripBackdrop`, and `EnemyTopLayer` must stay before `Canvas` (same layer 1 → sibling order) | safe-area shifts (`_shift_y`: top block + `top_offset()` — `%AiHand`, enemy strip + backdrop, time label, clocks; bottom block + bottom inset — ally strip + backdrop), positions derived from other modules' geometry (deck / discard piles + their hit buttons from `BS_HAND_CENTER` · gutter, donut centres from the AI peek / targeting band, `KillFeed.setup`, `ReservationChips.setup`), AI hand fan (`Card.tscn` instances under `%AiHand`), turn-bar colour (`variation_box("HudTurnBar")` copy ← `TURN_BAR[team]`) and sweep tween (x / width from the viewport), victory MVP line data, button text / target (season "다음 →" vs "Play Again"), `update_hud` state |
+| `UI_View_BattleHud.tscn` (root `Node`, instanced by `HudBuilder.build_ui()` under BattleSim): **`EnemyTopLayer`** (layer 1) → `%AiHand` (full rect) · `%EnemyStripBackdrop` (`HudStripBackdrop`, 1050×256 centred, y −8..248) · `%EnemyPilotStrip` (1030×244 centred, y 2..246); **`Canvas`** (layer 1, = `_bs.canvas`) → `%TimeLabel` (`HudClockLabel`, (20, 4) 220×34) · `%ObjTimer0` (26, 110, 101×60) · `%ObjTimer1` (right-anchored, 26 from the right) · `%PlayerStripBackdrop` (bottom-anchored, 286..22 above the bottom) · `%PlayerPilotStrip` (bottom-anchored, 276..32 above the bottom) · `%KillFeed` · `%CardPileDeck` · `%CardPileDiscard` · `%DeckButton` · `%DiscardButton` (flat, alpha 0) · `%CostDonutEnemy` · `%CostDonutPlayer` · `%ReservationChipsP` · `%TurnEndPanel_Player` (`UI_Comp_TurnEndPanel.tscn`, z 5 — over the hand cards) · `%CardPlayPreview` (z 20) · `%TurnAnnounce` → `%TurnBar` (`HudTurnBar`, 110 tall, vertically centred) · `%TurnLabel` (`HudTurnLabel`); **`VictoryLayer`** (50) → `%VictoryBackdrop` (`HudVictoryDimPanel`) · `%VictoryPanel` (`BattleGoldModal`, 700×520 centred) → `%VictoryLabel` (48) · `%MvpRow` → `MvpTag` (`BattleTitleLabel`) · `%MvpPortrait` · `%MvpName` (34) · `%PositionBadge_MvpPosition` (`PositionBadge`, text 20) · `%MvpKda` (`HudVictoryKdaLabel`), `%VictoryButton` (32). **Child order is draw order** — `Canvas`'s children keep the old build order exactly, other modules append hand cards / overlays after them and `move_child` relative to `%PlayerStripBackdrop`, and `EnemyTopLayer` must stay before `Canvas` (same layer 1 → sibling order) | safe-area shifts (`_shift_y`: top block + `top_offset()` — `%AiHand`, enemy strip + backdrop, time label, clocks; bottom block + bottom inset — ally strip + backdrop), positions derived from other modules' geometry (deck / discard piles + their hit buttons from `BS_HAND_CENTER` · gutter, donut centres from the AI peek / targeting band, `KillFeed.setup`, `ReservationChips.setup`), AI hand fan (`Card.tscn` instances under `%AiHand`), turn-bar side lines (`variation_box("HudTurnBar")` copy, `border_color` ← `TURN_BAR[team]`; `%TurnLabel` colour ← `SIDE_TEXT[team]`) and sweep tween (x / width from the viewport), victory MVP line data, button text / target (season "다음 →" vs "Play Again"), `update_hud` state |
 | `UI_Comp_PilotStrip.tscn`: 1030×244 root (theme) → `%Row` (757.6 wide, centred) → `PilotStripCell_Cell0..4` (`UI_Comp_PilotStripCell.tscn`, 151.52 apart). `UI_Comp_PilotStripCell.tscn` (151.52×244): `%Holder` (full rect, press scale) → `%Pill` (`PilotStripScoreTab`) · `%Bust` (ColorRect + `pilot_bust_mask` material, 127.12×158.9 at (12.2, 40.86)) · `%Dead` (`PilotStripDeadLabel`) · `%Score` (`PilotStripScoreLabel`, 30 tall under the disc) · `%Badge` (`SkillBadge`, Ø 50.848) · `%Mood` (stress mood word above the disc, hidden by default — `stress/README.md`); `%Hit` (flat Button, whole cell, alpha 0) | team colours (`variation_box("PilotStripScoreTab")` copy ← `TEAM_DISC[team]`, shader `disc_color`), per-cell material duplicate, press pivot = disc centre read from `%Bust`, badge `setup` (ally) / removed (enemy), portrait · tint · numbers · skill state, `anchor_for` / `pilot_at` read the cell rects |
-| `UI_View_PilotDetailPanel.tscn`: `PilotDetailLayer` (13) → `%Root` (theme). `UI_View_PilotDetailView.tscn` (per open): full-rect root (STOP) → `%Dim` (`BattleDimPanel`, the "outside"), `%ArtHolder` → `%PilotDetailArt_ArtMech` · `%PilotDetailArt_ArtPilot` (`UI_Comp_PilotDetailArt.tscn`: `%Texture` / `%Slab` (`PilotDetailArtSlab`) + `%FallbackLabel` at 42%), `%InfoColumn` → `%FxGrid` (Grid 6 cols, sep 12, x 26, grows **up**), `%Column` (VBox sep 16 at (578, 410), width 496) → Header (`BattlePanel`) → HeaderRow (HBox sep 12) → HeaderBody (VBox, expand: NameBox 52 / MechBox 32 / `%StressBox` 32 → `%Name` · `%Mech` · `%Stress` — stress line, hidden for pilots without stress) + `%ScoreButton` (`BattleChipButton` 156×88 → `%Growth` · `%GrowthRate`), StatGroup → TabsMargin (22) → Tabs (HBox sep 8, 62) → `%TabIngame` · `%TabPilot` · `%TabMech`, StatPanel (`PilotDetailStatPlate`) → `%Chips` (VBox sep 10) · `%DeadGap` 12 · `%DeadBox` 30 → `%DeadLabel`, `%SkillPanel` (`BattlePanel`) → `%SkillTop` (`%SkillIconSlot` 92² · gap 18 · NameBox 40 → `%SkillName`, gap 4, `%SkillDescSlot`, `%SkillStatusGap` 8, `%SkillStatusBox` 30 → `%SkillStatus`), `%SkillUseGap` 16, `%SkillUse` 68, `%NoSkillBox` 32; `%CardFan`, `%CardFanHits`; `%InfoMenu` (backdrop, last = top). Items: `PilotDetailStatRow` (HBox sep 10) + `PilotDetailStatCell` (`BattleChipButton`, `%Icon` · `%Name` · `%Value` · `%Bonus`), `PilotDetailFxThumb` (`BattleFxButton`, text mode `%Short` · `%Value` / art mode `%Art` (rounded mask) · `%Band` (`PilotDetailFxBand`) · `%BandValue`), `PilotDetailCardBand` (empty look), `PilotDetailInfoMenu` (`PilotDetailMenuPanel`, min width 372 → HeadBox 36: `%Title` (left 68%) + `%TitleValue` (right-aligned, from 50%) · gap 8 · `%ScoreBar` (58, `PilotDetailScoreBar` `_draw`, score plate only) · `%Rows` · `%NoteGap` 6 · `%Note` · `%NoteTail` 4 · `%FxGap` 14 · `%FxGrid` (Grid 4 cols, sep 12 / 10)) + `PilotDetailInfoRow` (36, key 42% / value 58% by anchors) + `PilotDetailStatFx` (VBox 72 wide → `%PilotDetailFxThumb_Icon` (the lasting-effect thumb, value texts off, `%Short` centred, extra `%Icon` 44² for skill glyphs) · `%Pct` · `%Flat`, 18pt `BattlePositiveLabel` / `BattleNegativeLabel` by sign) | art size from the texture aspect + pivot + front / back pose and swap tween, `%FxGrid` bottom (= fan top − `FX_ABOVE_FAN_GAP`), chip rows per tab (`_chip_defs`), cell / thumb highlight (switch to `BattleChipButtonOn` / `BattleFxButtonOn`), tab on / off (`BattleTabOn` / `BattleTab`), bonus colour (`BattlePositiveLabel` / `BattleNegativeLabel`) and value right edge (bonus width), effect abbreviation colour (data), skill icon tile · rich description (code widgets into the slots), note text (`_fill_note`) + its measured height, info plate position · height (`_place_menu`, re-placed next frame after a body rebuild), card fan + bands (positions from the hand geometry), card description boxes (`CardDescBox`), open / close motion |
+| `UI_View_PilotDetailPanel.tscn`: `PilotDetailLayer` (13) → `%Root` (theme). `UI_View_PilotDetailView.tscn` (per open): full-rect root (STOP) → `%Dim` (`BattleDimPanel`, the "outside"), `%ArtHolder` → `%PilotDetailArt_ArtMech` · `%PilotDetailArt_ArtPilot` (`UI_Comp_PilotDetailArt.tscn`: `%Texture` / `%Slab` (`PilotDetailArtSlab`) + `%FallbackLabel` at 42%), `%InfoColumn` → `%FxGrid` (Grid 6 cols, sep 12, x 26, grows **up**), `%Column` (VBox sep 16 at (578, 410), width 496) → Header (`BattlePanel`) → HeaderRow (HBox sep 12) → HeaderBody (VBox, expand: NameBox 52 / MechBox 32 / `%StressBox` 32 → `%Name` · `%Mech` · `%Stress` — stress line, hidden for pilots without stress) + `%ScoreButton` (`BattleChipButton` 156×88 → `%Growth` · `%GrowthRate`), StatGroup → TabsMargin (22) → Tabs (HBox sep 8, 62) → `%TabIngame` · `%TabPilot` · `%TabMech`, StatPanel (`PilotDetailStatPlate`) → `%Chips` (VBox sep 10) · `%DeadGap` 12 · `%DeadBox` 30 → `%DeadLabel`, `%SkillPanel` (`BattlePanel`) → `%SkillTop` (`%SkillIconSlot` 92² · gap 18 · NameBox 40 → `%SkillName`, gap 4, `%SkillDescSlot`, `%SkillStatusGap` 8, `%SkillStatusBox` 30 → `%SkillStatus`), `%SkillUseGap` 16, `%SkillUse` 68, `%NoSkillBox` 32 → `%NoSkill` (text from code: 스킬 없음 / 패시브 없음); `%CardFan`, `%CardFanHits`; `%InfoMenu` (backdrop, last = top). Items: `PilotDetailStatRow` (HBox sep 10) + `PilotDetailStatCell` (`BattleChipButton`, `%Icon` · `%Name` · `%Value` · `%Bonus`), `PilotDetailFxThumb` (`BattleFxButton`, text mode `%Short` · `%Value` / art mode `%Art` (rounded mask) · `%Band` (`PilotDetailFxBand`) · `%BandValue`), `PilotDetailCardBand` (empty look), `PilotDetailInfoMenu` (`PilotDetailMenuPanel`, min width 372 → HeadBox 36: `%Title` (left 68%) + `%TitleValue` (right-aligned, from 50%) · gap 8 · `%ScoreBar` (58, `PilotDetailScoreBar` `_draw`, score plate only) · `%Rows` · `%NoteGap` 6 · `%Note` · `%NoteTail` 4 · `%FxGap` 14 · `%FxGrid` (Grid 4 cols, sep 12 / 10)) + `PilotDetailInfoRow` (36, key 42% / value 58% by anchors) + `PilotDetailStatFx` (VBox 72 wide → `%PilotDetailFxThumb_Icon` (the lasting-effect thumb, value texts off, `%Short` centred, extra `%Icon` 44² for skill glyphs) · `%Pct` · `%Flat`, 18pt `BattlePositiveLabel` / `BattleNegativeLabel` by sign) | art size from the texture aspect + pivot + front / back pose and swap tween, `%FxGrid` bottom (= fan top − `FX_ABOVE_FAN_GAP`), chip rows per tab (`_chip_defs`), cell / thumb highlight (switch to `BattleChipButtonOn` / `BattleFxButtonOn`), tab on / off (`BattleTabOn` / `BattleTab`), bonus colour (`BattlePositiveLabel` / `BattleNegativeLabel`) and value right edge (bonus width), effect abbreviation colour (data), skill icon tile · rich description (code widgets into the slots), note text (`_fill_note`) + its measured height, info plate position · height (`_place_menu`, re-placed next frame after a body rebuild), card fan + bands (positions from the hand geometry), card description boxes (`CardDescBox`), open / close motion |
 | `UI_View_SkillPopup.tscn`: `Layer` (12) → `%Root` (theme) → `%Catcher` (top-wide). `UI_Comp_SkillPopupCard.tscn`: full-rect root → `%Panel` (`BattlePopup`, min width 640) → VBox (sep 10): Head (72: `%IconSlot` · gap 16 · NameBox(top 16) → `%Name` · TypeSlot 110 → `%Type` / `%Cooldown`(`%Clock` · `%Turns`)), `%DescSlot`, `%StatusBox`(30) → `%Status`, `%UseGap`, `%Use` (68); `%Arrow` (Polygon2D, after the panel) | catcher height (= strip top), panel position (above the portrait, clamped by `SCREEN_MARGIN`) and height (`get_combined_minimum_size`), arrow polygon + colour (`BattleTheme.POPUP_BG`), icon tile (`SkillImages.make_icon_tile` → `%IconSlot`), rich description (`StrategyIcon.make_rich_label` → `%DescSlot`, height `rich_height`), name variation (`BattleSkillNameLabel` / "스킬 없음" `BattleKeyLabel`), card-name press preview (Card + `CardDescBox`, code) |
 
 Fixed heights that look odd are deliberate pixel parity with the old code: the name row is a 40px label at
@@ -175,21 +187,44 @@ places / configures what the scene can't know (below). The pieces, in draw order
 Buttons removed: **Next Turn**, **Auto Play** and the rectangular
 **단계 넘기기** (Skip phase) button are all gone — BATTLE auto-ticks every
 `AUTO_PLAY_INTERVAL` (0.5s) inside `BattleSim._process()`, and ending the
-operation phase is now done by tapping the player's strategy point donut twice.
+operation phase is now done by tapping the player's strategy point donut and holding the
+턴 넘기기 panel that replaces it (`TurnEndPanel`).
 
 Connections:
 - `cost_donut.end_turn_pressed` → `_bs.card_phase.end_card_phase` (the manager
-  also re-checks `can_end_card_phase()` defensively)
+  also re-checks `can_end_card_phase()` defensively). `_bind_cost_donuts` places
+  `%TurnEndPanel_Player` (`place(TURN_END_PANEL_LEFT, donut centre y)`) and hands it to
+  `cost_donut.attach_turn_end_panel`; the panel's `hold_completed` is what emits it.
 - Play Again button → `_bs._on_restart_pressed`
 
 ### Reservation chips (`ReservationChips.gd`)
-Stacked **above** the ally donut (screen-left x 8, width 150 — wider than the donut column).
-One chip = rounded-rect card art (the card that placed the reservation,
-`BattleSim.reserve_src`) + value. The values (`next_phase_strategy_p` · `next_phase_draw_p` ·
-`kill_bounty_p` · `ambush_search_p`) are compared by a per-frame signature (the `_entries()` array, compared by value — no `str()`
-per frame) and redrawn only
-when they change, so a chip disappears on its own once it settles to 0. There is none on
-the enemy side (below the enemy donut it would overlap the battlefield's top-left tiles).
+Stacked **above** the ally donut (screen-left x 8; a chip is as wide as its content).
+**One chip = one source card**: rounded-rect card art + that card's reserved values on one line —
+strategy points as a small octagon glyph (`StrategyIcon`, `TEAM_DONUT[0]`) + `+3`, the rest as
+`hud.reserve.chip_draw` / `chip_bounty` / `chip_search` (`뽑기 3` · `처치 +2` · `찾기 1`). A card that
+reserves two things (준비 태세 = `strategy_next_phase:3;draw_next_phase:3`) is **one** chip `⬡+3 뽑기 3`;
+the same card played twice sums into its chip. **No plate** — the text is drawn with an outline
+(`BattleTheme.OUTLINE`, 6) in `BattleTheme.TEXT_SCORE`.
+
+Where the grouping comes from: every reserving effect (`_effect_strategy_next_phase` ·
+`_effect_draw_next_phase` · `_effect_strategy_on_kill` · `_effect_ambush_search`) calls
+`CardPhaseManager._note_reserve(kind, is_player, n)` → `BattleSim.note_reserve(kind, is_player,
+card, n)`, which appends `{side, kind, uid, card, n}` to **`BattleSim.reserve_log`** (display only —
+the ledgers `next_phase_strategy_*` · `next_phase_draw_*` · `kill_bounty_*` · `ambush_search_*` stay
+the truth; bounty keeps only its largest source, like the ledger). `ReservationChips._groups()` runs
+`BattleSim.prune_reserve_log()` (drops lines whose ledger `reserve_ledger(kind)` settled to 0 — so
+settlement code needed no change) and groups the player's lines by card uid. A ledger amount with no
+source line (an effect that ran outside a card) becomes an "unknown source" chip (`SLAB_BG`
+placeholder art). The group list is compared by value every frame and the chips relaid / redrawn only
+when it changes. There is none on the enemy side (below the enemy donut it would overlap the
+battlefield's top-left tiles).
+
+**Tapping a chip** (`_input` + `PointerPress`, press consumed) opens **`ReserveInfo`** to its right:
+"예약 효과" + one `hud.reserve.strategy|draw|bounty|search` line per value, and under it the card's
+`CardDescBox` (null card → lines only). Tapping the same chip closes it; any other press closes it and
+stays unhandled. It follows the chip (re-filled on a value change, closed when the chip settles away or
+the chips hide). Its height is measured one frame after opening (the wrapped lines only know their
+height once the column has its width) — that frame it is transparent.
 The card art is drawn only via `_draw`, so it is uploaded to the GPU first with
 `BattleSim.prime_texture` — otherwise it paints a white box (same problem as
 `PilotImages.prime_into`).
@@ -222,28 +257,50 @@ literal.
 - Fill runs clockwise face by face from the octagon's upper-right face; 9–16 points fill a
   second, lighter lap (`OVERFLOW_LIGHTEN`), and past 16 only the number grows.
 
-**Player flip → "턴 넘기기"** (`CostDonut` owns the whole interaction):
-1. tap the donut during the operation phase → the ring unwinds through empty and
-   re-winds counter-clockwise (`_sweep` tweens `ratio*TAU → -TAU`) while the
-   face swaps from the number to "턴 넘기기".
-2. tap it again → `end_turn_pressed` fires (only while `set_end_enabled(true)`;
-   a disabled face renders grey and swallows the press). `set_end_enabled`
-   repaints the caption as well as the ring, independently of the value — so a
-   state change that arms or disarms the button without moving the point total
-   can't leave a white ring under a grey "턴 넘기기".
-3. tap anywhere else → flips straight back to the point readout. That press is
-   deliberately left unhandled so whatever was actually clicked still reacts.
+**Player donut → "턴 넘기기" hold panel** (`CostDonut` + `TurnEndPanel`):
+1. tap the donut during the operation phase → the donut slides out to the left (`SLIDE_DUR` 0.22 s,
+   cubic) and the wide **턴 넘기기 panel** (`UI_Comp_TurnEndPanel.tscn`, 300×96, left edge
+   `HudBuilder.TURN_END_PANEL_LEFT`, vertically centred on the donut) slides in from the left
+   (`TurnEndPanel.SLIDE_SEC` 0.24 s, cubic). Opening ends nothing.
+2. **press and hold the panel `HOLD_SEC` (0.5 s)** → the gauge (`%Gauge`) fills left → right; full →
+   `hold_completed` → the donut closes the panel and emits `end_turn_pressed`. Releasing early drains
+   the gauge back in `DRAIN_SEC` (0.15 s). The press zone is generous: `hit_rect()` = the panel grown
+   by `HIT_PAD_RATIO` (50%) of its size on every side, all of it counts as the panel.
+   `set_end_enabled(false)` greys the panel (`modulate` = `BattleTheme.STRIP_DRAG_DIM`) and a hold
+   does nothing (the press is still swallowed).
+3. press outside that zone → panel slides out, donut slides back (`dismissed`). That press is
+   deliberately left unhandled so whatever was actually touched still reacts.
+4. phase change / modal / hand preview → `set_flip_allowed(false)` / `set_locked(true)` /
+   `set_preview(true)` close it the same way, so the next operation phase starts on the donut.
 
-Input runs through `CostDonut._input`, not `_gui_input`: hand cards call
-`accept_event()`, so a `_gui_input`/`_unhandled_input` pair would never see the
-outside tap. Presses landing inside the donut are consumed with
-`set_input_as_handled()`.
+Input runs through `_input` (donut and panel), not `_gui_input`: hand cards call
+`accept_event()`, so a `_gui_input`/`_unhandled_input` pair would never see the outside press.
+While the panel is out the donut ignores input; the panel's `_input` runs first (it is after the donut
+in the tree), so the press that opens the panel is never also a panel press. Presses inside are
+consumed with `set_input_as_handled()`. The donut's tap test uses its **rest** centre
+(`rest_center()`), so a donut still sliding back is tappable where it lands.
+
+**Mobile bug (fixed): one tap ended the turn.** The project leaves
+`input_devices/pointing/emulate_mouse_from_touch` at its default **on**, so every touch reaches
+`_input` twice — the `InputEventScreenTouch` **and** an emulated `InputEventMouseButton` (device
+`DEVICE_ID_EMULATION`); `set_input_as_handled()` on one does not stop the other (`Input` dispatches
+both). The old `CostDonut._input` treated both as presses: the first flipped the donut into 턴 넘기기,
+the duplicate (same tap) hit the flipped face and ended the phase. Desktop clicks produce no touch
+event, so it only showed on devices. Now every `_input` press goes through **`PointerPress.state()`**
+(mouse stream only while emulation is on; touch index 0 only when it is off), and ending needs a 0.5 s
+hold, which a tap cannot produce. Verified with injected input: one `Input.parse_input_event` touch
+delivers touch + mouse to `_input`; a tap opens the panel with 0 ends; touch + emulated mouse pushed
+by hand (press + release, twice) on the panel → 0 ends; hold 0.3 s → fill 0.63, 0 ends; hold 0.6 s → 1
+end, donut back; disabled hold 0.7 s → 0 ends; outside press reaches the scene root unhandled.
+Other battle `_input` listeners that still read both streams (`SkillPopup`, `CardPileViewer`,
+`CardTargetingOverlay`, `MarkerTouch`, `StressEventView`, `MvpView`) are idempotent closers or
+track their own state — move them to `PointerPress` if one ever toggles.
 
 State setters driven from `HudBuilder._update_cost_donuts()`:
 `set_value(cost, PHASE_THRESHOLD)`,
 `set_flip_allowed(in_card_phase and not modal_up)` where `modal_up` is
 "Deck/Discard browsing (열람) is open **or** the battle-opening VS confirm screen is up" (turning it off
-un-flips). Both clauses are load-bearing for the same reason: `CostDonut`
+closes the 턴 넘기기 panel). Both clauses are load-bearing for the same reason: `CostDonut`
 listens on `_input`, which runs ahead of GUI picking, so it stays tappable
 straight through either dim. The VS screen matters because `game_phase` is
 still CARD_PHASE while it is up — the arena has not opened yet, so
@@ -253,7 +310,7 @@ only in states where closing now would cut something off, such as a banner / mod
 charge (돌진) animation. Passing without playing a single card is allowed
 (see `card_phase/README.md`). `set_locked(…)`
 still exists on `CostDonut` but **nothing calls it any more** — targeting stopped
-being modal, so there is no state that needs the flip blocked. The donut's y is
+being modal, so there is no state that needs the panel blocked. The donut's y is
 still derived from `CardTargetingOverlay.BTN_HAND_GAP + BTN_H` so it keeps the
 same vertical band the "확인"/"취소" row occupies on the far side of the screen.
 
@@ -344,7 +401,7 @@ Now it's split into two copies:
 | Ally (`_player_strip`) | **below** the hand row, `%PlayerPilotStrip` (25, 1644, 1030×244 — bottom-anchored) | disc diameter ≈127 | press for detail panel |
 
 **The portrait is 70% of the size derived from the cell** (formerly `PilotStrip.PORTRAIT_SCALE`; the result is now
-baked into `UI_Comp_PilotStripCell.tscn` — see "Scenes and the dark theme"). The old `setup` first laid out the unscaled layout (disc diameter = min(cell width − `CELL_GAP`,
+baked into `UI_Comp_PilotStripCell.tscn` — see "Scenes and the battle theme"). The old `setup` first laid out the unscaled layout (disc diameter = min(cell width − `CELL_GAP`,
 height × 0.8)) to fix **the spacing between discs and the disc-centre height**, then shrinks
 only the diameter — the spacing stays, so the whole row narrows and gathers at the strip's
 horizontal centre (`_row_x`), and since the disc-centre height stays, alignment with the
@@ -520,7 +577,10 @@ clear `BaseButton`'s internal press. Only reproducible through the touch path
 Two `Control`s, each a pair of **one icon + turns remaining**. Left is Herald (purple flag),
 right is Dragon (vermilion wings) — **the same left/right arrangement as the cells where
 the two objectives stand on the battlefield**, so the position is the name. That's why
-there are no name labels.
+there are no name labels. **No plate** (user decision, kept in the white palette): the glyph
+uses the light field colours `BattleTheme.OBJ_*_FIELD` and the number is `TEXT_BRIGHT` with a
+black outline (`_outlined`). `kind_color()` (kill-log rows · reward popup, white plates) returns
+the deeper `OBJ_HERALD` / `OBJ_DRAGON`.
 
 - State comes only from `ObjectiveSystem.turns_until_cell(cell)`. Updating is just
   `HudBuilder.update_hud` calling `queue_redraw()`.
@@ -615,6 +675,9 @@ browse·engage (12).
 │                                                  description (`StrategyIcon` rich text — keywords · card cost icons · line breaks · particles)
 │                                                  one status line (cooldown left / tokens — omitted when "사용 가능" (ready))
 │    [               사용 (Use)               ]  (none for passives)
+├─ (mech tab) mech passive plate — **the same `%SkillPanel`** (`_build_passive_panel`): icon tile
+│    (`SkillImages.make_mech_icon_tile`) · name · description (`MechSkillSystem.passive_description`) ·
+│    status line (`패시브 · 토큰 n / max` or `상시 적용`); no Use button; no passive → "패시브 없음"
 └─ **held-card fan** — same spot (`BS_HAND_CENTER`) · width (`BS_HAND_WIDTH`) · size (×0.96) ·
      tilt · hover · drop shadow as the hand. All 6 cards, no title, spreads slightly only on open
 ```
@@ -821,6 +884,11 @@ The key prefix distinguishes the kind.
   is written once when `CardPhaseManager._deal_team_deck` goes through the deck — see
   `card_phase/README.md`.
 #### Lasting effect thumbnails (in-game tab) — bottom-left of the illustration
+**결속 (Bond, mech card 12 `link_engage`)** shows on **both** bonded pilots (`_append_link_fx`): only the
+caster stores it (`caster.engage_link`), so the target side scans `_bs.pilots` for `engage_link == this pilot`.
+One `fx:link:<pilot index>` cell per partner — card art of `LINK_CARD_UID` (`mech:12`), band value = the
+partner's name (`MvpView.display_name`); the info plate rows are 결속 상대 / 남은 시간 (영구 until either
+leaves the field — `MechSkillSystem.clear_field_effects` clears it) + note `hud.pilot_detail.note.fx_link`.
 **When the source card is known, the cell is that card's illustration** — the art is cut to a
 rounded rect filling the cell (`shaders/rounded_rect_mask.gdshader`) and the value sits on a
 black band at the bottom (`_make_fx_thumb`, art mode of `PilotDetailFxThumb`). The source is answered by the per-card
@@ -1051,6 +1119,9 @@ description box now stands beside the pointed hand card.
   `BattleSim.team_score()` lost its consumer but remains as a function.
 
 ### Kill log (`KillFeed.gd`)
+Look (white palette): each line is a white `BattleTheme.row_box()` plate (r8, drop shadow), slot backs
+`BattleTheme.SUNK`, dark icons over a white halo stroke (`ICON_HALO`), dark turret / objective labels
+without outlines, side rims `TEAM_RIM`.
 Stacks kills · turret demolitions · objective captures one line at a time at the **top-right**
 of the screen (8px below the top panel's bottom edge, y **256** = `TOP_PANEL_H` + 8). The
 battlefield flows on its own every 0.5 s and engages cover the screen with an overlay, so

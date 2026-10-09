@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3 uid="uid://ckuk1hg6ocdd2"]
+
+[ext_resource type="Script" path="res://features/battle_sim/ui/ReserveInfo.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="2_theme"]
+
+[node name="ReserveInfo" type="CanvasLayer"]
+layer = 12
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ReserveInfo.gd _root (테마 · 뷰포트 크기)."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Column" type="VBoxContainer" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ReserveInfo.gd _column: 판 + 카드 설명. 자리(칩 오른쪽 CHIP_GAP, 칩 가운데 높이)는 코드가 정한다. 폭 = ReserveInfo.WIDTH."
+layout_mode = 0
+offset_left = 172.0
+offset_top = 860.0
+offset_right = 592.0
+offset_bottom = 1000.0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Plate" type="PanelContainer" parent="Root/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"BattlePopup"
+
+[node name="Box" type="VBoxContainer" parent="Root/Column/Plate"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Root/Column/Plate/Box"]
+layout_mode = 2
+theme_type_variation = &"BattleSectionLabel"
+text = "tx_58ZB0FCDG2"
+
+[node name="Lines" type="Label" parent="Root/Column/Plate/Box"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ReserveInfo.gd _lines: 예약 효과 한 줄씩(hud.reserve.*), 코드가 채운다."
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"BattleBodyLabel"
+autowrap_mode = 3
+
+[node name="DescSlot" type="Control" parent="Root/Column"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ReserveInfo.gd _desc_slot: 카드 설명 판(CardDescBox, 코드 위젯)이 들어갈 자리."
+custom_minimum_size = Vector2(420, 120)
+layout_mode = 2
+mouse_filter = 2

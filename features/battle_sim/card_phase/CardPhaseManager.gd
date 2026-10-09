@@ -3064,21 +3064,16 @@ func card_has_valid_targets(cd: CardData) -> bool:
 			return not compute_valid_location_targets(cd, caster).is_empty()
 		"preview":
 			# engage — require at least one alive participant from each
-			# side inside the caster's area so start_engage doesn't no-op.
-			if caster == null:
+			# side so start_engage doesn't no-op. Same roster rule as
+			# `_effect_engage` (`engage_sides`: 탈진 excluded, 결속 · 추적 pulled
+			# in) — a looser area count let a card through that then folded as
+			# "대상 부족". Symmetric in teams, so the AI reads it too.
+			if caster == null or _bs.engage_phase == null:
 				return false
-			var area := compute_engage_area(caster, engage_radius(cd))
 			var exclude_lane: bool = has_clause_flag(cd.effect, "engage", "exclude_lane")
-			var participants := compute_engage_participants(caster, area, exclude_lane)
-			var has_p: bool = false
-			var has_e: bool = false
-			for raw in participants:
-				var p := raw as PilotData
-				if p.team == 0:
-					has_p = true
-				else:
-					has_e = true
-			return has_p and has_e
+			var sides: Array = _bs.engage_phase.engage_sides(caster, exclude_lane,
+					Vector2i(-999, -999), engage_radius(cd))
+			return not (sides[0] as Array).is_empty() and not (sides[1] as Array).is_empty()
 		_:
 			return true
 
@@ -5032,11 +5027,10 @@ func _effect_growth_perm(pct: int, ally_team: int, picked: PilotData,
 
 
 ## 예약 효과(다음 단계 정산)를 지금 도는 카드가 걸었다고 적는다 — 전략 점수
-## 도넛 옆 예약 칩(`ui/ReservationChips.gd`)이 그 카드 아트를 띄운다. 표시용.
-func _note_reserve(kind: String, is_player: bool) -> void:
-	if _current_card == null:
-		return
-	_bs.reserve_src["%s_%s" % [kind, "p" if is_player else "ai"]] = _current_card.card_uid()
+## 도넛 옆 예약 칩(`ui/ReservationChips.gd`)이 카드 한 장당 칩 하나로 묶는다. 표시용.
+## `_current_card` 가 없으면(카드 밖 효과) 출처 모름으로 적힌다.
+func _note_reserve(kind: String, is_player: bool, n: int) -> void:
+	_bs.note_reserve(kind, is_player, _current_card, n)
 
 
 ## 슬롯 효과(`PilotData.fx_src`)를 지금 도는 카드가 걸었다고 적는다 — 표시용.
@@ -5219,6 +5213,33 @@ func _discard_whole_hand(is_player: bool) -> int:
 	return moved
 
 
+## 약자 멸시 — 교전 개시에 충전(토큰)을 다 태운 [약자 멸시] 카드는 교전이 끝난 뒤
+## 손패에서 버려진다. 무대가 닫힌 직후 `EngagePhaseManager._on_dashboard_confirmed`
+## 가 부른다(교전 도중에 버리면 무대에 가려 연출이 안 보인다). 그 사이 다시
+## 충전된 카드나 이미 손을 떠난 카드는 건너뛴다.
+func discard_spent_contempt() -> void:
+	if _bs.mech_skill == null:
+		return
+	var touched: Array = [false, false]
+	for raw in _bs.mech_skill.take_spent_contempt_cards():
+		var cd := raw as CardData
+		if cd == null or cd.charge > 0:
+			continue
+		var is_player: bool = _bs.player_hand.has(cd)
+		var hand: Array = _bs.player_hand if is_player else _bs.ai_hand
+		if not hand.has(cd):
+			continue
+		hand.erase(cd)
+		send_to_discard(cd, _bs.player_discard if is_player else _bs.ai_discard)
+		if is_player:
+			_despawn_player_card_node(cd)
+		touched[0 if is_player else 1] = true
+	if touched[0]:
+		_refresh_hand_after_bulk_change(true)
+	if touched[1]:
+		_refresh_hand_after_bulk_change(false)
+
+
 ## 완벽한 마무리의 첫 절 — 손패 전부 버리기.
 func _effect_discard_hand(is_player: bool) -> String:
 	var moved: int = _discard_whole_hand(is_player)
@@ -5339,7 +5360,7 @@ func _effect_strategy_next_phase(n: int, is_player: bool) -> String:
 		_bs.next_phase_strategy_p += n
 	else:
 		_bs.next_phase_strategy_ai += n
-	_note_reserve("strategy", is_player)
+	_note_reserve("strategy", is_player, n)
 	return "다음 작전 단계 전략 점수 %+d" % n  # l10n-ignore
 
 
@@ -5351,7 +5372,7 @@ func _effect_strategy_on_kill(n: int, is_player: bool) -> String:
 		_bs.kill_bounty_p = maxi(_bs.kill_bounty_p, n)
 	else:
 		_bs.kill_bounty_ai = maxi(_bs.kill_bounty_ai, n)
-	_note_reserve("bounty", is_player)
+	_note_reserve("bounty", is_player, n)
 	return "이번 단계 처치 시 전략 점수 +%d (예약)" % n  # l10n-ignore
 
 
@@ -5822,10 +5843,13 @@ func _effect_track(turns: int, caster: PilotData, picked: PilotData) -> String:
 	return "추적 %s (%d턴)" % [_bs.pilot_label(picked), turns]  # l10n-ignore
 
 
-## 결속 — 시전자가 싸울 때 이 아군도 무대에 선다. 방향이 한쪽뿐인 것이 요점이다
-## (지정한 아군이 싸울 때 시전자가 끌려가지는 않는다).
+## 결속 — 시전자와 대상이 **서로를** 따라 무대에 선다: 둘 중 누가 교전에
+## 참여하든 다른 하나도 끌려 들어간다(`EngagePhaseManager._gather_participants`).
+## 둘 중 하나가 전장을 떠날 때까지 남는다(`MechSkillSystem.clear_field_effects`).
+## 짝의 기록은 시전자 쪽 `engage_link` 하나뿐이다 — 반대 방향은 그 값을 거꾸로
+## 읽어 얻으므로, 다른 대상에게 다시 쓰면 이전 대상과의 결속이 양쪽 다 끊긴다.
 func _effect_link_engage(caster: PilotData, picked: PilotData) -> String:
-	if caster == null or picked == null:
+	if caster == null or picked == null or picked == caster:
 		return "결속 (대상 없음)"  # l10n-ignore
 	caster.engage_link = picked
 	return "결속 → %s" % _bs.pilot_label(picked)  # l10n-ignore
@@ -6224,7 +6248,7 @@ func _effect_ambush_search(n: int, caster: PilotData, is_player: bool) -> String
 		return ""
 	var list: Array = _bs.ambush_search_p if is_player else _bs.ambush_search_ai
 	list.append({"caster": caster, "n": n})
-	_note_reserve("ambush", is_player)
+	_note_reserve("ambush", is_player, n)
 	return "다음 작전 단계에 교전 카드 찾기 %d" % n  # l10n-ignore
 
 
@@ -6288,7 +6312,7 @@ func _effect_draw_next_phase(n: int, is_player: bool) -> String:
 		_bs.next_phase_draw_p += n
 	else:
 		_bs.next_phase_draw_ai += n
-	_note_reserve("draw", is_player)
+	_note_reserve("draw", is_player, n)
 	return "다음 작전 단계 뽑기 %d" % n  # l10n-ignore
 
 

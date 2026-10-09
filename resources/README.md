@@ -545,13 +545,16 @@ by the map scenes (no lookup class). **Prototype placeholders (Blue Archive / Ne
 public release.** Sources and naming: `resources/images/base_map/README.md`.
 
 ### SkillImages.gd
-`class_name SkillImages`, extends `RefCounted`, static only. **Pilot skill icon
-lookup** — same role as `CardImages` / `MechImages`.
+`class_name SkillImages`, extends `RefCounted`, static only. **Pilot skill and mech
+passive icon lookup** — same role as `CardImages` / `MechImages`.
 
 | Function | Source | Used by |
 |---|---|---|
 | `icon_for(skill_key)` | `images/skill/skill_<English_Name>.png` via `ICON` (`pilot_skills.key` → file) | `ui/PilotDetailPanel.gd` skill block (left of the name, tinted with the name colour), `ui/SkillBadge.gd` (strip badge), `ui/SkillPopup.gd` |
+| `mech_icon_for(passive_key)` | same folder via `MECH_ICON` (`mech_passives.key` → file) | `ui/PilotDetailPanel.gd` mech tab passive plate + the passive's lasting-effect thumb |
 | `make_icon_tile(skill_key, px, bg, icon_color, shadow_color, shadow_px = 14)` | `icon_for` inside a `px`×`px` rounded-square `Panel` (radius `px*0.22`, fill `bg`, anti-aliased `StyleBoxFlat` soft shadow: `shadow_size = shadow_px`, offset `(0, shadow_px*0.4)`), icon inset 16% per side and tinted via `modulate` | `ui/PilotDetailPanel.gd` skill block, `meta/run_setup/DraftDetailPanel.gd` skill block |
+| `make_mech_icon_tile(passive_key, …)` | the same tile around `mech_icon_for` | `ui/PilotDetailPanel.gd` mech tab, `ban_pick/MechDetailPanel.gd`, `ban_pick/BanPickController.gd` sheet |
+| `make_texture_tile(tex, …)` | the tile around any glyph (null → empty tile) — the two above call it | — |
 
 `make_icon_tile` is all `MOUSE_FILTER_IGNORE`; an unmapped key still returns the
 empty tile. The shadow paints **outside** the rect — leave about `shadow_px` of
@@ -562,9 +565,22 @@ glyph on transparent, mostly 137² (Doorman Call Bell + Victor's four 68²,
 Rain of Arrows 200²). Source: namu.wiki `분류:Deadlock(게임)/영웅` → each hero
 page's 능력 section, webp/png → png. File name = `skill_` + the English ability
 name with spaces → `_` (apostrophes / hyphens kept; namu typos fixed:
-Dust Devil, Entangling Thorns). Only 25 are mapped (`ICON`, one ability per
-skill, chosen by effect); the rest are spare. A new skill key without a row
-returns null and the panel just omits the icon.
+Dust Devil, Entangling Thorns). 25 are mapped to pilot skills (`ICON`) and 15
+to mech passives (`MECH_ICON`), one ability per skill / passive, chosen by
+effect, **never shared between the two tables**; the rest are spare. A new
+key without a row returns null and the panel just omits the icon.
+
+### QuirkImages.gd
+`class_name QuirkImages`, extends `RefCounted`, static only. **Quirk (기벽) icon lookup** — same role as `SkillImages`.
+`icon_for(quirk_id)` → `images/quirks/quirk_<English_Name>.png` via `ICON` (`quirks.id` → file); unmapped / missing → null.
+Not drawn by any screen yet.
+
+`images/quirks/` holds **18 LoL Arena augment icons** (256², full-colour glyph in a round frame, transparent),
+one per quirk. Source: League of Legends Wiki `Category:Arena_augment_icons`, `<Name> ar augment.png` →
+`quirk_<Name>.png`. The augment tier matches the quirk grade — 0 일반 = Silver (grey), 1 희귀 = Gold (yellow),
+2 영웅 = Prismatic (rainbow); within a grade the glyph is chosen by effect (eye = field hit, runner = evasion,
+sword = engage hit, shield = engage evasion, arrow = growth, anchor = tank …). A new quirk needs a row in `ICON`
+with an icon of its grade's tier. **Prototype placeholders (Riot art): replace before any public release.**
 
 ### MechImages.gd
 `class_name MechImages`, extends `RefCounted`. Mech (frame) illustration lookup in the same
@@ -911,8 +927,8 @@ joined text, or the height disagrees with the label.
 through here** — season hub · press conference (기자회견) · training board · time-passing · standings · brackets ·
 draft. If each screen held its own `Color(...)` literals, the same card would be drawn in a different grey
 per screen, and touching up the palette once would mean combing through a dozen-odd files.
-**In-game (BattleSim) does not use this table** — the battlefield is a dark screen, and there
-a white card becomes a glaring slab. It has its own table, **`BattleTheme`** (below).
+**In-game (BattleSim) has its own table, `BattleTheme`** (below) — since 2026-10 it follows the same
+white-paper principles and aliases many of these constants.
 
 The design principle is coloured cards on white paper. Three rules:
 
@@ -1059,29 +1075,44 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 Label colour overrides that are data (side / grade / day state colours) stay `theme_override_colors` set by code;
 the scene value is a preview.
 
-### BattleTheme.gd + BattleTheme.tres (dark in-game palette / Theme for BattleSim UI)
+### BattleTheme.gd + BattleTheme.tres (in-game white palette / Theme for BattleSim UI)
 `class_name BattleTheme`, extends `RefCounted`. The **in-game (BattleSim) counterpart of `OutgameTheme`** —
-every colour / font size / radius of the battle UI (`HudBuilder`, `PilotStrip`, `PilotDetailPanel`,
-`SkillPopup`, `MvpView`) lives here. Principles (opposite of the white outgame paper, because the battlefield
-is a dark screen): plates are **translucent navy** (`PANEL_BG`, `POPUP_BG`) so the field shows through —
-only screens that end the battle are opaque (`MODAL_BG`); borders are a faint blue-grey (`PANEL_BORDER`);
-emphasis is **gold** (`GOLD`, `GOLD_BORDER`, `TEXT_TITLE`); sides are blue / red (`ALLY` · `ENEMY` text,
-`TEAM_*` fills, index = team).
-
-**Values were moved, not redesigned** — every constant is a literal that one of those five files already
-used, so renders are unchanged (near-equal pairs such as `TEXT_VALUE` / `TEXT_BRIGHT` were deliberately
-not merged — that is a design call). `PilotDetailPanel` · `HudBuilder` · `PilotStrip` keep their own
-constant names as aliases (`const STAT_PANEL_BG := BattleTheme.PANEL_BG` …) until they are moved to scenes.
+every colour / font size / radius of the battle UI (`HudBuilder`, `PilotStrip`, `PilotDetailPanel`, `SkillPopup`,
+`MvpView`, `KillFeed`, `ObjectiveTimer` / `ObjectiveRewardPopup`, `CardDescBox` (battle side), `CardSelectOverlay`,
+`CardPileViewer`, `EngageArena` / `EngageIntro`, `TraitBanner`, `TurnEndPanel`) lives here; code holds no colour
+literals, only these tokens. **Since 2026-10 the principles are the outgame ones** (user decision — every in-match
+plate converted): plates are **white cards** (`PANEL_BG` · `POPUP_BG` · `MENU_BG` = `OutgameTheme.SURFACE`) whose
+edges come from a **drop shadow** (`SHADOW`, `with_shadow()`) and a very faint border (`PANEL_BORDER` = `BORDER`);
+**every in-match dim is one token, `DIM_BLACK` = black α 0.30** (user decision — the field stays clearly visible but
+reads as covered); `DIM` (pilot detail, stress event) · `DIM_DEEP` (MVP) · `DIM_LIGHT` (victory, grid pickers, pile
+viewer, objective reward) · `DIM_FIELD` (hand pick, reward fx) and the engage surround / result all alias it. Text that
+stands **directly on a dim** follows the field rule — light colour + black outline (`TEXT_BRIGHT`, `TITLE_ON_DIM`,
+`SUB_ON_DIM`, `NEGATIVE_ON_DIM`, `POSITIVE_ON_DIM`, `GROWTH_ON_DIM`; `BattleOutlined*Label`); white plates stay white;
+**exception (user decision): description plates stay dark** — card description boxes (`CardDescBox` battle side: hand,
+detail card fan, pickers, previews), keyword note panels, and the pilot detail info plate (rows, note, effect cells,
+growth bar) keep the pre-white colours as `DESC_*` tokens (`DESC_BG` `DESC_NAME` `DESC_TEXT` `DESC_NOTE` `DESC_KW`
+`DESC_KNOCK` `DESC_SPECIAL` `DESC_HEADER` `DESC_KEY` `DESC_VALUE` `DESC_BODY` `DESC_POSITIVE` `DESC_NEGATIVE`
+`DESC_GROWTH` `DESC_GOLD` `DESC_CHIP_BG` `DESC_CHIP_BORDER` `DESC_ICON`, `DESC_FX_COLORS` / `desc_fx_color(c)`);
+emphasis is **amber** (`GOLD` = `ACCENT` fills, `TEXT_TITLE` = `ACCENT_TEXT` text; primary buttons are the outgame
+primary button); sides are blue / red — `ALLY` · `ENEMY` · `SIDE_TEXT` are darkened for white paper, `TEAM_*` stay
+as fills over the field. Many constants alias `OutgameTheme` directly (`const PANEL_BG = OutgameTheme.SURFACE`).
+**Not plates, so not whitened** (they float on the dark battlefield / art): damage popups, portrait banners, marker
+rings, strip disc numbers (`PilotStripDeadLabel`), stress words, the objective clocks (outlined number, light
+`OBJ_*_FIELD` glyphs — user decision), the strip growth tab (team-colour fill + outlined `TEXT_SCORE` — user
+decision), the skill badge (dark tile face like the skill icon tile), reservation chips — `TEXT_BRIGHT` + `OUTLINE`
+(`BattleOutlinedLabel`) stays for those.
 
 | Group | Exports |
 |---|---|
-| Plates | `PANEL_BG` `PANEL_BORDER` (detail plates) · `POPUP_BG` (skill popup + its arrow) · `MODAL_BG` (result panel, opaque) · `GOLD_PANEL_BG` (MVP info) · `MENU_BG` · `CHIP_BG` `CHIP_BG_HL` `CHIP_BORDER` `CHIP_BORDER_HL` (stat cells / FX thumbs) · `TAB_BG_ON/OFF` `TAB_BORDER_ON/OFF` · `BUTTON_BG` · `SLAB_BG` · `ART_SLAB_BG` `ART_SLAB_BORDER` `ART_BACK_TINT` · `FX_VALUE_BAND` |
-| Accent · dim | `GOLD` `GOLD_BORDER` `GLOW` · `DIM` (detail) `DIM_DEEP` (MVP) `DIM_LIGHT` (result) · `SHADOW` · `OUTLINE` `OUTLINE_SOFT` |
-| Skill tile | `SKILL_TILE_BG` `SKILL_TILE_ICON` `SKILL_TILE_SHADOW` `SKILL_KW_ICON` `SKILL_KNOCK` |
-| Text (bright → dim) | `TEXT_BRIGHT` `TEXT_VALUE` `TEXT_DESC` `TEXT_CLOCK` `TEXT_KDA` `TEXT_WAIT` `TEXT_PLACEHOLDER` `TEXT_NOTE` `TEXT_SUB` `TEXT_KEY` `TEXT_TYPE` `TEXT_MECH` · coloured `TEXT_TITLE` `TEXT_HEADER` `TEXT_SKILL` `TEXT_SCORE` `TEXT_SECTION` `TEXT_GROWTH` `TEXT_WARN` · `ALLY` `ENEMY` `POSITIVE` `NEGATIVE` `DEAD` |
-| Sides (index = team) | `TEAM_DISC` `TEAM_RIM` `TEAM_DONUT` `TURN_BAR` · `STRIP_DRAG_DIM` `DEAD_TINT` |
-| Sizes | `FONT_LARGE` 40 · `FONT_TITLE` 30 · `FONT_VALUE` 28 · `FONT_TAB` 26 · `FONT_BODY` 22 · `FONT_CAPTION` 20 · `FONT_SMALL` 18 · `RADIUS` `PANEL_RADIUS` `FX_RADIUS` `CHIP_RADIUS` `SLAB_RADIUS` `ART_SLAB_RADIUS` `SCORE_TAB_RADIUS` · `*_BORDER_W` · `PANEL_PAD` `POPUP_PAD` · `SHADOW_SIZE` `SHADOW_OFFSET` `OUTLINE_SIZE` `BUTTON_PRESS_LIGHTEN` |
-| StyleBox | `box(bg, radius, border, border_w)` (padding 0) · `panel_box()` · `chip_box(highlighted, fx)` · `tab_box(on)` · `popup_box()` — the same factories the theme is built from, for code that still styles nodes |
+| Plates | `PAPER` · `PANEL_BG` `PANEL_BORDER` · `POPUP_BG` (skill popup + its arrow) · `MODAL_BG` · `GOLD_PANEL_BG` · `MENU_BG` (desc boxes) · `SUNK` (tracks, slot backs) · `LINE_STRONG` (tracks / frames on paper) · `DEAD_SLOT` · `CHIP_BG` `CHIP_BG_HL` `CHIP_BORDER` `CHIP_BORDER_HL` (sunk cell / amber-tint highlight) · `TAB_BG_ON/OFF` `TAB_BORDER_ON/OFF` · `BUTTON_BG` · `SLAB_BG` · `ART_SLAB_BG` `ART_SLAB_BORDER` `ART_BACK_TINT` · `FX_VALUE_BAND` |
+| Accent · dim | `GOLD` `GOLD_BORDER` `GLOW` · `DIM_BLACK` (α 0.30) and its aliases `DIM` `DIM_DEEP` `DIM_LIGHT` `DIM_FIELD` · `SHADOW` · `OUTLINE` `OUTLINE_SOFT` · on-dim text `TITLE_ON_DIM` `SUB_ON_DIM` `NEGATIVE_ON_DIM` `POSITIVE_ON_DIM` `GROWTH_ON_DIM` |
+| Skill tile | `SKILL_TILE_BG` (`RAIL`) `SKILL_TILE_ICON` `SKILL_TILE_SHADOW` `SKILL_KW_ICON` (= `ACCENT_TEXT`) `SKILL_KNOCK` (= white) `SPECIAL_KW` (= `KeywordIcon.SPECIAL_COLOR_LIGHT`) · `FX_ICON` (glyphs on sunk cells) |
+| Text | on paper: `TEXT` `TEXT_VALUE` `TEXT_DESC` `TEXT_CLOCK` (= `OutgameTheme.TEXT`) · `TEXT_KDA` `TEXT_WAIT` `TEXT_PLACEHOLDER` `TEXT_NOTE` `TEXT_SUB` `TEXT_KEY` `TEXT_TYPE` `TEXT_MECH` (= `TEXT_SUB`) · `TEXT_FAINT` · `TEXT_ON_FILL` · coloured `TEXT_TITLE` `TEXT_HEADER` `TEXT_SKILL` `TEXT_SECTION` `TEXT_GROWTH` `TEXT_WARN` · `ALLY` `ENEMY` `POSITIVE` `NEGATIVE`; over the field: `TEXT_BRIGHT` `TEXT_SCORE` `DEAD` `STRESS_*` |
+| Effect cells | `FX_WARM` `FX_COOL` `FX_GREEN` `FX_MINT` `FX_GOLD` `FX_SHIELD` `FX_NEUTRAL` (detail-panel effect abbreviations on sunk cells) · `OBJ_HERALD` `OBJ_DRAGON` (on white plates) · `OBJ_HERALD_FIELD` `OBJ_DRAGON_FIELD` (objective clocks over the field) |
+| Sides (index = team) | `TEAM_DISC` `TEAM_RIM` `TEAM_DONUT` `TURN_BAR` (turn banner side lines) `SIDE_TEXT` · `STRIP_DRAG_DIM` `DEAD_TINT` · `PREVIEW_FIELD` (F6 previews' stand-in battlefield grey) |
+| Sizes | `FONT_LARGE` 40 · `FONT_TITLE` 30 · `FONT_VALUE` 28 · `FONT_TAB` 26 · `FONT_BODY` 22 · `FONT_CAPTION` 20 · `FONT_SMALL` 18 · `RADIUS` `PANEL_RADIUS` `FX_RADIUS` `CHIP_RADIUS` `SLAB_RADIUS` `ART_SLAB_RADIUS` `SCORE_TAB_RADIUS` `ROW_RADIUS` `DESC_BOX_RADIUS` · `*_BORDER_W` · `PANEL_PAD` `POPUP_PAD` `CLOCK_PAD` · `SHADOW_SIZE` `SHADOW_OFFSET` `DESC_SHADOW*` `OUTLINE_SIZE` |
+| StyleBox | `box(bg, radius, border, border_w)` (padding 0) · `with_shadow(sb)` · `panel_box()` · `chip_box(highlighted, fx)` · `tab_box(on)` · `popup_box()` · `gold_box()` (white + amber rim) · `row_box()` (kill-log row) · `desc_box()` — the same factories the theme is built from, for code that still styles nodes |
+| Buttons in code | `style_button(b, kind = "primary", font_size)` — delegates to `OutgameTheme.style_primary/ghost/danger_button` (selection overlay, pile viewer, engage intro / result, objective reward, jungle start) |
 | Theme | `build_theme()` · `save_theme()` → `THEME_PATH` (`BattleTheme.tres`) · `variation_box(name, item)` |
 
 **`BattleTheme.tres`** follows the `OutgameTheme.tres` rules exactly: never hand-edit; regenerate with
@@ -1089,60 +1120,63 @@ constant names as aliases (`const STAT_PANEL_BG := BattleTheme.PANEL_BG` …) un
 `Godot --headless --path . -s res://resources/BattleThemeBuilderCli.gd` (a brand-new `class_name` needs one
 `--import` first so the CLI can see it); attach it on the scene's first **Control** (under a `CanvasLayer`,
 e.g. `Root`) and pick a *Theme Type Variation*; no local StyleBoxes / colour overrides in scenes; a node's own
-font size stays `theme_override_font_sizes/font_size`. No variation sets button font colours unless listed —
-battle buttons use the engine default text colours.
+font size stays `theme_override_font_sizes/font_size`. Button variations set their font colours (white on amber,
+`ACCENT_TEXT` / `TEXT_SUB` tabs, `TEXT_FAINT` disabled).
 
 | Variation | Base | Purpose |
 |---|---|---|
-| `BattlePanel` | PanelContainer | Info plate — `panel_box()` (`PANEL_BG`, 1px `PANEL_BORDER`, `PANEL_RADIUS`), padding `PANEL_PAD` (detail header / stat plate / skill plate) |
-| `BattlePopup` | PanelContainer | Skill popup plate — `popup_box()` (`POPUP_BG`, `RADIUS`, AA, `SHADOW` down only), padding `POPUP_PAD` |
-| `BattleGoldPanel` | PanelContainer | Gold-rimmed plate (`GOLD_PANEL_BG`, 3px `GOLD_BORDER`, `RADIUS`), padding 0 — MVP info |
-| `BattleGoldModal` | PanelContainer | Same rim, opaque `MODAL_BG`, padding 0 — the victory / defeat panel (`UI_View_BattleHud.tscn` `%VictoryPanel` — a `Panel`, the variation's `panel` box applies) |
+| `BattlePanel` | PanelContainer | Info plate — `panel_box()` (white, 1px faint border, `PANEL_RADIUS`, shadow), padding `PANEL_PAD` (detail header / stat plate / skill plate, stress toast) |
+| `BattlePopup` | PanelContainer | Popup plate — `popup_box()` (white, `RADIUS`, shadow), padding `POPUP_PAD` (skill popup, reserve info) |
+| `BattleGoldPanel` | PanelContainer | `gold_box()` — white + 3px amber rim + shadow, padding 0 — MVP info |
+| `BattleGoldModal` | PanelContainer | Same, `MODAL_BG` — the victory / defeat panel (`%VictoryPanel`, a `Panel`) |
 | `BattleSlab` | PanelContainer | "No art yet" slab (`SLAB_BG`, 2px `PANEL_BORDER`, `SLAB_RADIUS`) |
-| `BattleDimPanel` | Panel | Full-rect dim `DIM` (detail panel); set mouse Ignore |
-| `BattleGoldButton` | Button | `BUTTON_BG` + 3px gold rim, `RADIUS`, pressed lightened `BUTTON_PRESS_LIGHTEN`, focus empty, `FONT_LARGE` — MVP "계속" |
-| `BattleActionButton` | Button | **Engine default button look**, only `FONT_VALUE` — skill "사용" (popup and detail panel) |
-| `BattleChipButton` · `BattleChipButtonOn` | Button | Stat cell normal / highlighted — `chip_box(false/true)` in every press state (detail panel cells) |
+| `BattleDimPanel` | Panel | Full-rect dim `DIM` (= `DIM_BLACK`; detail panel, stress event); set mouse Ignore |
+| `BattleGoldButton` | Button | Amber primary (`OutgameTheme.button_styles("primary")`, corners `RADIUS`), white text, `FONT_LARGE` — MVP "계속", victory button (font 32 override) |
+| `BattleActionButton` | Button | Amber primary, white text, `FONT_VALUE` — skill "사용" (popup and detail panel) |
+| `BattleChipButton` · `BattleChipButtonOn` | Button | Stat cell normal (sunk) / highlighted (amber tint + amber 3px) — `chip_box(false/true)` in every press state |
 | `BattleFxButton` · `BattleFxButtonOn` | Button | Same pair with `FX_RADIUS` (lasting-effect thumbnails) |
-| `BattleTab` · `BattleTabOn` | Button | Detail panel tab off / on — `tab_box(on)`, `FONT_TAB`, `font_color` `TEXT_KEY` / white |
+| `BattleTab` · `BattleTabOn` | Button | Detail panel tab off (sunk) / on (white, joins the plate) — `tab_box(on)`, `FONT_TAB`, text `TEXT_KEY` / `TEXT_TITLE` |
+| `BattleTextLabel` | Label | `TEXT`, `FONT_LARGE` — plain dark text on paper (victory line, MVP names, base of the HUD / turn-end labels) |
 | `BattleHeaderLabel` | Label | `TEXT_HEADER`, `FONT_LARGE` (detail name, note title) |
-| `BattleTitleLabel` | Label | Gold `TEXT_TITLE`, `FONT_TITLE` (result panel "MVP") |
+| `BattleTitleLabel` | Label | Amber `TEXT_TITLE`, `FONT_TITLE` (result panel "MVP") |
 | `BattleSkillNameLabel` | Label | `TEXT_SKILL`, `FONT_TITLE` |
 | `BattleValueLabel` · `BattleBodyLabel` · `BattleStatusLabel` · `BattleKeyLabel` | Label | `TEXT_VALUE` `FONT_VALUE` · `TEXT_DESC` · `TEXT_WAIT` · `TEXT_KEY` (the last three `FONT_BODY`) |
-| `BattleSectionLabel` · `BattleSubLabel` · `BattleCaptionLabel` | Label | `TEXT_SECTION` · `TEXT_SUB` (`FONT_BODY`) · `TEXT_TYPE` `FONT_CAPTION` (skill type, cooldown turns) |
-| `BattleGrowthLabel` | Label | `TEXT_GROWTH`, `FONT_LARGE` |
+| `BattleSectionLabel` · `BattleSubLabel` · `BattleCaptionLabel` | Label | `TEXT_SECTION` · `TEXT_SUB` (`FONT_BODY`) · `TEXT_TYPE` `FONT_CAPTION` |
+| `BattleGrowthLabel` | Label | `TEXT_GROWTH` (amber), `FONT_LARGE` |
 | `BattlePositiveLabel` · `BattleNegativeLabel` · `BattleAllyLabel` · `BattleEnemyLabel` | Label | `POSITIVE` · `NEGATIVE` · `ALLY` · `ENEMY`, `FONT_BODY` — binary state colours switch the variation name |
-| `BattleOutlinedLabel` | Label | `TEXT_BRIGHT` + `OUTLINE` outline `OUTLINE_SIZE`, `FONT_LARGE` — text floating on a dim / art with no plate |
+| `BattleOutlinedLabel` | Label | `TEXT_BRIGHT` + `OUTLINE` outline `OUTLINE_SIZE`, `FONT_LARGE` — text floating on the field / art / dim with no plate |
+| `BattleOutlinedSubLabel` · `BattleOutlinedNegativeLabel` · `BattleOutlinedPositiveLabel` | BattleOutlinedLabel | `SUB_ON_DIM` / `NEGATIVE_ON_DIM` / `POSITIVE_ON_DIM`, `FONT_BODY`, outline 4 — small lines on a dim (stress event `%Hint` / `%Effect`, switched by mood) |
 
 Screen variations (`_add_screen_variations`, same `<Scene><Role>` rule as outgame; label variations override
-only `font_color`):
+only `font_color` unless noted):
 
 | Variation | Base | Scene · node | Code |
 |---|---|---|---|
-| `MvpDimPanel` | BattleDimPanel | `MvpView` `Dim` (`DIM_DEEP`) | — |
-| `MvpTitleLabel` · `MvpSubLabel` | BattleOutlinedLabel | `MvpView` `Title` · `Metric` / `FallbackLabel` | — |
-| `HudClockLabel` | BattleOutlinedLabel | `BattleHud` `%TimeLabel` — `TEXT_CLOCK`, `FONT_SMALL`, outline `OUTLINE_SOFT` 4 | — |
-| `HudStripBackdrop` | BattleDimPanel | `BattleHud` `%EnemyStripBackdrop` · `%PlayerStripBackdrop` — `StyleBoxEmpty` (the strip backplates are invisible; the nodes stay as z-order / hide anchors) | — |
-| `HudTurnBar` | BattleDimPanel | `BattleHud` `%TurnBar` — `box(TURN_BAR[0], 0)`, AA off | `variation_box` copy, `bg_color` = `TURN_BAR[team]` |
-| `HudTurnLabel` | BattleOutlinedLabel | `BattleHud` `%TurnLabel` — white, 56, outline `OUTLINE_SOFT` | — |
+| `MvpDimPanel` | BattleDimPanel | `MvpView` `Dim` (`DIM_DEEP` = `DIM_BLACK`) | — |
+| `MvpTitleLabel` · `MvpSubLabel` · `MvpNameLabel` | BattleOutlinedLabel (`TITLE_ON_DIM`, on the dim) · BattleSubLabel · BattleTextLabel (both on white plates / slab) | `MvpView` `Title` · `Metric` / `FallbackLabel` · `%Name` / `%Kda` | — |
+| `HudClockLabel` | BattleTextLabel | `BattleHud` `%TimeLabel` — white pill (the label's own `normal` box, r999, shadow, padding `CLOCK_PAD`), `TEXT_CLOCK`, `FONT_CAPTION`; the scene label is 102 wide, centred | — |
+| `HudStripBackdrop` | BattleDimPanel | `BattleHud` `%EnemyStripBackdrop` · `%PlayerStripBackdrop` — `StyleBoxEmpty` (invisible; z-order / hide anchors) | — |
+| `HudTurnBar` | BattleDimPanel | `BattleHud` `%TurnBar` — white bar, shadow, 4px top / bottom lines in `TURN_BAR[0]`, AA off | `variation_box` copy, `border_color` = `TURN_BAR[team]` |
+| `HudTurnLabel` | BattleTextLabel | `BattleHud` `%TurnLabel` — `SIDE_TEXT[0]`, 56 | colour override `SIDE_TEXT[team]` |
 | `HudVictoryDimPanel` | BattleDimPanel | `BattleHud` `%VictoryBackdrop` (`DIM_LIGHT`) | — |
 | `HudVictoryKdaLabel` | BattleSubLabel | `BattleHud` `%MvpKda` — `TEXT_KDA`, 26 | — |
-| `PilotStripScoreTab` | BattleDimPanel | `PilotStripCell` `%Pill` — `box(TEAM_DISC[0], SCORE_TAB_RADIUS)`, AA | `variation_box` copy, `bg_color` = `TEAM_DISC[team]` (`PilotStrip.setup`) |
+| `PilotStripScoreTab` | BattleDimPanel | `PilotStripCell` `%Pill` — `box(TEAM_DISC[0], SCORE_TAB_RADIUS)`, AA (team colour kept on purpose) | `variation_box` copy, `bg_color` = `TEAM_DISC[team]` (`PilotStrip.setup`) |
 | `PilotStripScoreLabel` | BattleOutlinedLabel | `PilotStripCell` `%Score` — `TEXT_SCORE`, 20, outline black α 0.6, 3 | — |
-| `PilotStripDeadLabel` | BattleOutlinedLabel | `PilotStripCell` `%Dead` — `DEAD`, 53 (= disc diameter × 0.42) | — |
+| `PilotStripDeadLabel` | BattleOutlinedLabel | `PilotStripCell` `%Dead` — `DEAD`, 53 | — |
+| `TurnEndPanelPlate` · `TurnEndGauge` · `TurnEndLabel` | BattleGoldPanel · BattleDimPanel · BattleTextLabel | `UI_Comp_TurnEndPanel` `%Plate` (white, amber rim, `PANEL_RADIUS`) · `%Gauge` (`CHIP_BG_HL` amber tint, r `PANEL_RADIUS` − 4; width = code) · `Label` (`TEXT`, `FONT_TITLE`) | gauge width (`_apply_fill`) |
 | `PilotDetailStatPlate` | BattlePanel | `PilotDetailView` StatPanel — top corners square (the active tab sits on it) | — |
 | `StressEventAwakenLabel` · `StressEventPanicLabel` | BattleOutlinedLabel | `StressEventView` `%Result` — `STRESS_AWAKEN` / `STRESS_PANIC` | code switches by mood |
 | `StressMoodAwakenLabel` · `StressMoodPanicLabel` · `StressMoodShakenLabel` | BattleOutlinedLabel | `PilotStripCell` `%Mood`, `PilotDetailView` `%Stress` — `STRESS_*`, `FONT_BODY`, outline 4 | code switches by mood (`StressEvents.mood_variation`) |
 | `PilotDetailArtSlab` | BattleSlab | `PilotDetailArt` `%Slab` — "no art yet" (`ART_SLAB_BG`, 3px `ART_SLAB_BORDER`, top corners `ART_SLAB_RADIUS`) | shown when the texture is missing |
-| `PilotDetailFxBand` | BattleDimPanel | `PilotDetailFxThumb` `%Band` — value band under card art (`FX_VALUE_BAND`, bottom corners `FX_RADIUS` − 3) | — |
-| `PilotDetailMenuPanel` | BattlePopup | `PilotDetailInfoMenu` — `BattleTheme.desc_box()` (the dark card description box; `CardDescBox.panel_style(false)` returns the same), padding 20 / 16 | — |
+| `PilotDetailFxBand` · `PilotDetailFxBandLabel` | BattleDimPanel · BattleValueLabel | `PilotDetailFxThumb` `%Band` (`FX_VALUE_BAND`, bottom corners `FX_RADIUS` − 3) · `%BandValue` (`TEXT_ON_FILL`) | — |
+| `PilotDetailMenuPanel` | BattlePopup | `PilotDetailInfoMenu` — `desc_box()` (the **dark** card description box, `DESC_BG`; `CardDescBox.panel_style(false)` returns the same), padding 20 / 16 | — |
+| `PilotDetailMenuTitleLabel` · `PilotDetailMenuKeyLabel` · `PilotDetailMenuValueLabel` · `PilotDetailMenuPositiveLabel` · `PilotDetailMenuNegativeLabel` · `PilotDetailMenuFxButton` | BattleHeaderLabel · BattleKeyLabel · BattleValueLabel · BattlePositiveLabel · BattleNegativeLabel · BattleFxButton | Inside the dark info plate: `%Title` / `%TitleValue` (`DESC_HEADER`), `PilotDetailInfoRow` key / value (`DESC_KEY` / `DESC_VALUE`), `PilotDetailStatFx` `%Pct` / `%Flat` (`DESC_POSITIVE` / `DESC_NEGATIVE`, `_sign_variation`), its thumb (`DESC_CHIP_BG` + `DESC_CHIP_BORDER`) | effect abbreviation colour `desc_fx_color()` |
 | `PilotDetailCardBand` | Button | `PilotDetailCardBand` — `StyleBoxEmpty` in every state (input band over a fan card) | — |
 | `PilotDetailMechLabel` · `PilotDetailWarnLabel` · `PilotDetailPlaceholderLabel` | BattleKeyLabel · BattleNegativeLabel · BattleSubLabel | `%Mech` (`TEXT_MECH` 24) · `%DeadLabel` (`TEXT_WARN` 24) · `%FallbackLabel` (`TEXT_PLACEHOLDER` 34) — these also set `font_size` | — |
 | `PilotDetailNoteText` | RichTextLabel | `PilotDetailInfoMenu` `%Note` (`TEXT_NOTE`, `normal_font_size` `FONT_CAPTION`) | text + icons via `_fill_note` |
 
-The HUD rows (`_add_hud_variations`) also override font size / outline where the old code differed from the
-base. The victory panel uses the shared `BattleGoldModal` / `BattleTitleLabel` directly; its result line,
-MVP name and button keep the engine default colours with only `theme_override_font_sizes` (48 · 34 · 32).
+The victory panel uses the shared `BattleGoldModal` / `BattleTitleLabel`; its result line and MVP name are
+`BattleTextLabel` (48 · 34 overrides), its button `BattleGoldButton` (32).
 
 ### Bottom action bar (`add_bottom_bar`)
 **The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom

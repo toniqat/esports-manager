@@ -68,6 +68,7 @@ opposing laner …). A clause grammar would just produce 25 clauses, so here we 
 ### Icons
 `ICON` in `resources/SkillImages.gd` maps `key` → a Deadlock ability icon (`resources/images/skill/`).
 When adding a skill, add a row there too (if missing, only the icon silently drops out).
+Mech passives use the same folder through `MECH_ICON` (`../mech/README.md` → Icons) — pick an icon neither table uses.
 
 ---
 
@@ -167,6 +168,51 @@ the same faces.
 
 **`on_objective_won` is called only when won through an engage.** Taking it free because nobody showed up
 (`_award_uncontested`) is not "전투에서 승리" (won in battle) as the CSV text says.
+
+---
+
+## Effect banners — conditional passives announce themselves
+
+When a **conditional** passive actually fires (a condition was met and something happened), the
+pilot's portrait gets the same one-line banner as a buff card: glyph chip + name, no panel, outlined
+text (`rendering/README.md` → "Effect banners"; on the engage stage `EngageArena` draws it). Always-on
+stat passives and plain charge (token) accrual stay silent — they change numbers continuously, a banner
+per tick would be noise. One helper per system: `PilotSkillSystem._banner(p)` →
+`_bs.renderer.spawn_skill_banner(p)`, `MechSkillSystem._banner(p, key)` →
+`_bs.renderer.spawn_mech_passive_banner(p, key)`; the renderer merges repeats of the same passive on the
+same pilot (life stretched, no new row).
+
+**Pilot skills** (passives only — active skills are pressed by the player, their result is the feedback)
+
+| Skill | Banner? | Fires at |
+|---|---|---|
+| 기회주의자 (opportunist) | yes | `engage_bonus_rounds_from_kills` returns > 0 = the engage really got extra rounds (asked once per engage by `TurnEngageSim._advance_order`) |
+| 원딜 사냥꾼 (adc_hunter) | yes | `engage_focus_atk_mult` — called only when the first engage hit lands on the enemy ADC |
+| 사냥의 보상 (hunt_reward) | yes | `on_kill`, kill participation starts the growth window |
+| 전리품 수집가 (loot_collector) | yes | `on_kill`, a **new** enemy role was added |
+| 신예 (rookie) | yes | `_spawn_hot_hand` — charges full, [핫핸드] shuffled into the deck |
+| 퍼포먼스 · 축적 · 몰아치기 | no | charge accrual on every card / turn / hit (badge ring shows it) |
+| 노련함 · 불안정한 대포 · 만능 · 백본 | no | always-on modifiers (백본's match-start discard happens before the field is drawn) |
+| 경쟁 심리 (rivalry) | no | continuous comparison, flips on / off with the score — not an event |
+
+**Mech passives** (`mech_passives.csv`) and hand-held passive cards (`hand_passive:<key>`)
+
+| Passive | Banner? | Fires at (`MechSkillSystem`) |
+|---|---|---|
+| 고통과 쾌감 (pain_pleasure) | yes | `on_damage_dealt` / `on_damage_taken` (max HP gained) and own-lane turret kill card (`on_turret_destroyed`) — coalesced |
+| 영혼 수확 (soul_harvest) | yes | `_soul_harvest_gain` (card hit or engage hit) — coalesced |
+| 취약 각인 (vulnerability_mark) · 조준 보정 (calibration) | yes | `on_card_attack_hit` |
+| 반응 장갑 전개 (reactive_plating) | yes | `consume_reactive_armor` — on the **victim** whose damage was cut (key given explicitly: armor also comes from mech 1's cards) |
+| 오버클럭 (overclock) | yes | `overclock_extra_attack` returned true |
+| 불굴 (last_stand) | yes | `consume_last_stand` — on the ally that survived (key given explicitly) |
+| 처형 준비 (execution_charge) · 무념 (zen_charge) | yes | `_on_charge_full` (card granted / sweep) |
+| 수호 연계 (guardian_link) | yes | `on_shielded_ally_damage` — on the guarding mech, before its piggyback hit |
+| 승전보 (victory_report) · 철거 명령 (demolition_order) | yes | `on_objective_win` |
+| 미사일 적재 (missile_stock) | yes | `on_turret_destroyed`, own-lane turret |
+| 약자 멸시 (card, hand_passive:contempt) | yes — card art | `take_contempt_charges` spent > 0 (engage opening strike) |
+| 계시 (card, hand_passive:revelation) | yes — card art | `on_card_damage_for_revelation`, before the piggyback hit |
+| 과적재 (bulk_power) · 전탄 발사 (barrage) | no | always-on (every engage attack for barrage) |
+| 캐시 (card, cash) · 밸런스 (card, balance) | no | every card played (already shows a score popup) · always-on cost waiver |
 
 ---
 

@@ -1599,7 +1599,6 @@ tx_7QBNF0Q0DW,진행 중인 한계돌파가 없습니다
 tx_3NCH9K5W6B,코치 포인트 {n} 필요
 tx_TN0T71EKCT,코치 포인트 {n}
 tx_T4J6SR6Z2H,{n}P
-tx_3FGGE155P3,누구를 방문할까요?
 tx_SBR87FT4VQ,무엇을 함께할까요?
 tx_KW9B22X657,집중 훈련 코스를 고르세요
 tx_KD8HT00MQD,집중 훈련 결과
@@ -1721,6 +1720,11 @@ tx_KAZNBCDWDE,>벽이 높아졌다는 건 그만큼 올라왔다는 뜻이야. �
 tx_DBYRHDAACS,(목표 고르기 — 게임이 목표 셋으로 바꾼다)
 tx_F2XVSXXX9X,좋아요. 목표가 생기니 좀 보이는 것 같아요.
 tx_GDSE4N85DZ,이번에도 넘어 보일게요.
+tx_CDZXJZ9M6P,신뢰도 Lv.{n}
+tx_E2D5A7P8Z6,훈련 EXP · Lv.{n}
+tx_T6KW92G6MY,한계돌파 필요
+tx_HVEN1X5ECC,능력치 EXP {delta}
+tx_4DB24E4HX7,팀 전체
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -2257,7 +2261,6 @@ tx_DNDDCSPQEE,8강 4경기
 tx_QXB3XY4AYX,4강 1경기
 tx_XXXNFX172K,4강 2경기
 tx_TRMS5ZZQY6,결승
-tx_NCAC0FXRKV,{year}년 {month}월
 tx_1K2R63NYA9,훈련 기록이 없습니다
 tx_Q5HXG4JY2G,일정 없음
 tx_77T88FPPVZ,{day}: 예정된 경기 없음
@@ -2299,10 +2302,6 @@ tx_8EXSPR79YJ,{day} 저녁 · 외출 {n}회째
 tx_5GDZXY0QSR,{day} · 사건 발생 · {name}
 tx_CPW05B0HB9,오전
 tx_XXVBB9VYQX,오후
-tx_7YZ50G3EBF,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다
-tx_AWKX6T199K,오전 훈련 결과 · 잠시 후 오전 만남으로 넘어갑니다 (다음 = 건너뛰기)
-tx_CXNA4K157Z,오후 · 선수를 눌러 방문하세요 (하루 한 번)
-tx_7KR285R4ES,오늘 오후 일정을 마쳤습니다
 tx_5W9RGVB4BS,EXP +{n}
 tx_TCFF8QQBA3,스트레스 {delta}
 tx_B7175RYNW5,혼자 외출
@@ -2327,9 +2326,6 @@ tx_PJXWJ5R6J6,메크 연구
 tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
 tx_H106HT101H,연구소 연구 메크 없음
 tx_DY69B79HB4,저녁
-tx_FM9P3DRASG,오전 · 선수를 눌러 훈련 소감을 들어 보세요
-tx_N36SF54RT7,오전 만남을 마쳤습니다 · 다음을 누르면 오후로 넘어갑니다
-tx_CY41J8M14Z,저녁 · 사건이 일어났습니다
 tx_114TEDYXKT,오전 만남
 tx_SJMNVE78AH,지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번)
 tx_1SN8VDP0S4,오늘 오전에는 만날 수 있는 선수가 없습니다
@@ -2341,10 +2337,6 @@ tx_5Y82DHJ5DX,오전: {name} · {name2} 만남
 tx_444WVNHT09,{day} 오전 · 훈련 소감
 tx_V0SAHDNET7,오전 만남을 건너뛸까요?
 tx_H3RGAX8ZG6,아직 선수를 만나 훈련 소감을 들을 수 있습니다. 이대로 오후로 넘어갈까요?
-tx_NJVPQAVA5J,경기장 · 내일 경기를 준비합니다 (상대 분석 · 밴픽)
-tx_P7Q0RHTR7C,경기장 · 오늘은 경기 날입니다
-tx_9FT8896B37,경기장 · 경기를 마치고 기자회견이 기다립니다
-tx_D4H4CEEAQX,저녁 · 조용히 한 주를 마무리합니다
 tx_34NK587JXR,경기 준비
 tx_2PHY0EQHSZ,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일
 tx_3MV5ZYWADH,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다
@@ -2356,6 +2348,7 @@ tx_5CGB20BWXX,{day} 저녁 · 한계돌파
 tx_5N8MET0QZT,캠페인 {n} / {total}
 tx_09VTB4JWBH,리그 {league}주 · 플레이오프 {playoff}주
 tx_TQT1N3PWTS,국제대회 토너먼트 {weeks}주
+tx_Y6H2E9GP0C,DAY {n}
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어
@@ -2675,6 +2668,13 @@ tx_9Z3YXBGMTT,교전
 tx_95JG2WTYR0,승급석
 tx_ZNA4AGXBVT,★{n}
 tx_K0DXAWF4R1,랭크 {n}
+tx_JAA94W3HZE,MON
+tx_6TEJ91QHN4,TUE
+tx_HJHGWHQ20R,WED
+tx_PXK50FC8R6,THU
+tx_GJ2EZP9SNV,FRI
+tx_4Q8SQ2B532,SAT
+tx_2RS3PT0FNM,SUN
 tx_KEVDQS5CGB,기초 훈련 I
 tx_SN9RWDKSD9,기초 훈련 II
 tx_ETXQNX2FF3,사격 훈련 I

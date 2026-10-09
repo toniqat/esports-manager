@@ -497,3 +497,8 @@ tx_KAZNBCDWDE,mental.lb02.lb02_l3,active,mental_texts.csv text (id=LB02_L3),,,>�
 tx_DBYRHDAACS,mental.lb02.lb02_c0,active,mental_texts.csv text (id=LB02_C0),,,(목표 고르기 — 게임이 목표 셋으로 바꾼다),(Goal pick — the game replaces it with three goals),draft,dddb9225
 tx_F2XVSXXX9X,mental.lb02.lb02_c0_s0,active,mental_texts.csv text (id=LB02_C0_S0),,,좋아요. 목표가 생기니 좀 보이는 것 같아요.,"Okay. With a goal, I think I can see the way.",draft,0e93019d
 tx_GDSE4N85DZ,mental.lb02.lb02_c0_s1,active,mental_texts.csv text (id=LB02_C0_S1),,,이번에도 넘어 보일게요.,I'll get past this one too.,draft,135c91d7
+tx_CDZXJZ9M6P,mental.ui.result.trust,active,"EventResultPanel row label: trust bar, {n} = trust level after the change",,,신뢰도 Lv.{n},Trust Lv.{n},draft,aa557285
+tx_E2D5A7P8Z6,mental.ui.result.tlexp,active,"EventResultPanel row label: training-level EXP bar, {n} = training level",,,훈련 EXP · Lv.{n},Training EXP · Lv.{n},draft,1c4d173b
+tx_T6KW92G6MY,mental.ui.result.tlexp_full,active,"EventResultPanel row value: training EXP bar is full, no EXP was added",,,한계돌파 필요,Limit break needed,draft,ab23561a
+tx_HVEN1X5ECC,mental.ui.result.stat_exp,active,EventResultPanel compact chip: stat EXP banked without a whole point,,,능력치 EXP {delta},Stat EXP {delta},draft,4a3ffae3
+tx_4DB24E4HX7,mental.ui.result.team,active,"EventResultPanel block title for effects without a single pilot (team trust, manager mods, coach points)",,,팀 전체,Whole team,draft,6d5a77a4

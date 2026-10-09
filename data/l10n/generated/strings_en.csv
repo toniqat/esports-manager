@@ -1599,7 +1599,6 @@ tx_7QBNF0Q0DW,No limit break in progress
 tx_3NCH9K5W6B,Needs {n} coach points
 tx_TN0T71EKCT,Coach points {n}
 tx_T4J6SR6Z2H,{n}P
-tx_3FGGE155P3,Who will you visit?
 tx_SBR87FT4VQ,What will you do together?
 tx_KW9B22X657,Pick a focus training course
 tx_KD8HT00MQD,Focus training result
@@ -1721,6 +1720,11 @@ tx_KAZNBCDWDE,>A higher wall means you've climbed that far. Let's break it in re
 tx_DBYRHDAACS,(Goal pick — the game replaces it with three goals)
 tx_F2XVSXXX9X,"Okay. With a goal, I think I can see the way."
 tx_GDSE4N85DZ,I'll get past this one too.
+tx_CDZXJZ9M6P,Trust Lv.{n}
+tx_E2D5A7P8Z6,Training EXP · Lv.{n}
+tx_T6KW92G6MY,Limit break needed
+tx_HVEN1X5ECC,Stat EXP {delta}
+tx_4DB24E4HX7,Whole team
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -2257,7 +2261,6 @@ tx_DNDDCSPQEE,Quarterfinal 4
 tx_QXB3XY4AYX,Semifinal 1
 tx_XXXNFX172K,Semifinal 2
 tx_TRMS5ZZQY6,Final
-tx_NCAC0FXRKV,Year {year} · Month {month}
 tx_1K2R63NYA9,No training records
 tx_Q5HXG4JY2G,Nothing scheduled
 tx_77T88FPPVZ,{day}: No matches scheduled
@@ -2299,10 +2302,6 @@ tx_8EXSPR79YJ,{day} evening · Outing #{n}
 tx_5GDZXY0QSR,{day} · Incident · {name}
 tx_CPW05B0HB9,Morning
 tx_XXVBB9VYQX,Afternoon
-tx_7YZ50G3EBF,Morning training · Press Next to settle today's training
-tx_AWKX6T199K,Morning training results · The morning talk starts shortly (Next = skip)
-tx_CXNA4K157Z,Afternoon · Tap a player to visit (once per day)
-tx_7KR285R4ES,This afternoon is done
 tx_5W9RGVB4BS,EXP +{n}
 tx_TCFF8QQBA3,Stress {delta}
 tx_B7175RYNW5,Out alone
@@ -2327,9 +2326,6 @@ tx_PJXWJ5R6J6,Mech research
 tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
 tx_H106HT101H,No mech lab research
 tx_DY69B79HB4,Evening
-tx_FM9P3DRASG,Morning · Tap a player to hear how training went
-tx_N36SF54RT7,Morning talk done · Next moves on to the afternoon
-tx_CY41J8M14Z,Evening · Something happened
 tx_114TEDYXKT,Morning talk
 tx_SJMNVE78AH,Tap a player on the map to hear how training went (once a morning)
 tx_1SN8VDP0S4,No one to talk to this morning
@@ -2341,10 +2337,6 @@ tx_5Y82DHJ5DX,Morning: Talk with {name} and {name2}
 tx_444WVNHT09,{day} morning · After training
 tx_V0SAHDNET7,Skip the morning talk?
 tx_H3RGAX8ZG6,You can still meet a player about today's training. Move on to the afternoon anyway?
-tx_NJVPQAVA5J,Stadium · Get ready for tomorrow's match (scouting · ban/pick)
-tx_P7Q0RHTR7C,Stadium · It's match day
-tx_9FT8896B37,Stadium · The press conference awaits after the match
-tx_D4H4CEEAQX,Evening · A quiet end to the week
 tx_34NK587JXR,Match Prep
 tx_2PHY0EQHSZ,Scout the opponent and finish ban/pick today · the match is tomorrow
 tx_3MV5ZYWADH,Ban/pick done · Start Match goes straight into the match
@@ -2356,6 +2348,7 @@ tx_5CGB20BWXX,{day} evening · Limit break
 tx_5N8MET0QZT,Campaign {n} / {total}
 tx_09VTB4JWBH,League {league} weeks · Playoffs {playoff} weeks
 tx_TQT1N3PWTS,International tournament · {weeks} weeks
+tx_Y6H2E9GP0C,DAY {n}
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language
@@ -2675,6 +2668,13 @@ tx_9Z3YXBGMTT,engage
 tx_95JG2WTYR0,Rank Stone
 tx_ZNA4AGXBVT,★{n}
 tx_K0DXAWF4R1,Rank {n}
+tx_JAA94W3HZE,MON
+tx_6TEJ91QHN4,TUE
+tx_HJHGWHQ20R,WED
+tx_PXK50FC8R6,THU
+tx_GJ2EZP9SNV,FRI
+tx_4Q8SQ2B532,SAT
+tx_2RS3PT0FNM,SUN
 tx_KEVDQS5CGB,Basic Training I
 tx_SN9RWDKSD9,Basic Training II
 tx_ETXQNX2FF3,Shooting Drill I

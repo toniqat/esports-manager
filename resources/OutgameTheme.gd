@@ -994,6 +994,13 @@ static func _add_screen_variations(th: Theme) -> void:
 	visit.content_margin_bottom = 28.0
 	_add_derived(th, "VisitMenuBubble", &"PopupCard", visit)
 
+	# --- C week UI rework ---
+	# season/mental — event result panel (`UI_Comp_EventResultPanel`): compact stat chip on the
+	# white popup card (sunk pill, the SurfaceChip padding).
+	var er_chip: StyleBoxFlat = (th.get_stylebox(&"panel", &"SurfaceChip") as StyleBoxFlat).duplicate()
+	er_chip.bg_color = SURFACE_SUNK
+	_add_derived(th, "EventResultChip", &"SurfaceChip", er_chip)
+
 
 ## 둥근 그림 마스크(`clip_children` 부모가 그리는 흰 판).
 static func _mask_box(radius: int) -> StyleBoxFlat:

@@ -8,7 +8,7 @@ names) are also referenced as `{tx_…}` by finance specials, manager type descs
 
 | File | Role |
 |---|---|
-| `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule `effective(state, stat) = max(manager + staff_mods, assistant, dedicated staff)`; `owner` / `owner_name` / `is_delegated` (auto buttons); `staff_name(e)` — staff rows (`staff_row`, `run_setup.staff[]`) hold the l10n key `name_key` (`name.staff.*`) only, never the text (D7); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`); temporary mods `add_mod` / `decay_mods` (week end). |
+| `StaffSystem.gd` | `class_name StaffSystem` (static). Tables `manager_types` / `staff` / `teams.staff_ids`; run snapshot (`snapshot_for_run` → `run_setup.manager_type/manager_stats/staff`); cover rule `effective(state, stat) = max(manager + staff_mods, assistant, dedicated staff)`; `owner` / `owner_name` / `is_delegated` (auto buttons); `staff_name(e)` — staff rows (`staff_row`, `run_setup.staff[]`) hold the l10n key `name_key` (`name.staff.*`) only, never the text (D7); `effective_for_incident`; `analysis_tier` (`ANALYSIS_TIER_1..3`); temporary mods `add_mod` / `decay_mods` (week end); coach points `coach_points_grant` / `grant_coach_points` / `coach_points` / `spend_coach_points` (§15 D). |
 | `StaffPanel.gd` + `UI_View_StaffPanel.tscn` | Hub manage card + `HubSheet` body — see "Hub card + sheet" below. |
 | `UI_Comp_StaffStatRow.tscn` · `UI_Comp_StaffTraitRow.tscn` · `UI_Comp_StaffMemberRow.tscn` | Item scenes of the sheet (no script): one 능력치 row · one 장착 특성 row · one 스태프 row. |
 
@@ -22,6 +22,12 @@ Rules
 - `staff_mods.source` is an id, never text (D7): `finance:<special id>` (the finance sheet's `coach_hire` specials,
   bought with balance — `FinanceSystem.buy_special`) or `mental:<event id>` (interview / outing / press / incident
   clauses). `StaffSystem.mod_source_text(source)` turns it into the special's name / the event kind's label.
+- **Coach points** (§15 D, afternoon visit focus training): a weekly budget
+  `COACH_POINTS_BASE + floor(COACH_POINTS_PER × effective(state, "training"))` (`coach_points_grant`), granted at week
+  start (`grant_coach_points`, `SeasonHub.on_training_confirmed`) and never carried over. State
+  `season_state.coach_points` (int) + `coach_week` (the `MentalSystem.week_key` it belongs to); `coach_points(state)`
+  grants lazily when the week key changed (old saves), `spend_coach_points(state, n)` → false when short.
+  Spent by `features/season/mental/FocusTraining.gd`; shown on the week screen's afternoon card and the visit popup.
 - `manager_types()` rows hold l10n keys `name_key` / `desc_key` (`manager.type.{id}.name/desc`); screens `Loc.t` them.
 
 ## Hub card + sheet (`StaffPanel.gd`)

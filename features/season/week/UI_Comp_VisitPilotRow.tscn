@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3 uid="uid://u8jxhoixdubu"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="VisitPilotRow" type="Button"]
+auto_translate_mode = 2
+editor_description = "One pilot of the visit picker (VisitMenu, pick page): shown when 2+ pilots who can be visited share the tapped map spot. Code draws the round portrait into %Portrait and fills the texts."
+custom_minimum_size = Vector2(0, 120)
+offset_right = 880.0
+offset_bottom = 120.0
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Portrait" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_pilot_row()
+Slot for the round portrait (OutgameTheme.add_round_portrait)."
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 108.0
+offset_bottom = 104.0
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_pilot_row()"
+layout_mode = 0
+offset_left = 132.0
+offset_top = 18.0
+offset_right = 840.0
+offset_bottom = 60.0
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "Evelyn"
+
+[node name="Line" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_pilot_row()
+Trust level · stress."
+layout_mode = 0
+offset_left = 132.0
+offset_top = 64.0
+offset_right = 840.0
+offset_bottom = 100.0
+mouse_filter = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "신뢰 Lv.2 · 스트레스 34"

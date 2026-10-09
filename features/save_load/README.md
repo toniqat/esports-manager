@@ -159,6 +159,10 @@ Resource-typed entries:
 - `stress` (`{"<pid>": int}`, `features/season/mental/README.md` "Stress") round-trips as-is next to
   `trust` / `outings` / `mental` (string keys; readers wrap values in `int()`). It was missing from the
   save list at first, so a reload reset every pilot's stress to 0.
+- `coach_points` (int) + `coach_week` (week key) — §15 D coach points of the running week
+  (`features/season/staff/README.md`). Missing (old saves) → 0 / "" and `StaffSystem.coach_points` grants the
+  week's points on the first read. The visit records (`visit` / `focus` / `story`) and `mental.last_match` live
+  inside `mental` and round-trip with it.
 - `pending_match` round-trips as-is. Non-null from the Saturday "경기 준비" (`split: true`) through
   `_consume_pending_match_result` on Sunday. After the Saturday ban/pick it carries **`picks`** — the
   LAUNCH snapshot (shape of `match_resume` below) — with `match_resume` null; Sunday copies `picks`

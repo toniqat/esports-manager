@@ -13,8 +13,8 @@ extends Control
 #              stored in `pending_match.picks`, MatchFlow returns here), then a
 #              normal afternoon / evening without training
 #     Sun      morning = stadium → MatchFlow resumes at LAUNCH with the stored
-#              picks → BattleSim → result → STANDINGS → afternoon = PRESS
-#              (result-reactive) → evening → week end → HUB
+#              picks → BattleSim → result → STANDINGS → PRESS (result-reactive)
+#              → afternoon (visit, §15 D) → evening → week end → HUB
 #
 # One player match per week, always on Sunday (`CalendarSystem.MATCH_DAY`); the
 # AI matches of that round resolve on Sunday too. A week without a player match
@@ -382,6 +382,8 @@ func on_training_confirmed() -> void:
 	var board: TrainingBoard = get_node_or_null("TrainingBoard") as TrainingBoard
 	if board != null:
 		board.reset_week_progress()
+	# §15 D — the week's coach points (afternoon visit focus training), no carry-over.
+	StaffSystem.grant_coach_points(_gm.season_state)
 	_gm.season_state["week_day"] = 0
 	autosave("week_start")
 	goto(Screen.WEEK)
@@ -747,6 +749,7 @@ func _consume_pending_match_result() -> bool:
 	# §15 — limit-break goals and the awakening gauge read the match rows.
 	LimitBreak.record_match(s, pm as Dictionary)
 	Awakening.on_match(s, pm as Dictionary)
+	MentalSystem.record_match(s, pm as Dictionary)   # §15 D Sunday story (K/D/A, MVP)
 
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)

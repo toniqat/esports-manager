@@ -3,8 +3,9 @@
 The screen where the week passes **one day at a time, Monday to Sunday**. `Screen.WEEK` in
 `SeasonHub`. Training days (Mon–Fri) show the **team base map** and run as **morning → afternoon → evening**.
 The weekend carries the week's one player match: **Saturday morning** = stadium map + match prep
-(ban/pick), **Sunday morning** = stadium map + the match, **Sunday afternoon** = press conference —
-see "Weekend (Sat · Sun)".
+(ban/pick), **Sunday morning** = stadium map + the match, then the press conference, the afternoon
+(visit) and the evening — see "Weekend (Sat · Sun)". Every afternoon is a **visit (방문, §15 D)**: tap a pilot →
+집중 훈련 / 이야기 / 외출 (`VisitMenu`, "Afternoon visit" below).
 
 | File | Role |
 |---|---|
@@ -16,7 +17,10 @@ see "Weekend (Sat · Sun)".
 | `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
-| `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the action (`%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%Trust`) · `%Interview` / `%Outing`) |
+| `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the visit (`%Hint` = how to visit / nobody can be visited · `%Coach` = coach points left / weekly grant) |
+| `VisitMenu.gd` | `class_name VisitMenu extends CanvasLayer` — the afternoon **visit (방문)** popup, four pages: pick (2+ pilots on the tapped spot) → menu (집중 훈련 / 이야기 / 외출) → courses → result. Draws and emits only (`pilot_picked` · `option_picked` · `course_picked` · `closed`); `create()`, `open_picker` / `open_menu` / `show_courses` / `show_result`. F6 preview = the menu of my first pilot (focus opens the live courses page) |
+| `UI_View_VisitMenu.tscn` | Its scene (layer 20): `%Dim` (cancels the pick page only) · `DimRect` · `%SafeArea` → `PopupCard`: `%Header` (`%Portrait` · `%Name` · `%PilotLine` · `%Coach`) · `%Caption` · `%PickList` · `%Options` (`%Focus` / `%Story` / `%Outing` `SelectableCardButton`s with title + note) · `%Courses` · `%Result` (`%ResultLine` template) · `%Buttons` (`%Back` · `%Confirm`) |
+| `UI_Comp_VisitPilotRow.tscn` · `UI_Comp_VisitCourseRow.tscn` | Items of the popup (no script): one pilot of the picker (`%Portrait` · `%Name` · `%Line`) · one focus course (`%Name` · `%Stats` · `%Cost` · `%Reason`; picked = `SelectableCardButtonOn`) |
 | `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`); also the morning talk's summary |
 | `UI_Comp_WeekTalkCard.tscn` | Item: 오전 만남 before the talk (`%Hint` (no pick) · `%Pilot` (`%Portrait` · `%Name` · `%With` = joint-training partner or trust) · `%Talk`) |
 | *(shared)* `../UI_Comp_SeasonPilotCard.tscn` | The five pilot cards of `%PilotRow` (`features/season/README.md` "Pilot card · detail sheet") |
@@ -30,7 +34,7 @@ the map + afternoon card; the slot scene and its `WeekEveningHighlight` variatio
 **F6 preview** — run `UI_View_WeekProgressView.tscn` alone and it fills dummy data (`resources/UiPreview.gd`):
 in-memory run on **Wednesday afternoon**, a preview-only `TrainingBoard` (`PreviewBoard` child, coach arrangement)
 settles Mon–Wed, a pending incident is resolved with its first answer so no overlay covers the cards, the afternoon
-is begun (away states rolled) and the first pilot that can be asked is picked. Each base map scene has its own
+is begun (away states rolled); tap a pilot to open the visit popup (live, in memory). Each base map scene has its own
 F6 preview (one token per spot, named after it).
 
 ## Scene (`UI_View_WeekProgressView.tscn`)
@@ -85,7 +89,7 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   프리시즌 · 3주차                  1년 12월
   금요일                                5
  ──────────────────────────────────────────
-  오후 · 선수를 눌러 면담이나 외출을 요청하세요
+  오후 · 선수를 눌러 방문하세요 (하루 한 번)
   [  team base map, five pilot tokens   ]   ← pinned (%MapPin), does not scroll
   ▌(○) 오후                                  ← afternoon card, then incident (scroll)
   [TOP][JGL][MID][ADC][SUP]                  ← %PilotRow: five pilot cards, always shown
@@ -93,8 +97,8 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 ```
 
 (Mockup uses in-game Korean text: `1주` = Week 1, 월화수목금토일 = Mon–Sun, "프리시즌 · 3주차" =
-Preseason · Week 3, "1년 12월" = Year 1, December, "금요일" = Friday, 오후 = afternoon, 면담 / 외출 =
-meeting / outing, `다음` = Next.)
+Preseason · Week 3, "1년 12월" = Year 1, December, "금요일" = Friday, 오후 = afternoon, 방문 = visit,
+`다음` = Next.)
 
 * **Top horizontal rail** — on a dark pill spanning the full screen width, `N주` (Week N) at the
   left end, then seven weekday (요일) chips spaced evenly **left → right**. **Only the current
@@ -121,7 +125,7 @@ meeting / outing, `다음` = Next.)
 |---|---|
 | 월~금 (Mon–Fri) | **Training days**: 오전 (training, then the morning talk) → 오후 (afternoon) → 저녁 (evening incident), see "Training day: morning → afternoon → evening". The morning's Next runs `TrainingBoard.apply_day_training(day)`, which settles that row of the board and actually raises player stats. |
 | 토 (Sat) | **Prep day**: `STADIUM` (stadium map, "경기 준비" → MatchFlow PREP + BAN_PICK, picks stored) → `AFTERNOON` → `EVENING` on the team map, **no training, no morning talk**. Sunday's matches show as cards while the prep is open. |
-| 일 (Sun) | **Match day** (`CalendarSystem.MATCH_DAY`): `STADIUM` ("경기 시작" → BattleSim with the Saturday picks) → standings → `PRESS` (stadium map, "기자회견") → `EVENING` (team map, incident) → "주 마감 →". The day's matches show as cards. |
+| 일 (Sun) | **Match day** (`CalendarSystem.MATCH_DAY`): `STADIUM` ("경기 시작" → BattleSim with the Saturday picks) → standings → `PRESS` (stadium map, "기자회견") → `AFTERNOON` (team map, visit — the story is about the match) → `EVENING` (incident) → "주 마감 →". The day's matches show as cards. |
 
 ### Training day: morning → afternoon → evening (base map)
 
@@ -133,8 +137,8 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
 | `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training facility** (`TrainingBoard.day_groups` `facility` → `BaseMap.spot_of_facility`: the tile's `facility` column, else the colour of its first cell that day, so a joint-training group shares one spot; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`) | settles the day (`_settle_day` → `apply_day_training`) |
 | `RESULT` | `week_day_log[day]` set, no talk record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, mech mastery, quirk events; the bottom cards' stress change pops (`pulse_note`). When the FX ends the morning talk **opens by itself** (`_finish_result_fx` → `MentalSystem.begin_morning`) | skips the rest of the FX (same `_finish_result_fx`) |
 | `TALK` | `MentalSystem.morning_started`, no afternoon record | same spots; pilots that can be met are tappable (`MentalSystem.can_talk`), after the talk everyone but the met pair is dimmed. Pick one → `%Talk` on the talk card → morning talk dialog (joint training: the partner comes along) | afternoon (`_begin_afternoon`: `pass_talk` + `AfternoonAway.begin`); while a talk is still possible a **warning** asks first |
-| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be asked is dimmed and not tappable (`AfternoonAway.can_request`) | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident = straight to the next day**); while an action is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
-| `EVENING` | `MentalSystem.dusk_started` | afternoon positions, nobody tappable; the incident opens by itself | next day (`on_week_day_confirmed`) |
+| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be visited is dimmed and not tappable (`AfternoonAway.can_request`). Tap = visit (`VisitMenu`) | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident and no limit-break event = straight to the next day**, except Sunday, which stops on its evening for "주 마감 →"); while a visit is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
+| `EVENING` | `MentalSystem.dusk_started` | afternoon positions, nobody tappable; the limit-break event (§15 B) then the incident open by themselves | next day (`on_week_day_confirmed`) |
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
   pinned in `%MapPin` above the scrolling list. Spots per colour group and the fan-out of tokens sharing a spot: `base_map/README.md`.
@@ -144,7 +148,8 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   day's incident / afternoon outcomes), red `+N` / green `-N`, hidden at 0. Tap = `SeasonPilotDetail` sheet.
 * A reload between the settlement and the afternoon lands on `RESULT`: the FX plays again, then the afternoon starts.
 * **Autosave** (`_save` → `SeasonHub.autosave`): after the settlement, the talk opening, the afternoon, the incident roll,
-  opening a talk / interview / outing and every answer — closing the game mid-week resumes on this screen at
+  opening a talk, the visit (`visit`), a story / outing, a focus course (`focus`), an awakening / limit break and
+  every answer — closing the game mid-week resumes on this screen at
   the same stage (`features/save_load/README.md`).
 * **Afternoon away states** (rules and record: `features/season/mental/README.md` "Afternoon away states"):
   a stressed pilot may go out alone, otherwise any pilot may stay in the dorm by chance (rolled once, recorded).
@@ -164,10 +169,12 @@ lands on the same spot:
 | Sat | `AFTERNOON` → `EVENING` | `AfternoonAway` / dusk records (opened by itself, `_advance_weekend`) | team map, everyone on `W` (no training), away spots | as on a training day |
 | Sun | `STADIUM` | `has_player_match_on_day(6)` | stadium, pilots on the stage booths (`SPOT_BOOTH`) | **경기 시작** → `SeasonHub.on_week_day_match_start` (picks → BattleSim) |
 | Sun | `PRESS` | `SeasonHub.press_pending()`: my match of the week played, press unanswered | stadium, press room (`SPOT_PRESS`) | **기자회견** → `SeasonHub.open_press` (the standings' 확인 opens it directly) |
-| Sun | `EVENING` | after the press `_advance_weekend` runs `MentalSystem.begin_dusk` (incident roll) | team map | **주 마감 →** (an incident opens by itself first) |
+| Sun | `AFTERNOON` | after the press `_advance_weekend` runs `AfternoonAway.begin` (§15 D) | team map | visit as on a training day; **다음** → evening |
+| Sun | `EVENING` | `_begin_evening` → `MentalSystem.begin_dusk` (incident roll) | team map | **주 마감 →** (a limit-break event / an incident opens by itself first) |
 
 * A weekend day **without a player match** runs `AFTERNOON` → `EVENING` only (opened by itself).
-* `_advance_weekend` (called by `refresh`) records + saves the automatic steps (`afternoon` / `incident`).
+* `_advance_weekend` (called by `refresh`) records + saves the automatic step (`afternoon`). Old saves whose match
+  Sunday already rolled its evening stay in the evening.
 * Hint captions: `season.week.map_hint.stadium_prep` / `stadium_match` / `press` / `evening_quiet` (Sunday
   evening without an incident).
 * Match card hint (my match): Saturday `season.week.hint_prep`, Sunday with picks
@@ -192,17 +199,40 @@ records and forwards taps. On a training day the list order is **(pinned map) �
 * **Incident** — rolled when the evening starts (`_begin_evening` → `MentalSystem.begin_dusk`, once per weekday,
   seeded). A pending incident opens its dialog **by itself** (`_open_incident`, deferred); the card (red lead
   bar) shows `사건: <name> · <pilot>` and either `눌러서 대응하기` (reopens the dialog) or the effect notes once resolved.
-* **오후** (`AFTERNOON` only): tap an available pilot on the map (amber ring), then `면담` / `외출` on the
-  afternoon card. **No weekly count limits** (removed 2026-10): an interview is always possible, an outing needs
-  trust level ≥ `TRUST_OUTING_LEVEL` (the disabled button reads `외출 (신뢰 Lv.N↑)`). Without a pick the card says how
-  to pick (or that nothing is possible today). After the action the card collapses to a one-line summary with the effect notes.
-  Pressing Next without an action records a **pass** (after the warning when an action was still possible).
-  The record keeps its old name `evening` (`MentalSystem.begin_evening` / `finish_evening`), so saves stay compatible.
-* **Dialog overlay**: interview / outing / incident open a `VnDialogueView` (visual-novel dialogue,
+* **오후 = visit (방문, §15 D)** (`AFTERNOON` only) — see "Afternoon visit" below. The afternoon card says how to
+  visit and shows the week's coach points (`StaffSystem.coach_points` / `coach_points_grant`). After the visit the
+  card collapses to a one-line summary (`오후: <name> 집중 훈련 · <course>` / `오후: <name>와 이야기` / `오후: <name> 외출`)
+  with the effect notes. Pressing Next without a visit records a **pass** (after the warning when a visit was still
+  possible). The record keeps its old name `evening`, so saves stay compatible.
+* **Dialog overlay**: story / outing / limit-break event / incident open a `VnDialogueView` (visual-novel dialogue,
   `features/season/mental/README.md`; an incident's title is its `@tag`, the name plate the pilot), as the
   last child of this screen (`_overlay`, opened only through `_open_overlay`); its STOP root blocks the list and the bottom bar until it
   closes, then the screen `refresh()`es. An afternoon dialog left open by a reload (record with `choice = -1`)
   reopens itself with the same event.
+* **What opens by itself** (`_open_pending`, deferred after every `refresh`, one at a time, `_busy()` blocks the rest):
+  a talk / visit menu / afternoon dialog left open → a queued **awakening** (§15 C) → at the evening the
+  **limit-break event** (§15 B) → the incident.
+
+### Afternoon visit (방문, §15 D)
+Rules and records: `features/season/mental/README.md` "Afternoon visit (방문)".
+1. Tap a pilot on the base map. When other pilots who can be visited stand on the **same spot** (`_token_spots`),
+   `VisitMenu.open_picker` asks who (Cancel / the dim = nothing recorded).
+2. `_start_visit` → `MentalSystem.begin_visit` records the visit **before** the menu opens, saves (`visit`), and the
+   menu page shows 집중 훈련 (greyed out when the points are short) / 이야기 (what today's story is about) /
+   외출 (greyed out under `TRUST_OUTING_LEVEL`, the note says why). There is no way out of the menu but an option.
+3. 집중 훈련 → courses page (pick a row, then the confirm button) → `MentalSystem.finish_focus` → result page
+   (the note texts) → 확인 → redraw. 이야기 / 외출 → `begin_evening` → the VN dialogue.
+4. A reload with the menu open (`MentalSystem.visit_open`) reopens it.
+
+### Awakening and limit break (§15 B · C integration)
+* **Awakening** (`_open_awakening`): after every redraw (morning settlement once its result FX has ended, every
+  dialog / visit result, the return from a match) `Awakening.next_pending(state)` ≥ 0 opens C's `AwakeningView`
+  (`create()` → `add_child` → `open(pid)`, waits for `closed`, saves `awakening`, redraws → polls again). The class
+  is looked up by name (`ProjectSettings.get_global_class_list`), so a tree without it simply skips.
+* **Limit break** (`_open_limit_break`): when the evening has started and `LimitBreak.pending_event(state, day)` ≥ 0,
+  `LimitBreak.session(state, pid)` (a `session_view`-shaped dict) plays in the shared `VnDialogueView` (overlay kind
+  `limit_break`, sub `season.week.sub_limit_break`); the answer goes to `LimitBreak.choose_goal`, whose return is the
+  outcome view for `show_result`. Its close redraws, and the incident follows.
 
 ## Never settle twice
 
@@ -258,3 +288,7 @@ the press button reuses `term.activity.press`). Bubble texts are training tile n
 per label (the afternoon card's head is a key, and it is instanced under the screen, so the screen root must not
 disable translation). The old `season.week_evening_card.*` · `season.week.evening_*` · `season.week.sub_interview` /
 `sub_outing` keys are `deprecated`.
+§15 D: the afternoon texts say 방문 (visit) instead of 면담; new `season.week.afternoon_focus` / `afternoon_story` /
+`afternoon_coach` · `season.week.sub_story_pm` · `season.week.sub_limit_break`; deprecated `season.week.slot_trust` ·
+`season.week.outing_need_trust` (the afternoon card lost its pilot / buttons). The visit popup's texts are
+`mental.ui.visit.*` (mental domain); `VisitMenu` and its item scenes are all code-filled (`auto_translate_mode = 2` on the root).

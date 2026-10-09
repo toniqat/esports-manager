@@ -192,6 +192,9 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
 		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
+		# §15 D — coach points of the running week (missing = granted on the first read).
+		"coach_points":      int(s.get("coach_points", 0)),
+		"coach_week":        String(s.get("coach_week", "")),
 	}
 
 
@@ -246,6 +249,8 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
 		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
+		"coach_points":      int(s.get("coach_points", 0)),
+		"coach_week":        String(s.get("coach_week", "")),
 	}
 
 

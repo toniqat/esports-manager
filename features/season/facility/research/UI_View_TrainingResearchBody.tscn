@@ -1,0 +1,69 @@
+[gd_scene load_steps=5 format=3 uid="uid://b4y8g30l1sq6a"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/facility/research/TrainingResearchBody.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://features/season/facility/research/UI_Comp_TrainingResearchCard.tscn" id="3_card"]
+[ext_resource type="PackedScene" uid="uid://17ymofopboc3" path="res://features/season/training/UI_View_TrainingCoursePopover.tscn" id="4_pop"]
+
+[node name="TrainingResearchBody" type="Control"]
+editor_description = "Training facility body (TrainingResearch.make_body → FacilityView %BodySlot, full rect): the facility's research rows as TrainingResearchCard cards, 3 columns, scrolling inside %Scroll (about 4.5 rows on a 1080×1920 screen). Thumbnail tap = the course info popover (%Info, outside the scroll, closed by %InfoCatcher). Bottom bar action = owned courses modal (TrainingResearchOwned)."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("1_theme")
+script = ExtResource("2_script")
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchBody.gd _ready()
+Fills the body; only this scrolls (DragScroll)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="Grid" type="GridContainer" parent="Scroll"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchBody.gd _apply()
+One TrainingResearchCard per shown research row (CSV order). Sample cards are previews (cleared in _ready)."
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 20
+columns = 3
+
+[node name="TrainingResearchCard_Sample0" parent="Scroll/Grid" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="TrainingResearchCard_Sample1" parent="Scroll/Grid" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="TrainingResearchCard_Sample2" parent="Scroll/Grid" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="InfoCatcher" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchBody.gd _ready() · _show_info() · _close_info()
+Transparent full-rect tap catcher while the info popover is open: any tap closes it (and nothing under it is pressed)."
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TrainingCoursePopover_Info" parent="." instance=ExtResource("4_pop")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchBody.gd _ready() · _show_info()
+Course info popover (grade · name · owned · EXP · effect), placed by code next to the tapped thumbnail; a tap on it closes it."
+visible = false
+layout_mode = 0

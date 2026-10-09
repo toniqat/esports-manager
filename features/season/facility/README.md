@@ -13,7 +13,10 @@ Contract: `docs/outgame_dev_plan.md` §16 (decisions 1–12, user-confirmed 2026
 | `research/MechResearch.gd` | Kind handler `mech` (`mech_lab`) — stub | agent D |
 | `research/FrontResearch.gd` | Kind handler `front` — stub | agent F |
 | `research/PersonnelResearch.gd` | Kind handler `personnel` — stub | agent G |
-| `FacilitySheet*` · `ResearchBubble*` · `UI_Comp_Research*` (to come) | Facility sheet (HubSheet body), map bubbles, research rows | agent B |
+| `FacilitySheet.gd` + `UI_View_FacilitySheet.tscn` | Facility sheet (`HubSheet` body) — see "UI" below | agent B |
+| `UI_Comp_FacilityOccupantRow.tscn` · `UI_Comp_ResearchRow.tscn` · `UI_Comp_ResearchTargetChip.tscn` | Sheet list items (occupant · research row · target chip) | agent B |
+| `ResearchBubble.gd` + `UI_Comp_ResearchBubble.tscn` | Map speech bubble per facility (hub: tappable, week screen: read-only) | agent B |
+| `research_ring.gdshader` | Icon masked to a circle as a radial progress bar (bubble · row · sheet head) | agent B |
 
 Agents: **do not edit `FacilitySystem.gd` / `ResearchSystem.gd`** — report needed changes. Kind handlers keep the
 four static signatures below; anything else in their file is theirs.
@@ -158,3 +161,36 @@ own prefix.
 `new_keys` in the kind's domain (never `extract data`). A code key in a `research_*` domain must not have the shape
 `research_<x>.<y>.name|desc` (that is a data alias and gets no `L` constant) — use e.g. `research_mech.note.done`.
 Other agents' existing domains (`training`, `mastery`, `finance`, `staff`, `match` …) stay with their owners.
+
+## UI (agent B)
+**Map bubbles** — every team map (`week/base_map/`) has seven `Spot_Fac_*` markers (`facility_defs.csv` `spot`) and
+a `%Facilities` layer under the pilot tokens. `ResearchBubble.populate(map, state, interactive)` puts one bubble per
+marker (reused on refill; the stadium has no layer → none) with its tail tip (`%TailTip`) on the spot. The bubble
+shows the facility name, the active research icon (`ResearchSystem.row_icon`, else the facility icon) through
+`research_ring.gdshader` — circle mask + clockwise ring up to `ResearchSystem.progress`, the icon in colour only
+inside the filled sector — and the percent below. Idle states replace the percent and grey the icon, in this order:
+`공석` (nobody seated, red) · `대기` (no active research) · `정지` (active row blocked). Hub
+(`features/season/HubView.gd`): interactive, `pressed(fid)` → `FacilitySheet.open(hub, fid)`; `%Hit` also covers the
+spot under the tail (the building). Week screen (`week/WeekProgressView._add_map_section`, team map only):
+read-only, mouse ignored.
+
+**Facility sheet** — `FacilitySheet.open(host, fid) -> HubSheet` (title = facility name). Sections: head (ring icon,
+desc, `<stat> 스탯 <value>` = `FacilitySystem.stat_value`, weekly points / red "nobody" line) · level (`Lv n / max`,
+front-cap or expansion note, cost from `FacilitySystem.upgrade_cost` + `FinanceSystem.upgrade_funds`, two-step
+upgrade like the finance sheet, else a disabled button with `upgrade_block_reason`) · occupants (`담당 … · 감독 자리
+n/3`, then the manager and every run staff member with their value of this facility's stat; `배치` =
+`FacilitySystem.assign` — disabled with `assign_block_reason` in red, `해제` on the seated one) · research
+(active line + %, `연구 중지` = `ResearchSystem.clear`, one `ResearchRow` per `rows_for(fid)`: ring icon, name,
+desc, weeks · weeks left · done count, progress bar, `진행 중` / `대상 선택`, blocked rows disabled with
+`block_reason`) · target picker (a row whose handler offers `targets`: tapping the row opens chips `label NN%`,
+a chip = `select(fid, rid, target)`; untargeted row tap = `select(fid, rid, "")`) · kind body. Seating and
+selection are enabled only while `ResearchSystem.can_select(state)` (HUB); otherwise a red note. Every change
+refills in place (rows reused).
+
+**Kind body slot** (`%KindSlot`, hidden when `ResearchSystem.make_body` returns null): after every refill the
+sheet calls the body's `refresh()` if it has one, else frees it and builds a new one; a `changed` signal on the
+body (any payload) refills the whole sheet, deferred. Bodies are top-wide with their natural height.
+
+F6 previews: `UI_View_FacilitySheet` (in-memory run, manager seated in `train_field`, first row selected, one
+week ticked) · `UI_Comp_ResearchBubble` (40 % running) · items show their scene sample values. Display text:
+`data/l10n/src/facility_ui.csv` (`facility_ui.*`).

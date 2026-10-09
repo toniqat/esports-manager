@@ -1,1 +1,38 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_2DVG79QR47,facility_ui.bubble.vacant,active,ResearchBubble: nobody seated in the facility,6,,공석,Vacant,draft,9a0f8687
+tx_7QVM7MN5FJ,facility_ui.bubble.idle,active,ResearchBubble: no research selected,6,,대기,Idle,draft,df72a875
+tx_4EHMAGDXET,facility_ui.bubble.paused,active,ResearchBubble: active research blocked,6,,정지,Paused,draft,1d441e78
+tx_MG4PJRBEHT,facility_ui.sheet.stat_line,active,FacilitySheet head: facility stat + occupant value,,,{stat} 스탯 {value},{stat} {value},draft,85761688
+tx_SCR26J543Y,facility_ui.sheet.rate,active,FacilitySheet head: weekly research points,,,주간 연구량 {points},Research per week: {points},draft,14244fad
+tx_XWWWJ0X5XB,facility_ui.sheet.rate_boost,active,FacilitySheet head: weekly points with a front boost running,,,주간 연구량 {points} (연구 가속 +{pct}%),Research per week: {points} (boost +{pct}%),draft,c644be9b
+tx_ZZJ4JEHR6S,facility_ui.sheet.rate_none,active,FacilitySheet head: nobody seated,,,담당자가 없어 연구가 멈춰 있습니다,"Nobody is assigned, so research is on hold",draft,0bfa1adc
+tx_YT2BFHQ575,facility_ui.sheet.level_title,active,FacilitySheet level section title,,,시설 레벨  Lv {level} / {max},Facility level  Lv {level} / {max},draft,d8dcab03
+tx_Y0T8P41MJC,facility_ui.sheet.level_cap,active,FacilitySheet: front cap note (non-front facilities),,,프론트 레벨(Lv {level})까지 올릴 수 있습니다,Can be raised up to the front office level (Lv {level}),draft,1d05a1f3
+tx_TSJ90DZGZC,facility_ui.sheet.level_front,active,FacilitySheet: front level note,,,경영 확장 연구를 마치면 다음 레벨로 올릴 수 있습니다. 다른 시설은 프론트 레벨을 넘을 수 없습니다,Finish the expansion research to unlock the next level. No other facility may exceed the front office level,draft,e249fa4d
+tx_T1FB2QSPV3,facility_ui.sheet.upgrade_cost,active,FacilitySheet: upgrade cost line,,,"비용 {cost} · 시설 적립금 먼저, 모자라면 잔고 (가용 {available})","Cost {cost} · facility fund first, then balance (available {available})",draft,e0540f09
+tx_R5BCZ03CXS,facility_ui.sheet.upgrade,active,FacilitySheet: upgrade button (first step),,,업그레이드 → Lv {level},Upgrade → Lv {level},draft,0953524b
+tx_SSWDV60G95,facility_ui.sheet.upgrade_confirm,active,FacilitySheet: upgrade button (second step),,,한 번 더 눌러 확정 (−{cost}),Tap again to confirm (−{cost}),draft,4f54191d
+tx_V62WWZ2WYP,facility_ui.occ.line,active,FacilitySheet occupant section: current occupant + manager slot usage,,,담당 {name} · 감독 자리 {used}/{max},In charge: {name} · manager slots {used}/{max},draft,a02d3a55
+tx_FCQB0FXWBH,facility_ui.occ.manager_sub,active,FacilitySheet occupant row: manager slot usage,,,시설 {used}/{max}곳 담당,Running {used}/{max} facilities,draft,2afe7623
+tx_4KWT3Y97ST,facility_ui.occ.free,active,FacilitySheet occupant row: staff not seated anywhere,,,{job} · 배치 대기,{job} · unassigned,draft,c63afab1
+tx_EWYEJXNDAF,facility_ui.occ.at,active,FacilitySheet occupant row: staff seated in a facility,,,{job} · {facility} 담당,{job} · at {facility},draft,e1ae11c2
+tx_QCKTF34XFA,facility_ui.occ.value,active,FacilitySheet occupant row: this person's value of the facility stat,,,{stat} {value},{stat} {value},draft,8f9d9fb5
+tx_PHJQGAV021,facility_ui.locked,active,FacilitySheet: selection locked outside HUB,,,주가 시작된 뒤에는 연구와 담당자를 바꿀 수 없습니다,Research and assignments cannot change once the week has started,draft,96cebe07
+tx_MCBMW0QAHG,facility_ui.research.none,active,FacilitySheet research section: idle,,,진행 중인 연구가 없습니다. 아래에서 고르세요,No research running. Pick one below,draft,39d50117
+tx_XZCHMTZXXT,facility_ui.research.active,active,FacilitySheet research section: active research + percent,,,진행 중: {research} ({pct}),In progress: {research} ({pct}),draft,db52bad8
+tx_SMZ5HP2BNQ,facility_ui.research.vacant_note,active,FacilitySheet research section: nobody seated,,,담당자가 없어 연구가 진행되지 않습니다,Research does not progress without someone assigned,draft,e39d4958
+tx_DQJD7J14W6,facility_ui.research.target_title,active,FacilitySheet target picker title,,,{research}: 대상을 고르세요,{research}: pick a target,draft,8522f890
+tx_ZWZPJWG0QR,facility_ui.research.target_chip,active,FacilitySheet target chip: target label + its progress,,,{label} {pct},{label} {pct},draft,41f42f9d
+tx_8R6M39S8BD,facility_ui.row.weeks,active,ResearchRow meta: research length,,,{weeks}주 분량,{weeks} weeks of work,draft,fe2342e0
+tx_FS0DH25RXJ,facility_ui.row.left,active,ResearchRow meta: weeks left at the current rate,,,남은 {weeks}주,{weeks} weeks left,draft,d32233e7
+tx_0JERQ2SFZS,facility_ui.row.never,active,ResearchRow meta: cannot progress,,,담당자 없음,Nobody assigned,draft,59f1d621
+tx_NN26NEVRFH,facility_ui.row.done,active,ResearchRow meta: completion count,,,완료 {n}회,Done {n}x,draft,031c505c
+tx_SBN1CESNR1,facility_ui.row.active,active,ResearchRow state chip,,,진행 중,In progress,draft,7890cafc
+tx_B60H1YTW25,facility_ui.row.pick_target,active,ResearchRow state chip: targeted row,,,대상 선택,Pick target,draft,bfd19ea6
+tx_70JYF47F2A,facility_ui.hub_view.map_caption,active,UI_View_HubView.tscn Body/MapCaption text,,,구단 시설 · 시설을 눌러 연구와 담당자를 정합니다,Club facilities · tap a facility to set its research and staff,draft,e86e10bd
+tx_KGEH08E67V,facility_ui.facility_occupant_row.assign,active,UI_Comp_FacilityOccupantRow.tscn Buttons/Assign text,,,배치,Assign,draft,1b715d8d
+tx_XRTZSNXKK3,facility_ui.facility_occupant_row.release,active,UI_Comp_FacilityOccupantRow.tscn Buttons/Release text,,,해제,Release,draft,a7abea5b
+tx_CRM67JX767,facility_ui.facility_sheet.occupant_title,active,UI_View_FacilitySheet.tscn OccupantSection/Title text,,,담당자,In charge,draft,b25ae664
+tx_GTETHKQT5R,facility_ui.facility_sheet.research_section_title,active,UI_View_FacilitySheet.tscn ResearchSection/Title text,,,연구,Research,draft,02e00a02
+tx_8P6KV6MVBF,facility_ui.facility_sheet.stop,active,UI_View_FacilitySheet.tscn Stop text,,,연구 중지,Stop research,draft,519c1428
+tx_94GX7N1P3J,facility_ui.facility_sheet.rows_empty,active,UI_View_FacilitySheet.tscn RowsEmpty text,,,이 시설에서 할 수 있는 연구가 없습니다,This facility has nothing to research,draft,6dd08e28

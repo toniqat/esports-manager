@@ -470,6 +470,10 @@ func _add_map_section(stage: int) -> void:
 	map.name = "BaseMap_Stadium" if stadium else "BaseMap_Team"
 	(section.get_node("%MapHolder") as Control).add_child(map)
 	map.size = BaseMap.DESIGN_SIZE
+	if not stadium:
+		# §16 — the facility research bubbles, read-only (the hub map is the tappable one);
+		# they sit under the pilot tokens (`%Facilities` layer).
+		ResearchBubble.populate(map, s, false)
 
 	var rows_by_pid: Dictionary = {}
 	for raw in (_week_log().get(_day, []) as Array):

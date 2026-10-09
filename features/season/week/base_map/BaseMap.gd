@@ -8,6 +8,8 @@ extends Control
 #   ├ %Art     TextureRect, the map art (resources/images/base_map/)
 #   ├ Spots    Control ─ Spot_H · Spot_E · Spot_C · Spot_D · Spot_G · Spot_M · Spot_Q ·
 #   │                    Spot_W · Spot_Dorm · Spot_Entrance  (Marker2D, drag them in the editor)
+#   │                    + Spot_Fac_* (one per facility, `facility_defs.csv` `spot`; team maps only)
+#   ├ %Facilities  Control, code adds the facility research bubbles (`ResearchBubble.populate`)
 #   └ %Tokens  Control, code adds the pilot tokens here
 #
 # A training colour group has one spot (`COLOR_SPOTS`, the colour table of
@@ -79,6 +81,11 @@ static func create_stadium() -> BaseMap:
 	return (load(STADIUM_SCENE) as PackedScene).instantiate() as BaseMap
 
 
+## Marker name of a facility's spot (`facility_defs.csv` `spot`, e.g. `Spot_Fac_Intel`).
+static func facility_spot_name(fid: String) -> String:
+	return String(FacilitySystem.def(fid).get("spot", ""))
+
+
 ## Spot of a training colour symbol ("" = no tile → neutral).
 static func spot_of_color(symbol: String) -> String:
 	return String(COLOR_SPOTS.get(symbol, SPOT_NEUTRAL))
@@ -104,6 +111,35 @@ func spot_point(spot: String) -> Vector2:
 	if m == null:
 		return size * 0.5
 	return m.position
+
+
+## Does this map have the facility's `Spot_Fac_*` marker? (The stadium has none.)
+func has_facility_spot(fid: String) -> bool:
+	var spot: String = facility_spot_name(fid)
+	return spot != "" and get_node_or_null("Spots/" + spot) is Node2D
+
+
+## Map-local point of a facility's spot. A missing marker falls back to the neutral spot.
+func facility_point(fid: String) -> Vector2:
+	var spot: String = facility_spot_name(fid)
+	var m: Node2D = get_node_or_null("Spots/" + spot) as Node2D if spot != "" else null
+	if m == null:
+		return spot_point(SPOT_NEUTRAL)
+	return m.position
+
+
+## The facility bubble layer (`%Facilities`, under the pilot tokens); null on a map
+## without one (the stadium).
+func facility_layer() -> Control:
+	return get_node_or_null("%Facilities") as Control
+
+
+## Puts `node` so that its local point `anchor` stands on the facility's spot, clamped
+## inside the map rect (a bubble near the top edge slides down over its spot).
+func place_at_facility(node: Control, fid: String, anchor: Vector2) -> void:
+	var area: Vector2 = size if size.x > 0.0 else DESIGN_SIZE
+	var at: Vector2 = facility_point(fid) - anchor
+	node.position = at.clamp(Vector2.ZERO, (area - node.size).max(Vector2.ZERO))
 
 
 func clear_tokens() -> void:
@@ -178,14 +214,19 @@ static func _separate(nodes: Array, area: Vector2) -> void:
 
 
 ## F6 preview: one token per spot named after it (spot check), plus two more on the
-## neutral spot to show the fan-out.
+## neutral spot to show the fan-out, and the facility bubbles of an in-memory run.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
+	var gm: Node = UiPreview.ensure_run()
+	if gm != null:
+		ResearchBubble.populate(self, gm.season_state, false)
 	var scene: PackedScene = load(_PREVIEW_TOKEN) as PackedScene
 	var entries: Array = []
 	# Every marker of this scene (team maps and the stadium alike), two extra on W.
 	var spots: Array = []
 	for m in get_node("Spots").get_children():
+		if String(m.name).begins_with("Spot_Fac_"):
+			continue  # facility spots carry the bubbles, not tokens
 		spots.append(String(m.name).trim_prefix("Spot_"))
 	spots.append_array([SPOT_NEUTRAL, SPOT_NEUTRAL])
 	for spot in spots:

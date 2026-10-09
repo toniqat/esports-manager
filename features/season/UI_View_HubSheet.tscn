@@ -130,7 +130,7 @@ horizontal_scroll_mode = 0
 [node name="Body" type="Control" parent="Root/SafeArea/Card/Pad/VBox/ScrollSlot/Scroll"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — HubSheet.gd body: Scroll content root — callers add one top-wide body scene here.
-Filled at runtime by the caller with one top-wide body scene (FinancePanel · StaffPanel · MasteryPanel · LeagueTeamDetail) that sets the body height."
+Filled at runtime by the caller with one top-wide body scene (FinancePanel · StaffPanel · FacilitySheet · LeagueTeamDetail) that sets the body height."
 custom_minimum_size = Vector2(928, 0)
 layout_mode = 2
 size_flags_horizontal = 3

@@ -1,7 +1,7 @@
 class_name HubSheet
 extends CanvasLayer
 
-# The **shared detail sheet** opened by the hub manage cards (staff · mech research · finance)
+# The **shared detail sheet** opened by the hub manage cards (staff · finance), the hub map facilities
 # and the standings team detail. Dims the whole screen and shows one white card inside the
 # safe area (title · vertically scrolling body · bottom `닫기`). Same pattern as
 # `meta/lobby/ConfirmPopup.gd`.
@@ -13,7 +13,7 @@ extends CanvasLayer
 # close, and offsets `%SafeArea` by the device's safe-area insets.
 #
 # **The body is filled by the caller.** Every body is a scene — the hub panels (`FinancePanel` ·
-# `StaffPanel` · `MasteryPanel`) and the standings team detail (`league/LeagueTeamDetail`):
+# `StaffPanel` · `facility/FacilitySheet`) and the standings team detail (`league/LeagueTeamDetail`):
 # the caller adds one instance under `body` (top-wide) and it reports its own height
 # (`set_body_height(size.y)` on `resized`).
 #

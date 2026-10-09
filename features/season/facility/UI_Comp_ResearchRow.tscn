@@ -1,0 +1,163 @@
+[gd_scene load_steps=4 format=3 uid="uid://crn5pipm4yu3n"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Shader" path="res://features/season/facility/research_ring.gdshader" id="2_ring"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ring"]
+resource_local_to_scene = true
+shader = ExtResource("2_ring")
+shader_parameter/progress = 0.4
+shader_parameter/ring_width = 0.09
+shader_parameter/gap = 0.02
+shader_parameter/fill_color = Color(0.961, 0.651, 0.137, 1)
+shader_parameter/track_color = Color(0.886, 0.890, 0.906, 1)
+shader_parameter/gap_color = Color(1, 1, 1, 1)
+shader_parameter/rest_dim = 0.6
+shader_parameter/all_grey = false
+
+[node name="ResearchRow" type="Button"]
+auto_translate_mode = 2
+editor_description = "One research row of the facility sheet (FacilitySheet %Rows). The whole card is the tap target: untargeted row = select it, targeted row = open its target chips. Code switches the variation (SelectableCardButtonOn = active / picking) and disables it outside HUB or when blocked (%Block shows the reason)."
+custom_minimum_size = Vector2(0, 148)
+offset_right = 928.0
+offset_bottom = 148.0
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()
+Research icon (quirk image) through research_ring.gdshader: circle + this row's progress ring."
+material = SubResource("ShaderMaterial_ring")
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 104.0
+offset_bottom = 104.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()"
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 124.0
+offset_top = 12.0
+offset_right = -190.0
+offset_bottom = 48.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 26
+text = "사격 훈련 I"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="State" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()
+진행 중 (active) / 대상 선택 (targeted, pick a target) / empty."
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -190.0
+offset_top = 14.0
+offset_right = -20.0
+offset_bottom = 44.0
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 20
+text = "진행 중"
+horizontal_alignment = 2
+clip_text = true
+
+[node name="Desc" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()"
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 124.0
+offset_top = 48.0
+offset_right = -20.0
+offset_bottom = 78.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "사격 코스 한 장을 얻습니다"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Meta" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()
+Weeks of work · weeks left at the current rate · completion count."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 124.0
+offset_top = 80.0
+offset_right = -120.0
+offset_bottom = 108.0
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "2주 분량 · 남은 1주 · 완료 1회"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Pct" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()"
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 80.0
+offset_right = -20.0
+offset_bottom = 108.0
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "40%"
+horizontal_alignment = 2
+
+[node name="Track" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 124.0
+offset_top = 114.0
+offset_right = -20.0
+offset_bottom = 126.0
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="Fill" type="Panel" parent="Track"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()
+Code sets anchor_right = progress."
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.4
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="Block" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: FacilitySheet.gd _fill_row()
+Block reason (ResearchSystem.block_reason) when the row cannot be chosen."
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_left = 124.0
+offset_top = 114.0
+offset_right = -20.0
+offset_bottom = 142.0
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 20
+text = "시설 Lv 2 이상 필요"
+clip_text = true
+text_overrun_behavior = 3

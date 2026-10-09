@@ -2,126 +2,178 @@
 
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 [ext_resource type="Script" uid="uid://0q7cd2lmrxa5" path="res://features/season/staff/PersonnelBody.gd" id="2_script"]
-[ext_resource type="PackedScene" uid="uid://c133frsnedlc7" path="res://features/season/staff/UI_Comp_PersonnelStaffRow.tscn" id="3_row"]
+[ext_resource type="PackedScene" uid="uid://chqr303ok24s5" path="res://features/season/staff/UI_Comp_StaffThumb.tscn" id="3_thumb"]
 
 [node name="PersonnelBody" type="VBoxContainer"]
-editor_description = "Personnel section of the 인사팀 facility sheet (PersonnelResearch.make_body → FacilitySheet). Top-wide; list samples are replaced at runtime."
-anchors_preset = 10
+editor_description = "Personnel office body (FacilityView %BodySlot, PersonnelResearch.make_body). Top: run staff as StaffThumb cards (3 columns, ~2.5 rows visible, scrolls inside). Bottom: scouted candidates (3 columns, takes the rest, scrolls inside) with the scouting gauge on its header line. Tap a card = confirm popup (dismiss / hire). Sample cards are previews (cleared in _ready)."
+anchors_preset = 15
 anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("1_theme")
 theme_override_constants/separation = 0
 script = ExtResource("2_script")
 
-[node name="StaffSection" type="VBoxContainer" parent="."]
+[node name="StaffHead" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="StaffSection"]
-custom_minimum_size = Vector2(0, 40)
+[node name="Title" type="Label" parent="StaffHead"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
 text = "tx_W0X6SW7323"
+vertical_alignment = 1
 
-[node name="StaffSub" type="Label" parent="StaffSection"]
+[node name="StaffSub" type="Label" parent="StaffHead"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()"
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()
+Staff count · weekly salary total, right end of the title line."
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 text = "4명 · 주급 합계 250"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="StaffGap" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
 
 [node name="StaffEmpty" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()"
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff() (shown instead of the grid when nobody is hired)"
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
+visible = false
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 22
 text = "tx_CZ4VNDDER3"
 
-[node name="StaffList" type="VBoxContainer" parent="."]
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()"
+[node name="StaffScroll" type="ScrollContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _ready() · _fill_staff()
+Fixed 2.5 card rows tall (2.5 × 330 + 2 × 28) — the half row hints that it scrolls."
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 881)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Center" type="CenterContainer" parent="StaffScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="StaffGrid" type="GridContainer" parent="StaffScroll/Center"]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_staff()
+Every run staffer (StaffThumb: job · seat, weekly salary). Tap = dismiss confirm."
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/h_separation = 40
+theme_override_constants/v_separation = 28
+columns = 3
+
+[node name="StaffThumb_Staff0" parent="StaffScroll/Center/StaffGrid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="StaffThumb_Staff1" parent="StaffScroll/Center/StaffGrid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="StaffThumb_Staff2" parent="StaffScroll/Center/StaffGrid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="StaffThumb_Staff3" parent="StaffScroll/Center/StaffGrid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="CandGap" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 8
 
-[node name="PersonnelStaffRow" parent="StaffList" instance=ExtResource("3_row")]
-layout_mode = 2
-
-[node name="GapCandSection" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 24)
+[node name="CandHead" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 mouse_filter = 2
+theme_override_constants/separation = 16
 
-[node name="CandSection" type="VBoxContainer" parent="."]
+[node name="Title" type="Label" parent="CandHead"]
 layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
-
-[node name="Title" type="Label" parent="CandSection"]
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 28
 text = "tx_XVA01HKA07"
+vertical_alignment = 1
 
-[node name="CandSub" type="Label" parent="CandSection"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 36)
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 18
-text = "3명 — 한 명을 영입하거나 모두 보냅니다"
-
-[node name="CandEmpty" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-theme_type_variation = &"FaintLabel"
-theme_override_font_sizes/font_size = 22
-text = "tx_FG29WZFWYV"
-autowrap_mode = 3
-
-[node name="CandList" type="VBoxContainer" parent="."]
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()"
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="PersonnelStaffRow" parent="CandList" instance=ExtResource("3_row")]
-layout_mode = 2
-
-[node name="PassRow" type="HBoxContainer" parent="."]
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates() (hidden without candidates)"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 76)
-layout_mode = 2
-mouse_filter = 2
-alignment = 2
-
-[node name="PassAll" type="Button" parent="PassRow"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — PersonnelBody.gd (two-step 모두 보내기)"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 56)
+[node name="ScoutTrack" type="Panel" parent="CandHead"]
+custom_minimum_size = Vector2(220, 14)
 layout_mode = 2
 size_flags_vertical = 4
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 22
-text = "모두 보내기"
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="ScoutFill" type="Panel" parent="CandHead/ScoutTrack"]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates() (anchor_right = scouting progress)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.4
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="ScoutPct" type="Label" parent="CandHead"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()
+Scouting gauge percent (the facility researches on its own)."
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "스카우트 40%"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="CandHeadGap" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CandScroll" type="ScrollContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _ready()
+Takes the rest of the body; candidates scroll inside."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Center" type="CenterContainer" parent="CandScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="CandGrid" type="GridContainer" parent="CandScroll/Center"]
+editor_description = "[필수] 지우면 오류 — PersonnelBody.gd _fill_candidates()
+The last scout's unanswered candidates (StaffThumb: job, weekly salary). Tap = hire confirm."
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 40
+theme_override_constants/v_separation = 28
+columns = 3
+
+[node name="StaffThumb_Cand0" parent="CandScroll/Center/CandGrid" instance=ExtResource("3_thumb")]
+layout_mode = 2
+
+[node name="StaffThumb_Cand1" parent="CandScroll/Center/CandGrid" instance=ExtResource("3_thumb")]
+layout_mode = 2
 
 [node name="Tail" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 20)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 mouse_filter = 2

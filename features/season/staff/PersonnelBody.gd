@@ -1,33 +1,30 @@
 class_name PersonnelBody
 extends VBoxContainer
 
-# Personnel section of the `personnel` facility sheet (§16, decision 10) — built by
-# `PersonnelResearch.make_body`. Two lists of `UI_Comp_PersonnelStaffRow`:
-#   스태프 목록 — every run staffer: name, job (specialty label), six stats, weekly salary,
-#                 the facility they sit in; `해고` (two-step: the first press arms the row,
-#                 the second dismisses — a seated staffer is unseated first).
-#   영입 후보   — the last scout's unanswered candidates: `영입` (two-step, salary on the
-#                 row) adds one to the run team and consumes the list; `모두 보내기`
-#                 (two-step) passes on all.
-# Every change goes through `StaffSystem` / `PersonnelResearch`; the body then refills itself
-# and emits `changed` so the host sheet can refresh what depends on staff (occupant picker,
-# stat values, salary).
+# Personnel office body (§16, facility `personnel`) — `FacilityView` %BodySlot, built by
+# `PersonnelResearch.make_body`. The office scouts on its own (auto research, no picker):
+#   스태프 목록 — every run staffer as a `StaffThumb` (job · where they sit, weekly salary), 3 columns,
+#                 about 2.5 rows visible, scrolls inside. Count · salary total on the title line.
+#                 Tap → `ConfirmPopup` (name, job, salary, six stats) → `StaffSystem.dismiss`.
+#   영입 후보   — the last scout's unanswered candidates (`PersonnelResearch.candidates`), same cards,
+#                 the rest of the body, scrolls inside. The scouting gauge (bar + %) sits on the
+#                 header line. Tap → `ConfirmPopup` → `PersonnelResearch.hire_candidate` (the list is
+#                 consumed — the others go back).
+# After a hire / dismiss the body refills and emits `changed` (the header and the occupant picker
+# read staff). Refusals go out as `message` (the screen's toast).
 #
-# **Layout lives in `UI_View_PersonnelBody.tscn`** (+ item scene `UI_Comp_PersonnelStaffRow.tscn`).
-# The script fills `%` nodes, instances rows and swaps button texts / variations (armed state).
+# **Layout lives in `UI_View_PersonnelBody.tscn`**; cards are `staff/UI_Comp_StaffThumb.tscn`.
 
-## After a hire / dismiss / pass — the host refreshes whatever reads the staff.
+## After a hire / dismiss — the host refreshes whatever reads the staff.
 signal changed
+## A refusal to show as the facility screen's toast.
+signal message(text: String)
 
 const SCENE_PATH: String = "res://features/season/staff/UI_View_PersonnelBody.tscn"
-const ROW_SCENE: PackedScene = preload("res://features/season/staff/UI_Comp_PersonnelStaffRow.tscn")
-const _ARM_DISMISS: String = "dismiss:"
-const _ARM_HIRE: String = "hire:"
-const _ARM_PASS: String = "pass"
-
 var _state: Dictionary = {}
-# The armed two-step action ("" none, "dismiss:<id>", "hire:<id>", "pass").
-var _armed: String = ""
+var _confirm: ConfirmPopup = null
+# What the open confirm popup acts on: {"op": "dismiss" | "hire", "id": int}.
+var _pending: Dictionary = {}
 
 
 ## Instantiates the scene. `PersonnelBody.new()` is an empty box — don't use it.
@@ -36,15 +33,19 @@ static func create() -> PersonnelBody:
 
 
 func _ready() -> void:
-	%PassAll.pressed.connect(_on_pass_pressed)
+	for grid: Node in [%StaffGrid, %CandGrid]:
+		for c in grid.get_children():
+			grid.remove_child(c)
+			c.queue_free()
+	DragScroll.attach(%StaffScroll)
+	DragScroll.attach(%CandScroll)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
 
-## Binds the live `season_state` and fills both lists.
+## Binds the live `season_state` and fills both grids.
 func bind(state: Dictionary) -> void:
 	_state = state
-	_armed = ""
 	if is_node_ready():
 		refresh()
 	else:
@@ -52,143 +53,150 @@ func bind(state: Dictionary) -> void:
 
 
 func refresh() -> void:
+	if _state.is_empty():
+		return
 	_fill_staff()
 	_fill_candidates()
 
 
-# ── Lists ────────────────────────────────────────────────────────────────────
+# ── Grids ────────────────────────────────────────────────────────────────────
 func _fill_staff() -> void:
 	var staff: Array = (_state.get("run_setup", {}) as Dictionary).get("staff", [])
 	%StaffSub.text = Loc.t(L.RESEARCH_PERSONNEL_BODY_STAFF_SUB,
 			{"n": staff.size(), "amount": StaffSystem.weekly_salary_total(_state)})
 	%StaffEmpty.visible = staff.is_empty()
-	var rows: Array = _rows(%StaffList, staff.size())
-	for i in rows.size():
+	%StaffScroll.visible = not staff.is_empty()
+	var grid: GridContainer = %StaffGrid
+	_thumbs(grid, staff.size(), _on_staff_pressed)
+	for i in staff.size():
 		var e: Dictionary = staff[i]
 		var sid: int = int(e.get("id", -1))
-		var row: Control = rows[i]
-		_fill_row(row, e)
+		var job: String = StaffSystem.job_label(String(e.get("job", "")))
 		var fid: String = FacilitySystem.facility_of_staff(_state, sid)
-		var seat: Label = row.get_node("%Seat")
-		seat.visible = true
-		if fid != "":
-			seat.text = Loc.t(L.RESEARCH_PERSONNEL_BODY_SEAT, {"facility": FacilitySystem.facility_name(fid)})
-			seat.theme_type_variation = &"AccentLabel"
-		else:
-			seat.text = Loc.t(L.RESEARCH_PERSONNEL_BODY_SEAT_NONE)
-			seat.theme_type_variation = &"FaintLabel"
-		var armed: bool = _armed == _ARM_DISMISS + str(sid)
-		var confirm_key: String = L.RESEARCH_PERSONNEL_BODY_DISMISS_SEATED_CONFIRM if fid != "" \
-				else L.RESEARCH_PERSONNEL_BODY_DISMISS_CONFIRM
-		var action_text: String = Loc.t(confirm_key if armed else L.RESEARCH_PERSONNEL_BODY_DISMISS)  # l10n-dynamic: research_personnel.body.dismiss*
-		_set_action(row.get_node("%Action"), action_text, armed, _on_dismiss_pressed.bind(sid))
+		var sub: String = Loc.t(L.RESEARCH_PERSONNEL_BODY_SUB_FREE, {"job": job}) if fid == "" \
+				else Loc.t(L.RESEARCH_PERSONNEL_BODY_SUB_SEATED, {"job": job, "facility": FacilitySystem.facility_name(fid)})
+		(grid.get_child(i) as StaffThumb).show_person(str(sid), StaffSystem.staff_name(e), sub,
+				Loc.t(L.STAFF_PANEL_SALARY, {"amount": int(e.get("salary", 0))}))
 
 
 func _fill_candidates() -> void:
+	var ratio: float = ResearchSystem.progress(_state, PersonnelResearch.FACILITY)
+	(%ScoutFill as Control).anchor_right = ratio
+	%ScoutPct.text = Loc.t(L.RESEARCH_PERSONNEL_BODY_SCOUT_PROGRESS,
+			{"percent": ResearchBubble.percent_text(ratio)})
 	var ids: Array = PersonnelResearch.candidates(_state)
-	%CandSub.text = Loc.t(L.RESEARCH_PERSONNEL_BODY_CAND_SUB, {"n": ids.size()})
-	%CandSub.visible = not ids.is_empty()
-	%CandEmpty.visible = ids.is_empty()
-	%PassRow.visible = not ids.is_empty()
-	var rows: Array = _rows(%CandList, ids.size())
-	for i in rows.size():
+	var grid: GridContainer = %CandGrid
+	_thumbs(grid, ids.size(), _on_cand_pressed)
+	for i in ids.size():
 		var sid: int = int(ids[i])
-		var row: Control = rows[i]
-		_fill_row(row, StaffSystem.staff_row(sid))
-		(row.get_node("%Seat") as Label).visible = false
-		var armed: bool = _armed == _ARM_HIRE + str(sid)
-		_set_action(row.get_node("%Action"),
-				Loc.t(L.RESEARCH_PERSONNEL_BODY_HIRE_CONFIRM if armed else L.RESEARCH_PERSONNEL_BODY_HIRE),
-				armed, _on_hire_pressed.bind(sid))
-	var pass_armed: bool = _armed == _ARM_PASS
-	(%PassAll as Button).text = Loc.t(L.RESEARCH_PERSONNEL_BODY_PASS_CONFIRM if pass_armed
-			else L.RESEARCH_PERSONNEL_BODY_PASS_ALL)
-	(%PassAll as Button).theme_type_variation = &"PrimaryButton" if pass_armed else &"GhostButton"
+		var e: Dictionary = StaffSystem.staff_row(sid)
+		(grid.get_child(i) as StaffThumb).show_person(str(sid), StaffSystem.staff_name(e),
+				StaffSystem.job_label(String(e.get("job", ""))),
+				Loc.t(L.STAFF_PANEL_SALARY, {"amount": int(e.get("salary", 0))}))
 
 
-## Name · job · six stats · salary of one staff entry (run staff or `staff_row`).
-func _fill_row(row: Control, e: Dictionary) -> void:
-	row.get_node("%Name").text = StaffSystem.staff_name(e)
-	row.get_node("%Job").text = StaffSystem.job_label(String(e.get("job", "")))
-	row.get_node("%Stats").text = stats_text(e)
-	row.get_node("%Salary").text = Loc.t(L.STAFF_PANEL_SALARY, {"amount": int(e.get("salary", 0))})
+# Keeps exactly `n` thumbs in `grid` (new ones wired to `handler(thumb)`).
+static func _thumbs(grid: GridContainer, n: int, handler: Callable) -> void:
+	while grid.get_child_count() > n:
+		var c: Node = grid.get_child(grid.get_child_count() - 1)
+		grid.remove_child(c)
+		c.queue_free()
+	while grid.get_child_count() < n:
+		var t := StaffThumb.create()
+		grid.add_child(t)
+		t.pressed.connect(handler.bind(t))
 
 
-## "훈련 17 · 전술 8 · 메크 지식 6 · …" — the six stats in `StaffSystem.STATS` order.
-static func stats_text(e: Dictionary) -> String:
+# ── Actions (confirm popup) ──────────────────────────────────────────────────
+func _on_staff_pressed(t: StaffThumb) -> void:
+	var sid: int = int(t.who)
+	var why: String = StaffSystem.dismiss_block_reason(_state, sid)
+	if why != "":
+		message.emit(why)
+		return
+	var e: Dictionary = FacilitySystem.run_staff(_state, sid)
+	var lines: Array = [info_text(e)]
+	var fid: String = FacilitySystem.facility_of_staff(_state, sid)
+	if fid != "":
+		lines.append(Loc.t(L.RESEARCH_PERSONNEL_BODY_DISMISS_SEATED, {"facility": FacilitySystem.facility_name(fid)}))
+	_open_confirm({"op": "dismiss", "id": sid},
+			Loc.t(L.RESEARCH_PERSONNEL_BODY_DISMISS_TITLE, {"name": StaffSystem.staff_name(e)}),
+			"\n\n".join(lines), Loc.t(L.RESEARCH_PERSONNEL_BODY_DISMISS), true)
+
+
+func _on_cand_pressed(t: StaffThumb) -> void:
+	var sid: int = int(t.who)
+	var why: String = StaffSystem.hire_block_reason(_state, sid)
+	if why != "":
+		message.emit(why)
+		return
+	var e: Dictionary = StaffSystem.staff_row(sid)
+	var lines: Array = [info_text(e)]
+	var rest: int = PersonnelResearch.candidates(_state).size() - 1
+	if rest > 0:
+		lines.append(Loc.t(L.RESEARCH_PERSONNEL_BODY_HIRE_REST, {"n": rest}))
+	_open_confirm({"op": "hire", "id": sid},
+			Loc.t(L.RESEARCH_PERSONNEL_BODY_HIRE_TITLE, {"name": StaffSystem.staff_name(e)}),
+			"\n\n".join(lines), Loc.t(L.RESEARCH_PERSONNEL_BODY_HIRE), false)
+
+
+func _open_confirm(pending: Dictionary, title: String, body: String, ok_text: String, danger: bool) -> void:
+	if _confirm == null:
+		_confirm = ConfirmPopup.create()
+		add_child(_confirm)
+		_confirm.confirmed.connect(_on_confirmed)
+		_confirm.cancelled.connect(func() -> void: _pending = {})
+	_pending = pending
+	_confirm.open(title, body, Loc.t(L.UI_BUTTON_CANCEL), ok_text, danger)
+
+
+func _on_confirmed() -> void:
+	var p: Dictionary = _pending
+	_pending = {}
+	if p.is_empty():
+		return
+	var sid: int = int(p["id"])
+	var why: String = StaffSystem.dismiss(_state, sid) if String(p["op"]) == "dismiss" \
+			else PersonnelResearch.hire_candidate(_state, sid)
+	if why != "":
+		message.emit(why)
+	refresh()
+	changed.emit()
+
+
+## "<job> · 주급 n" then the six stats, three per line (`StaffSystem.STATS` order).
+static func info_text(e: Dictionary) -> String:
+	var head: String = Loc.t(L.RESEARCH_PERSONNEL_BODY_INFO, {
+			"job": StaffSystem.job_label(String(e.get("job", ""))), "salary": int(e.get("salary", 0))})
 	var stats: Dictionary = e.get("stats", {})
 	var parts: Array = []
 	for s in StaffSystem.STATS:
 		parts.append("%s %d" % [StaffSystem.stat_label(String(s)), int(stats.get(s, StaffSystem.STAT_MIN))])
-	return " · ".join(parts)
+	var half: int = ceili(parts.size() / 2.0)
+	return "%s\n%s\n%s" % [head, " · ".join(parts.slice(0, half)), " · ".join(parts.slice(half))]
 
 
-# Action button: text, armed look (PrimaryButton) and one fresh `pressed` handler.
-static func _set_action(btn: Button, text: String, armed: bool, handler: Callable) -> void:
-	btn.text = text
-	btn.theme_type_variation = &"PrimaryButton" if armed else &"GhostButton"
-	btn.pressed.connect(handler)
-
-
-# ── Actions (two-step) ───────────────────────────────────────────────────────
-func _on_dismiss_pressed(sid: int) -> void:
-	if _armed != _ARM_DISMISS + str(sid):
-		_arm(_ARM_DISMISS + str(sid))
-		return
-	_armed = ""
-	StaffSystem.dismiss(_state, sid)
-	_after_change()
-
-
-func _on_hire_pressed(sid: int) -> void:
-	if _armed != _ARM_HIRE + str(sid):
-		_arm(_ARM_HIRE + str(sid))
-		return
-	_armed = ""
-	PersonnelResearch.hire_candidate(_state, sid)
-	_after_change()
-
-
-func _on_pass_pressed() -> void:
-	if _armed != _ARM_PASS:
-		_arm(_ARM_PASS)
-		return
-	_armed = ""
-	PersonnelResearch.pass_all(_state)
-	_after_change()
-
-
-func _arm(what: String) -> void:
-	_armed = what
-	refresh.call_deferred()
-
-
-func _after_change() -> void:
-	refresh.call_deferred()
-	changed.emit()
-
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
-## Replaces the list's rows with `n` fresh instances; the list hides when empty.
-static func _rows(list: Node, n: int) -> Array:
-	for c in list.get_children():
-		list.remove_child(c)
-		c.queue_free()
-	for i in n:
-		list.add_child(ROW_SCENE.instantiate())
-	(list as CanvasItem).visible = n > 0
-	return list.get_children()
-
-
-## F6 단독 실행 미리보기 — 메모리 런의 스태프 + 스카우트 후보 3명(`PersonnelResearch.draw`).
+## F6 단독 실행 미리보기 — 메모리 런의 스태프 + 스카우트 후보 4명(`PersonnelResearch.draw`),
+## 스카우트 게이지 일부 채움.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
+	offset_left = 40.0
+	offset_right = -40.0
+	offset_top = 40.0
+	offset_bottom = -40.0
 	var gm: Node = UiPreview.ensure_run()
 	if gm == null:
 		return
 	var state: Dictionary = gm.season_state
 	var sc: Dictionary = state.get("scout", {})
-	sc["candidates"] = PersonnelResearch.draw(state, 3, 7)
+	sc["candidates"] = PersonnelResearch.draw(state, 4, 7)
 	state["scout"] = sc
-	changed.connect(func() -> void: print("[UiPreview] PersonnelBody changed"))
+	var a: Dictionary = ResearchSystem.active(state, PersonnelResearch.FACILITY)
+	if not a.is_empty():
+		var r: Dictionary = ResearchSystem.row(String(a["rid"]))
+		var res: Dictionary = state.get("research", {})
+		(res["points"] as Dictionary)[ResearchSystem.key_of(String(a["rid"]), String(a["target"]))] = \
+				int(ResearchSystem.cost(r) * 0.4)
+	UiPreview.trace(changed, "changed")
+	UiPreview.trace(message, "message")
 	bind(state)

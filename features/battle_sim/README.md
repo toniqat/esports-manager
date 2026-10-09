@@ -38,13 +38,13 @@ runs write nothing):
 | Key | Value |
 |---|---|
 | `winner_side` | 0 = my team (team 0), 1 = opponent |
-| `pilot_stats` | 10 rows in `pilots` order (0..4 = my team): `{"pilot_id", "side", "role", "k", "d", "a", "dmg", "taken", "care"}` — `pilot_id` = `PlayerData.id` (falls back to `PilotData.pilot_id`), `role` = `GameEnums.Role`. Contract: `docs/outgame_dev_plan.md` §10.4; how each number is counted: `combat/README.md` "Match stats" |
+| `pilot_stats` | 10 rows in `pilots` order (0..4 = my team): `{"pilot_id", "side", "role", "k", "d", "a", "dmg", "taken", "care", "turret", "score", "obj", "obj_turns"}` (the last four feed the §15 limit-break goals: turret damage, score earned, objectives taken + their turns) — `pilot_id` = `PlayerData.id` (falls back to `PilotData.pilot_id`), `role` = `GameEnums.Role`. Contract: `docs/outgame_dev_plan.md` §10.4; how each number is counted: `combat/README.md` "Match stats" |
 | `stress` | `{"<pid>": int}` my pilots' stress at match end (`StressEvents.final_values`) → `StressSystem.record_match` |
 | `mvp_pilot_id` | winning team's best `RunStats.mvp_score(row)` (`features/season/run_stats/README.md`), -1 if none |
 
 Then the **MVP view** opens, and its "계속" opens the existing result panel (now with an MVP
 line) — `ui/README.md` "Match end — MVP view → result panel". SeasonHub consumes the payload
-(`RunStats.record_match`).
+(`RunStats.record_match`, then `LimitBreak.record_match`).
 
 ---
 

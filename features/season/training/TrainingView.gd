@@ -144,6 +144,9 @@ var _thumb_faces: Array = []             # 5 TextureRect
 var _thumb_exp_chips: Array = []         # 5 Panel (`%ExpChip` of each TrainingThumb)
 var _thumb_exp_texts: Array = []         # 5 Label (`%ExpText`)
 var _exp_chip_base: StyleBoxFlat = null  # 씬의 칩 옷 — 색만 바꿔 복사한다
+## §15 B run training level chip on each thumbnail (`_refresh_level_chips`).
+var _thumb_level_chips: Array = []       # 5 Panel (`%LevelChip`)
+var _thumb_level_texts: Array = []       # 5 Label (`%LevelText`)
 
 # 인벤토리에서 고른 코스와 그 정보 팝오버.
 var _sel_tile: TrainingTile = null
@@ -238,6 +241,8 @@ func _bind_thumbs() -> void:
 		chip.visible = false
 		_thumb_exp_chips.append(chip)
 		_thumb_exp_texts.append(thumb.get_node("%ExpText"))
+		_thumb_level_chips.append(thumb.get_node("%LevelChip"))
+		_thumb_level_texts.append(thumb.get_node("%LevelText"))
 
 
 ## **판 옆의 요일 글자는 없다.** 다섯 줄이 무슨 요일인가는 이 화면이 답해야
@@ -387,6 +392,26 @@ func _refresh_thumbs() -> void:
 		var p: PlayerData = pilots[seat]
 		(_thumb_faces[seat] as TextureRect).texture = \
 				null if p == null else PilotImages.eye_for(p.id)
+	_refresh_level_chips(pilots)
+
+
+## §15 B — "Lv2" chip per portrait; accent fill while that pilot's bar is full (a limit
+## break is due or its goal is open), dark rail otherwise.
+func _refresh_level_chips(pilots: Array) -> void:
+	if _thumb_level_chips.size() != COLS or _board == null:
+		return
+	var state: Dictionary = _board.season_state()
+	for seat in COLS:
+		var chip: Panel = _thumb_level_chips[seat]
+		var p: PlayerData = pilots[seat]
+		chip.visible = p != null and TrainingLevel.has_level(state, p.id)
+		if not chip.visible:
+			continue
+		(_thumb_level_texts[seat] as Label).text = TrainingLevel.chip_text(state, p.id)
+		var sty := OutgameTheme.variation_box(&"PilotThumbTag")
+		sty.bg_color = OutgameTheme.ACCENT if TrainingLevel.awaiting_break(state, p.id) \
+				else OutgameTheme.RAIL
+		chip.add_theme_stylebox_override(&"panel", sty)
 
 
 func _on_thumb_pressed(seat: int) -> void:

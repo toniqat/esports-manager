@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://bcyyv0oikg8bb"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/training/LimitBreakDemo.gd" id="2_script"]
+
+[node name="LimitBreakDemo" type="Control"]
+editor_description = "Dev harness (F6 only): plays the limit-break dialogue (LimitBreak.pending_event → session → VnDialogueView.open → choose_goal) on an in-memory run. Never instanced by the game; the week screen runs the same calls."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_theme")
+script = ExtResource("2_script")

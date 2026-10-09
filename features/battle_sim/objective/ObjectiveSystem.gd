@@ -231,6 +231,8 @@ func _run_objective_engage(st: Dictionary, kind: int,
 	var reward: String = reward_text(kind)
 	await _grant_reward(kind, winner)
 	_push_feed(kind, winner, t0 if winner == 0 else t1)
+	# §15 B match stat — the winning group took it (`BattleSim.credit_objective`).
+	_bs.credit_objective(t0 if winner == 0 else t1)
 	# 고양감(파일럿 스킬)은 **싸워서 이겼을 때만** 충전한다 — 아무도 안 나와
 	# 거저 가져간 경우(`_award_uncontested`)는 "전투에서 승리"가 아니다.
 	if _bs.skill != null:
@@ -252,6 +254,8 @@ func _award_uncontested(st: Dictionary, kind: int, winner: int,
 	# 무혈 획득도 킬로그에 오른다 — 아무도 안 나와 거저 가져간 것이야말로
 	# 그 순간 화면에 아무 일도 일어나지 않는 경우라, 자국이 더 필요하다.
 	_push_feed(kind, winner, t0 if winner == 0 else t1)
+	# §15 B match stat — the winning group took it (`BattleSim.credit_objective`).
+	_bs.credit_objective(t0 if winner == 0 else t1)
 	if _bs.mech_skill != null:
 		_bs.mech_skill.on_objective_win(winner)
 	_reschedule(st, _bs.OBJ_RESPAWN_TURNS)

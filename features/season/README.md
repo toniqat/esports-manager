@@ -156,7 +156,7 @@ plus preview-only manager children, since `_hub` is null standalone:
 normally come from the host) · `HubSheet` = own-team detail (a `LeagueTeamDetail` body) · `EndingView` = all six titles won ·
 `GameOverView` = preseason playoff final lost · `BracketView` = SFs done, final pending ·
 `IntlBracketView` = preseason INTL, QFs done, SFs pending. Item scenes use hand-written values:
-`SeasonPilotCard` (Corin, trust past half, shaken) · `SeasonPilotDetail` (my first pilot of the in-memory run) · `HubManageCard` (finance, alert dot) · `BracketMatchBox`
+`SeasonPilotCard` (Corin, trust past half, shaken, training Lv2 chip in accent) · `SeasonPilotDetail` (my first pilot of the in-memory run, training bar filled + a limit-break goal picked) · `HubManageCard` (finance, alert dot) · `BracketMatchBox`
 / `IntlMatchBox` (own team won). `정산` / `확인` / hub buttons only print (no settlement, no scene change).
 `EndingView` / `GameOverView` keep their managers in `_league` / `_intl` / `_tournament` (re-read from
 `_hub` every refresh; the preview sets them directly).
@@ -241,19 +241,26 @@ SeasonPilotCard (Panel · Card, min h 256, width from the row · SeasonPilotCard
 ├ BadgeSlot CenterContainer (y 12..42) ─ %PositionBadge_Role (PositionBadge)
 ├ %Ring (TrustRing, 140², centred, y 50) ─ %Portrait slot 116² inside (code: add_round_portrait)
 ├ %TrustPill (ProgressFill 56×34, portrait bottom-right) ─ %TrustText (OnFill 22)
+├ %LevelChip (ProgressFill 60×34, portrait bottom-left) ─ %LevelText (OnFill 20)   §15 training level "LvN"
 ├ %Stress (Caption 20, y 196)        "스트레스 N", NegativeLabel when shaken
 ├ %StressNote (28, y 220)            emphasised line: hub = mood when shaken; week = the day's stress change
 └ %Hit flat Button over the card → pressed(pilot_id)
 
 SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.gd)
 ├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust (`신뢰도 Lv.N (P%)`) · %Outings · %Mood
+├ TrainingTitle · TrainingLine (%TrainLevel `Lv N / 5` · %TrainExp EXP in the level) · %TrainTrack ─ %TrainFill
+│   (ProgressTrack / ProgressFill bar) · %TrainState (limit-break goal + progress, "한계 도달" or the cap)   §15 B
 ├ StatsTitle · %Stats ─ Stat0..5 (Line: Name (Body 26) · Value (Title 30)) + Note (Caption 18, stat_note)
 ├ QuirksTitle · %QuirksEmpty · %Quirks ─ %QuirkLine template ("name · effect", grade colour)
 └ ResearchTitle · %Research (research mech · tier (value / max), tier colour) · Tail
 ```
 
 - API: `SeasonPilotCard.show_pilot(pid, role, trust, stress)` (`trust` = points; the card shows the level on the pill and the progress on the ring) / `show_empty(role)` / `set_note(text, variation)` /
-  `pulse_note()` / `set_tappable(on)`; `SeasonPilotDetail.open(host, pilot_id) -> HubSheet` (null for an unknown id).
+  `pulse_note()` / `set_tappable(on)` / `set_training_level(level, alert)`; `SeasonPilotDetail.open(host, pilot_id) -> HubSheet` (null for an unknown id).
+- **Training level (§15 B)**: `show_pilot` reads the run itself (`TrainingLevel`, via `/root/GameManager`) — the
+  chip shows `LvN` on the dark rail, **accent** while the bar is full (limit break due or its goal open), and is
+  hidden for pilots without a training level (AI pilots, empty seat). The detail sheet's training rows
+  (`_fill_training`) show level / EXP bar / `LimitBreak.goal_text`. Rules: `training/README.md` "Training level".
 - `TrustRing` (`@tool` `_draw` widget): `width` (scene), `ratio` · `color` (code). Track = `SURFACE_SUNK`, arc from 12 o'clock.
 
 ## Phase week budget (CalendarSystem.PHASE_WEEKS)

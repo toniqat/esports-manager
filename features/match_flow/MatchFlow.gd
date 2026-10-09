@@ -439,6 +439,7 @@ func _cheat_finish(winner_side: int) -> void:
 			rows.append({
 				"pilot_id": pd.id, "side": side, "role": pd.role,
 				"k": 0, "d": 0, "a": 0, "dmg": 0, "taken": 0, "care": 0,
+				"turret": 0, "score": 0.0, "obj": 0, "obj_turns": [],
 			})
 			if side == winner_side and pd.role == RunStats.top_role():
 				mvp_id = pd.id

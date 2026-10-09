@@ -192,6 +192,8 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
 		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
+		# §15 B — run-only training level / limit break (string keys only).
+		"training_level":    (s.get("training_level", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -246,6 +248,8 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
 		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
+		# §15 B — run-only training level / limit break (string keys only).
+		"training_level":    (s.get("training_level", {}) as Dictionary).duplicate(true),
 	}
 
 

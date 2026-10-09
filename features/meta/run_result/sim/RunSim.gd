@@ -262,7 +262,8 @@ func _play_player_match(gm: Node, hub: SeasonHub, md: int) -> void:
 				continue
 			(side_ids[side] as Array).append(pd.id)
 			rows.append({"pilot_id": pd.id, "side": side, "role": pd.role,
-					"k": 0, "d": 0, "a": 0, "dmg": 0, "taken": 0, "care": 0})
+					"k": 0, "d": 0, "a": 0, "dmg": 0, "taken": 0, "care": 0,
+					"turret": 0, "score": 0.0, "obj": 0, "obj_turns": []})
 	var winners: Array = side_ids[winner_side]
 	var mvp: int = int(winners[randi() % winners.size()]) if not winners.is_empty() else -1
 	s["pending_match"] = {

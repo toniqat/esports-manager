@@ -61,6 +61,7 @@ func _bind(sheet: HubSheet, state: Dictionary, pd: PlayerData) -> void:
 	ml.text = StressSystem.line(stress, mood)
 	ml.theme_type_variation = &"NegativeLabel" if StressSystem.is_over(stress) else &"CaptionLabel"
 
+	_fill_training(state, pid)
 	_fill_stats(pd)
 	_fill_quirks(state, pid)
 	_fill_research(state, pid)
@@ -115,6 +116,32 @@ func _fill_research(state: Dictionary, pid: int) -> void:
 	rl.add_theme_color_override("font_color", MechMastery.tier_color(tier))
 
 
+## §15 B — run training level, EXP bar and the limit-break line (`TrainingLevel` / `LimitBreak`).
+func _fill_training(state: Dictionary, pid: int) -> void:
+	var lv: int = TrainingLevel.level(state, pid)
+	(%TrainLevel as Label).text = Loc.t(L.TRAINING_LEVEL_DETAIL_LEVEL,
+			{"n": lv, "max": TrainingLevel.MAX_LEVEL})
+	var at_max: bool = TrainingLevel.is_max(state, pid)
+	var el: Label = %TrainExp
+	el.visible = not at_max
+	el.text = Loc.t(L.TRAINING_LEVEL_EXP,
+			{"exp": TrainingLevel.exp_of(state, pid), "need": TrainingLevel.exp_need(state, pid)})
+	(%TrainFill as Control).anchor_right = TrainingLevel.progress(state, pid)
+	var sl: Label = %TrainState
+	var goal: String = LimitBreak.goal_text(state, pid)
+	sl.theme_type_variation = &"AccentLabel"
+	if goal != "":
+		sl.text = goal
+	elif at_max:
+		sl.text = Loc.t(L.TRAINING_LEVEL_MAX)
+		sl.theme_type_variation = &"CaptionLabel"
+	elif TrainingLevel.awaiting_break(state, pid):
+		sl.text = Loc.t(L.TRAINING_LEVEL_FULL)
+	else:
+		sl.text = ""
+	sl.visible = sl.text != ""
+
+
 ## The sheet scrolls exactly this node's height (the scene's `Tail` is the bottom gap).
 func _fit_sheet() -> void:
 	if _sheet != null:
@@ -131,4 +158,8 @@ func _fill_preview() -> void:
 	var ids: Array = MentalSystem.my_pilot_ids(state)
 	if ids.is_empty():
 		return
-	_bind(null, state, MentalEvents.pilot_of(state, int(ids[0])))
+	# §15 B — a full training bar with a picked limit-break goal, so the training rows show.
+	var pid: int = int(ids[0])
+	TrainingLevel.add_exp(state, pid, TrainingLevel.exp_need(state, pid))
+	LimitBreak.choose_goal(state, pid, 0)
+	_bind(null, state, MentalEvents.pilot_of(state, pid))

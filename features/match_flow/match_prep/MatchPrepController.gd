@@ -18,12 +18,14 @@ signal phase_finished(result: Dictionary)
 var _view: MatchPrepView
 
 
-# Called by MatchFlow with the resolved player + enemy rosters and the
-# enemy team display name.
-func enter(player_roster: Array, enemy_roster: Array, player_team_name: String, enemy_team_name: String) -> void:
+# Called by MatchFlow with the resolved player + enemy rosters, the team display
+# names and the enemy team id (its analysis rank, `IntelResearch.rank`, sets the reveal tier).
+func enter(player_roster: Array, enemy_roster: Array, player_team_name: String, enemy_team_name: String,
+		enemy_team_id: int = -1) -> void:
 	_view = MatchPrepView.create()
 	_mf.canvas.add_child(_view)
-	_view.fill(_mf.gm.season_state, player_roster, enemy_roster, player_team_name, enemy_team_name)
+	_view.fill(_mf.gm.season_state, player_roster, enemy_roster, player_team_name, enemy_team_name,
+			enemy_team_id)
 	_view.start_pressed.connect(_on_start_pressed)
 	# Saturday prep (split): this button leads to the ban/pick, not to the match.
 	if _mf.is_prep_only():

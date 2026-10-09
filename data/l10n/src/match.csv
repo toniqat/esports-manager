@@ -40,8 +40,8 @@ tx_JFNQCJHJWF,match.mech_detail.quirk_title,active,MechDetailPanel quirk block h
 tx_HJGDFGJ4TM,match.mech_detail.quirk_inactive,active,quirk effect whose condition does not hold,,,{effect}  (조건 미충족),{effect}  (condition not met),draft,bd605daa
 tx_5YCR7YFGNT,match.intel.total,active,intel pilot row stat total,,,합계 {total},Total {total},draft,8c7948c2
 tx_7A1FMDGC3E,match.intel.no_info,active,intel mech / card line empty,,,정보 없음,No info,draft,534fb589
-tx_4Y7CG5R478,match.intel.tier_header,active,intel header chip,,,분석 {tier}단계 · {label},Analysis Tier {tier} · {label},draft,23351215
-tx_4P15WEPRM6,match.intel.need,active,intel header,,,내 {tx_Z1HJZ9M6K6} {have} · 다음 단계 {need} 필요,My {tx_Z1HJZ9M6K6} {have} · {need} needed for next tier,draft,9e1e2bde
+tx_4Y7CG5R478,match.intel.tier_header,active,intel header chip,,,분석 단계 {tier} · {label},Analysis Tier {tier} · {label},draft,f3fa68d0
+tx_4P15WEPRM6,match.intel.need,active,intel header: how to raise the tier,,,전력 분석실에서 연구하면 단계가 오릅니다,Research in the Analysis Room to raise it,draft,f2c0dcdd
 tx_CHAJA53SVW,match.intel.analyst,active,analyst note head,,,분석 · {who},Analysis · {who},draft,e423b8f1
 tx_4GMKW7SCDD,match.intel.tier.name_only,active,reveal tier 0,,,이름 · 역할,Name · Role,draft,cbc70d56
 tx_Q605SZ346S,match.intel.tier.approx,active,reveal tier 1,,,대략적인 {tx_FV39P9GPAJ},Approx. Pilot Stats,draft,0f40335f

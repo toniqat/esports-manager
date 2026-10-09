@@ -49,14 +49,16 @@ func set_start_text(text: String) -> void:
 	start.text = text
 
 
+## `enemy_team_id` = the opponent (its analysis rank sets the reveal tier); -1 = read it from
+## `enemy_roster`.
 func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
-		player_team_name: String, enemy_team_name: String) -> void:
+		player_team_name: String, enemy_team_name: String, enemy_team_id: int = -1) -> void:
 	%Matchup.text = "%s  vs  %s" % [player_team_name, enemy_team_name]
 	%EnemyTitle.text = Loc.t(L.MATCH_PREP_ENEMY_TITLE, {"team": enemy_team_name})
 	%OwnTitle.text = Loc.t(L.MATCH_PREP_OWN_TITLE, {"team": player_team_name})
 	_state = state
 	_shown.clear()
-	var enemy: Dictionary = OpponentIntel.build(state, enemy_roster, false)
+	var enemy: Dictionary = OpponentIntel.build(state, enemy_roster, false, enemy_team_id)
 	(%IntelView_EnemyIntel as IntelView).show_intel(enemy)
 	_fill_cards(%EnemyCards, enemy)
 	_fill_cards(%OwnCards, OpponentIntel.build(state, player_roster, true))
@@ -93,7 +95,8 @@ func _on_card_pressed(pid: int) -> void:
 
 
 ## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 다음 경기 상대(미리보기 전용
-## 리그 일정 `UiPreview.ensure_league`)와 내 팀 로스터로 채운다. 분석 단계는 런 그대로다.
+## 리그 일정 `UiPreview.ensure_league`)와 내 팀 로스터로 채운다. 분석 단계는 그 상대의 런 속
+## 분석 단계(`IntelResearch.rank`) 그대로다.
 ## `경기 시작` 은 출력만 한다(호스트가 없어 다음 단계로 넘어가지 않는다).
 func _fill_preview() -> void:
 	UiPreview.stage(self)
@@ -109,4 +112,4 @@ func _fill_preview() -> void:
 	if m != null:
 		eid = int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
 	fill(s, OpponentIntel.team_roster(s, pid), OpponentIntel.team_roster(s, eid),
-			lm.team_name(pid), lm.team_name(eid))
+			lm.team_name(pid), lm.team_name(eid), eid)

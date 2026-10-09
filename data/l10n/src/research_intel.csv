@@ -1,3 +1,12 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_J3Y69RGNTH,research_intel.in_scout.name,active,research.csv name_key (id=in_scout),,,상대 분석,Opponent Analysis,draft,ab5b3f50
 tx_F4XDP3C9Q9,research_intel.in_scout.desc,active,research.csv desc_key (id=in_scout),,,고른 팀의 분석 단계를 한 단계 올립니다.,Raises the analysis rank of the chosen team by one.,draft,57450f3f
+tx_CX9KQC20YH,research_intel.in_deep.name,active,research.csv name_key (id=in_deep),,,정밀 분석,Deep Analysis,draft,1c554926
+tx_HF10DRTSC6,research_intel.in_deep.desc,active,research.csv desc_key (id=in_deep),,,고른 팀의 분석 단계를 한 단계 올립니다. 시설 레벨이 높아야 하지만 더 빨리 끝납니다.,"Raises the analysis rank of the chosen team by one. Needs a higher facility level, but finishes sooner.",draft,87ba670e
+tx_4YKPQENSGB,research_intel.target,active,"intel research target label (team short name, current rank)",,,{team} · 분석 {rank}/{max},{team} · Analysis {rank}/{max},draft,053108d5
+tx_T7D9CGRHZ8,research_intel.target_next,active,intel research target label of my next opponent,,,{team} · 분석 {rank}/{max} · 다음 상대,{team} · Analysis {rank}/{max} · Next opponent,draft,5abbc06e
+tx_J4KMC49ABA,research_intel.note.rank_up,active,toast note when an intel research completes,,,{team} 분석 {rank}단계,{team} analysis tier {rank},draft,518a66ee
+tx_W59SNZ97CJ,research_intel.block.no_target,active,intel research row block reason (every team at max rank),,,더 분석할 팀이 없습니다,No team left to analyse,draft,0a6c8fac
+tx_NNENFKVN7T,research_intel.body.caption,active,intel facility sheet body caption,,,팀별 분석 단계: 연구가 끝날 때마다 한 단계씩 오릅니다.,Analysis tier per team: each finished research raises it by one.,draft,8a5d7ed7
+tx_JFWCEN193R,research_intel.body.next,active,intel facility sheet body chip on the next opponent row,,,다음 상대,Next opponent,draft,77a3a50b
+tx_S4MP0P7FCH,research_intel.body.rank,active,intel facility sheet body team rank,,,분석 {rank}/{max},Analysis {rank}/{max},draft,325582d8

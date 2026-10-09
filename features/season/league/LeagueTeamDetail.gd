@@ -48,7 +48,7 @@ func _fit_sheet() -> void:
 		_sheet.set_body_height(size.y)
 
 
-## F6 단독 실행 미리보기 — 메모리 런의 다른 팀 하나(런의 실제 분석 단계). 시트 없이 본문만.
+## F6 단독 실행 미리보기 — 메모리 런의 다른 팀 하나(그 팀의 실제 분석 단계). 시트 없이 본문만.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
@@ -57,4 +57,4 @@ func _fill_preview() -> void:
 	var s: Dictionary = gm.season_state
 	var tid: int = (int(s["player_team_id"]) + 1) % 8
 	show_detail(Loc.t(L.SEASON_LEAGUE_DETAIL_RECORD, {"rank": 2, "win": 3, "loss": 1}),
-			OpponentIntel.build(s, OpponentIntel.team_roster(s, tid), false))
+			OpponentIntel.build(s, OpponentIntel.team_roster(s, tid), false, tid))

@@ -311,20 +311,6 @@ static func weekly_salary_total(state: Dictionary) -> int:
 	return total
 
 
-## **Deprecated (§16)** — replaced by the per-team analysis rank (`IntelResearch.rank`);
-## agent E removes it with its callers. Kept compiling until then.
-## Analysis reveal tier 0..3 — how many `ANALYSIS_TIER_1..3` (const.csv) thresholds are met.
-## 0 = name · role, 1 = + rough stats, 2 = + top-mastery mechs, 3 = + pilot cards.
-## M8 — the `analysis_tier` traits shift the result (clamped 0..3).
-static func analysis_tier(state: Dictionary) -> int:
-	var v: int = effective(state, "analysis")
-	var tier: int = 0
-	for i in range(1, 4):
-		if v >= ConstTable.int_of("ANALYSIS_TIER_%d" % i):
-			tier = i
-	return clampi(tier + TraitSystem.run_mod(state, "analysis_tier"), 0, 3)
-
-
 # ── Temporary mods ───────────────────────────────────────────────────────────
 ## Temporary manager-stat mod for `weeks` weeks (minus one per week end, gone at 0).
 static func add_mod(state: Dictionary, stat: String, delta: int, weeks: int, source: String = "") -> void:

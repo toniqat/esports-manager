@@ -190,7 +190,7 @@ var _team_names: Dictionary = {}   # side(int) → String
 var _mastery_on: bool = false
 ## Quirks (§14, T1) — on in a season run (`QuirkSystem.is_enabled`). My pilots only.
 var _quirk_on: bool = false
-## Analysis reveals the enemy's likely picks (`StaffSystem.analysis_tier >= 2`).
+## Analysis reveals the enemy's likely picks (enemy reveal tier >= 2, `OpponentIntel.tier_for`).
 var _show_enemy_likely: bool = false
 ## mech_id(int) → {"pilot": String, "value": int} — each enemy pilot's top mech (sheet line).
 var _enemy_likely: Dictionary = {}
@@ -306,9 +306,11 @@ func _setup_mastery() -> void:
 	_show_enemy_likely = false
 	if not _mastery_on:
 		return
-	_show_enemy_likely = StaffSystem.analysis_tier(s) >= 2
+	var enemy_roster: Array = _rosters.get(_other_side(_player_side), [])
+	var enemy_tier: int = OpponentIntel.tier_for(s, OpponentIntel.roster_team(enemy_roster))
+	_show_enemy_likely = enemy_tier >= OpponentIntel.TIER_MECHS
 	_setup_adept()
-	for raw in _rosters.get(_other_side(_player_side), []):
+	for raw in enemy_roster:
 		var pd := raw as PlayerData
 		if pd == null:
 			continue

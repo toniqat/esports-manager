@@ -146,7 +146,7 @@ func _enter_phase(p: int) -> void:
 			var e_roster := _team_roster(enemy_team_id)
 			var p_name: String = _team_name(player_team_id)
 			var e_name: String = _team_name(enemy_team_id)
-			_prep.enter(p_roster, e_roster, p_name, e_name)
+			_prep.enter(p_roster, e_roster, p_name, e_name, enemy_team_id)
 		GameEnums.MatchPhase.BAN_PICK:
 			# 밴픽 화면은 위/아래에 양 팀 파일럿 초상화를 세우므로 로스터와
 			# 팀명이 함께 필요하다 — 배정(ASSIGN)은 아직 멀었지만, 누구를

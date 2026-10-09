@@ -78,8 +78,7 @@ func _fill_header(intel: Dictionary) -> void:
 		sb.bg_color = OutgameTheme.SURFACE_SUNK
 		chip.add_theme_stylebox_override(&"panel", sb)
 	%Need.visible = not full
-	%Need.text = Loc.t(L.MATCH_INTEL_NEED, {"have": int(intel.get("analysis", 0)),
-			"need": int(intel.get("next_need", 0))})
+	%Need.text = Loc.t(L.MATCH_INTEL_NEED)   # how to raise it: research in the intel facility
 
 
 func _fill_note(intel: Dictionary) -> void:
@@ -98,8 +97,8 @@ static func _clear(box: Node) -> void:
 		c.queue_free()
 
 
-## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 다른 팀 하나를 런의 실제
-## 분석 단계로 보여 준다.
+## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 다른 팀 하나를 그 팀의 실제
+## 분석 단계(`IntelResearch.rank`)로 보여 준다.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
@@ -107,4 +106,4 @@ func _fill_preview() -> void:
 		return
 	var s: Dictionary = gm.season_state
 	var eid: int = (int(s["player_team_id"]) + 1) % 8
-	show_intel(OpponentIntel.build(s, OpponentIntel.team_roster(s, eid), false))
+	show_intel(OpponentIntel.build(s, OpponentIntel.team_roster(s, eid), false, eid))

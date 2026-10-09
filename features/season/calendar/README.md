@@ -48,7 +48,9 @@ the AI matches of that round stand on **Sunday**; schedule and bracket entries a
 Sat / Sun (afternoon + evening only, no stadium / press).
 
 Static helpers: `is_training_day(day)` (Mon–Fri) · `matchday_of(day)` (Sunday → 0, else -1) ·
-`is_week_day(day)` (0..6 — every day has an afternoon / evening). They do not answer whether a match
+`is_week_day(day)` (0..6 — every day has an afternoon / evening) · `day_in_phase(state)` (day number inside
+the current phase from 1, `(phase_week − 1) × 7 + week_day + 1`, `week_day` −1 counts as Monday — the week
+screen's `DAY N`). They do not answer whether a match
 is actually **scheduled** — the schedule answers that (`SeasonHub.has_player_match_on_day`).
 
 ## Phase boundaries (CalendarSystem.PHASE_WEEKS)

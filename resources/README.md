@@ -1043,7 +1043,7 @@ shows only real value changes.
 | `AccentLabel` | Label | Amber text on white (`FONT_CAPTION`, `ACCENT_TEXT`) |
 | `OnFillLabel` | Label | White text on a colour fill (`FONT_CAPTION`, `TEXT_ON_FILL`) — the fill colour itself is data |
 | `NegativeLabel` · `PositiveLabel` · `LinkLabel` | Label | Semantic text colour `NEGATIVE` (loss, error, warning) · `POSITIVE` (gain, qualified) · `LINK` (blue info, e.g. mastery gain), all `FONT_CAPTION` like `AccentLabel`; a body-size use adds `theme_override_font_sizes/font_size` = `FONT_BODY` |
-| `RailLabel` | Label | Grey text on the dark rail (`FONT_CAPTION`, `RAIL_TEXT`) — 주간 화면 `%WeekLabel` |
+| `RailLabel` | Label | Grey text on the dark rail (`FONT_CAPTION`, `RAIL_TEXT`) — `UI_View_PhaseIntro` rail labels (the week screen's `%WeekLabel` was removed 2026-10) |
 | `OnFillTextButton` | Button | `TextButton` with every font colour `TEXT_ON_FILL` — a text button on a colour fill (상점 배너 "확률 보기") |
 | `BarPrimaryButton` · `BarGhostButton` · `BarDarkButton` | Button | One slot of a **bottom action bar** — same colours / fonts as `PrimaryButton` · `GhostButton` · `DarkButton` with **square corners** (`bar_button_styles(kind)`, `BAR_BUTTON_VARIATIONS`). Only inside a bar; the device inset is added by `fit_bottom_bar` |
 | `BarSeparator` | Panel | The vertical line between bar slots (`BOTTOM_BAR_SEP`, no radius) — a `Panel` child of every slot but the last, anchored right-wide, `offset_left = -2`, mouse Ignore. Replaces the `Sep` `ColorRect` and its colour literal |
@@ -1110,6 +1110,9 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `WeekRail` | SunkPanel | `WeekProgressView` `Rail` (the old `WeekEveningHighlight` went with the evening slot scene) | — |
 | `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
 | `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
+| `PilotGaugePanel` · `PilotGaugeMask` | DimPanel | `PilotGauge` root (white, `BORDER_STRONG` 1px, r 12) · its `%Mask` (black 0.62, r 12) | scene-set (mask shown by code) |
+| `WeekMapPilotMask` | DimPanel | `WeekMapPilot` `%Mask`: black 0.62 circle (r 42) over the portrait of a pilot who cannot be picked | scene-set (shown by code) |
+| `VisitMenuBubble` | PopupCard | `VisitMenu` `%Bubble`: the visit menu speech bubble (white, `BORDER_STRONG` 2px, r 28, shadow, padding 32 / 28; the scene's `%Tail` polygons use the same colours) | scene-set |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
 | `PhaseIntroBackdrop` | ScreenBackground | `PhaseIntro` `Backdrop` (full-screen `RAIL`, no radius) | — |
 | `FacilityViewToast` | SurfaceChip | `FacilityView` `%Toast` (`RAIL` pill, radius 34 — same look as `LobbyToast`) | — |

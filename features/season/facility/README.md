@@ -147,8 +147,9 @@ shows the facility name, the facility icon through `research_ring.gdshader` — 
 `ResearchSystem.progress` — and the percent below. Idle states replace the percent and grey the icon, in this order:
 `공석` (nobody seated, red) · `대기` (no active research) · `정지` (active row blocked). Hub
 (`features/season/HubView.gd`): interactive, `pressed(fid)` → `SeasonHub.open_facility(fid)`; `%Hit` also covers the
-spot under the tail (the building). Week screen (`week/WeekProgressView._add_map_section`, team map only):
-read-only, mouse ignored.
+spot under the tail (the building). The week screen (`week/WeekProgressView`) shows **no** bubbles (removed
+2026-10 week-UI rework); `ResearchBubble.populate(map, state, false)` (read-only, mouse ignored) is still used by the
+base map F6 preview.
 
 **Facility screen** — `SeasonHub.open_facility(fid)` → `FacilityView.show_facility(state, fid)` + `Screen.FACILITY`;
 `허브로 돌아가기` (bottom bar, right) → HUB. The screen never scrolls as a whole.

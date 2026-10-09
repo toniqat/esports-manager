@@ -376,7 +376,6 @@ tx_7QBNF0Q0DW,mental.ui.visit.need_goal,active,Focus training course disabled re
 tx_3NCH9K5W6B,mental.ui.visit.need_points,active,Focus training disabled reason: too few coach points,,,코치 포인트 {n} 필요,Needs {n} coach points,draft,845e1069
 tx_TN0T71EKCT,mental.ui.visit.coach_points,active,VisitMenu header: coach points left this week,,,코치 포인트 {n},Coach points {n},draft,7113bedc
 tx_T4J6SR6Z2H,mental.ui.visit.cost,active,Focus training course row: coach point cost,,,{n}P,{n}P,draft,8fdfbd00
-tx_3FGGE155P3,mental.ui.visit.title_pick,active,VisitMenu caption: 2+ pilots share the tapped spot,,,누구를 방문할까요?,Who will you visit?,draft,ab1521ae
 tx_SBR87FT4VQ,mental.ui.visit.title_menu,active,VisitMenu caption: the three visit options,,,무엇을 함께할까요?,What will you do together?,draft,5c72e178
 tx_KW9B22X657,mental.ui.visit.title_courses,active,VisitMenu caption: course list,,,집중 훈련 코스를 고르세요,Pick a focus training course,draft,3961af13
 tx_KD8HT00MQD,mental.ui.visit.title_result,active,VisitMenu caption: result page,,,집중 훈련 결과,Focus training result,draft,1a3a0d14

@@ -5,11 +5,11 @@
 
 [node name="BaseMap_Hyakkiyako" type="Control"]
 editor_description = "Team base map (BaseMap.gd). Drag the Spots/Spot_* markers onto the buildings; pilots stand on the spot of their training colour (morning) or on Dorm / Entrance (afternoon away). Art is a prototype placeholder, see resources/images/base_map/README.md."
-custom_minimum_size = Vector2(1000, 634)
+custom_minimum_size = Vector2(1200, 761)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 1000.0
-offset_bottom = 634.0
+offset_right = 1200.0
+offset_bottom = 761.0
 mouse_filter = 2
 script = ExtResource("1_map")
 
@@ -37,87 +37,87 @@ mouse_filter = 2
 
 [node name="Spot_H" type="Marker2D" parent="Spots"]
 editor_description = "Field accuracy (전장 명중, tile colour H)"
-position = Vector2(376, 130)
+position = Vector2(451, 156)
 gizmo_extents = 28.0
 
 [node name="Spot_E" type="Marker2D" parent="Spots"]
 editor_description = "Field evasion (전장 회피, tile colour E)"
-position = Vector2(676, 183)
+position = Vector2(811, 220)
 gizmo_extents = 28.0
 
 [node name="Spot_C" type="Marker2D" parent="Spots"]
 editor_description = "Engage accuracy (교전 명중, tile colour C)"
-position = Vector2(600, 442)
+position = Vector2(720, 530)
 gizmo_extents = 28.0
 
 [node name="Spot_D" type="Marker2D" parent="Spots"]
 editor_description = "Engage evasion (교전 회피, tile colour D)"
-position = Vector2(547, 224)
+position = Vector2(656, 269)
 gizmo_extents = 28.0
 
 [node name="Spot_G" type="Marker2D" parent="Spots"]
 editor_description = "Growth (공격 / 체력 성장, tile colours A and P)"
-position = Vector2(212, 271)
+position = Vector2(254, 325)
 gizmo_extents = 28.0
 
 [node name="Spot_M" type="Marker2D" parent="Spots"]
 editor_description = "Mech mastery (메크 숙련, tile colour M)"
-position = Vector2(341, 424)
+position = Vector2(409, 509)
 gizmo_extents = 28.0
 
 [node name="Spot_Q" type="Marker2D" parent="Spots"]
 editor_description = "Quirk (기벽, tile colour Q)"
-position = Vector2(800, 524)
+position = Vector2(960, 629)
 gizmo_extents = 28.0
 
 [node name="Spot_W" type="Marker2D" parent="Spots"]
 editor_description = "Neutral (무속성, tile colours W and K, and no tile = basic course)"
-position = Vector2(482, 318)
+position = Vector2(578, 382)
 gizmo_extents = 28.0
 
 [node name="Spot_Dorm" type="Marker2D" parent="Spots"]
 editor_description = "Dorm (숙소): afternoon, a pilot with no tile that day rests here"
-position = Vector2(553, 108)
+position = Vector2(664, 130)
 gizmo_extents = 28.0
 
 [node name="Spot_Entrance" type="Marker2D" parent="Spots"]
 editor_description = "Entrance (출입구): afternoon, a pilot out alone (stress) stands here"
-position = Vector2(765, 277)
+position = Vector2(918, 332)
 gizmo_extents = 28.0
 
 [node name="Spot_Fac_TrainField" type="Marker2D" parent="Spots"]
 editor_description = "Facility train_field (전장 훈련장): research bubble tail tip"
-position = Vector2(330, 420)
+position = Vector2(396, 504)
 gizmo_extents = 36.0
 
 [node name="Spot_Fac_TrainEngage" type="Marker2D" parent="Spots"]
 editor_description = "Facility train_engage (교전 훈련장): research bubble tail tip"
-position = Vector2(590, 440)
+position = Vector2(708, 528)
 gizmo_extents = 36.0
 
 [node name="Spot_Fac_TrainGrowth" type="Marker2D" parent="Spots"]
 editor_description = "Facility train_growth (체력 단련실): research bubble tail tip"
-position = Vector2(210, 260)
+position = Vector2(252, 312)
 gizmo_extents = 36.0
 
 [node name="Spot_Fac_Intel" type="Marker2D" parent="Spots"]
 editor_description = "Facility intel (전력 분석실): research bubble tail tip"
-position = Vector2(380, 150)
+position = Vector2(456, 180)
 gizmo_extents = 36.0
 
 [node name="Spot_Fac_MechLab" type="Marker2D" parent="Spots"]
 editor_description = "Facility mech_lab (메크 연구소): research bubble tail tip"
-position = Vector2(670, 180)
+position = Vector2(804, 216)
 gizmo_extents = 36.0
 
 [node name="Spot_Fac_Front" type="Marker2D" parent="Spots"]
 editor_description = "Facility front (프론트): research bubble tail tip"
-position = Vector2(545, 225)
+position = Vector2(654, 270)
 gizmo_extents = 36.0
 
 [node name="Spot_Fac_Personnel" type="Marker2D" parent="Spots"]
 editor_description = "Facility personnel (인력 개발실): research bubble tail tip"
-position = Vector2(720, 330)
+position = Vector2(864, 396)
 gizmo_extents = 36.0
 
 [node name="Facilities" type="Control" parent="."]

@@ -7,14 +7,14 @@ extends Control
 # 그날의 카드 목록.
 #
 #   ┌──────────────────────────────────────┐
-#   │ 3주  월  화 [수] 목  금  토  일          │  ← 요일 레일
+#   │  월  화 [수] 목  금  토  일              │  ← 요일 레일
 #   └──────────────────────────────────────┘
-#     프리시즌 · 3주차              1년 12월   ← 머리글 (요일 · 날짜)
-#     수요일                              5
+#     프리시즌          DAY 17                 ← 머리글: 페이즈 이름 · 페이즈 안의 날 수
+#                        WED                     (CalendarSystem.day_in_phase) · 요일 영문 약칭
 #    ─────────────────────────────────────
-#     [ 팀 부지 맵 + 선수 토큰 ]              ← 훈련일: 고정 (%MapPin)
-#     [ 사건 · 오후 카드 ]                     ← 세로 스크롤
-#     [선수][선수][선수][선수][선수]           ← 항상 (%PilotRow, 오늘 스트레스 증감 강조)
+#   [ 팀 부지 맵 + 선수 토큰 (1200 폭, 좌우 60 잘림) ] ← 고정 (%MapPin)
+#     [선수][선수][선수][선수][선수]           ← 항상, 맵 바로 아래 (%PilotRow, 오늘 스트레스 증감 강조)
+#     [ 사건 · 오후 카드 ]                     ← 세로 스크롤 (%Scroll, 하단 바까지)
 #    [ 오전 / 오후 ][        다음        ]    ← 하단 바
 #
 # 레일의 **지금 요일 한 칸만 앰버로 채워진다** — 지나온 날은 흰 글자, 남은 날은
@@ -52,8 +52,8 @@ extends Control
 #
 # ── 씬 ──────────────────────────────────────────────────────────────────────
 # **배치 · 스타일은 `UI_View_WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
-# 스크롤 · 하단 선수 카드 줄 `%PilotRow` · 하단 바). 훈련일의 맵(`WeekMapSection`(+ `BaseMap` ·
-# `WeekMapPilot`))은 스크롤 위에 고정된 `%MapPin` 에, 목록의 카드는 아이템 씬(`WeekMatchCard` ·
+# 맵 아래 선수 카드 줄 `%PilotRow` · 스크롤 · 하단 바). 맵(`WeekMapSection`(+ `BaseMap` ·
+# `WeekMapPilot`))은 고정된 `%MapPin` 에, 목록의 카드는 아이템 씬(`WeekMatchCard` ·
 # `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` · `WeekAfternoonDoneCard`)을 `%List` 에 붙인다.
 # 이 스크립트는 `%` 노드에 데이터를 넣고, 데이터에 따라 바뀌는 색(역할 띠 · 오늘 칩 ·
 # 내 경기 카드 · 상승/하락 · 오후에 못 부르는 선수의 흐림)과 기기 인셋만 코드로 넣는다.
@@ -70,6 +70,12 @@ const MAP_SECTION_SCENE: PackedScene = preload("res://features/season/week/UI_Co
 const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapPilot.tscn")
 
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
+
+## Weekday (Mon 0 … Sun 6) → English abbreviation key (header, under DAY N).
+const DAY_ABBR: Array = [  # l10n-keys: term.day.abbr.*
+	L.TERM_DAY_ABBR_MON, L.TERM_DAY_ABBR_TUE, L.TERM_DAY_ABBR_WED, L.TERM_DAY_ABBR_THU,
+	L.TERM_DAY_ABBR_FRI, L.TERM_DAY_ABBR_SAT, L.TERM_DAY_ABBR_SUN,
+]
 
 ## Day stage, read from the records (`_stage`). STADIUM / PRESS are weekend-only.
 enum Stage { OFF, MORNING, RESULT, TALK, AFTERNOON, EVENING, STADIUM, PRESS }
@@ -88,23 +94,26 @@ const FX_TAIL: float = 0.25
 ## Start offset between pilots (seat order), so neighbouring tokens' texts sit at different heights.
 const FX_PILOT_STAGGER: float = 0.2
 const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # afternoon summary without a pilot (pass)
-## Afternoon token of a pilot that cannot be asked (away, or no action left).
-const MAP_DIM: Color = Color(1, 1, 1, 0.45)
+## The picked map token (morning talk pick / afternoon visit open) is drawn this much larger,
+## around its centre. A token that cannot be picked gets the black masks instead
+## (`_token_dimmed`; `%Mask` + each gauge's `set_dimmed`).
+const MAP_PICKED_SCALE: float = 1.2
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
 
-@onready var _week_lbl: Label = %WeekLabel
 @onready var _phase_lbl: Label = %Phase
-@onready var _title_lbl: Label = %Title
-@onready var _date_small_lbl: Label = %DateSmall
-@onready var _date_big_lbl: Label = %DateBig
+@onready var _day_count_lbl: Label = %DayCount
+@onready var _day_abbr_lbl: Label = %DayAbbr
 @onready var _list_scroll: ScrollContainer = %Scroll
 @onready var _list_body: VBoxContainer = %List
 @onready var _list_end: Control = %ListEnd
 @onready var _map_pin: Control = %MapPin
-## The scroll's top as authored (no map). On training days it moves under `%MapPin`.
-@onready var _scroll_top: float = _list_scroll.offset_top
+@onready var _pilot_row: Control = %PilotRow
+## `%PilotRow`'s authored height and its gap to the map above / the list below
+## (`_place_under_map` keeps both when the map is hidden).
+@onready var _pilot_row_h: float = _pilot_row.offset_bottom - _pilot_row.offset_top
+@onready var _under_map_gap: float = _pilot_row.offset_top - _map_pin.offset_bottom
 @onready var _stage_btn: Button = %Stage
 @onready var _action_btn: Button = %Action
 
@@ -123,7 +132,6 @@ var _overlay_kind: String = ""        # "talk" / "evening" / "limit_break" / "in
 var _overlay_pid: int = -1            # the dialogue's pilot (limit break answers by pilot)
 var _visit_menu: VisitMenu = null     # afternoon visit popup (pick / menu / courses / result)
 var _awaken_view: Node = null         # §15 C AwakeningView while it is open
-var _token_spots: Dictionary = {}     # pilot id -> base-map spot of the current build
 var _skip_popup: ConfirmPopup = null  # "skip the morning talk / afternoon?" warning, made on first use
 
 var _pilot_cards: Array = []          # SeasonPilotCard x5 (scene %PilotRow, seat order)
@@ -145,7 +153,7 @@ func _ready() -> void:
 			_chip_panels.append(chip)
 			_chip_labels.append(lbl)
 	_action_btn.pressed.connect(_on_action_pressed)
-	_pilot_cards = (%PilotRow as Control).get_children()
+	_pilot_cards = _pilot_row.get_children()
 	for c in _pilot_cards:
 		(c as SeasonPilotCard).pressed.connect(_on_pilot_card_pressed)
 	# Drag / fling scrolling instead of the engine's touch drag.
@@ -327,7 +335,6 @@ func _week_log() -> Dictionary:
 
 
 func _refresh_rail() -> void:
-	_week_lbl.text = Loc.t(L.TERM_WEEK_COUNT, {"n": int(_gm.season_state.get("phase_week", 1))})
 	for d in _chip_panels.size():
 		var chip: Panel = _chip_panels[d]
 		var lbl: Label = _chip_labels[d]
@@ -345,30 +352,16 @@ func _refresh_rail() -> void:
 
 func _refresh_header() -> void:
 	var s: Dictionary = _gm.season_state
-	var phase: int = int(s["current_phase"])
-	_phase_lbl.text = Loc.t(L.SEASON_COMMON_PHASE_WEEK, {
-		"phase": GameEnums.phase_label(phase), "week": int(s["phase_week"])})
-	_title_lbl.text = OutgameTheme.day_name(_day)
-	# 달력은 주의 월요일에 서 있으므로 요일만큼 더해 그날 날짜를 만든다.
-	var date: Dictionary = _date_of_day(_day)
-	_date_small_lbl.text = Loc.t(L.SEASON_WEEK_DATE, {"year": int(date["year"]), "month": int(date["month"])})
-	_date_big_lbl.text = "%d" % int(date["day"])
+	_phase_lbl.text = GameEnums.phase_label(int(s["current_phase"]))
+	_day_count_lbl.text = Loc.t(L.SEASON_WEEK_DAY_COUNT, {"n": CalendarSystem.day_in_phase(s)})
+	_day_abbr_lbl.text = day_abbr(_day)
 
 
-## 이번 주 월요일에서 `day` 일 뒤의 날짜. 달을 넘길 수 있으므로
-## `CalendarSystem.DAYS_IN_MONTH` 를 지난다 — 그냥 더하면 12월 30일 + 3 이 33일이 된다.
-func _date_of_day(day: int) -> Dictionary:
-	var s: Dictionary = _gm.season_state
-	var y: int = int(s["year"]); var m: int = int(s["month"]); var d: int = int(s["day"])
-	for _i in day:
-		d += 1
-		if d > int(CalendarSystem.DAYS_IN_MONTH[m - 1]):
-			d = 1
-			m += 1
-			if m > 12:
-				m = 1
-				y += 1
-	return {"year": y, "month": m, "day": d}
+## Weekday `i` (Mon 0 … Sun 6) as its English abbreviation (MON … SUN). Out of range = "".
+static func day_abbr(i: int) -> String:
+	if i < 0 or i >= DAY_ABBR.size():
+		return ""
+	return Loc.t(String(DAY_ABBR[i]))  # l10n-dynamic: term.day.abbr.*
 
 
 # ── 카드 목록 ────────────────────────────────────────────────────────────────
@@ -381,9 +374,9 @@ func _rebuild_list() -> void:
 	for c in _map_pin.get_children():
 		_map_pin.remove_child(c)
 		c.queue_free()
-	# No map (match days): the list starts where the scene puts it.
+	# No map (no stage): the pilot row and the list move up to the map's slot.
 	_map_pin.visible = false
-	_list_scroll.offset_top = _scroll_top
+	_place_under_map(false)
 	# The cards keep the scroll's anchored width (as the code-built list did) — the VBox
 	# would otherwise shrink by the bar's width. Measured from the anchors, not from
 	# `size`: an overflowing scroll grows by its bar, and reading that back would widen
@@ -422,6 +415,15 @@ func _rebuild_list() -> void:
 		_list_scroll.scroll_vertical = 0
 
 
+## `%PilotRow` directly under the map (`%MapPin` bottom + the authored gap) and the card
+## list under it, down to the bar. Without a map both move up to the map's top.
+func _place_under_map(has_map: bool) -> void:
+	var top: float = _map_pin.offset_bottom + _under_map_gap if has_map else _map_pin.offset_top
+	_pilot_row.offset_top = top
+	_pilot_row.offset_bottom = top + _pilot_row_h
+	_list_scroll.offset_top = _pilot_row.offset_bottom + _under_map_gap
+
+
 ## Adds an item scene to the list and returns it (the end marker is moved last afterwards).
 func _add_item(scene: PackedScene) -> Control:
 	var item: Control = scene.instantiate() as Control
@@ -436,44 +438,19 @@ func _add_item(scene: PackedScene) -> Control:
 ## pilot that cannot be asked any more is dimmed on its spot.
 func _add_map_section(stage: int) -> void:
 	var s: Dictionary = _gm.season_state
-	# Pinned above the scroll (`%MapPin`), so the map stays while the cards scroll;
-	# the list starts one card gap under it.
+	# Pinned (`%MapPin`), so the map stays while the cards scroll; the pilot row and
+	# the list stand under it.
 	var section: Control = MAP_SECTION_SCENE.instantiate() as Control
 	_map_pin.add_child(section)
 	_map_pin.visible = true
-	_list_scroll.offset_top = _map_pin.offset_bottom \
-			+ float(_list_body.get_theme_constant("separation"))
-	var hint: String = Loc.t(L.SEASON_WEEK_MAP_HINT_MORNING)
-	if stage == Stage.STADIUM:
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_STADIUM_PREP if _day == CalendarSystem.PREP_DAY
-				else L.SEASON_WEEK_MAP_HINT_STADIUM_MATCH)
-	elif stage == Stage.PRESS:
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_PRESS)
-	elif stage == Stage.EVENING and not MentalSystem.incident_pending(s, _day) \
-			and MentalSystem.incident_session(s, _day).is_empty():
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_EVENING_QUIET)
-	elif stage == Stage.RESULT:
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_RESULT)
-	elif stage == Stage.TALK:
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_TALK_DONE if MentalSystem.talk_done(s, _day)
-				else L.SEASON_WEEK_MAP_HINT_TALK)
-	elif stage == Stage.AFTERNOON:
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_AFTERNOON_DONE if MentalSystem.evening_done(s, _day)
-				else L.SEASON_WEEK_MAP_HINT_AFTERNOON)
-	elif stage == Stage.EVENING:
-		hint = Loc.t(L.SEASON_WEEK_MAP_HINT_EVENING)
-	(section.get_node("%Hint") as Label).text = hint
+	_place_under_map(true)
 
 	var stadium: bool = stage == Stage.STADIUM or stage == Stage.PRESS
 	var map: BaseMap = BaseMap.create_stadium() if stadium \
 			else BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
 	map.name = "BaseMap_Stadium" if stadium else "BaseMap_Team"
-	(section.get_node("%MapHolder") as Control).add_child(map)
-	map.size = BaseMap.DESIGN_SIZE
-	if not stadium:
-		# §16 — the facility research bubbles, read-only (the hub map is the tappable one);
-		# they sit under the pilot tokens (`%Facilities` layer).
-		ResearchBubble.populate(map, s, false)
+	# 1200-wide map centred on the full-width holder; the screen crops 60 px each side.
+	BaseMap.mount(map, section.get_node("%MapHolder") as Control)
 
 	var rows_by_pid: Dictionary = {}
 	for raw in (_week_log().get(_day, []) as Array):
@@ -494,7 +471,6 @@ func _add_map_section(stage: int) -> void:
 		_sel_pid = -1
 
 	_tokens.clear()
-	_token_spots.clear()
 	var entries: Array = []
 	for raw_pid in _my_pilots_in_seat_order():
 		var pid: int = int(raw_pid)
@@ -518,7 +494,6 @@ func _add_map_section(stage: int) -> void:
 			spot = BaseMap.SPOT_ENTRANCE
 		var token: Control = _add_map_token(map, stage, pid, String(names.get(seat, "")), away)
 		_tokens[pid] = token
-		_token_spots[pid] = spot
 		var hold: Control = token.get_node("%Portrait")
 		entries.append({"node": token, "spot": spot, "anchor": hold.position + hold.size * 0.5})
 	map.place_tokens(entries)
@@ -534,15 +509,24 @@ func _stadium_spot(stage: int) -> String:
 
 ## One pilot token on the map (`UI_Comp_WeekMapPilot.tscn`). No name under the portrait:
 ## the morning shows a speech bubble with the training `course` this pilot does now, the
-## afternoon an away chip (혼자 외출 / 숙소 휴식) and dims pilots that cannot be asked. The
-## RESULT stage's rising texts are added later by `_play_result_fx`.
+## afternoon an away chip (혼자 외출 / 숙소 휴식). Under the portrait three gauge panels
+## (stress · trust · awakening, `PilotGauge`). A pilot that cannot be picked is covered by the
+## black masks (`_token_dimmed`); the picked one (`_token_picked`) is scaled up around its
+## centre and drawn over the others. The RESULT stage's rising texts are added later by
+## `_play_result_fx`.
 func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: String) -> Control:
 	var s: Dictionary = _gm.season_state
 	var token: Control = MAP_PILOT_SCENE.instantiate() as Control
 	map.add_token(token)
-	var picked: bool = (stage == Stage.TALK or stage == Stage.AFTERNOON) and pid == _sel_pid
+	var picked: bool = _token_picked(stage, pid)
 	OutgameTheme.add_round_portrait(token.get_node("%Portrait"), PilotImages.circle_for(pid),
 			Vector2.ZERO, MAP_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.SURFACE)
+	var stress_g: PilotGauge = token.get_node("%PilotGauge_Stress")
+	var trust_g: PilotGauge = token.get_node("%PilotGauge_Trust")
+	var awaken_g: PilotGauge = token.get_node("%PilotGauge_Awaken")
+	stress_g.show_stress(StressSystem.value(s, pid))
+	trust_g.show_trust(MentalSystem.trust(s, pid))
+	awaken_g.show_awakening(Awakening.gauge(s, pid), Awakening.threshold())
 	var bubble_on: bool = stage == Stage.MORNING and course != ""
 	(token.get_node("%Bubble") as Control).visible = bubble_on
 	(token.get_node("%BubbleTail") as CanvasItem).visible = bubble_on
@@ -550,29 +534,57 @@ func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: St
 	var away_chip: Control = token.get_node("%Away")
 	var away_lbl: Label = token.get_node("%Name")
 	away_chip.visible = false
-	var hit: Button = token.get_node("%Hit")
-	hit.disabled = true
-	if stage == Stage.TALK:
-		var can_talk: bool = MentalSystem.can_talk(s, _day, pid)
-		hit.disabled = not can_talk
-		if can_talk:
-			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
-		elif MentalSystem.talk_done(s, _day) and not _in_talk(pid):
-			token.modulate = MAP_DIM
-	elif stage == Stage.AFTERNOON or stage == Stage.EVENING:
+	if stage == Stage.AFTERNOON or stage == Stage.EVENING:
 		if away == AfternoonAway.AWAY_DORM:
 			away_lbl.text = Loc.t(L.SEASON_WEEK_MAP_DORM)
 			away_chip.visible = true
 		elif away == AfternoonAway.AWAY_SELF_OUTING:
 			away_lbl.text = Loc.t(L.SEASON_WEEK_MAP_SELF_OUTING)
 			away_chip.visible = true
-		var can: bool = stage == Stage.AFTERNOON and AfternoonAway.can_request(s, _day, pid)
-		hit.disabled = not can
-		if can:
-			hit.pressed.connect(_on_map_pilot_picked.bind(pid))
-		elif stage == Stage.AFTERNOON:
-			token.modulate = MAP_DIM
+	var hit: Button = token.get_node("%Hit")
+	var can: bool = _can_pick(stage, pid)
+	hit.disabled = not can
+	if can:
+		hit.pressed.connect(_on_map_pilot_picked.bind(pid))
+	var dim: bool = _token_dimmed(stage, pid)
+	(token.get_node("%Mask") as Control).visible = dim
+	for g in [stress_g, trust_g, awaken_g]:
+		(g as PilotGauge).set_dimmed(dim)
+	if picked:
+		token.pivot_offset = token.size * 0.5
+		token.scale = Vector2.ONE * MAP_PICKED_SCALE
+		token.z_index = 1
 	return token
+
+
+## The token of `pid` is the picked one: the morning talk's pick (until the talk is used) or
+## the pilot whose afternoon visit is open (menu / courses / result).
+func _token_picked(stage: int, pid: int) -> bool:
+	var s: Dictionary = _gm.season_state
+	if stage == Stage.TALK:
+		return pid == _sel_pid and MentalSystem.can_talk(s, _day, pid)
+	if stage == Stage.AFTERNOON:
+		return pid >= 0 and pid == MentalSystem.visit_open(s, _day)
+	return false
+
+
+## Black mask over a token: in the talk / afternoon / evening stages every pilot that cannot
+## be picked, except the one whose meeting is under way — so once the morning talk or the
+## afternoon visit is used, and all evening, every token is dark.
+func _token_dimmed(stage: int, pid: int) -> bool:
+	var s: Dictionary = _gm.season_state
+	if stage == Stage.TALK:
+		if MentalSystem.talk_done(s, _day):
+			return true
+		return not MentalSystem.can_talk(s, _day, pid) and not _in_talk(pid)
+	if stage == Stage.AFTERNOON:
+		if MentalSystem.evening_done(s, _day):
+			return true
+		var e: Dictionary = MentalSystem.evening(s, _day)
+		if not e.is_empty() and int(e.get("pilot_id", -1)) == pid:
+			return false
+		return not AfternoonAway.can_request(s, _day, pid)
+	return stage == Stage.EVENING
 
 
 ## `pid` may be picked on the map in `stage` (morning talk / afternoon action).
@@ -726,22 +738,12 @@ func _on_pilot_card_pressed(pid: int) -> void:
 	SeasonPilotDetail.open(self, pid)
 
 
-## Map tap. Morning talk: pick the pilot (the talk card asks). Afternoon: visit — when
-## other pilots who can be visited stand on the same spot, the popup asks who first.
+## Map tap. Morning talk: pick the pilot (the talk card asks). Afternoon: visit the tapped
+## pilot straight away (tokens never overlap, so there is no "who?" picker).
 func _on_map_pilot_picked(pid: int) -> void:
 	if _busy():
 		return
 	if _stage() == Stage.AFTERNOON:
-		var same: Array = []
-		for raw in _my_pilots_in_seat_order():
-			var other: int = int(raw)
-			if String(_token_spots.get(other, "")) == String(_token_spots.get(pid, "")) \
-					and AfternoonAway.can_request(_gm.season_state, _day, other):
-				same.append(other)
-		if same.size() >= 2:
-			_visit_menu = _make_visit_menu()
-			_visit_menu.open_picker(_gm.season_state, same)
-			return
 		_start_visit(pid)
 		return
 	_sel_pid = pid
@@ -1248,14 +1250,13 @@ func _my_pilots_in_seat_order() -> Array:
 
 
 # ── Afternoon visit (방문, §15 D) ─────────────────────────────────────────────
-# Tap a pilot → (picker when several stand on the spot) → the visit is recorded
-# (`MentalSystem.begin_visit`, saved) → `VisitMenu`: 집중 훈련 (courses → result) /
+# Tap a pilot → the visit is recorded (`MentalSystem.begin_visit`, saved) → `VisitMenu`, a
+# speech bubble over that pilot's (scaled-up) token: 집중 훈련 (courses → result) /
 # 이야기 (story dialogue) / 외출 (outing dialogue). A reload with the menu open reopens it.
 
 func _make_visit_menu() -> VisitMenu:
 	var menu := VisitMenu.create()
 	add_child(menu)
-	menu.pilot_picked.connect(_on_visit_pilot_picked)
 	menu.option_picked.connect(_on_visit_option)
 	menu.course_picked.connect(_on_visit_course)
 	menu.closed.connect(_on_visit_closed)
@@ -1273,11 +1274,15 @@ func _start_visit(pid: int) -> void:
 	_open_visit_menu(pid)
 
 
+## Opens (or refills) the menu bubble for `pid`, pointing at that pilot's map token.
 func _open_visit_menu(pid: int) -> void:
 	if _visit_menu == null:
 		if _busy():
 			return
 		_visit_menu = _make_visit_menu()
+	var token: Control = _tokens.get(pid, null)
+	if token != null:
+		_visit_menu.point_at(token.get_node("%Portrait"), token)
 	_visit_menu.open_menu(_gm.season_state, pid, _day)
 
 
@@ -1285,10 +1290,6 @@ func _close_visit_menu() -> void:
 	if _visit_menu != null:
 		_visit_menu.queue_free()
 		_visit_menu = null
-
-
-func _on_visit_pilot_picked(pid: int) -> void:
-	_start_visit(pid)
 
 
 func _on_visit_option(option: String) -> void:
@@ -1322,7 +1323,7 @@ func _on_visit_course(id: String) -> void:
 		_visit_menu.show_result(s, MentalEvents.note_texts(s, out.get("notes", [])))
 
 
-## Picker cancelled (nothing recorded) or the focus result confirmed.
+## The focus result confirmed.
 func _on_visit_closed() -> void:
 	_close_visit_menu()
 	refresh()

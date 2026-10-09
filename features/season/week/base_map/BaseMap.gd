@@ -16,9 +16,21 @@ extends Control
 # `features/season/training/README.md`); `Dorm` and `Entrance` are the afternoon
 # away spots. Which map a team uses is data (`teams.csv` `map_id` → `SCENES`).
 # Tokens that share a spot are fanned out in rows (`place_tokens`) so they never
-# overlap, and every token is kept inside the map rect.
+# overlap, and every token is kept inside the on-screen part of the map (`visible_rect`).
 
-const DESIGN_SIZE: Vector2 = Vector2(1000, 634)
+## Map scale against the art's authored 1000 × 634 frame (`ART_BASE_SIZE`). The scenes are
+## already authored at this scale — root size, art rect and every `Spot_*` marker — so
+## `spot_point` / `facility_point` / `size` are in **scaled map pixels**. Overlays put on the
+## map (pilot tokens, research bubbles) are NOT scaled: only their positions follow the spots.
+const MAP_SCALE: float = 1.2
+const ART_BASE_SIZE: Vector2 = Vector2(1000, 634)
+## Root size of every map scene (= ART_BASE_SIZE × MAP_SCALE, rounded). Wider than the
+## 1080 screen: hosts centre it horizontally (`mount`) and the overflow is cropped equally
+## on both sides; `visible_rect()` is the part on screen.
+const DESIGN_SIZE: Vector2 = Vector2(1200, 761)
+## Phone viewport width (`docs/mobile_safe_area.md` §1) — the fallback of `visible_rect`
+## outside the tree.
+const VIEW_WIDTH: float = 1080.0
 
 ## `map_id` → scene. The order is the image numbering in `resources/images/base_map/`.
 const SCENES: Array = [
@@ -61,7 +73,9 @@ const COLOR_SPOTS: Dictionary = {
 ## Fan-out of tokens sharing a spot: column / row step and tokens per row. The step is
 ## also a token's footprint: tokens on nearby spots are pushed apart until their
 ## footprints no longer overlap (`_separate`, at most `SEPARATE_PASSES` passes).
-const TOKEN_STEP: Vector2 = Vector2(130, 160)
+## The token (`UI_Comp_WeekMapPilot`) is 152 × 152: portrait 84 + the three gauge panels
+## under it; the step leaves an 8 px gap. Tokens keep this pixel size whatever the map's scale.
+const TOKEN_STEP: Vector2 = Vector2(160, 160)
 const TOKENS_PER_ROW: int = 3
 const SEPARATE_PASSES: int = 32
 
@@ -102,6 +116,36 @@ func _ready() -> void:
 		_fill_preview()
 
 
+## Adds `map` to `holder` (a plain Control, not a container — a container would take the
+## map's 1200 minimum width and widen the page) at `DESIGN_SIZE`, centred horizontally on
+## the holder, top-aligned, and keeps it centred when the holder resizes. Hosts give the
+## holder a screen-centred rect, so the overflow is cropped equally left / right.
+static func mount(map: BaseMap, holder: Control) -> void:
+	holder.add_child(map)
+	map.size = DESIGN_SIZE
+	map._center_in(holder)
+	var cb: Callable = map._center_in.bind(holder)
+	if not holder.resized.is_connected(cb):
+		holder.resized.connect(cb)
+
+
+func _center_in(holder: Control) -> void:
+	if not is_instance_valid(holder) or get_parent() != holder:
+		return
+	var w: float = holder.size.x if holder.size.x > 0.0 else VIEW_WIDTH
+	position = Vector2(roundf((w - DESIGN_SIZE.x) * 0.5), 0.0)
+
+
+## Map-local rect that is on screen: the map is centred on the viewport (`mount`), so the
+## crop is `(DESIGN_SIZE.x − viewport width) / 2` on each side (none on a viewport wider
+## than the map, e.g. a tablet). Full height. Tokens / bubbles that must stay visible
+## clamp to this instead of the whole map rect.
+func visible_rect() -> Rect2:
+	var vw: float = get_viewport_rect().size.x if is_inside_tree() else VIEW_WIDTH
+	var crop: float = maxf(0.0, (DESIGN_SIZE.x - vw) * 0.5)
+	return Rect2(crop, 0.0, DESIGN_SIZE.x - crop * 2.0, DESIGN_SIZE.y)
+
+
 ## Map-local point of a spot. A missing marker falls back to the neutral spot, then
 ## to the map centre.
 func spot_point(spot: String) -> Vector2:
@@ -135,11 +179,10 @@ func facility_layer() -> Control:
 
 
 ## Puts `node` so that its local point `anchor` stands on the facility's spot, clamped
-## inside the map rect (a bubble near the top edge slides down over its spot).
+## inside the on-screen part of the map (`visible_rect`; a bubble near the top edge slides
+## down over its spot).
 func place_at_facility(node: Control, fid: String, anchor: Vector2) -> void:
-	var area: Vector2 = size if size.x > 0.0 else DESIGN_SIZE
-	var at: Vector2 = facility_point(fid) - anchor
-	node.position = at.clamp(Vector2.ZERO, (area - node.size).max(Vector2.ZERO))
+	node.position = clamp_into(facility_point(fid) - anchor, node.size, visible_rect())
 
 
 func clear_tokens() -> void:
@@ -157,7 +200,7 @@ func add_token(node: Control) -> void:
 ## `anchor` = the token-local point that stands on the spot (the portrait centre).
 ## Tokens sharing a spot fan out in rows of `TOKENS_PER_ROW`, centred on the spot,
 ## in `entries` order; tokens of nearby spots are then pushed apart (`_separate`), and
-## every token is clamped inside the map rect.
+## every token is clamped inside the on-screen part of the map (`visible_rect`).
 func place_tokens(entries: Array) -> void:
 	var groups: Dictionary = {}
 	var order: Array = []
@@ -168,7 +211,7 @@ func place_tokens(entries: Array) -> void:
 			groups[spot] = []
 			order.append(spot)
 		(groups[spot] as Array).append(e)
-	var area: Vector2 = size if size.x > 0.0 else DESIGN_SIZE
+	var area: Rect2 = visible_rect()
 	var nodes: Array = []
 	for spot in order:
 		var group: Array = groups[spot]
@@ -182,7 +225,7 @@ func place_tokens(entries: Array) -> void:
 			var off := Vector2((float(col) - float(in_row - 1) * 0.5) * TOKEN_STEP.x,
 					float(row) * TOKEN_STEP.y)
 			var at: Vector2 = base + off - (e2.get("anchor", Vector2.ZERO) as Vector2)
-			node.position = at.clamp(Vector2.ZERO, (area - node.size).max(Vector2.ZERO))
+			node.position = clamp_into(at, node.size, area)
 			nodes.append(node)
 	_separate(nodes, area)
 
@@ -190,7 +233,7 @@ func place_tokens(entries: Array) -> void:
 ## Pushes overlapping token footprints (`TOKEN_STEP`, centred on each token) apart along
 ## the axis of least overlap, half each, clamped inside `area`. Tokens fanned out on one
 ## spot already sit a footprint apart, so this only moves tokens of nearby spots.
-static func _separate(nodes: Array, area: Vector2) -> void:
+static func _separate(nodes: Array, area: Rect2) -> void:
 	for _pass in SEPARATE_PASSES:
 		var moved: bool = false
 		for i in nodes.size():
@@ -206,11 +249,17 @@ static func _separate(nodes: Array, area: Vector2) -> void:
 					push.x = over.x * 0.5 * (1.0 if d.x >= 0.0 else -1.0)
 				else:
 					push.y = over.y * 0.5 * (1.0 if d.y >= 0.0 else -1.0)
-				a.position = (a.position - push).clamp(Vector2.ZERO, (area - a.size).max(Vector2.ZERO))
-				b.position = (b.position + push).clamp(Vector2.ZERO, (area - b.size).max(Vector2.ZERO))
+				a.position = clamp_into(a.position - push, a.size, area)
+				b.position = clamp_into(b.position + push, b.size, area)
 				moved = true
 		if not moved:
 			return
+
+
+## Top-left `at` of a box of `box` size moved inside `area` (a box larger than the area
+## sticks to its top-left corner).
+static func clamp_into(at: Vector2, box: Vector2, area: Rect2) -> Vector2:
+	return at.clamp(area.position, (area.end - box).max(area.position))
 
 
 ## F6 preview: one token per spot named after it (spot check), plus two more on the

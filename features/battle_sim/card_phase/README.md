@@ -1162,6 +1162,11 @@ card's illustration.
     With neither GameManager nor the DB, it takes 3 random cards from the pool that passed only the position filter.
   - The current CSV values were filled by rolling the slot table once. **To re-roll, clear that
     cell** (empty cell = seeded roll).
+  - **§15 C card loadouts**: in a season run my pilots' roster copies carry their *active card preset*
+    in `pilot_cards` (`PilotLoadout.apply_to`, `MatchFlow._finalize_rosters`) — it may hold upgraded "+"
+    ids (`cards.csv` rows id = base + 100, `pool = 0`, linked by the base row's `upgrade_id`). Nothing here
+    changes: `pilot_card_ids_for` accepts any existing id whose `scope` allows the position, and
+    `_pilot_cards_for` deals what it returns (`features/season/awakening/README.md`).
 - **The old "shared mech cards" (공용 메크 카드) are gone.** The `card_type = mech` rows in cards.csv
   (전투 개시 (Start Battle) · 공격 (Attack) · 필중 (Sure Hit) …) all became pilot cards, and the `MECH_CARDS_PER_PILOT` fallback and
   the per-role slot table (`_pilot_slots_for` — jungle (정글) 2 + draw 1 …) were deleted along with them.
@@ -1501,6 +1506,10 @@ caster — because it gathers participants around the caster's cell. Full rules 
   | 골드러시 — growth +`GOLD_RUSH_GROWTH_PER_TOKEN` per token (토큰) (const.csv `CARD_GOLD_RUSH_GROWTH_PER_TOKEN`) | `BattleSim.add_score` (adds to accrual multiplier) | `hand_growth_add(p)` |
   | 자신감 — battlefield hit (명중) +`CONFIDENCE_HIT_BONUS` (const.csv `CARD_CONFIDENCE_HIT_BONUS`) | `SimulationCore.roll_hit` (attacker hit multiplier) | `hand_hit_add(p)` (cards: `hand_confidence_cards(p)`) |
   | 맑은 정신 — cost cut by `CLEAR_MIND_COST_CUT` for the cards on both sides (const.csv `CARD_CLEAR_MIND_COST_CUT`) | `BattleSim.effective_cost_for` | `hand_neighbor_discount(cd, is_player)` |
+
+  **Per-card amount (§15 C)**: an upgraded "+" row writes its own amount on the clause —
+  `hand_passive:confidence|hit_pct:25` (자신감+), `hand_passive:clear_mind|cut:2` (맑은 정신+); `_hand_passive_mod(cd, mod,
+  fallback)` reads `hand_passive_<mod>` from `effect_params()` and falls back to the const for the base rows.
 
   All three count **only cards in that pilot's hand (손패)** (multiple copies of the same card add up). 맑은 정신
   looks at hand **position**, so both the moment the AI measures cost (`run_ai_plays` — before removing from hand) and

@@ -17,6 +17,7 @@
 | `UI_Comp_BanPickPortrait.tscn` / `.gd` | Pilot portrait (back plate, face, side rim, `기벽 n` badge, tap `Hit`) |
 | `UI_Comp_BanPickBanChip.tscn` / `.gd` | Ban chip (dimmed art + ✕) |
 | `UI_Comp_BanPickSheetCard.tscn` / `.gd` | One card of the sheet's card row (card slot + tap button + count badge), `create()` per card |
+| `UI_View_BanPickLoadoutPicker.tscn` / `BanPickLoadoutPicker.gd` | §15 C pre-match card preset picker (section "Card preset picker" below) |
 | `MechDetailPanel.gd` / `.tscn` | Assign-step mech detail popup — white modal, same family as `DraftDetailPanel` (section "MechDetailPanel" below) |
 
 **F6 standalone run (dummy data)** — every scene above with a script fills itself when run on its own
@@ -415,3 +416,18 @@ cover the grid with no gaps, there's no spot that escapes. `%Grid` being `IGNORE
 the same chain (if the body were STOP, even pressing the empty space between cells would cut it
 there). On desktop the wheel pierces STOP, so this defect isn't visible. Rules and how to verify:
 **`docs/mobile_safe_area.md` §5**.
+
+## Card preset picker (§15 C, `BanPickLoadoutPicker`)
+Pressing the assignment step's start bar (`_on_start_pressed`, the only hook in `BanPickController`) opens
+`BanPickLoadoutPicker.open_if_needed(self, my roster, _finish)` when a season run is active and at least one of
+my pilots owns 2+ card presets (`PilotLoadout`, `features/season/awakening/README.md`); otherwise `_finish`
+runs as before. Mechs can still be re-seated: 취소 closes the popup and returns to the assignment. 확인 writes
+each pilot's choice with `PilotLoadout.set_active` (run state — the Saturday prep split keeps it for Sunday)
+and calls `_finish`; `MatchFlow._finalize_rosters` → `PilotLoadout.apply_to` puts the active preset on the
+roster copies (fresh launch, Sunday resume and mid-match resume alike).
+- Scene: CanvasLayer 20 (above the ban/pick canvas), `DimPanel`, `%SafeArea` (device insets), centred
+  `PopupCard`: title · hint · `%Rows` (one duplicate of `%RowTemplate` per pilot, seat order: `SunkPanel` row —
+  round portrait · name · position · preset tabs (`TabTemplate` duplicates, `SelectableTile` / `SelectableTileOn`,
+  "기본" / "프리셋 n") · the tab's 3 cards as `AwakeningCardCell` at 0.55 (no tap; "+" cards captioned)) ·
+  footer 취소 (`GhostButton`) / 확인 (`PrimaryButton`). Text: `awakening.picker.*`, `ui.button.*`.
+- F6: in-memory run, two of my pilots get an extra preset; buttons only print.

@@ -64,6 +64,8 @@ func _bind(sheet: HubSheet, state: Dictionary, pd: PlayerData) -> void:
 	_fill_stats(pd)
 	_fill_quirks(state, pid)
 	_fill_research(state, pid)
+	# §15 C — awakening gauge + card presets (`features/season/awakening/`).
+	AwakeningPilotBlock.mount(%AwakeningSlot, state, pid)
 	_fit_sheet()
 
 

@@ -1,0 +1,31 @@
+key,alias,status,context,max_len,note,ko,en,en_status,en_hash
+tx_P2MTN9VDF2,awakening.view.title,active,"AwakeningView intro title / panel title, also the detail sheet section title",,,깨달음,Awakening,draft,7b74ed49
+tx_RM8HQHF7RZ,awakening.view.intro,active,AwakeningView intro line under the title (name = pilot),,,{name}{i} 무언가를 깨달았습니다,{name} has had a realization,draft,95156106
+tx_YACHZAA3G1,awakening.view.sub,active,AwakeningView panel subtitle: pilot name and which awakening of the run this is,,,{name} · {n}번째 깨달음,{name} · awakening #{n},draft,5fabf2f3
+tx_SNYGR0A6D8,awakening.view.choose,active,AwakeningView option page heading,,,이번 깨달음으로 무엇을 얻을까요?,What will this awakening bring?,draft,b22b5f9c
+tx_3D94XEY8BS,awakening.view.skip,active,AwakeningView option page when no option is available (confirm spends it),,,지금은 얻을 수 있는 것이 없습니다. 이번 깨달음은 넘어갑니다.,Nothing can be gained right now. This awakening passes.,draft,b83a9ff9
+tx_VF3M8S8SGS,awakening.option.upgrade.name,active,AwakeningView option button title,,,카드 강화,Upgrade a card,draft,a1f50db4
+tx_SPHKS5F297,awakening.option.upgrade.desc,active,AwakeningView option button description,,,프리셋의 카드 한 장을 강화된 + 카드로 바꿉니다,Turn one card of a preset into its upgraded + version,draft,0ffca7d9
+tx_XVEKB2ARPN,awakening.option.swap.name,active,AwakeningView option button title,,,카드 교체,Swap a card,draft,c0dff2d8
+tx_MKQQ6S25FH,awakening.option.swap.desc,active,AwakeningView option button description,,,새 카드 후보 하나와 프리셋의 카드 한 장을 맞바꿉니다,Trade one card of a preset for one of the new candidates,draft,8b7a91d5
+tx_XRXCJDX7T9,awakening.option.preset.name,active,AwakeningView option button title,,,프리셋 추가,Add a preset,draft,094b4b98
+tx_K03F5VX51P,awakening.option.preset.desc,active,AwakeningView option button description,,,카드 세 장으로 된 새 프리셋을 얻습니다. 경기 전에 골라 쓸 수 있습니다,"Gain a new preset of three cards, chosen before each match",draft,cf986c8b
+tx_VX5DQ2VWFY,awakening.option.locked_level,active,AwakeningView: why add preset is locked,,,훈련 레벨 {n} 이상 필요,Needs training level {n},draft,0596762b
+tx_C04CSM6AH9,awakening.option.locked_max,active,AwakeningView: why add preset is locked,,,추가 프리셋이 가득 찼습니다 (최대 {n}),Extra presets are full (max {n}),draft,916b91e8
+tx_BBTC2K3EDB,awakening.option.none_upgrade,active,AwakeningView: why card upgrade is locked,,,강화할 수 있는 카드가 없습니다,No card left to upgrade,draft,0de65da7
+tx_M26N55RWGQ,awakening.option.none_swap,active,AwakeningView: why card swap is locked,,,교체할 후보가 없습니다,No candidate to swap in,draft,209e49d6
+tx_WVN114Z3KD,awakening.upgrade.hint,active,AwakeningView upgrade page: preview area before a card is picked,,,강화할 카드를 고르세요,Pick a card to upgrade,draft,f6820b9e
+tx_5Z059Q72G0,awakening.upgrade.done,active,AwakeningView / pickers: tag under an already upgraded card,,,강화됨,Upgraded,draft,8463ac17
+tx_FJV4RH5RB5,awakening.swap.cands,active,AwakeningView swap page: row title of the 3 candidates,,,새 카드 후보,New candidates,draft,88919fa3
+tx_NM2N0G1CX7,awakening.swap.held,active,AwakeningView swap page: row title of the preset's 3 cards,,,뺄 카드,Card to replace,draft,c55a10d3
+tx_CPB8AVTK0N,awakening.swap.hint,active,AwakeningView swap page: preview area before a card is picked,,,들일 카드와 뺄 카드를 하나씩 고르세요,Pick one card to bring in and one to replace,draft,c074eac1
+tx_Y7542JPYWV,awakening.preset.cand,active,AwakeningView add-preset page: label of candidate preset n,,,후보 {n},Option {n},draft,df62ba21
+tx_9BJC6ABYHM,awakening.preset.hint,active,AwakeningView add-preset page: preview area before a preset is picked,,,새 프리셋을 하나 고르세요,Pick one new preset,draft,8b164e32
+tx_6KTJD01A88,awakening.preset_tab.base,active,Preset tab / label: the base preset (the pilot's own cards),,,기본,Base,draft,7f1d8c41
+tx_4Z7Q89GAKB,awakening.preset_tab.extra,active,"Preset tab / label: extra preset n (n = 2, 3)",,,프리셋 {n},Preset {n},draft,8a3adb6e
+tx_K1RJF50930,awakening.detail.gauge,active,SeasonPilotDetail awakening gauge value,,,{n} / {max},{n} / {max},draft,b8e86fba
+tx_T07VH8HG79,awakening.detail.pending,active,SeasonPilotDetail: an awakening is queued for this pilot,,,깨달음 대기 중,Awakening pending,draft,d9f450fa
+tx_WDK4ZJ8X7X,awakening.detail.presets,active,SeasonPilotDetail section title: the pilot's card presets,,,카드 프리셋,Card presets,draft,b4c2ad1e
+tx_2FVH8MVSD4,awakening.detail.active,active,Chip on the preset used in the next match,,,출전,Active,draft,52cc285a
+tx_GWM9Y2YTZE,awakening.picker.title,active,Ban/pick assignment: preset picker popup title,,,출전 프리셋,Match presets,draft,a0abe4e1
+tx_D4QK1WR6H2,awakening.picker.hint,active,Ban/pick preset picker: line under the title,,,이번 경기에 쓸 카드 프리셋을 고르세요,Choose the card preset each pilot brings to this match,draft,489ff80d

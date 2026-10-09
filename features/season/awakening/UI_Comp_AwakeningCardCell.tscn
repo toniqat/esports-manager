@@ -1,0 +1,68 @@
+[gd_scene load_steps=4 format=3 uid="uid://b4wl800fkkqhp"]
+
+[ext_resource type="Script" path="res://features/season/awakening/AwakeningCardCell.gd" id="1_cell"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://bxhvekawvf1gg" path="res://scenes/Card.tscn" id="3_card"]
+
+[node name="AwakeningCardCell" type="VBoxContainer"]
+auto_translate_mode = 2
+editor_description = "One pilot card of the awakening screens / ban-pick preset picker: the real hand card (Card.tscn) in a selectable frame, a tap button over it and a caption under it. Card scale comes from code (set_card_scale); the frame switches SelectableCard / SelectableCardOn."
+offset_right = 176.0
+offset_bottom = 274.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 6
+script = ExtResource("1_cell")
+
+[node name="Frame" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningCardCell.gd set_selected()"
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_type_variation = &"SelectableCard"
+
+[node name="Pad" type="MarginContainer" parent="Frame"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="CardSlot" type="Control" parent="Frame/Pad"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningCardCell.gd set_card_scale()
+Card-sized slot; code sets its size = 160×220 × scale."
+custom_minimum_size = Vector2(160, 220)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Card" parent="Frame/Pad/CardSlot" instance=ExtResource("3_card")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningCardCell.gd fill() · set_card_scale()"
+layout_mode = 0
+mouse_filter = 2
+
+[node name="Hit" type="Button" parent="Frame"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningCardCell.gd _ready() · set_locked()
+Transparent tap target over the whole frame → tapped(card_id)."
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true
+
+[node name="Caption" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningCardCell.gd set_caption()
+\"Upgraded\" under a + card, or a host note; empty keeps the line."
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "Upgraded"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true

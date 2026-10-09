@@ -192,6 +192,11 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
 		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
+		# §15 C — awakening gauge / queue / count + card loadouts (string keys, `int()` reads).
+		"awakening":         (s.get("awakening", {}) as Dictionary).duplicate(true),
+		"awakening_pending": (s.get("awakening_pending", []) as Array).duplicate(true),
+		"awakening_count":   (s.get("awakening_count", {}) as Dictionary).duplicate(true),
+		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -246,6 +251,11 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"outings":           (s.get("outings", {}) as Dictionary).duplicate(true),
 		"stress":            (s.get("stress", {}) as Dictionary).duplicate(true),
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
+		# §15 C — awakening gauge / queue / count + card loadouts (string keys, `int()` reads).
+		"awakening":         (s.get("awakening", {}) as Dictionary).duplicate(true),
+		"awakening_pending": (s.get("awakening_pending", []) as Array).duplicate(true),
+		"awakening_count":   (s.get("awakening_count", {}) as Dictionary).duplicate(true),
+		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
 	}
 
 

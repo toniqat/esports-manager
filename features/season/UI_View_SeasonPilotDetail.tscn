@@ -382,6 +382,13 @@ theme_override_font_sizes/font_size = 22
 text = "Headsman · Skilled (520 / 1000)"
 autowrap_mode = 3
 
+[node name="AwakeningSlot" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _bind()
+§15 C: AwakeningPilotBlock (awakening gauge + card presets) is mounted here by code (features/season/awakening/)."
+layout_mode = 2
+mouse_filter = 2
+
 [node name="Tail" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2

@@ -67,6 +67,10 @@ Clauses joined by `&` (all must hold). Evaluated against the mech the pilot ride
 | `mech_role:<n>` | the mech's role class is `n` (`GameEnums.Role`: 0 탱커 · 1 격투 · 2 암살 · 3 서폿 · 4 원딜) |
 | `tier:<n>` | the pilot's mastery tier with that mech is ≥ `n` (`MechMastery.tier_of`, 0..3) |
 
+## Icons
+`QuirkImages.icon_for(id)` (`resources/QuirkImages.gd`) — one LoL Arena augment icon per quirk, tier colour = grade
+(Silver 일반 · Gold 희귀 · Prismatic 영웅). Add a quirk → add its row there.
+
 ## Where quirks show
 | Screen | What |
 |---|---|

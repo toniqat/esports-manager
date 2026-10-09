@@ -882,26 +882,14 @@ static func _team_name(namer: Node, team_id: int) -> String:
 	return "Team %d" % team_id
 
 
-## "숙련 +12 · <mech>" — what the day's mastery cells actually added to the pilot's
-## research mech: the same steps as `MechMastery.add_training_exp` (train scale, then
-## `gain_preview`'s multipliers). Empty when nothing was earned or mastery is off.
+## "숙련 +12" — a day's mastery (after `gain_preview`'s multipliers). §16: the training
+## board's mastery tiles and the per-pilot research mech are gone (mastery comes from the
+## mech lab), so a day card normally carries 0 here. Empty when nothing / mastery is off.
 func _mastery_text(pilot_id: int, raw: int) -> String:
 	var state: Dictionary = _gm.season_state
 	if raw <= 0 or not MechMastery.is_enabled(state):
 		return ""
-	var amount: int = MechMastery.gain_preview(state, pilot_id,
-			roundi(float(raw) * ConstTable.num("MASTERY_TRAIN_SCALE")))
-	var mech: int = MechMastery.research_mech(state, pilot_id)
-	if mech < 0:   # same fallback as `add_training_exp` — the coach's pick
-		var pd: PlayerData = MechMastery.find_pilot(state, pilot_id)
-		if pd != null:
-			mech = MechMastery.auto_research_mech(state, pd)
-	if mech >= 0:
-		# §15 A — the mech's level after the gain ("Bastion Lv3").
-		var mech_txt: String = "%s %s" % [MechMastery.mech_name(mech),
-				MechMastery.level_name(MechMastery.level_of(state, pilot_id, mech))]
-		return Loc.t(L.SEASON_WEEK_MASTERY_MECH, {"n": amount, "mech": mech_txt})
-	return Loc.t(L.SEASON_WEEK_MASTERY, {"n": amount})
+	return Loc.t(L.SEASON_WEEK_MASTERY, {"n": MechMastery.gain_preview(state, pilot_id, raw)})
 
 
 ## Quirk events → `[[text, colour]]`. Row shape (§14.1):

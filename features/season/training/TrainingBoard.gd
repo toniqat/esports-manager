@@ -563,11 +563,7 @@ func apply_day_training(day: int) -> Array:
 			if up != 0:
 				p.set(key, maxi(PlayerData.STAT_MIN, int(p.get(key)) + up))
 		carry[seat] = pocket
-		# Mastery cells of this day go to the pilot's research mech (M4 owns
-		# what happens there — multipliers, no-research-mech handling).
 		var mastery_exp: int = int(mastery.get(seat, 0))
-		if mastery_exp > 0:
-			MechMastery.add_training_exp(_gm.season_state, int(p.id), mastery_exp)
 		rows.append({
 			"pilot_id": int(p.id), "role": int(p.role),
 			"seat": seat, "before": before, "after": snapshot(p),

@@ -39,7 +39,7 @@ the save round-trips it through JSON, so every read goes through `int()` (`quirk
 | Source | Where | What |
 |---|---|---|
 | Training tiles with `Q` cells | `TrainingBoard.apply_day_training` (see `features/season/training/README.md` "Quirk tiles") | `quirk:gain` / `quirk:reroll` / `quirk:slot` on the pilot of each `Q` cell, on that cell's day |
-| Mech research | `MechMastery.settle_week` | each of my pilots with a research mech: `QUIRK_RESEARCH_CHANCE`% → `gain_random` (seeded per run · week · pilot) |
+| Mech research (§16) | `MechResearch.on_complete` → `MechResearch.quirk_roll` (`features/season/facility/research/`) | when a mech-lab research completes, each of my five pilots: `QUIRK_RESEARCH_CHANCE`% → `gain_random` (seeded per run · week · pilot); the quirks found are listed in the completion toast |
 
 ## Table `data/csv/quirks.csv` (game.db `quirks`)
 | Column | Meaning |
@@ -74,7 +74,7 @@ Clauses joined by `&` (all must hold). Evaluated against the mech the pilot ride
 ## Where quirks show
 | Screen | What |
 |---|---|
-| `메크 연구` sheet (`features/season/mastery/MasteryPanel.gd`) | grade odds + research chance line; per pilot card a `기벽 n / slots` block, one line per quirk (grade pill · name in grade colour · effect) |
+| 메크 연구소 facility sheet body (`features/season/mastery/MechLabBody.gd`) | grade odds + research chance line; per pilot card a `기벽 n / slots` block, one line per quirk (grade pill · name in grade colour · effect) |
 | Ban/pick (`features/match_flow/ban_pick/`) | my portraits: `기벽 n` badge (highest grade colour); my mech slots: `기벽 +N` tag (total with that mech); bottom sheet rider line `· 기벽 +N`; `MechDetailPanel` quirk block for the tapped seat's pilot (unmet conditions dimmed) |
 | Week progress day rows | `apply_day_training` row key `quirk` — drawn by `features/season/week/` (T3+T4) |
 | Collection detail | **not shown** — quirks are run-only (§14.0) |

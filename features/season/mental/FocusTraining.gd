@@ -166,7 +166,7 @@ static func add_story_mastery(state: Dictionary, pid: int, amount: int) -> Dicti
 
 ## The mech a story's `mastery:` clause trains: the mech `pid` was given in this week's
 ## Saturday ban/pick (`pending_match.picks.player_assigned_mech_ids`, indexed by role), else
-## the weekly research mech, else the coach's pick (`MechMastery.auto_research_mech`).
+## the mech lab's research mech (`MechResearch.lab_mech`), else `MechMastery.growth_mech`.
 static func story_mech(state: Dictionary, pid: int) -> int:
 	var pd: PlayerData = MentalEvents.pilot_of(state, pid)
 	if pd == null:
@@ -177,7 +177,7 @@ static func story_mech(state: Dictionary, pid: int) -> int:
 		if ids is Array and pd.role >= 0 and pd.role < (ids as Array).size() \
 				and int((ids as Array)[pd.role]) >= 0:
 			return int((ids as Array)[pd.role])
-	var mech: int = MechMastery.research_mech(state, pid)
+	var mech: int = MechResearch.lab_mech(state)
 	if mech < 0:
-		mech = MechMastery.auto_research_mech(state, pd)
+		mech = MechMastery.growth_mech(state, pd)
 	return mech

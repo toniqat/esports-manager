@@ -6,7 +6,6 @@ extends RefCounted
 # (JSON round-trips them untouched; numbers come back as floats, so every read
 # goes through `int()`):
 #   season_state.mech_mastery     = {"<pilot_id>": {"<mech_id>": int 0..MASTERY_MAX}}
-#   season_state.mastery_research = {"<pilot_id>": mech_id}   (weekly research mech)
 #
 # Points 0..100 per pilot × mech, shown as a **level 0..5** like trust: level = how
 # many thresholds `MASTERY_LV_1..5` the points reached (`level_of`, progress inside
@@ -24,8 +23,8 @@ extends RefCounted
 # MatchFlow applies it to roster copies (`apply_to`); BattleSim sees only the level
 # (`mech_levels_ctx` → `match_ctx.mech_levels`) for mech upgrades (`MechUpgrades`).
 #
-# Gains: weekly research mech (`settle_week`), mastery training tile
-# (`add_training_exp` → research mech), Saturday story (`gain`, §15 D). Gains for MY
+# Gains: mech-lab research (§16 — `MechResearch.on_complete`, every pilot of mine on the
+# researched mech) and the Saturday story (`gain`, §15 D). Gains for MY
 # pilots are multiplied by the knowledge multiplier, `FinanceSystem.mastery_mult` and
 # the trait `mastery_pct` inside `gain`; opponent pilots gain the raw amount.
 # Matches played give nothing (§15 — the old match gain is gone).
@@ -55,7 +54,6 @@ static func init_run(state: Dictionary) -> void:
 			if pd != null:
 				mm[str(pd.id)] = initial_row(pd, run_rank(pd, pool_key == "intl_pilots"))
 	state["mech_mastery"] = mm
-	state["mastery_research"] = {}
 
 
 ## Rank 1..5 that decides a pilot's run-start mastery: my five = collection rank and
@@ -274,24 +272,10 @@ static func gain(state: Dictionary, pilot_id: int, mech_id: int, amount: int) ->
 	row[str(mech_id)] = clampi(int(row.get(str(mech_id), 0)) + add, 0, max_value())
 
 
-## That pilot's weekly research mech (-1 = none).
-static func research_mech(state: Dictionary, pilot_id: int) -> int:
-	return int((state.get("mastery_research", {}) as Dictionary).get(str(pilot_id), -1))
-
-
-## Sets (mech_id >= 0) or clears (-1) the research mech.
-static func set_research(state: Dictionary, pilot_id: int, mech_id: int) -> void:
-	var r: Dictionary = state.get("mastery_research", {})
-	if mech_id < 0:
-		r.erase(str(pilot_id))
-	else:
-		r[str(pilot_id)] = mech_id
-	state["mastery_research"] = r
-
-
-## Coach's rule (plain, not optimal): the pilot's own-role mech with the highest
-## mastery still below the cap (ties: lower id). -1 if nothing can grow.
-static func auto_research_mech(state: Dictionary, pd: PlayerData) -> int:
+## The pilot's own-role mech with the highest mastery still below the cap (ties: lower
+## id); -1 if nothing can grow. Fallback mech for gains without an explicit mech
+## (story `mastery:` clause, `FocusTraining.story_mech`) and the lab body's default chip.
+static func growth_mech(state: Dictionary, pd: PlayerData) -> int:
 	if pd == null:
 		return -1
 	var best: int = -1
@@ -303,63 +287,6 @@ static func auto_research_mech(state: Dictionary, pd: PlayerData) -> int:
 			best = mid
 			best_v = v
 	return best
-
-
-## "코치에게 맡기기" — every one of my pilots gets the coach's research mech.
-static func auto_assign_all(state: Dictionary) -> void:
-	for pd in my_pilots(state):
-		set_research(state, pd.id, auto_research_mech(state, pd))
-
-
-## How many of my pilots have no research mech.
-static func missing_research_count(state: Dictionary) -> int:
-	var n: int = 0
-	for pd in my_pilots(state):
-		if research_mech(state, pd.id) < 0:
-			n += 1
-	return n
-
-
-## Mastery tile EXP from the training board (`TrainingBoard.apply_day_training`)
-## — goes to the research mech; with none set, to the coach's choice so a tile
-## placed before choosing is not wasted.
-static func add_training_exp(state: Dictionary, pilot_id: int, amount: int) -> void:
-	if amount <= 0 or not is_enabled(state):
-		return
-	var mech: int = research_mech(state, pilot_id)
-	if mech < 0:
-		mech = auto_research_mech(state, find_pilot(state, pilot_id))
-	gain(state, pilot_id, mech, roundi(float(amount) * ConstTable.num("MASTERY_TRAIN_SCALE")))
-
-
-## Week close (`SeasonHub._end_week`) — research gain for my pilots. When the
-## knowledge area is delegated, the coach fills empty research slots first.
-static func settle_week(state: Dictionary) -> void:
-	if not is_enabled(state):
-		return
-	var delegated: bool = StaffSystem.is_delegated(state, "knowledge")
-	var amount: int = ConstTable.int_of("MASTERY_GAIN_RESEARCH")
-	for pd in my_pilots(state):
-		var mech: int = research_mech(state, pd.id)
-		if mech < 0 and delegated:
-			mech = auto_research_mech(state, pd)
-			set_research(state, pd.id, mech)
-		if mech >= 0:
-			gain(state, pd.id, mech, amount)
-			_research_quirk_roll(state, pd.id)
-
-
-## Research also turns up quirks (§14, T1): `QUIRK_RESEARCH_CHANCE`% per pilot
-## with a research mech → `QuirkSystem.gain_random` (a full pilot gets nothing).
-## Seeded per run · week · pilot, so reloading the week close never rerolls.
-static func _research_quirk_roll(state: Dictionary, pilot_id: int) -> void:
-	if not QuirkSystem.is_enabled(state):
-		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash([int(state.get("run_seed", 0)), int(state.get("current_phase", 0)),
-			int(state.get("phase_week", 1)), pilot_id, "quirk_research"])
-	if rng.randi_range(1, 100) <= ConstTable.int_of("QUIRK_RESEARCH_CHANCE"):
-		QuirkSystem.gain_random(state, pilot_id)
 
 
 # ── Pilots ───────────────────────────────────────────────────────────────────

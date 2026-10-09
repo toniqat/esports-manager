@@ -4,11 +4,12 @@
 
 [node name="MasteryMechChip" type="Button"]
 auto_translate_mode = 2
-editor_description = "One own-role mech chip (MasteryPilotRow): name + level · stat %; tap = set / clear the research mech. Variation is state (PrimaryButton = research mech, else GhostButton); the level bar (fill = progress inside the level, colour = level) is data."
+editor_description = "One mech chip (MasteryPilotRow, read-only): name + level · stat %. Variation is state (PrimaryButton = the lab's research mech, else GhostButton); the level bar (fill = progress inside the level, colour = level) is data."
 custom_minimum_size = Vector2(0, 92)
 offset_right = 290.0
 offset_bottom = 92.0
 size_flags_horizontal = 3
+mouse_filter = 2
 focus_mode = 0
 theme = ExtResource("1_theme")
 theme_type_variation = &"GhostButton"
@@ -32,7 +33,7 @@ mouse_filter = 2
 color = Color(0.86, 0.87, 0.9, 1)
 
 [node name="LevelBar" type="ColorRect" parent="LevelTrack"]
-editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_pilot_row()
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_pilot_row()
 Fill: anchor_right = progress inside the level (code), colour = MechMastery.level_color."
 unique_name_in_owner = true
 layout_mode = 1

@@ -14,7 +14,7 @@ mouse_filter = 2
 theme = ExtResource("1_theme")
 
 [node name="Grade" type="Panel" parent="."]
-editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_quirks()"
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_quirks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
@@ -39,7 +39,7 @@ vertical_alignment = 1
 
 [node name="Name" type="Label" parent="."]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MasteryPanel.gd"
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
@@ -54,7 +54,7 @@ clip_text = true
 
 [node name="Effect" type="Label" parent="."]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MasteryPanel.gd _fill_quirks()"
+editor_description = "[필수] 지우면 오류 — MechLabBody.gd _fill_quirks()"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1

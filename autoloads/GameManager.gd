@@ -135,8 +135,6 @@ var season_state: Dictionary = {
 	"pilot_mods": [],
 	# 메크 숙련도 `{"<pilot_id>": {"<mech_id>": int}}` — `MechMastery`.
 	"mech_mastery": {},
-	# 주간 연구 메크 `{"<pilot_id>": mech_id}` — `MechMastery`.
-	"mastery_research": {},
 	# 기벽 `{"<pilot_id>": {"slots": int, "ids": [int]}}` — 내 선수만. `QuirkSystem` (§14).
 	"quirks": {},
 	# 재무 · 시설 — 모양은 `FinanceSystem` 이 소유한다(§11).
@@ -190,7 +188,6 @@ func reset_season_state() -> void:
 		"staff_mods": [],
 		"pilot_mods": [],
 		"mech_mastery": {},
-		"mastery_research": {},
 		"quirks": {},
 		"finance": {},
 		"trust": {},

@@ -549,7 +549,7 @@ func _end_week() -> void:
 	# 혼자 남은 AI 경기(예: 배정이 어긋난 주)가 있으면 여기서 정리된다.
 	_resolve_remaining_ai_for_week()
 	# 주 마감 정산(M3~M7) — **달력이 넘어가기 전**, 순서 고정(계획서 §11.1):
-	# 재무 수지 → 메크 연구 → 멘탈 주간 초기화 → 감독 · 선수 일시 보정 감소.
+	# 재무 수지 → 연구 게이지(§16, 메크 연구 포함) → 멘탈 주간 초기화 → 감독 · 선수 일시 보정 감소.
 	var s: Dictionary = _gm.season_state
 	var fin: Dictionary = FinanceSystem.settle_week(s)
 	if String(fin.get("toast", "")) != "":
@@ -557,7 +557,6 @@ func _end_week() -> void:
 	# §16 — research gauges of every seated facility; completions become HUB toasts.
 	for t in ResearchSystem.tick_week(s):
 		hub_toasts.append(String(t))
-	MechMastery.settle_week(s)
 	MentalSystem.end_week(s)
 	# A match that never got a result (stale Saturday picks) does not outlive its week.
 	var pm: Variant = s.get("pending_match", null)

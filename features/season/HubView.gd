@@ -105,7 +105,7 @@ static func trust_color(level: int) -> Color:
 ## 씬의 `%Manage` 카드 순서가 이 배열 순서다.
 # 클래스 참조는 상수식이 아니라 `const` 로 못 둔다 — 함수로 돌려준다.
 static func _manage_panels() -> Array:
-	return [StaffPanel, MasteryPanel, FinancePanel]
+	return [StaffPanel, FinancePanel]
 
 
 func _refresh_manage_row() -> void:

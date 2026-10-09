@@ -5,7 +5,7 @@ extends VBoxContainer
 # screen bottom row). A `HubSheet` body (title = pilot name): the same card as header (not
 # tappable) next to total / trust / outings / stress, then the six stats by their **full
 # names** (`PlayerData.stat_label`, no short forms) with their one-line notes, equipped quirks
-# (`QuirkSystem`) and this week's research mech (`MechMastery`).
+# (`QuirkSystem`) and the mech lab's research mech (`MechResearch.lab_mech`).
 #
 # **Layout lives in `UI_View_SeasonPilotDetail.tscn`.** `open` puts one instance into the
 # sheet's `body`; this script fills `%` nodes (quirk lines are duplicates of the hidden
@@ -106,7 +106,8 @@ func _fill_quirks(state: Dictionary, pid: int) -> void:
 
 func _fill_research(state: Dictionary, pid: int) -> void:
 	var rl: Label = %Research
-	var mech: int = MechMastery.research_mech(state, pid) if MechMastery.is_enabled(state) else -1
+	# §16 — the mech the mech lab is researching (every pilot of mine gains on it).
+	var mech: int = MechResearch.lab_mech(state) if MechMastery.is_enabled(state) else -1
 	if mech < 0:
 		rl.text = Loc.t(L.SEASON_PILOT_DETAIL_RESEARCH_NONE)
 		rl.theme_type_variation = &"FaintLabel"

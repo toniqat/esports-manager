@@ -158,3 +158,20 @@ own prefix.
 `new_keys` in the kind's domain (never `extract data`). A code key in a `research_*` domain must not have the shape
 `research_<x>.<y>.name|desc` (that is a data alias and gets no `L` constant) — use e.g. `research_mech.note.done`.
 Other agents' existing domains (`training`, `mastery`, `finance`, `staff`, `match` …) stay with their owners.
+
+## MechResearch (agent D — `research/MechResearch.gd`, `mech_lab`)
+- **Rows** (`research.csv`, l10n `research_mech`): `mech_study` (2 weeks, Lv1, repeatable) · `mech_deep`
+  (3 weeks, Lv3, repeatable, `p1 = 200`). `p1` = gain percent of `MASTERY_GAIN_LAB` (empty = 100).
+- **`targets`**: every mech that at least one of my pilots can still grow on (below `MASTERY_MAX`), mechs my
+  pilots' roles use first (count of my pilots with that role, desc), then mech id. `{id: "<mech id>",
+  label: mech name, icon: MechImages.portrait_for}`. A repeatable row goes idle once its mech is maxed for
+  all five (target no longer offered). **`row_available`**: blocked outside a run.
+- **`on_complete`**: each of my five pilots `MechMastery.gain(state, pid, mech, raw_gain(row))` (knowledge =
+  the lab occupant through `StaffSystem.effective`, `FinanceSystem.mastery_mult`, trait `mastery_pct`), then
+  `quirk_roll` (`QUIRK_RESEARCH_CHANCE`% per pilot, seeded per run · phase · week · pilot · `"quirk_research"`).
+  Note `research_mech.note.done` = `{mech} 숙련도 +{n}{extra}` — `extra` = ` · 레벨 업 <name LvN, …>` and/or
+  ` · 기벽 획득 <name quirk, …>`.
+- Helpers: `FID`, `lab_mech(state)` (the lab's active target mech, -1 idle — read by `SeasonPilotDetail` and
+  `FocusTraining.story_mech`), `raw_gain(row)`, `quirk_roll(state, pid) -> quirk id | -1`.
+- **`make_body`** → `MechLabBody.create(state)` (`features/season/mastery/`, read-only overview of my pilots on
+  the lab mech; `mastery/README.md` "Mech-lab body"). It fills on entering the tree; `refresh()` refills.

@@ -1,3 +1,16 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_1B74EM9AMW,research_mech.mech_study.name,active,research.csv name_key (id=mech_study),,,메크 연구,Mech Study,draft,a27ab83a
 tx_KHARDPAGQ1,research_mech.mech_study.desc,active,research.csv desc_key (id=mech_study),,,고른 메크의 숙련도를 내 선수 모두가 얻습니다.,All your pilots gain mastery on the chosen mech.,draft,23e1a61c
+tx_NA4RC13ZTZ,research_mech.mech_deep.name,active,research.csv name_key (id=mech_deep),,,메크 심화 연구,Advanced Mech Study,draft,545ce3f8
+tx_ZKVJJPQ8GS,research_mech.mech_deep.desc,active,research.csv desc_key (id=mech_deep),,,고른 메크의 숙련도를 내 선수 모두가 크게 얻습니다.,All your pilots gain a lot of mastery on the chosen mech.,draft,8a0d5bd0
+tx_M4GWN5P6GJ,research_mech.block.no_run,active,MechResearch.row_available: block reason outside a run,,,진행 중인 런이 없다,No run in progress,draft,8235c1d8
+tx_BKPE192XXS,research_mech.note.done,active,Mech research completion toast note; extra = level-up / quirk segments (each starts with a separator) or empty,,,{mech} 숙련도 +{n}{extra},{mech} mastery +{n}{extra},draft,79a1e861
+tx_Q9N1WHEQBZ,research_mech.note.level_ups,active,Mech research toast segment: pilots whose mastery level rose (name Lv),,,레벨 업 {list},Level up {list},draft,d8854563
+tx_BVA23HC92H,research_mech.note.quirks,active,Mech research toast segment: pilots who gained a quirk (name quirk),,,기벽 획득 {list},Quirks found {list},draft,26e1881b
+tx_FP5BCNEGHG,research_mech.body.target,active,Mech lab sheet body head: lab target mech and per-pilot gain after multipliers,,,연구 대상: {mech}  ·  완료 시 선수 전원 +{n},Researching: {mech}  ·  all pilots +{n} on completion,draft,59bf32f4
+tx_1KSSXG0HPY,research_mech.body.no_target,active,Mech lab sheet body head when the lab has no mech research,,,연구 중인 메크가 없다. 연구 목록에서 메크를 고른다,No mech under research. Pick one from the research list,draft,4cec3b3e
+tx_Q56Z57M5X6,research_mech.body.rules,active,UI_View_MechLabBody.tscn Main/Rules text,,,메크 연구가 끝나면 선수 전원이 그 메크 숙련도를 얻는다  ·  Lv3 · Lv4 · Lv5 에서 메크 강화 해금,A finished mech study gives every pilot mastery on that mech  ·  mech upgrades unlock at Lv3 · Lv4 · Lv5,draft,a7769bc0
+tx_MFTFCFHE5J,research_mech.body.quirk_odds,active,Mech lab sheet body: research quirk chance + grade odds,,,기벽: 메크 연구가 끝날 때 선수마다 {pct}% 확률로 획득  ·  {odds},Quirks: each pilot has a {pct}% chance when a mech study finishes  ·  {odds},draft,91049d56
+tx_HTGJKVQAVJ,research_mech.body.pilot_target,active,Mech lab body pilot card: level on the lab mech and the gain on completion,,,{mech} {level}  ·  +{n},{mech} {level}  ·  +{n},draft,3d279119
+tx_KFCBS2C101,research_mech.body.pilot_max,active,Mech lab body pilot card: already at max mastery on the lab mech,,,{mech} {level}  ·  최대,{mech} {level}  ·  max,draft,8bd25951
+tx_57BFE3HFY3,research_mech.body.pilot_none,active,Mech lab body pilot card: the lab has no mech research,,,연구 대상 없음,No research target,draft,cdbcd00f

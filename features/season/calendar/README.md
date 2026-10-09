@@ -104,7 +104,8 @@ week that just ended (`current_phase` / `phase_week`). Order is fixed (plan §11
 2. `FinanceSystem.settle_week(state)` — income − expense, surplus allocation or the
    bankruptcy rule, history (`features/season/finance/README.md`). Its `toast` is queued in
    `SeasonHub.hub_toasts` and shown on the next HUB.
-3. `MechMastery.settle_week(state)` — weekly research mech.
+3. `ResearchSystem.tick_week(state)` — §16 research gauges (mech mastery comes from the mech lab's
+   completions, `features/season/facility/README.md`); toasts queued in `hub_toasts`.
 4. `MentalSystem.end_week(state)` — weekly mental reset; a `pending_match` that never got a result
    (stale Saturday picks) is dropped.
 5. `StaffSystem.decay_mods(state)` → `PilotMods.decay_week(state)` — temporary mods tick down.

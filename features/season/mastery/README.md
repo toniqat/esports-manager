@@ -1,6 +1,6 @@
 # mastery/ — mech mastery (M4, reworked §15 A)
 
-Display text is l10n keys (`mastery` domain; the mech-lab body's own lines are `research_mech.body.*`); the level label is `mastery.level` ("Lv{n}") via
+Display text is l10n keys (`mastery` domain; the mech-lab body's own text is in `research_mech`); the level label is `mastery.level` ("Lv{n}") via
 `MechMastery.level_name(l)`; mech upgrade lines are `mastery.upgrade.<id>.desc` (data column of
 `mech_upgrades.csv`, see `features/battle_sim/mech/README.md` "Mech upgrades").
 
@@ -18,8 +18,8 @@ on load (`SaveSystem._deserialize_season_state` no longer copies it).
 | File | Role |
 |---|---|
 | `MechMastery.gd` | `class_name MechMastery` (static). Init (rank deal), points → level / progress, level %, apply, `mech_levels_ctx`, gains (`gain` / `gain_preview` / `gain_mult`), `growth_mech`. Reads the mech table (`mechs`) and `players` / `intl_players` `mech_pref` from game.db itself — `all_mechs` rows are `{id, name_key, role}`; `mech_name(id)` = `Loc.t(name_key)`. |
-| `MechLabBody.gd` + `UI_View_MechLabBody.tscn` | 메크 연구소 facility-sheet body (`MechResearch.make_body`) — read-only mastery overview of my pilots against the lab's research mech. |
-| `UI_Comp_MasteryPilotRow.tscn` · `UI_Comp_MasteryMechChip.tscn` · `UI_Comp_MasteryQuirkLine.tscn` | Item scenes of the body (no script): one pilot card · one mech chip (read-only, `mouse_filter` ignore) · one quirk line. |
+| `MechLabBody.gd` + `UI_View_MechLabBody.tscn` | 메크 연구소 facility body (`MechResearch.make_body`) — grid of research target mechs, tap = research it (HUB only). |
+| `UI_Comp_MechLabCard.tscn` · `UI_Comp_MechLabPilot.tscn` | Item scenes of the body (no script): one mech card (a `Button`) · one suggested-pilot slot. |
 
 All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are written here.
 
@@ -63,38 +63,37 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
     `MechResearch.quirk_roll`), `add_training_exp` (training `M` tiles are gone), consts
     `MASTERY_GAIN_RESEARCH` · `MASTERY_TRAIN_SCALE`, the 메크 연구 hub card (`MasteryPanel`).
 - `growth_mech(state, pd)`: own-role mech with the highest mastery still below the cap (ties: lower
-  id), -1 if none — fallback mech (story clause, lab body when the lab is idle).
+  id), -1 if none — fallback mech (story clause).
 
 ## Mech-lab body (`MechLabBody`)
-- Built by `MechResearch.make_body` → `MechLabBody.create(state)`; fills itself when it enters the tree
-  (`_ready` → `refresh()`), `refresh()` refills in place (rows / chips / quirk lines reused by `_ensure`).
-  Read-only: choosing the research and its target mech is the facility sheet's research list (agent B).
-- Head: lab occupant · effective knowledge | gain multiplier; `%Target` = `연구 대상: <mech> · 완료 시 선수
-  전원 +n` (after multipliers; `FaintLabel` "no mech under research" when the lab is idle); level-% legend;
-  static rules line; quirk odds (research chance + grade odds, only while `QuirkSystem.is_enabled`).
-- One card per pilot (`GameEnums.ROLE_DISPLAY_ORDER`): portrait, name, position badge, `%Research` =
-  `<lab mech> LvN · +n` (or `· 최대` at the cap, or "no target"), top-3 mastery, chips (the lab mech first
-  as `PrimaryButton`, then own-role mechs as `GhostButton`, 3 at most; level bar = progress inside the
-  level, colour = level), `%NextUpgrade` = next locked mech upgrade of the lab mech (or `growth_mech`),
-  then the quirk block (`기벽 n / slots`, one line per quirk).
-- **F6 preview** — run `UI_View_MechLabBody.tscn` alone: in-memory run (`UiPreview.ensure_run`), the first
-  available mech-lab row + first target completed once (`on_complete`) and selected, then filled.
-- **Scene** (`UI_View_MechLabBody.tscn`, root `VBoxContainer` top-wide; theme `OutgameTheme.tres`):
+User rework 2026-10-09: the "메크 연구" / "메크 심화 연구" split is gone (one row `mech_study`), the body is a mech
+picker. Built by `MechResearch.make_body` → `MechLabBody.create(state)`, full rect in `FacilityView` `%BodySlot`;
+fills itself when it enters the tree, `refresh()` refills in place (cards reused by `_ensure`).
+- **Grid**: one card per `MechResearch.targets(state, row)` (mechs my pilots can still grow on, that order),
+  3 columns, card height fixed in the scene (300 + gap 20 → about 4.5 rows on the ~1440 px slot of 1080×1920;
+  taller phones show more). Only the grid scrolls (`%Scroll` + `DragScroll`). `%Empty` when nothing is offered.
+- **Card**: mech portrait (`MechImages.portrait_for`), name, role badge (`PositionBadge`, `MechResearch.mech_role`),
+  research progress `ResearchSystem.progress(state, "mech_lab", "mech_study", target)` as `%Pct` + bar (paused
+  points included; `FaintLabel` at 0 %), then up to 3 pilots from `MechResearch.fit_pilots` (round portrait with
+  role ring, name, `Lv3 · 65` in `MechMastery.level_color`; unused slots transparent).
+- **Tap** = `ResearchSystem.select(state, "mech_lab", "mech_study", "<mech id>")` → `refresh()` + `changed`
+  (refusal → `message`). The lab's active mech = `SelectableCardButtonOn`, others `SelectableCardButton`. Outside
+  HUB (`ResearchSystem.can_select` false) every card is disabled (the header says why). No stop button, no
+  "진행 중" line, no facility description; the "no research picked" warning is the hub's.
+- **F6 preview** — run `UI_View_MechLabBody.tscn` alone: in-memory run at HUB, the first target 40 % and active,
+  the second 20 % (paused); the body is inset like the facility slot.
+- **Scene**:
   ```
-  MechLabBody (VBox)
-  ├ %Empty                      no run (hidden)
-  └ %Main (VBox)
-    ├ HeadRow  %Head (occupant · knowledge) | %Gain
-    ├ %Target · %Legend · Rules (static tx_ key) · %QuirkOdds
-    ├ %Pilots (MasteryPilotRow, sep 16 — the scene sample is reused)
-    └ Tail
-  MasteryPilotRow (Panel · Card) → %Content (VBox, inset 18)
-    ├ Top (244)  %Portrait (round portrait added by code) · %Name · %Research · %PositionBadge_Position · %TopMechs · %Chips (MasteryMechChip) · %NextUpgrade
-    └ %Quirks    Divider · Head (%Count · %Max) · %QuirkEmpty · %Lines (MasteryQuirkLine) · Tail
-  MasteryMechChip (Button, read-only) → LevelTrack (grey ColorRect) → %LevelBar (fill)
+  MechLabBody (Control, full rect)
+  ├ %Empty    FaintLabel (hidden)
+  └ %Scroll (vertical, bar hidden) → %Grid (GridContainer 3 cols, sep 20) → MechLabCard (sample reused)
+  MechLabCard (Button, SelectableCardButton[On], min h 300) → Pad (12) → Content (VBox)
+    ├ Head  ArtMask (SunkPanel clip, 112²) → %Art · Info (%Name · %PositionBadge_Role · %Pct)
+    ├ Track (ProgressTrack) → %Fill (ProgressFill, anchor_right = progress)
+    ├ Divider
+    └ %Pilots  MechLabPilot_1..3 (%Portrait 72² round portrait by code · %Name · %Level)
   ```
-  Code owns: texts, target / research colours, chip variation, level bar fill / colour, grade colours,
-  the round portrait (`OutgameTheme.add_round_portrait` into `%Portrait`), and the pilot card height.
+  Code owns: texts, card variation / disabled, the fill ratio, the level colour, the round portraits.
 
 ## Where mastery shows outside this folder
 - Ban/pick (`features/match_flow/ban_pick/README.md` "Mech mastery"): slot tags (`Lv3 +10%`), grid badges

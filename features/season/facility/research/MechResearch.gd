@@ -113,6 +113,43 @@ static func quirk_roll(state: Dictionary, pilot_id: int) -> int:
 	return int(res.get("id", -1)) if String(res.get("result", "")) == "gain" else -1
 
 
-## The mech-lab section of the facility sheet: my five pilots on the lab's mech.
+## Role (`GameEnums.Role`) a mech is built for (`mechs.role`); -1 for an unknown id.
+static func mech_role(mech_id: int) -> int:
+	for raw in MechMastery.all_mechs():
+		if int((raw as Dictionary)["id"]) == mech_id:
+			return int((raw as Dictionary)["role"])
+	return -1
+
+
+## Up to `n` of my pilots suited to `mech_id` (the lab body's per-mech strip): first every pilot
+## with Lv1+ mastery on it, highest points first (ties: own-role pilot first, then seat order),
+## then the remaining pilots whose role is the mech's role, highest points first. A pilot with
+## Lv0 on a mech of another role is never suggested, so fewer than `n` can come back.
+static func fit_pilots(state: Dictionary, mech_id: int, n: int = 3) -> Array:
+	var role: int = mech_role(mech_id)
+	var lv1: int = MechMastery.threshold(1)
+	var skilled: Array = []
+	var fits: Array = []
+	for p in MechMastery.my_pilots(state):
+		var pd := p as PlayerData
+		var v: int = MechMastery.value(state, pd.id, mech_id)
+		if v >= lv1:
+			skilled.append(pd)
+		elif pd.role == role:
+			fits.append(pd)
+	var by_points := func(a: PlayerData, b: PlayerData) -> bool:
+		var va: int = MechMastery.value(state, a.id, mech_id)
+		var vb: int = MechMastery.value(state, b.id, mech_id)
+		if va != vb:
+			return va > vb
+		if (a.role == role) != (b.role == role):
+			return a.role == role
+		return GameEnums.role_seat(a.role) < GameEnums.role_seat(b.role)
+	skilled.sort_custom(by_points)
+	fits.sort_custom(by_points)
+	return (skilled + fits).slice(0, maxi(0, n))
+
+
+## The mech-lab facility body: the grid of research targets (`MechLabBody`).
 static func make_body(state: Dictionary, _fid: String) -> Control:
 	return MechLabBody.create(state)

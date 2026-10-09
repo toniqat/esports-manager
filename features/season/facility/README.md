@@ -240,8 +240,14 @@ The facility is in `ResearchSystem.AUTO_KINDS` — `ensure_auto` keeps `scout` a
   Note `research_mech.note.done` = `{mech} 숙련도 +{n}{extra}` — `extra` = ` · 레벨 업 <name LvN, …>` and/or
   ` · 기벽 획득 <name quirk, …>`.
 - Helpers: `FID`, `lab_mech(state)` (the lab's active target mech, -1 idle — read by `SeasonPilotDetail` and
-  `FocusTraining.story_mech`), `raw_gain(row)`, `quirk_roll(state, pid) -> quirk id | -1`.
-- **`make_body`** → `MechLabBody.create(state)` (`features/season/mastery/`) — *being reworked (2026-10-09).*
+  `FocusTraining.story_mech`), `raw_gain(row)`, `quirk_roll(state, pid) -> quirk id | -1`,
+  `mech_role(mech_id)` (`mechs.role`, -1 unknown), `fit_pilots(state, mech_id, n = 3)` — the body's suggested
+  pilots: my pilots with Lv1+ mastery on the mech (points desc; ties own-role first, then seat order), then the
+  remaining pilots whose role = the mech's role (points desc); a Lv0 off-role pilot is never suggested, so fewer
+  than `n` can come back.
+- **`make_body`** → `MechLabBody.create(state)` (`features/season/mastery/README.md` "Mech-lab body"): a 3-column
+  grid of `targets` (tap = `select(state, "mech_lab", "mech_study", "<mech id>")`, HUB only), each card with
+  its progress and `fit_pilots`. No stop button, no "진행 중" line, no description.
 
 ## TrainingResearch (`research/TrainingResearch.gd`, kind `training`)
 Files: `research/TrainingResearch.gd` (handler + course→facility map), `research/TrainingResearchBody.gd` +

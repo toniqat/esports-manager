@@ -1041,8 +1041,6 @@ tx_JNX31TB32C,프리셋: 전문화 분배 + 특성
 tx_96VG8VVT6V,프레스티지 프리셋. 재설정해야 쓸 수 있습니다
 tx_JXE6K3B8JS,"전문화 분배가 비워지고, 특성은 그대로 남습니다"
 tx_BG420X1TPQ,감독 능력치
-tx_GYJVQGJEM9,없음. 기벽 훈련 타일 · 메크 연구로 얻는다
-tx_WZDGTR97KE,진행 중인 런이 없다
 tx_43FCJDADR5,코치에게 맡기기
 tx_S3TMQTME0B,메크 코치가 없다. 선수마다 직접 연구 메크를 고른다
 tx_9795WB8ABE,미숙
@@ -1055,17 +1053,11 @@ tx_DC141DPMTX,주간 연구 +{n}
 tx_1R29MF9ZRE,빈 자리는 코치가 채움
 tx_H26DNEN9EX,연구 메크 미지정 {n}명
 tx_AYCQXCCH15,{n} / {total} 지정
-tx_5XP7EXN0MZ,담당: {name}   ·   지식 {value}
-tx_NPNPJYNJ78,획득 배율 ×{mult}
-tx_AVASF1MNRA,숙련 레벨 보정 (명중 · 회피 4종)   {tiers}
 tx_9C36WN5CN9,주 마감마다 연구 메크 +{research} (배율 전)  ·  Lv3 · Lv4 · Lv5 에서 메크 강화 해금
 tx_0R1EGAX9DP,기벽: 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds}
 tx_9YHCDH1Y7N,연구: {mech}
 tx_KVG9N478Y5,주 마감에 코치가 지정
 tx_1AFM6E35JF,연구 미지정
-tx_PW12RBBJ9E,숙련 상위  {list}
-tx_1D7T0ZQE77,기벽  {n} / {slots}
-tx_D1SA7C6KSP,최대 {n}칸
 tx_A91DQR5EYH,과적재: 공격력 +1 기준 최대 체력 {from} → {to}
 tx_0VZTRKKM1T,[몸집 불리기] 최대 체력 증가량 상승
 tx_CECSHTRHDG,[강습] 비용 {from} → {to}
@@ -1130,8 +1122,6 @@ tx_NDKXMX6EB0,조준 보정: 명중당 공격력 +{from} → +{to}
 tx_XWA7EKFJNA,[테러] 비용 {from} → {to}
 tx_PBWDAW1MZ6,[파괴] 비용 {from} → {to}
 tx_MG2RP2KA00,Lv{n}
-tx_G5CGK84PBE,다음 강화 {level} · {mech}: {text}
-tx_YQBQKH8GAN,{mech}: 메크 강화 모두 해금
 tx_VDJKS7MNHE,BAN
 tx_VX9Q85PM8S,드래그 드롭으로 메크-파일럿 지정 변경
 tx_6Z915A6SVE,BAN
@@ -2009,22 +1999,19 @@ tx_4YKPQENSGB,{team} · 분석 {rank}/{max}
 tx_T7D9CGRHZ8,{team} · 분석 {rank}/{max} · 다음 상대
 tx_J4KMC49ABA,{team} 분석 {rank}단계
 tx_W59SNZ97CJ,더 분석할 팀이 없습니다
-tx_NNENFKVN7T,팀별 분석 단계: 연구가 끝날 때마다 한 단계씩 오릅니다.
 tx_JFWCEN193R,다음 상대
 tx_S4MP0P7FCH,분석 {rank}/{max}
+tx_GKADDT6VK8,분석
+tx_RCS8QGHPPF,분석 중
+tx_8EPYQF11Z2,분석 완료
+tx_N5KMGQJ8D2,완료
 tx_1B74EM9AMW,메크 연구
 tx_KHARDPAGQ1,고른 메크의 숙련도를 내 선수 모두가 얻습니다.
 tx_M4GWN5P6GJ,진행 중인 런이 없다
 tx_BKPE192XXS,{mech} 숙련도 +{n}{extra}
 tx_Q9N1WHEQBZ,레벨 업 {list}
 tx_BVA23HC92H,기벽 획득 {list}
-tx_FP5BCNEGHG,연구 대상: {mech}  ·  완료 시 선수 전원 +{n}
-tx_1KSSXG0HPY,연구 중인 메크가 없다. 연구 목록에서 메크를 고른다
-tx_Q56Z57M5X6,메크 연구가 끝나면 선수 전원이 그 메크 숙련도를 얻는다  ·  Lv3 · Lv4 · Lv5 에서 메크 강화 해금
-tx_MFTFCFHE5J,기벽: 메크 연구가 끝날 때 선수마다 {pct}% 확률로 획득  ·  {odds}
-tx_HTGJKVQAVJ,{mech} {level}  ·  +{n}
-tx_KFCBS2C101,{mech} {level}  ·  최대
-tx_57BFE3HFY3,연구 대상 없음
+tx_82EVYEXTWG,연구할 수 있는 메크가 없다
 tx_40KE8V9E9S,스태프 스카우트
 tx_SKS0NQX6X5,영입할 수 있는 스태프 후보를 찾습니다.
 tx_Q81FF70898,영입 후보 {n}명
@@ -2034,17 +2021,16 @@ tx_W0X6SW7323,스태프 목록
 tx_D6VFEA8FS2,{n}명 · 주급 합계 {amount}
 tx_CZ4VNDDER3,고용된 스태프가 없습니다
 tx_XVA01HKA07,영입 후보
-tx_A8KAFWVEB1,{n}명 — 한 명을 영입하거나 모두 보냅니다
-tx_FG29WZFWYV,스태프 스카우트를 마치면 후보가 여기에 나옵니다
-tx_ZER9Z0CY1W,배치 · {facility}
-tx_DWJ2YS43HN,배치 없음
 tx_BNEQQWKNPV,해고
-tx_T5J3D3WBYB,해고 확정
-tx_PAZY3K1HKC,자리 비우고 해고
 tx_1ZDA977HGZ,영입
-tx_FQ2QYR4GMT,영입 확정
-tx_FJHYNYQ0XK,모두 보내기
-tx_M6054BQ9PK,정말 보내기
+tx_YAF7YXS3BF,스카우트 {percent}
+tx_FH7332P9JX,{job} · {facility}
+tx_WB2J502BG7,{job} · 배치 없음
+tx_93W9A6R32X,{name} 해고
+tx_ZXK676KV1N,{name} 영입
+tx_HQYAA3A4GP,{job} · 주급 {salary}
+tx_Q87CAKXEMP,지금 {facility}에 배치되어 있어 해고하면 그 자리가 빕니다.
+tx_Y8V52C12XE,영입하면 남은 후보 {n}명은 돌아갑니다.
 tx_C3D9TTX7RM,사격 훈련 I
 tx_288T6NSM51,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_CRDZVM594S,사격 훈련 II
@@ -2111,12 +2097,13 @@ tx_EBFDNYKE96,이미 {tile} 보유 중 — 이 연구로 얻을 것이 없습니
 tx_6WVG8N4C08,{tile} +1 (보유 {count})
 tx_V9NPEPYYS2,{from} → {tile} (보유 {count})
 tx_5QB65MDX49,빈 칸 훈련 → {tile}
-tx_AC1WCSB0X8,훈련 코스 연구
-tx_V93GKWZPM0,{name} 담당 · 훈련 {value} → 이 훈련장 코스 EXP ×{mult}
-tx_88S9T5ZDNW,보유 {tile} ×{count}
-tx_3TCS926866,보유 {tile} · 빈 칸 전부
-tx_EWD5MBCCEY,미보유
-tx_PN5J2CCXY4,{grade} Lv{level}
+tx_S4PDAQDXKH,{weeks}주 연구
+tx_91QM7A45ZW,{weeks}주 남음
+tx_R2D1QEASCG,연구 중
+tx_NQ55SJ1GZZ,정지됨
+tx_2K7K3FW47B,Lv {level} 필요
+tx_4Y88DKP9E7,보유 중인 훈련 코스
+tx_F3AZ6WY1P2,훈련 보드에 놓을 수 있는 코스입니다. 코스를 누르면 설명을 봅니다.
 tx_ET86TTP31D,런 클리어
 tx_02GQ3R71G2,런 실패
 tx_ZPVTEEG9GC,런 포기

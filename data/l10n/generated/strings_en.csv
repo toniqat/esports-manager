@@ -1041,8 +1041,6 @@ tx_JNX31TB32C,Presets: Spec Allocation + Traits
 tx_96VG8VVT6V,Prestige preset. Reset it to use it
 tx_JXE6K3B8JS,Spec allocation is cleared; traits stay as they are
 tx_BG420X1TPQ,Manager Stats
-tx_GYJVQGJEM9,None. Earned from quirk training tiles · mech research
-tx_WZDGTR97KE,No run in progress
 tx_43FCJDADR5,Leave it to the coach
 tx_S3TMQTME0B,No mech coach. Pick each pilot's research mech yourself
 tx_9795WB8ABE,Novice
@@ -1055,17 +1053,11 @@ tx_DC141DPMTX,Weekly research +{n}
 tx_1R29MF9ZRE,Coach fills empty slots
 tx_H26DNEN9EX,{n} {plural:n|player|players} without a research mech
 tx_AYCQXCCH15,{n} / {total} assigned
-tx_5XP7EXN0MZ,In charge: {name}   ·   Knowledge {value}
-tx_NPNPJYNJ78,Gain multiplier ×{mult}
-tx_AVASF1MNRA,"Mastery level bonus (hit · evasion, 4 stats)   {tiers}"
 tx_9C36WN5CN9,Research mech +{research} each week end (before multiplier)  ·  mech upgrades unlock at Lv3 · Lv4 · Lv5
 tx_0R1EGAX9DP,Quirks: {pct}% chance at week end with a research mech  ·  {odds}
 tx_9YHCDH1Y7N,Research: {mech}
 tx_KVG9N478Y5,Coach assigns at week end
 tx_1AFM6E35JF,No research mech
-tx_PW12RBBJ9E,Top mastery  {list}
-tx_1D7T0ZQE77,Quirks  {n} / {slots}
-tx_D1SA7C6KSP,Max {n} {plural:n|slot|slots}
 tx_A91DQR5EYH,Overload: Max HP per +1 ATK {from} → {to}
 tx_0VZTRKKM1T,[Bulk Up] more Max HP
 tx_CECSHTRHDG,[Assault] cost {from} → {to}
@@ -1130,8 +1122,6 @@ tx_NDKXMX6EB0,Aim Assist: ATK per hit +{from} → +{to}
 tx_XWA7EKFJNA,[Terror] cost {from} → {to}
 tx_PBWDAW1MZ6,[Destruction] cost {from} → {to}
 tx_MG2RP2KA00,Lv{n}
-tx_G5CGK84PBE,Next upgrade {level} · {mech}: {text}
-tx_YQBQKH8GAN,{mech}: all mech upgrades unlocked
 tx_VDJKS7MNHE,BAN
 tx_VX9Q85PM8S,Drag and drop to reassign mechs to pilots
 tx_6Z915A6SVE,BAN
@@ -2009,22 +1999,19 @@ tx_4YKPQENSGB,{team} · Analysis {rank}/{max}
 tx_T7D9CGRHZ8,{team} · Analysis {rank}/{max} · Next opponent
 tx_J4KMC49ABA,{team} analysis tier {rank}
 tx_W59SNZ97CJ,No team left to analyse
-tx_NNENFKVN7T,Analysis tier per team: each finished research raises it by one.
 tx_JFWCEN193R,Next opponent
 tx_S4MP0P7FCH,Analysis {rank}/{max}
+tx_GKADDT6VK8,Analyse
+tx_RCS8QGHPPF,Analysing
+tx_8EPYQF11Z2,Fully analysed
+tx_N5KMGQJ8D2,Done
 tx_1B74EM9AMW,Mech Study
 tx_KHARDPAGQ1,All your pilots gain mastery on the chosen mech.
 tx_M4GWN5P6GJ,No run in progress
 tx_BKPE192XXS,{mech} mastery +{n}{extra}
 tx_Q9N1WHEQBZ,Level up {list}
 tx_BVA23HC92H,Quirks found {list}
-tx_FP5BCNEGHG,Researching: {mech}  ·  all pilots +{n} on completion
-tx_1KSSXG0HPY,No mech under research. Pick one from the research list
-tx_Q56Z57M5X6,A finished mech study gives every pilot mastery on that mech  ·  mech upgrades unlock at Lv3 · Lv4 · Lv5
-tx_MFTFCFHE5J,Quirks: each pilot has a {pct}% chance when a mech study finishes  ·  {odds}
-tx_HTGJKVQAVJ,{mech} {level}  ·  +{n}
-tx_KFCBS2C101,{mech} {level}  ·  max
-tx_57BFE3HFY3,No research target
+tx_82EVYEXTWG,No mech to research
 tx_40KE8V9E9S,Staff Scouting
 tx_SKS0NQX6X5,Finds staff candidates you can hire.
 tx_Q81FF70898,{n} staff candidates
@@ -2034,17 +2021,16 @@ tx_W0X6SW7323,Staff
 tx_D6VFEA8FS2,{n} staff · weekly salary {amount}
 tx_CZ4VNDDER3,No staff hired
 tx_XVA01HKA07,Candidates
-tx_A8KAFWVEB1,{n} — hire one or pass on all
-tx_FG29WZFWYV,Candidates appear here after Staff Scouting
-tx_ZER9Z0CY1W,Seat · {facility}
-tx_DWJ2YS43HN,Unseated
 tx_BNEQQWKNPV,Dismiss
-tx_T5J3D3WBYB,Confirm
-tx_PAZY3K1HKC,Unseat & dismiss
 tx_1ZDA977HGZ,Hire
-tx_FQ2QYR4GMT,Confirm
-tx_FJHYNYQ0XK,Pass on all
-tx_M6054BQ9PK,Confirm pass
+tx_YAF7YXS3BF,Scouting {percent}
+tx_FH7332P9JX,{job} · {facility}
+tx_WB2J502BG7,{job} · Unseated
+tx_93W9A6R32X,Dismiss {name}
+tx_ZXK676KV1N,Hire {name}
+tx_HQYAA3A4GP,{job} · Weekly pay {salary}
+tx_Q87CAKXEMP,Seated in {facility}: dismissing leaves that seat empty.
+tx_Y8V52C12XE,Hiring sends the other {n} candidates away.
 tx_C3D9TTX7RM,Shooting Drill I
 tx_288T6NSM51,"On completion, adds one copy of this training course."
 tx_CRDZVM594S,Shooting Drill II
@@ -2111,12 +2097,13 @@ tx_EBFDNYKE96,Already own {tile} — nothing to gain
 tx_6WVG8N4C08,{tile} +1 (owned {count})
 tx_V9NPEPYYS2,{from} → {tile} (owned {count})
 tx_5QB65MDX49,Empty cells now train {tile}
-tx_AC1WCSB0X8,Course Research
-tx_V93GKWZPM0,{name} · training {value} → this facility's courses EXP ×{mult}
-tx_88S9T5ZDNW,Own {tile} ×{count}
-tx_3TCS926866,Own {tile} · every empty cell
-tx_EWD5MBCCEY,Not owned
-tx_PN5J2CCXY4,{grade} Lv{level}
+tx_S4PDAQDXKH,{weeks}-week research
+tx_91QM7A45ZW,{weeks} {plural:weeks|week|weeks} left
+tx_R2D1QEASCG,Researching
+tx_NQ55SJ1GZZ,Paused
+tx_2K7K3FW47B,Needs Lv {level}
+tx_4Y88DKP9E7,Owned Courses
+tx_F3AZ6WY1P2,Courses you can place on the training board. Tap one to see its details.
 tx_ET86TTP31D,Run Cleared
 tx_02GQ3R71G2,Run Failed
 tx_ZPVTEEG9GC,Run Abandoned

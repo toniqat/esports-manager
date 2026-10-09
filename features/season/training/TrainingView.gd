@@ -22,8 +22,10 @@ extends Control
 #      (`PilotImages.eye_for`, 480×200 밴드)를 쓰고 이름 · 역할 글자는 없다 —
 #      이 줄이 답하는 질문은 "이 열이 누구의 훈련인가" 하나뿐이라 얼굴이
 #      그 답이고 테두리 색이 역할이다. 누르면 그 선수의 상세 시트(`SeasonPilotDetail`).
-#   2. **5×5 훈련판** — 열이 선수, 행이 하루. **칸도 요일 글자도 그리지
-#      않는다**: 바탕은 선수마다 세로 줄 하나뿐이고, 그 위에 **모서리가 둥근**
+#   2. **5×5 훈련판** — 열이 선수, 행이 하루. **칸은 그리지 않는다**
+#      (row labels 월 … 금 sit left of the board in the scene's `DayLabels`
+#      column, mirrored by an equally wide empty right gutter so the board stays
+#      centred): 바탕은 선수마다 세로 줄 하나뿐이고, 그 위에 **모서리가 둥근**
 #      코스 타일이 앉는다. 여러 칸 타일의 안쪽 경계는 이음매의 **가운데
 #      토막**만 희미하게 남는다(2×2 = 작은 십자, 가로 2칸 = 작은 세로 일자).
 #   3. **타일 인벤토리** — 세로로 선 **카드 한 줄의 가로 스크롤**이다. 카드에는
@@ -40,9 +42,9 @@ extends Control
 #      "판 비우기"(1) 와 "훈련 확정"(2) 이 그 구간을 1:2 로 나눠 갖는다
 #      (`%Bar` 의 stretch ratio — 코치에게 맡긴 동안만 "코치 추천"(1) 이 가운데에 선다).
 #
-# **"주간"이라는 말은 화면에서 뺐다.** 판은 여전히 다섯 줄이고 정산도 하루씩
-# 먹지만, 여기서 짜는 것은 한 주의 시간표가 아니라 선수 다섯의 일상이다 —
-# 요일을 적어 두면 그 다섯 칸이 달력의 약속처럼 읽힌다.
+# Weekday labels are back (they were once removed as "calendar noise"): the
+# week screen settles the board one row per weekday, so the planner needs to
+# see which row is which day. They are pure scene text (`term.day.short.*`).
 #
 # 예전에는 썸네일 아래에 **예상 변화 한 줄**(썸네일을 눌러 선수를 갈아타며
 # 여섯 스탯 before→after 를 보던 줄)이 있었다. 썸네일이 순수한 머리글이 되며
@@ -82,9 +84,10 @@ const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 # ── 판의 기하 (그리기 · 히트가 같은 값을 읽는다) ─────────────────────────────
 ## 판의 칸은 **정사각형**이다. 색 면이 곧 "한 선수의 하루"라 가로로 납작하면
 ## 여러 칸 타일의 모양(2×2 · 1×3 · 5×1)이 판 위에서 왜곡돼 읽힌다.
-## 씬의 `%Grid` 크기(880×880)와 초상화 폭(`TrainingThumb` 170 + 간격 6)이 이 값에 맞춰져 있다.
-const CELL: float        = 176.0
-const GRID_H: float      = CELL * float(ROWS)   # 880
+## Scene sizes follow this value: `%Grid` 760×760, portrait width (`TrainingThumb` 146 + gap 6),
+## and the 880-wide `Block` = 60 weekday column + 5 × CELL + 60 empty right gutter.
+const CELL: float        = 152.0
+const GRID_H: float      = CELL * float(ROWS)   # 760
 ## 칸 사이 여백. 타일 몸통은 **자기 타일과 맞닿은 변에서만** 이 여백을 버려
 ## 이어 붙는다(`_draw_tile_body`).
 const CELL_PAD: float    = 2.0
@@ -245,14 +248,9 @@ func _bind_thumbs() -> void:
 		_thumb_level_texts.append(thumb.get_node("%LevelText"))
 
 
-## **판 옆의 요일 글자는 없다.** 다섯 줄이 무슨 요일인가는 이 화면이 답해야
-## 하는 질문이 아니다 — 여기서 짜는 것은 한 주의 시간표가 아니라 선수 다섯의
-## 일상이고, 요일을 적어 두면 그 다섯 칸이 달력의 약속처럼 읽힌다. 줄의 순서
-## 자체(위에서 아래로)가 이미 앞뒤를 말한다. 정산은 여전히 하루씩 먹는다.
-##
-## `TrainingBoard.DAY_NAMES` 는 이 화면이 유일한 소비자였으므로 함께 삭제됐다 —
-## 요일 이름이 필요한 자리는 시간 경과 화면 하나이고, 그쪽은 예전부터
-## `OutgameTheme.DAY_NAMES` 를 읽는다.
+## The weekday labels left of the board are scene-only (`DayLabels`, shared
+## `term.day.short.*` keys) — `%Grid` stays board-local, so every drawing / hit /
+## drop coordinate below starts at the board's own left edge, not the label column.
 func _bind_grid() -> void:
 	_grid = %Grid
 	_grid.draw.connect(_draw_grid)

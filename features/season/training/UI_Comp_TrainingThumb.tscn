@@ -6,9 +6,9 @@
 auto_translate_mode = 2
 editor_description = "One column header of the training board (TrainingView %Thumbs). Border colour = the seat's role colour (code duplicates ThumbFrame and sets border_color). Tap (%Hit) = pilot detail sheet (SeasonPilotDetail)."
 clip_contents = true
-custom_minimum_size = Vector2(170, 70.83334)
-offset_right = 170.0
-offset_bottom = 70.83334
+custom_minimum_size = Vector2(146, 60.83333)
+offset_right = 146.0
+offset_bottom = 60.83333
 mouse_filter = 2
 theme = ExtResource("1_theme")
 theme_type_variation = &"TrainingThumbFrame"
@@ -41,7 +41,7 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -104.0
-offset_top = -32.0
+offset_top = -30.0
 offset_right = -6.0
 offset_bottom = -4.0
 grow_horizontal = 0

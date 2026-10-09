@@ -82,7 +82,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Block" type="Control" parent="SafeArea/BoardArea"]
-editor_description = "Portrait row (top) + board (15 px below it). Centre-anchored: 880 wide = 5 × CELL, height = portrait 70.83 + 15 + 880."
+editor_description = "Weekday label column (left, 60 px) + portrait row (top) + board (15 px below it) + an equally wide empty right gutter, so the board stays centred. Centre-anchored: 880 wide = 60 + 5 × CELL (152) + 60, height = portrait 60.83 + 15 + 760."
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -90,9 +90,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -440.0
-offset_top = -482.91666
+offset_top = -417.91666
 offset_right = 440.0
-offset_bottom = 482.91666
+offset_bottom = 417.91666
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -100,13 +100,13 @@ mouse_filter = 2
 [node name="Thumbs" type="HBoxContainer" parent="SafeArea/BoardArea/Block"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind_thumbs()
-Five column headers in seat order (GameEnums.ROLE_DISPLAY_ORDER) — child i = board column i, so each sits centred over its 176 px column (170 wide + 6 gap, 3 px inset). Not tappable."
+Five column headers in seat order (GameEnums.ROLE_DISPLAY_ORDER) — child i = board column i, so each sits centred over its 152 px column (146 wide + 6 gap, 3 px inset inside the 60 px gutters)."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 3.0
-offset_right = -3.0
-offset_bottom = 70.83334
+offset_left = 63.0
+offset_right = -63.0
+offset_bottom = 60.83333
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
@@ -134,15 +134,74 @@ layout_mode = 2
 [node name="Grid" type="Control" parent="SafeArea/BoardArea/Block"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _grid
-The 5×5 training board — drawn in code (TrainingView._draw_grid), and it is the drop target / board drag source / tap-to-remove hit area (STOP). Cell = 176 (TrainingView.CELL); keep the size = 5 × CELL."
+The 5×5 training board — drawn in code (TrainingView._draw_grid), and it is the drop target / board drag source / tap-to-remove hit area (STOP). Cell = 152 (TrainingView.CELL); keep the size = 5 × CELL (760 × 760), between the 60 px weekday column and the 60 px right gutter."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -880.0
+offset_left = 60.0
+offset_top = -760.0
+offset_right = -60.0
 grow_horizontal = 2
 grow_vertical = 0
+
+[node name="DayLabels" type="VBoxContainer" parent="SafeArea/BoardArea/Block"]
+editor_description = "Weekday labels, one per board row (row y = weekday y). 60 px wide (= the empty right gutter, so the board stays centred), 760 tall = 5 × CELL, bottom-aligned with %Grid. Texts are the shared term.day.short.* keys (OutgameTheme.DAY_LETTERS); no script touches them."
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -760.0
+offset_right = 60.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Day0" type="Label" parent="SafeArea/BoardArea/Block/DayLabels"]
+custom_minimum_size = Vector2(0, 152)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_AWJ076K0Q7"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Day1" type="Label" parent="SafeArea/BoardArea/Block/DayLabels"]
+custom_minimum_size = Vector2(0, 152)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_0J2DR8DPC8"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Day2" type="Label" parent="SafeArea/BoardArea/Block/DayLabels"]
+custom_minimum_size = Vector2(0, 152)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_BVST3R7BK6"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Day3" type="Label" parent="SafeArea/BoardArea/Block/DayLabels"]
+custom_minimum_size = Vector2(0, 152)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_MVCR2S5R3Y"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Day4" type="Label" parent="SafeArea/BoardArea/Block/DayLabels"]
+custom_minimum_size = Vector2(0, 152)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_16NB4JJ5HY"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Inventory" type="Control" parent="SafeArea"]
 editor_description = "Course list hung above the bottom action bar (24 px gap): label row + one-row horizontal scroll of course cards."

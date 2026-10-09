@@ -5,14 +5,15 @@ day) board**. It ports the routine training board of the original game (Esports 
 analysis doc of the original's 87 tiles was deleted; it remains in `docs/routine.md` at git
 `bc52878`.
 
-**The word "주간" (weekly) and weekday (요일) labels were removed from the screen.** The board still
-has five rows and is still settled one day at a time (`apply_day_training`), but what you plan here
-is not a week's timetable but the **daily routine** of five players — writing Mon · Tue · Wed on each
-row makes those five cells read like calendar appointments and pulls the eye away from what this
-screen actually asks (who gets what, and how much). The order of the rows (top to bottom) already
-expresses sequence. `TrainingBoard.DAY_NAMES` was the only consumer of that text, so it **was deleted
-too** — the only place that needs weekday names is the **week-progress screen (시간 경과 화면)**
-(`features/season/week/`), which has always read `OutgameTheme.DAY_NAMES`.
+**Each board row is labelled with its weekday (월 화 수 목 금) on the left.** An earlier version
+removed these labels (the five rows were meant to read as a routine, not a timetable), but the board
+is settled **one row per weekday** (`apply_day_training`, run by the week-progress screen
+(시간 경과 화면, `features/season/week/`)), and day-scoped clauses (`day_next` · `day_prev_all` …)
+only make sense if you can see which row is which day — so they are back. The labels are **scene
+text** (`DayLabels` in `UI_View_TrainingView.tscn`, the shared `term.day.short.*` keys behind
+`OutgameTheme.DAY_LETTERS`; no script touches them), and an equally wide **empty right gutter**
+mirrors the label column so the board stays horizontally centred. The word "주간" (weekly) is still
+not shown on this screen.
 
 ## Files
 | File | Role |
@@ -136,8 +137,8 @@ level, EXP bar, goal line (`features/season/README.md` "Pilot card · detail she
 Column order is `GameEnums.ROLE_DISPLAY_ORDER` (the same table as the battlefield strip · hub roster
 · ban/pick). **Sat·Sun are not on the board** — those two days are the match weekend, not training,
 and the board size itself now does what the old 7-day grid's Fri·Sat·Sun MATCH lock used to do.
-**Weekday names are not written beside the board** (see intro above) — `월` … `금` in the diagram
-explain the data axis; they are not text shown on screen.
+The `월` … `금` row labels in the diagram **are shown on screen** — a 60px label column left of the
+board (`DayLabels`), with a matching 60px empty gutter on the right (see intro and "Screen layout").
 
 The original has this axis **reversed** (rows are players, columns are periods). That's why effect
 scope names are by **meaning** (`day_*` / `mate_*`), not up/down/left/right — written as directions,
@@ -286,12 +287,16 @@ parts at ×1.00 left out). Per-pilot parts (breakthrough `train_bonus_pct`) show
 `EXP ×r` chip on that pilot's portrait — `r` = the pilot's best day in `exp_mult_table` ÷ the
 team-wide value, so it reads straight from what settlement multiplies (`_refresh_exp_chips`).
 
-**There is one horizontal baseline — the board is centred.** The board sits at the screen centre (100..980 on
-1080) as part of the centre-anchored `Block` (portrait row + board), so the portraits can't drift off
-their columns; the drop preview is drawn in board-local coordinates. Previously the board's left
-edge was a constant (`GRID_X` 80) with a weekday text column **inside** it, pushing the board's right
-edge off screen (1102 > 1080) — when the weekday column was removed entirely, that trap went with it
-(`DAY_GUTTER` / `_day_x` deleted).
+**There is one horizontal baseline — the board is centred.** `Block` is centre-anchored and 880 wide
+(100..980 on 1080): a **60px weekday label column** (`DayLabels`, 100..160) + the **760px board**
+(`%Grid`, 5 × `CELL` 152, 160..920) + a **60px empty right gutter** (920..980) of the same width as the
+labels, so the board itself sits at the screen centre. The portrait row is in the same `Block`, inset
+by the same 60px on both sides, so the portraits can't drift off their columns. `%Grid` is a separate
+node starting at the board's left edge, so drawing, hit testing, the drop preview and the drag preview
+all stay **board-local** — the label column never enters the `CELL` maths. (A much older version put
+the weekday text **inside** the board's coordinate space with a constant left edge, `GRID_X` 80, which
+pushed the board's right edge off screen (1102 > 1080); the labels are now a sibling column in the
+scene, and the cell shrank from 176 to 152 to make room inside the same 880px block.)
 
 **There is also one vertical baseline, stacked bottom to top.** `Inventory` is anchored to the bottom of
 `%SafeArea`, hanging the course list 24px above the bottom action bar, and `BoardArea` (the room between the
@@ -310,9 +315,10 @@ TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: 
 │ ├ Title          TitleLabel 34, centred, y 8..52
 │ ├ %StaffLine     SubLabel 22, centred, x 40..−40, y 54..84
 │ ├ BoardArea      Control, y 96 .. −436 (= course label row − 16)
-│ │ └ Block        centre-anchored 880 × 965.83
-│ │   ├ %Thumbs    HBox (sep 6, inset 3) ─ TrainingThumb_Thumb0..4 = UI_Comp_TrainingThumb.tscn
-│ │   └ %Grid      880 × 880 at the bottom of Block — drawn in code, STOP, drop target
+│ │ └ Block        centre-anchored 880 × 835.83 (= 60 labels + 760 board + 60 empty gutter)
+│ │   ├ %Thumbs    HBox (sep 6, inset 60 + 3 each side) ─ TrainingThumb_Thumb0..4 = UI_Comp_TrainingThumb.tscn (146 × 60.83)
+│ │   ├ %Grid      760 × 760 at the bottom of Block, x 60..−60 — drawn in code, STOP, drop target
+│ │   └ DayLabels  VBox sep 0, x 0..60, bottom 760 ─ Day0..4 SubLabel 26, 152 tall, centred, text = term.day.short.mon … fri keys
 │ └ Inventory      bottom-anchored, x 40..−40, y −420 .. −152
 │   ├ CourseLabel  SubLabel 22 "훈련 코스"
 │   ├ %EffectLine  AccentLabel 20, right-aligned, 860 wide (overlaps the label row on purpose)
@@ -348,8 +354,11 @@ select, and that information is shown after "훈련 확정" by the **week-progre
 (`TrainingResultView`) that used to fill that role was deleted when settlement was split per weekday.
 
 ### Board (`_draw_grid`)
-Cells are **square** (`CELL` 176) — a colour patch is "one player's day", so if cells were flat and
-wide, multi-cell tile shapes (2×2 · 1×3 · 5×1) would read distorted on the board.
+Cells are **square** (`CELL` 152, was 176 before the weekday label column + right gutter took 2 × 60px
+of the 880px block) — a colour patch is "one player's day", so if cells were flat and
+wide, multi-cell tile shapes (2×2 · 1×3 · 5×1) would read distorted on the board. The scene sizes
+follow `CELL`: `%Grid` 760 × 760, each `DayLabels` row 152 tall, portrait 146 wide (+ 6 gap) × 60.83
+(2.4:1).
 
 **Empty cells are not drawn. The background is just one vertical line per player**
 (`COLUMN_LINE_W` / `COLUMN_LINE_COLOR` — running through the column centre for the board's height).

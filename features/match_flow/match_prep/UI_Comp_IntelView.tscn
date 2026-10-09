@@ -1,11 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://yx1lfk671dpc"]
+[gd_scene load_steps=5 format=3 uid="uid://yx1lfk671dpc"]
 
 [ext_resource type="Script" uid="uid://bssrv8rri8yx7" path="res://features/match_flow/match_prep/IntelView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://dhrhg3nkxunca" path="res://features/match_flow/match_prep/UI_Comp_IntelPilotRow.tscn" id="3_row"]
+[ext_resource type="Texture2D" path="res://resources/images/staff/staff_bust.svg" id="4_bust"]
 
 [node name="IntelView" type="VBoxContainer"]
-editor_description = "One team's OpponentIntel.build() result: tier header (opponents only) · analyst note (delegated) or the 'no analyst' line · five IntelPilotRow. Width = the parent's; height = content. The pilot-row sample is replaced at runtime."
+editor_description = "One team's OpponentIntel.build() result: tier header (opponents only, show_header) · analyst note (delegated) or the 'no analyst' line · five IntelPilotRow. Width = the parent's; height = content. The pilot-row sample is replaced at runtime."
 offset_right = 984.0
 offset_bottom = 300.0
 mouse_filter = 2
@@ -91,7 +92,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Card" type="PanelContainer" parent="Note"]
-editor_description = "Analyst note card (IntelAnalystNote — amber tint)."
+editor_description = "Analyst note card (IntelAnalystNote — amber tint): thumbnail left, name + lines right."
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"IntelAnalystNote"
@@ -104,12 +105,37 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 10
 
-[node name="VBox" type="VBoxContainer" parent="Note/Card/Pad"]
+[node name="Row" type="HBoxContainer" parent="Note/Card/Pad"]
 layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="ThumbFrame" type="PanelContainer" parent="Note/Card/Pad/Row"]
+clip_children = 2
+editor_description = "Analyst thumbnail on the left of the note (rounded SunkPanel mask, 96 square, top-aligned)."
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="AnalystPortrait" type="TextureRect" parent="Note/Card/Pad/Row/ThumbFrame"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_note()
+The intel facility occupant's portrait (StaffImages.portrait(intel.analyst_who))."
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("4_bust")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="VBox" type="VBoxContainer" parent="Note/Card/Pad/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Analyst" type="Label" parent="Note/Card/Pad/VBox"]
+[node name="Analyst" type="Label" parent="Note/Card/Pad/Row/VBox"]
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_note()"
 unique_name_in_owner = true
@@ -120,12 +146,12 @@ theme_override_font_sizes/font_size = 20
 text = "분석 · 분석관 김 (분석가)"
 clip_text = true
 
-[node name="Gap" type="Control" parent="Note/Card/Pad/VBox"]
+[node name="Gap" type="Control" parent="Note/Card/Pad/Row/VBox"]
 custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Lines" type="VBoxContainer" parent="Note/Card/Pad/VBox"]
+[node name="Lines" type="VBoxContainer" parent="Note/Card/Pad/Row/VBox"]
 auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — IntelView.gd _fill_note() · IntelView.gd _ready()
@@ -134,7 +160,7 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 3
 
-[node name="Line0" type="Label" parent="Note/Card/Pad/VBox/Lines"]
+[node name="Line0" type="Label" parent="Note/Card/Pad/Row/VBox/Lines"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_type_variation = &"BodyLabel"
@@ -142,7 +168,7 @@ theme_override_font_sizes/font_size = 22
 text = "경계 대상: 미드 Norma — 전장 회피 수치가 가장 높습니다."
 autowrap_mode = 3
 
-[node name="Tail" type="Control" parent="Note/Card/Pad/VBox"]
+[node name="Tail" type="Control" parent="Note/Card/Pad/Row/VBox"]
 custom_minimum_size = Vector2(0, 3)
 layout_mode = 2
 mouse_filter = 2

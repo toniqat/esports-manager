@@ -7,8 +7,9 @@ extends VBoxContainer
 # read the same reveal rule the same way.
 #
 # **Layout lives in `UI_Comp_IntelView.tscn`** (+ one `UI_Comp_IntelPilotRow.tscn` per pilot): a VBox as wide as
-# its parent and as tall as its content — tier header (opponents only) · analyst note
-# (delegated) or the "no analyst" line · five rows. This script only fills `%` nodes, shows /
+# its parent and as tall as its content — tier header (opponents only, `show_header`) · analyst
+# note (delegated: the analyst's thumbnail on the left, name + lines right) or the "no analyst"
+# line · five rows. This script only fills `%` nodes, shows /
 # hides the blocks, instances the rows, and paints the tier chip (full = `AccentChip`, below
 # full = a `SURFACE_SUNK` copy of that box — a state colour, `OutgameTheme.variation_box`).
 
@@ -18,6 +19,9 @@ const ROW_SCENE: PackedScene = preload("res://features/match_flow/match_prep/UI_
 ## false = header + analyst note only (MatchFlow PREP draws the pilots as cards below,
 ## `MatchPrepPilotCard`); the league team detail keeps the five rows.
 @export var show_rows: bool = true
+## false = no tier header ("분석 단계 n · …" chip + how to raise it) — the PREP screen drops it;
+## the league team detail keeps it.
+@export var show_header: bool = true
 
 var _note_line: Label = null   # scene sample analyst line, duplicated per line
 
@@ -44,10 +48,10 @@ func _notification(what: int) -> void:
 func show_intel(intel: Dictionary) -> void:
 	var own: bool = bool(intel.get("own", false))
 	var delegated: bool = bool(intel.get("delegated", false))
-	%Header.visible = not own
+	%Header.visible = not own and show_header
 	%NoAnalyst.visible = not own and not delegated
 	%Note.visible = not own and delegated
-	if not own:
+	if not own and show_header:
 		_fill_header(intel)
 	if not own and delegated:
 		_fill_note(intel)
@@ -83,6 +87,7 @@ func _fill_header(intel: Dictionary) -> void:
 
 func _fill_note(intel: Dictionary) -> void:
 	%Analyst.text = Loc.t(L.MATCH_INTEL_ANALYST, {"who": intel["analyst"]})
+	(%AnalystPortrait as TextureRect).texture = StaffImages.portrait(String(intel.get("analyst_who", "")))
 	var lines: Node = %Lines
 	_clear(lines)
 	for raw in (intel.get("notes", []) as Array):

@@ -1176,8 +1176,6 @@ tx_Y52NPQTAB1,"Suggested ban: {mech}, {pilot}'s main mech."
 tx_8F1HRN6A8N,Weak link: {role} {name}. Worth targeting that lane.
 tx_1W81NVQ0EN,{mech} (main)
 tx_CYD6TW7EWM,Mech {id}
-tx_2D102EEXT5,Opponent · {team}
-tx_YRJDDXHF35,My Team · {team}
 tx_F90CBNJRXW,TANK
 tx_2A43E3P03W,FIGHTER
 tx_QFDE088804,ASSASSIN
@@ -1185,13 +1183,13 @@ tx_46B6F94E0X,SUPPORT
 tx_WYAR6ATGZK,SNIPER
 tx_51C591RCKG,Threat
 tx_FVQ03DD4B3,Overall
-tx_EE9ZYA8C66,No main mech
 tx_P5GRXR0NQ6,Start Ban/Pick
 tx_E2AWTQEV33,Ready
 tx_KG4ED588AK,Mech upgrades (mastery Lv3 · 4 · 5)
 tx_P850G2PZ26,"{pilot} — mastery {level}, {n} / {total} unlocked"
 tx_PK6V12WXVN,Unlocked
 tx_B042CJCX8V,Locked
+tx_WFN2VMXPR0,VS
 tx_MR5VKS3AHG,Overload
 tx_C214C4GTV6,Deploy Reactive Armor
 tx_4AGJGY73MM,Pain and Pleasure

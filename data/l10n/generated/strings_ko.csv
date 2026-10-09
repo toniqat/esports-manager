@@ -1176,8 +1176,6 @@ tx_Y52NPQTAB1,추천 밴: {mech}. {pilot}의 주력 메크입니다.
 tx_8F1HRN6A8N,약한 고리: {role} {name}. 그 라인을 노려 볼 만합니다.
 tx_1W81NVQ0EN,{mech} 주력
 tx_CYD6TW7EWM,메크 {id}
-tx_2D102EEXT5,상대 팀 · {team}
-tx_YRJDDXHF35,내 팀 · {team}
 tx_F90CBNJRXW,TANK
 tx_2A43E3P03W,FIGHTER
 tx_QFDE088804,ASSASSIN
@@ -1185,13 +1183,13 @@ tx_46B6F94E0X,SUPPORT
 tx_WYAR6ATGZK,SNIPER
 tx_51C591RCKG,경계 대상
 tx_FVQ03DD4B3,종합
-tx_EE9ZYA8C66,주력 메크 없음
 tx_P5GRXR0NQ6,밴픽 시작
 tx_E2AWTQEV33,준비 완료
 tx_KG4ED588AK,메크 강화 (숙련 Lv3 · 4 · 5)
 tx_P850G2PZ26,"{pilot} — 숙련 {level}, 해금 {n} / {total}"
 tx_PK6V12WXVN,해금
 tx_B042CJCX8V,잠김
+tx_WFN2VMXPR0,VS
 tx_MR5VKS3AHG,과적재
 tx_C214C4GTV6,반응 장갑 전개
 tx_4AGJGY73MM,고통과 쾌감

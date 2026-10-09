@@ -1,16 +1,18 @@
 class_name MatchPrepView
 extends Control
 
-# PREP 화면 한 장 — 흰 아웃게임 종이, 가운데 제목, 세로 스크롤(상대 팀 위 · 내 팀 아래),
-# 하단 바 `경기 시작`. `MatchPrepController` 가 만들고(`create()`) 채운다(`fill()`).
+# PREP 화면 한 장 — 흰 아웃게임 종이, 가운데 제목, 세로 스크롤(분석 메모 → 상대 팀 카드 →
+# 가운데 대진 블록 `내 팀 로고 · 약칭  VS  상대 약칭 · 로고` → 내 팀 카드), 하단 바 `경기 시작`.
+# `MatchPrepController` 가 만들고(`create()`) 채운다(`fill()`).
 #
 # **레이아웃의 정본은 `UI_View_MatchPrepView.tscn` 이다.** 이 스크립트가 하는 일:
 #   • 안전 영역 — `%Safe` 를 노치만큼 내린다(`Paper` 는 화면 전체를 덮으므로 노치 띠를
 #     따로 메울 필요가 없다). 아래쪽은 `OutgameTheme.fit_bottom_bar(%Start, %Safe)` 가 맡는다 —
 #     `%Safe` 를 아래 인셋만큼 올리고, 하단 바(`BarPrimaryButton`, 모서리 0 은 변형 몫)는
 #     인셋 자리까지 내려가 그 높이만큼 아래 여백을 갖는다(기기 값이라 변형이 아니라 코드).
-#   • 상대 팀 분석 머리 — `%IntelView_EnemyIntel` 은 `IntelView` 씬 인스턴스(리그 팀 상세와 공용)를
-#     `show_rows = false` 로 둔 것: 분석 단계 칩 · 분석 메모만 보인다.
+#   • 상대 팀 분석 메모 — `%IntelView_EnemyIntel` 은 `IntelView` 씬 인스턴스(리그 팀 상세와 공용)를
+#     `show_rows = false` · `show_header = false` 로 둔 것: 분석 메모(분석가 썸네일)만 보인다.
+#   • 대진 블록 — 두 팀 로고(`TeamLogos`) · 약칭(`GameManager.team_short_name`).
 #   • 두 팀의 선수 — `%EnemyCards` / `%OwnCards` 의 `MatchPrepPilotCard` 다섯 장(자리 순서)을
 #     `OpponentIntel.build()` 의 행으로 채운다(공개 단계는 그 행이 이미 지킨다). 카드를 누르면
 #     상세 시트: 내 선수 = `SeasonPilotDetail`, 상대(또는 런 밖의 내 선수) = `MatchPrepPilotDetail`.
@@ -53,15 +55,23 @@ func set_start_text(text: String) -> void:
 ## `enemy_roster`.
 func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
 		player_team_name: String, enemy_team_name: String, enemy_team_id: int = -1) -> void:
-	%Matchup.text = "%s  vs  %s" % [player_team_name, enemy_team_name]
-	%EnemyTitle.text = Loc.t(L.MATCH_PREP_ENEMY_TITLE, {"team": enemy_team_name})
-	%OwnTitle.text = Loc.t(L.MATCH_PREP_OWN_TITLE, {"team": player_team_name})
 	_state = state
 	_shown.clear()
 	var enemy: Dictionary = OpponentIntel.build(state, enemy_roster, false, enemy_team_id)
+	var own: Dictionary = OpponentIntel.build(state, player_roster, true)
 	(%IntelView_EnemyIntel as IntelView).show_intel(enemy)
 	_fill_cards(%EnemyCards, enemy)
-	_fill_cards(%OwnCards, OpponentIntel.build(state, player_roster, true))
+	_fill_cards(%OwnCards, own)
+	_fill_versus(%OwnLogo, %OwnAbbr, int(own["team_id"]), player_team_name)
+	_fill_versus(%EnemyLogo, %EnemyAbbr, int(enemy["team_id"]), enemy_team_name)
+
+
+## One side of the versus block: the team logo and short name (`teams.csv` short_name_key);
+## no team id (-1, MatchFlow without a season) → no logo and `fallback_name`.
+func _fill_versus(logo: TextureRect, abbr: Label, team_id: int, fallback_name: String) -> void:
+	logo.texture = TeamLogos.texture(team_id) if team_id >= 0 else null
+	var gm: Node = get_node_or_null("/root/GameManager")
+	abbr.text = String(gm.team_short_name(team_id)) if gm != null and team_id >= 0 else fallback_name
 
 
 ## Five cards of one team in seat order (the intel rows already are); missing pilots hide
@@ -78,8 +88,7 @@ func _fill_cards(box: Node, intel: Dictionary) -> void:
 			continue
 		var row: Dictionary = rows[i]
 		var pid: int = int(row["pilot_id"])
-		card.fill(row, own, MentalSystem.trust(_state, pid) if own else 0,
-				StressSystem.value(_state, pid) if own else 0, pid == threat)
+		card.fill(row, own, MentalSystem.trust(_state, pid) if own else 0, pid == threat)
 		_shown[pid] = [intel, row]
 
 

@@ -78,7 +78,9 @@ static func team_roster(state: Dictionary, team_id: int) -> Array:
 
 # ── Builder ───────────────────────────────────────────────────────────────────
 ## `team_id` = whose roster (its analysis rank sets the tier); -1 = read it from the roster.
-## → `{tier, tier_label, own, team_id, rows: [row], delegated, analyst, notes: [String], threat_pilot_id}`.
+## → `{tier, tier_label, own, team_id, rows: [row], delegated, analyst, analyst_who, notes: [String],
+## threat_pilot_id}`. `analyst_who` = the intel facility occupant (staff id string / "manager",
+## `StaffImages.portrait`), "" when not delegated.
 ## `threat_pilot_id` = the pilot the analyst's "경계 대상" line names (`strongest_row`), -1 when
 ## that line is not shown (manager owns analysis, tier 0, own team).
 ## A row (one per pilot, display order 탑 → 서폿):
@@ -101,11 +103,12 @@ static func build(state: Dictionary, roster: Array, is_own: bool, team_id: int =
 			and FacilitySystem.is_delegated_fid(state, INTEL_FACILITY)
 	var out: Dictionary = {
 		"tier": tier, "tier_label": Loc.t(String(TIER_LABELS[tier])), "own": is_own,  # l10n-dynamic: match.intel.tier.*
-		"team_id": tid, "rows": rows, "delegated": delegated, "analyst": "", "notes": [],
-		"threat_pilot_id": -1,
+		"team_id": tid, "rows": rows, "delegated": delegated, "analyst": "", "analyst_who": "",
+		"notes": [], "threat_pilot_id": -1,
 	}
 	if delegated:
 		out["analyst"] = analyst_label(state)
+		out["analyst_who"] = FacilitySystem.occupant(state, INTEL_FACILITY)
 		out["notes"] = interpret(state, rows, tier)
 		if tier > TIER_NAME_ONLY:
 			out["threat_pilot_id"] = int(strongest_row(rows).get("pilot_id", -1))

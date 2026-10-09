@@ -22,9 +22,10 @@ LOAD → PREP → BAN_PICK → LAUNCH (change_scene → BattleSim)
 
 The two enum values remain for save compatibility (`match_resume.phase`).
 
-PREP is the pre-match scouting sheet (white outgame paper) — opponent on top, own team below, each
-team as **five vertical pilot cards** in seat order (badge, round portrait, big stat total, up to two
-mech chips; own cards add the season trust ring / level + stress; tap = detail sheet).
+PREP is the pre-match scouting sheet (white outgame paper) — analyst note on top, then opponent cards,
+a centred versus block (team logos + short names, `VS`) and own cards, each team as **five vertical
+pilot cards** in seat order (round portrait, big stat total; own cards add the season trust ring /
+level — no name / role / mech / gauge labels; tap = detail sheet).
 **How much of the opponent is visible follows the analysis reveal tier** (M5 — name/role → stat
 ranges → exact stats + top mechs → pilot cards; own team always full), with an analyst note when
 analysis is delegated and a red `경계 대상` chip on the pilot the analyst names. Details: `match_prep/README.md`. Pressing "경기 시작" (Start match) advances

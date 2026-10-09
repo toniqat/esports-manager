@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://bdp4lyclwsybn"]
+[gd_scene load_steps=6 format=3 uid="uid://bdp4lyclwsybn"]
 
 [ext_resource type="Script" uid="uid://bv41mlvo2jt85" path="res://features/match_flow/match_prep/MatchPrepView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://yx1lfk671dpc" path="res://features/match_flow/match_prep/UI_Comp_IntelView.tscn" id="3_intel"]
 [ext_resource type="PackedScene" path="res://features/match_flow/match_prep/UI_Comp_MatchPrepPilotCard.tscn" id="4_card"]
+[ext_resource type="Texture2D" path="res://resources/images/team_logos/team_0.svg" id="5_logo"]
 
 [node name="MatchPrepView" type="Control"]
 layout_mode = 3
@@ -50,22 +51,6 @@ theme_override_font_sizes/font_size = 48
 text = "tx_VGK1FJEFJY"
 horizontal_alignment = 1
 
-[node name="Matchup" type="Label" parent="Safe"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 40.0
-offset_top = 86.0
-offset_right = -40.0
-offset_bottom = 120.0
-grow_horizontal = 2
-theme_type_variation = &"SubLabel"
-text = "내 팀  vs  상대 팀"
-horizontal_alignment = 1
-
 [node name="Scroll" type="ScrollContainer" parent="Safe"]
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _ready()"
 unique_name_in_owner = true
@@ -74,7 +59,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = 136.0
+offset_top = 104.0
 offset_right = -40.0
 offset_bottom = -140.0
 grow_horizontal = 2
@@ -82,28 +67,12 @@ grow_vertical = 2
 horizontal_scroll_mode = 0
 
 [node name="Body" type="VBoxContainer" parent="Safe/Scroll"]
+editor_description = "Fills the scroll height (expand): analyst note on top, then the enemy cards · versus block · own cards centred in the rest by the two expand spacers (they collapse to 0 when the content is taller than the scroll)."
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 mouse_filter = 2
 theme_override_constants/separation = 0
-
-[node name="EnemyHead" type="Control" parent="Safe/Scroll/Body"]
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="EnemyTitle" type="Label" parent="Safe/Scroll/Body/EnemyHead"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 38.0
-grow_horizontal = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 28
-text = "상대 팀 · 팀 이름"
 
 [node name="EnemyIntelPad" type="MarginContainer" parent="Safe/Scroll/Body"]
 editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 끝이 스크롤 오른쪽 끝에서 16 떨어진다."
@@ -114,9 +83,15 @@ theme_override_constants/margin_right = 8
 [node name="IntelView_EnemyIntel" parent="Safe/Scroll/Body/EnemyIntelPad" instance=ExtResource("3_intel")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()
-상대 팀 분석 머리 — IntelView 씬(리그 팀 상세와 공용)을 show_rows = false 로: 분석 단계 칩 · 분석 메모(또는 분석 담당 없음 한 줄)만. 선수는 아래 카드 줄."
+상대 팀 분석 메모 — IntelView 씬(리그 팀 상세와 공용)을 show_rows = false · show_header = false 로: 분석 메모(왼쪽 분석가 썸네일) 또는 분석 담당 없음 한 줄만. 분석 단계 칩은 PREP 에서 뺐다(2026-10). 선수는 아래 카드 줄."
 layout_mode = 2
 show_rows = false
+show_header = false
+
+[node name="TopSpace" type="Control" parent="Safe/Scroll/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="EnemyCardsGap" type="Control" parent="Safe/Scroll/Body"]
 editor_description = "카드 오른쪽 위 모서리에 걸친 '경계 대상' 칩(카드 위로 16 튀어나온다)이 들어갈 자리."
@@ -133,7 +108,7 @@ theme_override_constants/margin_right = 8
 [node name="EnemyCards" type="HBoxContainer" parent="Safe/Scroll/Body/EnemyCardsPad"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _ready() · fill()
-상대 팀 카드 줄 (신뢰 · 스트레스 없음, 합계 · 메크는 분석 단계대로) — MatchPrepPilotCard 다섯 장(자리 순서 탑 → 서폿), 폭은 줄을 나눠 갖는다(expand)."
+상대 팀 카드 줄 (신뢰 없음, 합계는 분석 단계대로) — MatchPrepPilotCard 다섯 장(자리 순서 탑 → 서폿), 폭은 줄을 나눠 갖는다(expand)."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
@@ -158,28 +133,92 @@ size_flags_horizontal = 3
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Gap2" type="Control" parent="Safe/Scroll/Body"]
+[node name="VersusGap" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="OwnHead" type="Control" parent="Safe/Scroll/Body"]
-custom_minimum_size = Vector2(0, 46)
+[node name="VersusPad" type="MarginContainer" parent="Safe/Scroll/Body"]
+editor_description = "오른쪽 8 = 카드 줄과 같은 끝 — 가운데가 카드 줄 가운데와 맞는다."
 layout_mode = 2
 mouse_filter = 2
+theme_override_constants/margin_right = 8
 
-[node name="OwnTitle" type="Label" parent="Safe/Scroll/Body/OwnHead"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — MatchPrepView.gd fill()"
+[node name="Versus" type="HBoxContainer" parent="Safe/Scroll/Body/VersusPad"]
+editor_description = "Versus block: own team (left: logo + short name) · VS · opponent (right). Logos = TeamLogos.texture, names = GameManager.team_short_name (teams.csv short_name_key)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="OwnSide" type="VBoxContainer" parent="Safe/Scroll/Body/VersusPad/Versus"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="OwnLogo" type="TextureRect" parent="Safe/Scroll/Body/VersusPad/Versus/OwnSide"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 38.0
-grow_horizontal = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 28
-text = "내 팀 · 팀 이름"
+editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _fill_versus()"
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+texture = ExtResource("5_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="OwnAbbr" type="Label" parent="Safe/Scroll/Body/VersusPad/Versus/OwnSide"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _fill_versus()"
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 40
+text = "CNH"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VsText" type="Label" parent="Safe/Scroll/Body/VersusPad/Versus"]
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 64
+text = "tx_WFN2VMXPR0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EnemySide" type="VBoxContainer" parent="Safe/Scroll/Body/VersusPad/Versus"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="EnemyLogo" type="TextureRect" parent="Safe/Scroll/Body/VersusPad/Versus/EnemySide"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _fill_versus()"
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+texture = ExtResource("5_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EnemyAbbr" type="Label" parent="Safe/Scroll/Body/VersusPad/Versus/EnemySide"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _fill_versus()"
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 40
+text = "WLF"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VersusGap2" type="Control" parent="Safe/Scroll/Body"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
 
 [node name="OwnCardsPad" type="MarginContainer" parent="Safe/Scroll/Body"]
 editor_description = "오른쪽 8 = 스크롤 막대(8)와 합쳐 카드 줄 끝이 스크롤 오른쪽 끝에서 16 떨어진다. 카드 다섯 장 = (992 − 4 × 10) / 5 ≈ 190 폭."
@@ -190,7 +229,7 @@ theme_override_constants/margin_right = 8
 [node name="OwnCards" type="HBoxContainer" parent="Safe/Scroll/Body/OwnCardsPad"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — MatchPrepView.gd _ready() · fill()
-내 팀 카드 줄 (신뢰 링 · 레벨 · 스트레스 + 합계 · 메크, 언제나 전부 공개) — MatchPrepPilotCard 다섯 장(자리 순서 탑 → 서폿), 폭은 줄을 나눠 갖는다(expand)."
+내 팀 카드 줄 (신뢰 링 · 레벨 + 합계, 게이지 없음) — MatchPrepPilotCard 다섯 장(자리 순서 탑 → 서폿), 폭은 줄을 나눠 갖는다(expand)."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
@@ -214,6 +253,11 @@ size_flags_horizontal = 3
 [node name="MatchPrepPilotCard_Own4" parent="Safe/Scroll/Body/OwnCardsPad/OwnCards" instance=ExtResource("4_card")]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="BottomSpace" type="Control" parent="Safe/Scroll/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="BottomPad" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 16)

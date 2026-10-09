@@ -53,8 +53,6 @@ tx_Y52NPQTAB1,match.intel.note.ban,active,analyst note,,,{tx_YY1PTH9QJN}: {mech}
 tx_8F1HRN6A8N,match.intel.note.weak,active,analyst note,,,약한 고리: {role} {name}. 그 라인을 노려 볼 만합니다.,Weak link: {role} {name}. Worth targeting that lane.,draft,77cb5d8d
 tx_1W81NVQ0EN,match.intel.mech_main,active,pilot main mech without mastery grade,,,{mech} 주력,{mech} (main),draft,ae4e7364
 tx_CYD6TW7EWM,match.intel.mech_fallback,active,unknown mech id,,,메크 {id},Mech {id},draft,cebcdd50
-tx_2D102EEXT5,match.prep.enemy_title,active,prep screen section title,,,상대 팀 · {team},Opponent · {team},draft,a0309062
-tx_YRJDDXHF35,match.prep.own_title,active,prep screen section title,,,내 팀 · {team},My Team · {team},draft,e43e2214
 tx_F90CBNJRXW,match.ban_pick.role.tank,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,TANK,TANK,draft,db5987d0
 tx_2A43E3P03W,match.ban_pick.role.fighter,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,FIGHTER,FIGHTER,draft,81a84dc5
 tx_QFDE088804,match.ban_pick.role.assassin,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,ASSASSIN,ASSASSIN,draft,951d8ef2
@@ -62,10 +60,10 @@ tx_46B6F94E0X,match.ban_pick.role.support,active,"Mech role tag on ban/pick filt
 tx_WYAR6ATGZK,match.ban_pick.role.sniper,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,SNIPER,SNIPER,draft,77a2ac8b
 tx_51C591RCKG,match.prep.warn_badge,active,PREP pilot card red badge on the opponent pilot the analyst flags,6,,경계 대상,Threat,draft,6074eff5
 tx_FVQ03DD4B3,match.prep.overall,active,PREP pilot card caption above the big stat total,,,종합,Overall,draft,f7c86d76
-tx_EE9ZYA8C66,match.prep.no_mech,active,PREP pilot card mech chip row when the pilot has no mech,,,주력 메크 없음,No main mech,draft,e22b486d
 tx_P5GRXR0NQ6,match.flow.prep_to_ban_pick,active,"Match prep bottom button on Saturday (prep only, the match is on Sunday)",,,밴픽 시작,Start Ban/Pick,draft,978f73c2
 tx_E2AWTQEV33,match.flow.picks_done,active,Ban/pick assign-step bottom button on Saturday: stores the picks and returns to the season (the match is on Sunday),,,준비 완료,Ready,draft,439878df
 tx_KG4ED588AK,match.mech_detail_panel.upgrade_title,active,UI_View_MechDetailPanel.tscn UpgradeBlock/UpgradeTitle text,,,메크 강화 (숙련 Lv3 · 4 · 5),Mech upgrades (mastery Lv3 · 4 · 5),draft,1e3b3a19
 tx_P850G2PZ26,match.mech_detail.upgrade_pilot,active,MechDetailPanel upgrade block — the tapped seat's pilot and how many steps are unlocked,,,"{pilot} — 숙련 {level}, 해금 {n} / {total}","{pilot} — mastery {level}, {n} / {total} unlocked",draft,115e7286
 tx_PK6V12WXVN,match.mech_detail.upgrade_open,active,MechDetailPanel upgrade row — step unlocked for that pilot,,,해금,Unlocked,draft,d1496ce8
 tx_B042CJCX8V,match.mech_detail.upgrade_locked,active,MechDetailPanel upgrade row — step still locked for that pilot,,,잠김,Locked,draft,956f2f42
+tx_WFN2VMXPR0,match.match_prep_view.vs,active,UI_View_MatchPrepView.tscn versus block between own team (left) and opponent (right) logos,,,VS,VS,draft,b8a1e1dc

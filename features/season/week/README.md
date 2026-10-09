@@ -176,7 +176,7 @@ records and forwards taps. On a training day the list order is **(pinned map) �
   bar) shows `사건: <name> · <pilot>` and either `눌러서 대응하기` (reopens the dialog) or the effect notes once resolved.
 * **오후** (`AFTERNOON` only): tap an available pilot on the map (amber ring), then `면담` / `외출` on the
   afternoon card. **No weekly count limits** (removed 2026-10): an interview is always possible, an outing needs
-  trust ≥ `TRUST_OUTING_MIN` (the disabled button reads `외출 (신뢰 N↑)`). Without a pick the card says how
+  trust level ≥ `TRUST_OUTING_LEVEL` (the disabled button reads `외출 (신뢰 Lv.N↑)`). Without a pick the card says how
   to pick (or that nothing is possible today). After the action the card collapses to a one-line summary with the effect notes.
   Pressing Next without an action records a **pass** (after the warning when an action was still possible).
   The record keeps its old name `evening` (`MentalSystem.begin_evening` / `finish_evening`), so saves stay compatible.

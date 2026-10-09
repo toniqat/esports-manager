@@ -3,7 +3,7 @@ class_name TrustRing
 extends Control
 
 # Radial progress ring drawn around a pilot portrait (`SeasonPilotCard`): a full track circle,
-# then an arc from 12 o'clock clockwise for `ratio` (trust / TRUST_MAX). Placed as a node in the
+# then an arc from 12 o'clock clockwise for `ratio` (progress toward the next trust level). Placed as a node in the
 # card scene (a `_draw` widget); the scene sets its size and `width`, the card script sets
 # `ratio` and `color` (trust band colour, `HubView.trust_color`). The ring sits on the node's
 # edge, so the portrait slot goes inside it, inset by `width` + a small gap.

@@ -164,10 +164,10 @@ model — off the field, healing `RECALL_HEAL_RATIO` per turn until full — and
 changed. `GROWTH_PER_TURN` was deleted from game_config.
 
 Now `BattleSim.refresh_growth_stats` derives both from growth points —
-`growth` = attack share (`GROWTH_ATK_PER_SCORE` per 1k), `growth_hp` = max-HP share
-(`GROWTH_HP_PER_SCORE` per 1k) — both in const.csv.
-**This asymmetry — attack growing several times faster than HP — is the whole feel of growth**, so
-tune the two keys together. Instead of multiplying each turn, stats are **recomputed** from the two originals (prevents
+`growth` = attack share, `growth_hp` = max-HP share, both from one curve
+`BattleSim.growth_curve(score, is_hp)` (piecewise log + spikes, `GROWTH_*` keys in const.csv) × the growth coefficient.
+Attack and HP currently share the same curve constants (`GROWTH_ATK_CURVE` = `GROWTH_HP_CURVE`), so
+the two diverge only through the pilot's growth coefficients; tune the `GROWTH_*` pairs together. Instead of multiplying each turn, stats are **recomputed** from the two originals (prevents
 rounding-error accumulation). `_init` fills the two originals — mech stat injection
 (`SimulationCore._stats_for`) goes through the constructor, so they are never empty on any spawn
 path. The recompute runs the moment the score moves (`add_score`).
@@ -181,11 +181,11 @@ end of the safe-farming turn / at the end of the perfect-finish operation phase)
 Both share the same field, so whichever is applied later overwrites.
 
 **Growth points `score`** (opening `SCORE_START`) — the **source** of the growth above. It is the pilot's growth currency,
-equivalent to gold in a MOBA. There are three sources:
-**front line (전선) presence** (`SCORE_FRONTLINE_PER_TURN`) / **jungle camp (캠프)** (`SCORE_JUNGLE_CAMP`,
-respawn `JUNGLE_CAMP_RESPAWN_TURNS`, jungler) / **kill (처치) bounty** (last hit `SCORE_KILL_BASE` +
-`SCORE_KILL_BOUNTY_RATE` of the lead gap; assists get up to `SCORE_ASSIST_MAX_SHARE` proportional to damage).
-Turret (포탑) demolition `SCORE_TURRET_FULL`. **Turret/HQ damage and death penalties were deleted.** No cap,
+equivalent to gold in a MOBA. Sources:
+**front line (전선) presence** (`SCORE_FRONTLINE_PER_TURN`) / **jungle camp (캠프)** (`BattleSim.jungle_camp_score()`,
+respawn `JUNGLE_CAMP_RESPAWN_TURNS`, jungler) / **kill (처치)** (fixed `BattleSim.kill_reward()` split by damage share +
+the last hit's bounty `SCORE_KILL_BOUNTY_RATE` of the lead gap) / turret (포탑) damage (`SCORE_TURRET_FULL` per turret).
+**HQ damage and death penalties were deleted.** No cap,
 floor `SCORE_MIN`. All of these keys live in const.csv.
 Shown on the pilot strip in `18.05k` format; team score is the sum of its members. All rules
 live in the `SCORE_*` section of `BattleSim` (values from const.csv), and every change passes through `BattleSim.add_score` alone —
@@ -1052,6 +1052,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
 | `LobbySurfaceBar` · `LobbyToast` | Card · SurfaceChip | `Lobby` `StripBack` / `TabBarBack` · `Toast` | error toast = `NEGATIVE` copy |
 | `BanPickOrderPip` · `IntelAnalystNote` | SunkPanel · SunkPanel | `BanPickOrderPip` root (r6; side colour + capsule corners = code copy) · `IntelView` `Note/Card` (`ACCENT_DIM`, r14) | pip fill = side colour |
+| `MatchPrepPilotCard` · `MatchPrepCardInner` · `MatchPrepWarnChip` · `MatchPrepMechChip` | Card · Card · AccentChip · SunkPanel | `UI_Comp_MatchPrepPilotCard` root (card look, no padding) · its embedded `SeasonPilotCard` (`StyleBoxEmpty` — no second card) · `%Warn` `경계 대상` (`NEGATIVE`, pill, padding 10/2) · `MechChip*` (`SURFACE_SUNK`, r8, padding 4/2) | — |
 | `MessengerBubbleNpc` · `MessengerBubbleMine` · `MessengerAnswerButton` · `MessengerNoteChipMuted` | Card · Card · GhostButton · AccentChip | `MessengerNpcBubble` / `MessengerPlayerBubble` `%Bubble` (r22, padding 0 — the scene's `Pad` pads) · `MessengerAnswerButton` (ghost + padding 22/17) · failed `MessengerNoteChip` | — |
 | `VnDialogueBubble` · `VnDialogueNamePlate` · `VnDialogueNamePlateMine` · `VnDialogueArtSlab` · `VnDialogueChoiceButton` | Card · AccentChip · AccentChip · SunkPanel · GhostButton | `UI_View_VnDialogue` `%Bubble` (r28, padding 0, the scene's `Pad` pads) · `%NamePlate` (pilot `ACCENT` / manager `RAIL`, r14 + padding), switched by `VnDialogueView._show_line` · `%Slab` (no-art placeholder) · `UI_Comp_VnChoiceButton` (ghost + padding) | (none) |
 

@@ -22,10 +22,12 @@ LOAD → PREP → BAN_PICK → LAUNCH (change_scene → BattleSim)
 
 The two enum values remain for save compatibility (`match_resume.phase`).
 
-PREP is the pre-match scouting sheet (white outgame paper) — opponent on top, own team below.
+PREP is the pre-match scouting sheet (white outgame paper) — opponent on top, own team below, each
+team as **five vertical pilot cards** in seat order (badge, round portrait, big stat total, up to two
+mech chips; own cards add the season trust ring / level + stress; tap = detail sheet).
 **How much of the opponent is visible follows the analysis reveal tier** (M5 — name/role → stat
 ranges → exact stats + top mechs → pilot cards; own team always full), with an analyst note when
-analysis is delegated. Details: `match_prep/README.md`. Pressing "경기 시작" (Start match) advances
+analysis is delegated and a red `경계 대상` chip on the pilot the analyst names. Details: `match_prep/README.md`. Pressing "경기 시작" (Start match) advances
 to BAN_PICK and triggers the pre-ban-pick autosave.
 
 Entry point: `scenes/MatchFlow.tscn`. Resume saves skip PREP and jump
@@ -77,7 +79,9 @@ bottom  5 pilot portraits → 5 mech slots → 2 ban chips      (ally, mirrored)
 - **The screen uses the outgame white-background family** (`OutgameTheme`) — the background is a
   pale grey and only the pick pane is a single shadowed white card, so one board separates "this is
   where you choose" from "this is both teams' situation". It used to be a dark board.
-- **A grid cell is just a square portrait + one name line below.** A role-class badge (a rounded
+- **A grid cell is just a square portrait + a strip of small pilot badges below** (my pilots who
+  are 능숙+ with that mech; the enemy's 능숙+ pilots sit over the art's top-right when analysis
+  reveals mastery — no mech name, that is in the sheet). A role-class badge (a rounded
   rectangle filled with the role colour + two white letters `Tk/As/Fi/Sn/Su`) sits at top left.
   Each cell used to carry two more lines, `HP · ATK · 존재감` (presence) and the passive name, but
   on a screen for scanning twenty-one mechs, making people read five lines per cell defeats
@@ -268,6 +272,7 @@ resume path restores the saved `player_side` as is, so it is unaffected by this 
 | `MatchFlow.gd` | State machine orchestrator |
 | `match_prep/MatchPrepController.gd` · `MatchPrepView.gd/.tscn` | Pre-match scouting sheet (analysis reveal) — controller + scene-owned screen |
 | `match_prep/OpponentIntel.gd` · `IntelView.gd` | Reveal rule builder + its drawer, shared with the league team detail — `match_prep/README.md` |
+| `match_prep/MatchPrepPilotCard.gd/.tscn` · `MatchPrepPilotDetail.gd/.tscn` | PREP pilot card (five per team) and the opponent pilot detail sheet body (`HubSheet`) |
 | `ban_pick/BanPickController.gd` | Ban/Pick + mech assignment rules / state — fills and drives the screen scene |
 | `ban_pick/UI_View_BanPickView.tscn` (+ item scenes) | The ban/pick screen layout — both teams' portraits + mech grid + bottom detail sheet + drag ghost (`ban_pick/README.md` "Scene") |
 | `ban_pick/MechDetailPanel.gd/.tscn` (+ `MechMasteryRow` · `MechQuirkRow` · `MechCardCell` item scenes) | Mech detail popup for the assignment step |

@@ -67,7 +67,9 @@ static func team_roster(state: Dictionary, team_id: int) -> Array:
 
 # ── Builder ───────────────────────────────────────────────────────────────────
 ## → `{tier, tier_label, own, rows: [row], delegated, analyst, notes: [String],
-##     analysis (effective value), next_need (value for the next tier, 0 at FULL)}`.
+##     threat_pilot_id, analysis (effective value), next_need (value for the next tier, 0 at FULL)}`.
+## `threat_pilot_id` = the pilot the analyst's "경계 대상" line names (`strongest_row`), -1 when
+## that line is not shown (manager owns analysis, tier 0, own team).
 ## A row (one per pilot, display order 탑 → 서폿):
 ##   `{pilot_id, name, role, role_label, show_stats, exact,
 ##     stats: [{label, text, value}], total_text,
@@ -87,13 +89,15 @@ static func build(state: Dictionary, roster: Array, is_own: bool) -> Dictionary:
 			and StaffSystem.is_delegated(state, "analysis")
 	var out: Dictionary = {
 		"tier": tier, "tier_label": Loc.t(String(TIER_LABELS[tier])), "own": is_own,  # l10n-dynamic: match.intel.tier.*
-		"rows": rows, "delegated": delegated, "analyst": "", "notes": [],
+		"rows": rows, "delegated": delegated, "analyst": "", "notes": [], "threat_pilot_id": -1,
 		"analysis": StaffSystem.effective(state, "analysis") if bool(state.get("active", false)) else 0,
 		"next_need": threshold_of(tier + 1) if tier < FULL else 0,
 	}
 	if delegated:
 		out["analyst"] = analyst_label(state)
 		out["notes"] = interpret(state, rows, tier)
+		if tier > TIER_NAME_ONLY:
+			out["threat_pilot_id"] = int(strongest_row(rows).get("pilot_id", -1))
 	return out
 
 
@@ -115,16 +119,12 @@ static func interpret(_state: Dictionary, rows: Array, tier: int) -> Array:
 	if tier <= TIER_NAME_ONLY or rows.is_empty():
 		return [Loc.t(L.MATCH_INTEL_NOTE_NO_DATA)]
 	var lines: Array = []
-	var best: Dictionary = {}
-	var best_total: int = -1
+	var best: Dictionary = strongest_row(rows)
 	var weak: Dictionary = {}
 	var weak_total: int = 1 << 30
 	for raw in rows:
 		var r: Dictionary = raw
 		var t: int = _row_total(r)
-		if t > best_total:
-			best_total = t
-			best = r
 		if t < weak_total:
 			weak_total = t
 			weak = r
@@ -137,6 +137,20 @@ static func interpret(_state: Dictionary, rows: Array, tier: int) -> Array:
 	elif not weak.is_empty() and weak != best:
 		lines.append(Loc.t(L.MATCH_INTEL_NOTE_WEAK, {"role": weak["role_label"], "name": weak["name"]}))
 	return lines
+
+
+## The strongest lane by visible stat total (first row wins ties) — the pilot the analyst
+## note calls "경계 대상". {} for no rows.
+static func strongest_row(rows: Array) -> Dictionary:
+	var best: Dictionary = {}
+	var best_total: int = -1
+	for raw in rows:
+		var r: Dictionary = raw
+		var t: int = _row_total(r)
+		if t > best_total:
+			best_total = t
+			best = r
+	return best
 
 
 # ── Internals ─────────────────────────────────────────────────────────────────

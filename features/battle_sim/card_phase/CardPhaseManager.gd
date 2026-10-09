@@ -4889,7 +4889,7 @@ func _effect_move(caster: PilotData, picked: Variant) -> String:
 	# 함수라 값도 재생성 시계도 어긋날 수 없다.
 	var msg: String = "이동 %s → (%d,%d)" % [_bs.pilot_label(caster), cell.x, cell.y]  # l10n-ignore
 	if _bs.sim_core.harvest_camp_under(caster):
-		msg += " · 캠프 +%.2fk" % _bs.SCORE_JUNGLE_CAMP  # l10n-ignore
+		msg += " · 캠프 +%.2fk" % _bs.jungle_camp_score()  # l10n-ignore
 	return msg
 
 
@@ -4905,7 +4905,7 @@ func _effect_steal_camp(picked: Variant, caster: PilotData) -> String:
 	var cell := picked as Vector2i
 	if not _bs.sim_core.steal_camp_point(cell, caster):
 		return "약탈 실패 (캠프 없음)"  # l10n-ignore
-	return "약탈 (%d,%d) +%.2fk" % [cell.x, cell.y, _bs.SCORE_JUNGLE_CAMP]  # l10n-ignore
+	return "약탈 (%d,%d) +%.2fk" % [cell.x, cell.y, _bs.jungle_camp_score()]  # l10n-ignore
 
 
 # 사전 준비 — hand-wide cost reduction. Mutates every current hand card's
@@ -6331,14 +6331,20 @@ func hand_growth_add(p: PilotData) -> float:
 ## [자신감] — 이 파일럿이 손에 든 자신감 장수 × `CARD_CONFIDENCE_HIT_BONUS` (전장 명중 배율 가산분).
 ## `SimulationCore.roll_hit` 이 공격자 쪽으로 묻는다.
 func hand_hit_add(p: PilotData) -> float:
+	return CONFIDENCE_HIT_BONUS * float(hand_confidence_cards(p).size())
+
+
+## The [자신감] cards `p` holds in hand — `hand_hit_add` counts them, the pilot detail
+## panel shows the first one's art as the effect thumbnail.
+func hand_confidence_cards(p: PilotData) -> Array:
+	var out: Array = []
 	if p == null:
-		return 0.0
-	var total: float = 0.0
+		return out
 	for raw in _team_hand(p.team):
 		var cd := raw as CardData
 		if cd.owner_pilot == p and _is_hand_passive(cd, HAND_CONFIDENCE):
-			total += CONFIDENCE_HIT_BONUS
-	return total
+			out.append(cd)
+	return out
 
 
 ## [맑은 정신] — 손패에서 `cd` 바로 옆에 붙은 맑은 정신 수만큼 비용을 깎는다.

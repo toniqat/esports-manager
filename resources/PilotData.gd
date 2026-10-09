@@ -70,8 +70,8 @@ var evasion: int          = 50
 # 다른 일이라, 그 둘을 가르는 것이 훈련판의 선택지가 된다.
 var engage_hit: int       = 50
 var engage_eva: int       = 50
-# 성장 계수 배율 — `BattleSim.refresh_growth_stats` 가 `GROWTH_ATK_PER_SCORE` /
-# `GROWTH_HP_PER_SCORE` 에 곱한다. 1.0 이 기준(스탯이 `PlayerData.GROWTH_STAT_BASE` 일 때).
+# Growth coefficient multipliers — `BattleSim.refresh_growth_stats` multiplies the growth curve
+# (`BattleSim.growth_curve`) by these. 1.0 이 기준(스탯이 `PlayerData.GROWTH_STAT_BASE` 일 때).
 # **스탯을 직접 밀지 않고 성장률을 민다** — 전자는 재계산 한 번에 지워지고,
 # 훈련이 바꾸는 것은 개시 스탯이 아니라 경기가 흘랬가는 기울기다.
 var atk_growth_mult: float = 1.0
@@ -158,9 +158,9 @@ var bonus_max_hp_mult: float = 0.0
 # 아니라 구조상 보일 수 없었다.
 #
 # 지금은 둘이 갈라져 있다. `growth` 는 공격력, `growth_hp` 는 최대 체력이고
-# 둘 다 `score` 에서 파생된다(`BattleSim.refresh_growth_stats`) — 공격력이
-# 훨씬 빠르게 자라므로(`GROWTH_ATK_PER_SCORE` > `GROWTH_HP_PER_SCORE`, const.csv)
-# 성장치가 쌓일수록 TTK 가 실제로 줄어든다.
+# 둘 다 `score` 에서 파생된다(`BattleSim.refresh_growth_stats`). 곡선 상수는
+# 지금 둘이 같다(`GROWTH_ATK_CURVE` = `GROWTH_HP_CURVE`, const.csv) — 둘의 차이는
+# 선수의 공격 성장 / 체력 성장 계수에서만 난다.
 #
 # `base_atk` / `base_max_hp` 는 `_init` 이 채운다. 스폰 시점의 메크 스탯 주입
 # (`SimulationCore._stats_for`)이 생성자를 거치므로, 성장 이전의 원본은 언제나
@@ -169,7 +169,7 @@ var base_atk: int         = 0
 var base_max_hp: int      = 0
 ## 공격력 성장 배율분. `atk = base_atk × (1 + growth) + atk_buff`.
 var growth: float         = 0.0
-## 최대 체력 성장 배율분. 공격력보다 느리게 자란다(`GROWTH_HP_PER_SCORE`).
+## 최대 체력 성장 배율분. 공격력보다 느리게 자란다(`GROWTH_HP_CURVE` / `GROWTH_SPIKE_HP`).
 var growth_hp: float      = 0.0
 # 카드가 거는 **일시적** 공격력 가산(전투 준비 등). `atk` 를 직접 밀면 성장
 # 재계산이 그 사이에 끼었을 때 가산분이 통째로 지워지거나 두 번 빠진다 —
@@ -254,8 +254,8 @@ func persistent_fx_total(kind: String) -> float:
 # 무관해서(성장은 시간, 성장치는 기록) 킬을 따도 타워를 밀어도 스탯이 1도
 # 변하지 않았다.
 #
-# 적립처는 셋이다: **전선 체류**(턴당), **정글 캠프**(정글러), **처치 현상금**
-# (라스트힛 + 피해 비례 어시스트). 규칙과 상수는 전부 `BattleSim` 의 `SCORE_*`
+# Sources: front-line presence (per turn), jungle camps (jungler), kills (fixed reward split
+# by damage share + the last hit's bounty), turret damage. 규칙과 상수는 전부 `BattleSim` 의 `SCORE_*`
 # 절에 있고, 변동은 `BattleSim.add_score` 한 곳만 지난다.
 var score: float          = ConstTable.num("SCORE_START")   # = BattleSim.SCORE_START
 

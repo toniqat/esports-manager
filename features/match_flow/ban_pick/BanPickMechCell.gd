@@ -1,14 +1,17 @@
 class_name BanPickMechCell
 extends Button
 
-# One **mech grid cell** of the pick pane: square portrait + name line, the role badge
-# (top-left), mastery / analysis tags, and the BAN / BLUE / RED slab over a taken mech.
+# One **mech grid cell** of the pick pane: square portrait, the role badge (top-left), pilot
+# badges — my pilots 능숙+ with this mech in the strip under the art, the enemy's 능숙+ pilots
+# (analysis tier >= 2) top-right over the art — and the BAN / BLUE / RED slab over a taken mech.
+# No mech name: it is in the sheet / `MechDetailPanel`.
 #
 # **Layout lives in `UI_Comp_BanPickMechCell.tscn`** (cell size = the grid's column width, art fills
 # the square part). `BanPickController` instantiates one per mech (`create()`) into the grid
 # and fills / refreshes it. Data colours stay in code: the role badge fill (role colour), the
-# tag fills, the slab tint, and the highlight border (`set_highlight`) — the scene's StyleBox
-# is the plain cell and the highlights are derived from it.
+# badge rings (side colour / accent when highlighted, `BanPickPilotDot`), the slab tint, and the
+# highlight border (`set_highlight`) — the scene's StyleBox is the plain cell and the
+# highlights are derived from it.
 #
 # The button is `MOUSE_FILTER_PASS` in the scene on purpose — STOP kills drag scrolling of
 # the grid on phones (`docs/mobile_safe_area.md` §5).
@@ -19,13 +22,9 @@ const STYLE_STATES: Array = ["normal", "hover", "pressed", "focus", "disabled"]
 var art: TextureRect = null
 var role_badge: Panel = null
 var role_label: Label = null
-var name_label: Label = null
-## Top-right tag (enemy likely pick / analyst ban). Optional.
-var intel: Panel = null
-var intel_label: Label = null
-## Bottom-left tag (my rider's tier). Optional.
-var mine: Panel = null
-var mine_label: Label = null
+## Badge rows (optional — a row deleted from the scene is skipped).
+var my_dots: Control = null
+var enemy_dots: Control = null
 var veil: ColorRect = null
 var tag: Label = null
 
@@ -41,11 +40,8 @@ func _ready() -> void:
 	art = %Art
 	role_badge = get_node_or_null("%RoleBadge") as Panel
 	role_label = get_node_or_null("%RoleLabel") as Label
-	name_label = %NameLabel
-	intel = get_node_or_null("%Intel") as Panel
-	intel_label = get_node_or_null("%IntelLabel") as Label
-	mine = get_node_or_null("%Mine") as Panel
-	mine_label = get_node_or_null("%MineLabel") as Label
+	my_dots = get_node_or_null("%MyDots") as Control
+	enemy_dots = get_node_or_null("%EnemyDots") as Control
 	veil = %Veil
 	tag = %Tag
 	_base_style = get_theme_stylebox("normal") as StyleBoxFlat
@@ -53,10 +49,9 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## Name, portrait and role badge (`initial` = two letters, `role_col` = role colour; an
-## empty `initial` hides the badge).
-func setup(mech_name: String, tex: Texture2D, initial: String, role_col: Color) -> void:
-	name_label.text = mech_name
+## Portrait and role badge (`initial` = two letters, `role_col` = role colour; an empty
+## `initial` hides the badge).
+func setup(tex: Texture2D, initial: String, role_col: Color) -> void:
 	art.texture = tex
 	if role_badge == null:
 		return
@@ -82,23 +77,34 @@ func set_highlight(col: Color, width: int) -> void:
 		add_theme_stylebox_override(st, sb)
 
 
-## F6 단독 실행 미리보기 — 시트로 열어 본(앰버 테두리) 정글 기체 한 칸: 역할 배지 ·
-## `예상 픽` 태그 · 내 라이더 `능숙` 태그. 색은 `BanPickController` 와 같은 값.
+## Pilot badges. `mine` = my pilot ids (seat order, ≤ 5), `enemy` = enemy pilot ids (best
+## first, ≤ 2); `*_col` = side colour of the ring; `focus_*` = highlight that row (my pick
+## turn → mine, my ban turn → enemy). Empty arrays hide the badges.
+func set_pilot_dots(mine: Array, enemy: Array, mine_col: Color, enemy_col: Color,
+		focus_mine: bool, focus_enemy: bool) -> void:
+	_fill_dots(my_dots, mine, mine_col, focus_mine)
+	_fill_dots(enemy_dots, enemy, enemy_col, focus_enemy)
+
+
+static func _fill_dots(row: Control, ids: Array, col: Color, focus: bool) -> void:
+	if row == null:
+		return
+	var dots: Array = row.get_children()
+	for i in dots.size():
+		var dot := dots[i] as BanPickPilotDot
+		dot.visible = i < ids.size()
+		if dot.visible:
+			dot.show_pilot(int(ids[i]), col, focus)
+
+
+## F6 단독 실행 미리보기 — 시트로 열어 본(앰버 테두리) 정글 기체 한 칸: 역할 배지 · 내 능숙
+## 선수 셋(내 픽 차례라 강조) · 상대 능숙 선수 둘. 색은 `BanPickController` 와 같은 값.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(pressed, "cell pressed")
-	setup("Triumph", MechImages.portrait_for(6), "Fi", Color(1.00, 0.55, 0.20))
+	setup(MechImages.portrait_for(6), "Fi", Color(1.00, 0.55, 0.20))
 	set_highlight(OutgameTheme.ACCENT, 4)
 	veil.visible = false
 	tag.visible = false
-	_preview_tag(intel, intel_label, Loc.t(L.MATCH_BAN_PICK_TAG_EXPECTED_PICK), Color(0.88, 0.27, 0.27))
-	_preview_tag(mine, mine_label, MechMastery.tier_name(2), MechMastery.tier_color(2))
-
-
-func _preview_tag(panel: Panel, label: Label, text: String, bg: Color) -> void:
-	if panel == null:
-		return
-	panel.visible = true
-	panel.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 8))
-	if label != null:
-		label.text = text
+	set_pilot_dots([0, 2, 5], [7, 11], Color(0.20, 0.45, 0.92), Color(0.88, 0.27, 0.27),
+			true, false)

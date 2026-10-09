@@ -296,7 +296,7 @@ func _fill_preview() -> void:
 	UiPreview.trace(closed)
 	choice_picked.connect(func(_idx: int) -> void:
 		show_outcome([Loc.t(L.PRESS_PREVIEW_REPLY)],
-				[Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": "+3"}),
+				[Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": MentalEvents.trust_delta_text(3)}),
 				Loc.t(L.MENTAL_UI_NOTE_SMOD, {"stat": StaffSystem.stat_label("mental"), "delta": "+1",
 						"duration": MentalEvents.duration(2)})], 1))
 	var sub: String = Loc.t(L.PRESS_CONFERENCE_SUB, {

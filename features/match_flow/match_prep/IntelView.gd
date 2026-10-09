@@ -15,6 +15,10 @@ extends VBoxContainer
 const SCENE_PATH: String = "res://features/match_flow/match_prep/UI_Comp_IntelView.tscn"
 const ROW_SCENE: PackedScene = preload("res://features/match_flow/match_prep/UI_Comp_IntelPilotRow.tscn")
 
+## false = header + analyst note only (MatchFlow PREP draws the pilots as cards below,
+## `MatchPrepPilotCard`); the league team detail keeps the five rows.
+@export var show_rows: bool = true
+
 var _note_line: Label = null   # scene sample analyst line, duplicated per line
 
 
@@ -47,8 +51,14 @@ func show_intel(intel: Dictionary) -> void:
 		_fill_header(intel)
 	if not own and delegated:
 		_fill_note(intel)
-	var rows: Node = %Rows
+	var rows: Control = %Rows
 	_clear(rows)
+	rows.visible = show_rows
+	var tail := get_node_or_null("RowsTail") as Control
+	if tail != null:
+		tail.visible = show_rows
+	if not show_rows:
+		return
 	for raw in (intel.get("rows", []) as Array):
 		var row := ROW_SCENE.instantiate() as IntelPilotRow
 		rows.add_child(row)

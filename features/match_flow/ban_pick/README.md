@@ -11,7 +11,8 @@
 | `UI_Comp_BanPickOrderRow.tscn` / `.gd` | The order strip, instanced as `%BanPickOrderRow_OrderRow` in `UI_View_BanPickView.tscn` (`create()` for other hosts). Scene: 64 tall, `%Pips` holder (full rect) · `%PipIcon` · `%TurnArrow`. Script: one `BanPickOrderPip` per move into `%Pips` (count = sequence), tween / pulse / triangle bob (`build`, `refresh`, `stop`, `_process`); static `same_run` / `seq_run` |
 | `UI_Comp_BanPickOrderPip.tscn` | One order cell (no script): `Panel` (`BanPickOrderPip` variation, r6; code puts a copy of that box with squared capsule-inner corners and the side colour) + `Joint` (2px `SURFACE` `ColorRect` on its left edge, full height, shown inside a capsule) |
 | `BanPickGrid.gd` | `@tool` Container on `%Grid`: float-exact grid (`columns`, `h_gap`, `v_gap`) — `GridContainer` lays out in whole pixels and the 191.6px cells drifted 0.6px per row |
-| `UI_Comp_BanPickMechCell.tscn` / `.gd` | Grid cell (Button `SelectableTile`, `MOUSE_FILTER_PASS`), `create()` per mech; `setup`, `set_highlight` (amber / side-colour border of variable width, derived in code from the variation's box) |
+| `UI_Comp_BanPickMechCell.tscn` / `.gd` | Grid cell (Button `SelectableTile`, `MOUSE_FILTER_PASS`), `create()` per mech; `setup(tex, initial, role_col)`, `set_highlight` (amber / side-colour border of variable width, derived in code from the variation's box), `set_pilot_dots(mine, enemy, mine_col, enemy_col, focus_mine, focus_enemy)` (pilot badges, section "Grid pilot badges") |
+| `BanPickPilotDot.gd` | `class_name BanPickPilotDot` — `_draw` widget placed as nodes in the cell scene: a small round crop of the middle of the pilot's eye band (`PilotImages.eye_for`, `EYE_UV`) in a ring; `show_pilot(pid, side_col, focus)` (focus = accent ring 3px, full opacity; else side-colour ring 2px at `DIM_ALPHA`) |
 | `UI_Comp_BanPickMechSlot.tscn` / `.gd` | Team mech slot (frame + art + name band + mastery / quirk tags, tap `Hit`); `setup(side_col, seat)` builds the per-instance frame style |
 | `UI_Comp_BanPickPortrait.tscn` / `.gd` | Pilot portrait (back plate, face, side rim, `기벽 n` badge, tap `Hit`) |
 | `UI_Comp_BanPickBanChip.tscn` / `.gd` | Ban chip (dimmed art + ✕) |
@@ -27,7 +28,9 @@
   3:3 picks) with a sheet open. Rosters are copies, so assignment never touches the run's pilots.
 - `MechDetailPanel` — in-memory run, Overdrive opened from the seat of the pilot with the best mastery.
 - `BanPickOrderRow` — the real sequence (`BanPickController.SEQUENCE`, side colours), move 4 (opponent pick inside a two-cell capsule) current.
-- Item scenes (`BanPickMechCell` · `MechSlot` · `Portrait` · `BanChip` · `SheetCard` · `MechCardCell` ·
+- `BanPickMechCell` alone — Triumph cell opened in the sheet, three of my badges highlighted (my pick turn)
+  and two dimmed enemy badges (real pilot ids).
+- Item scenes (`MechSlot` · `Portrait` · `BanChip` · `SheetCard` · `MechCardCell` ·
   `MechMasteryRow` · `MechQuirkRow`) — hand-set values with real mech / pilot / card / quirk ids,
   filled the way `BanPickController` / `MechDetailPanel` fill them.
 
@@ -209,14 +212,14 @@ above and below the grid.
 ### Mech grid
 5 columns (`%Grid.columns`), `BanPickView.GRID_VISIBLE_ROWS` **4.5 rows**. Being non-integer is the
 point — the fifth row showing half cut is the only signal that "there's more below". The cell size is the cell
-scene's (`UI_Comp_BanPickMechCell.tscn`: column width × (square + name line)); the **grid height** is 4.5 rows
+scene's (`UI_Comp_BanPickMechCell.tscn`: column width 191.6 × (square art + 36 badge strip) = 227.6); the **grid height** is 4.5 rows
 of it, clamped to the band between the team blocks (`BanPickView.fit_pane`) — so cells stay square on
 every safe area (안전 영역) and only the number of visible rows changes.
 
-What goes in one cell: role-class tag · machine art · machine name · `HP / ATK / 존재감` (presence) ·
-**passive name**. The passive is written right in the cell because picking a machine fixes one
-passive along with it — if you had to open the sheet every time to see it, scanning 21 machines
-would take 21 taps. Only the detailed description lives in the sheet.
+What goes in one cell: role-class badge (top-left) · machine art · **pilot badges** — my pilots who
+ride it well in the strip under the art, the enemy's over the art's top-right (section "Grid pilot
+badges"). No machine name, numbers or passive: the art is what you scan by, everything else is in
+the sheet one tap away (name · stats · passive · cards).
 
 A banned / picked machine has its whole cell covered by a slab with `BAN` / `BLUE` / `RED` stamped
 in the centre (the colour changes too). It can still be tapped **to view**; only committing is
@@ -323,15 +326,25 @@ numbers live in `features/season/mastery/README.md` / `MASTERY_*` in const.csv.
 | Where | What |
 |---|---|
 | Mech slots (`_refresh_slot_mastery`) | Top-left tag `<tier> <bonus>` (e.g. `능숙 +2`) filled with the tier colour — the pilot on that seat with that machine. **My slots always** (also during ban/pick, so dragging a slot shows the change at once); **enemy slots** only when analysis reveals mastery (`StaffSystem.analysis_tier >= 2`) and after the assign intro re-seats them by pilot (`_enemy_seated`). |
-| Grid cells (`_refresh_cell_marks`) | Bottom-left: my natural rider's tier when 능숙 or better. Top-right: `예상 픽` (red) = an enemy pilot's top-mastery machine (`_enemy_likely`, analysis tier ≥ 2), or `추천 밴` (amber) = analyst's recommended ban. Taken cells show no tags. |
-| Bottom sheet (`_fill_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name tier value (스탯 bonus)`, and the analysis line (`상대 예상 픽 — pilot` / `분석가 추천 밴 — pilot 의 주력`). |
+| Grid cells (`_refresh_cell_marks`) | Pilot badges (`BanPickPilotDot`) — see "Grid pilot badges" below. Taken cells show none. |
+| Bottom sheet (`_fill_sheet_mastery`) | Under the art, left of the buttons: my natural rider's `name tier value (스탯 bonus)`, and the analysis line `상대 예상 픽 — pilot` (an enemy pilot's top-mastery machine, `_enemy_likely`, analysis tier ≥ 2). |
 | `MechDetailPanel` | A `숙련도` block — that team's five pilots with this machine (tier · value · bonus), the tapped seat's pilot marked ▶ (`_mastery_rows`; enemy only with analysis tier ≥ 2). |
 
-**Recommended bans** (`_analyst_bans`) appear when the analysis area is delegated
-(`StaffSystem.is_delegated(state, "analysis")`) and I still have bans left: the
-`MASTERY_ANALYST_BANS` highest-mastery enemy likely picks that are still legal. Like every
-delegated automation it is a plain rule, not an optimal one. Banning an enemy main is the natural
-mastery penalty — that pilot falls back to a lower-mastery machine.
+### Grid pilot badges
+Computed once per `enter` (`_setup_adept`, mastery does not change during the draft) into
+`_my_adept` / `_enemy_adept` (mech_id → pilot ids), drawn by `_refresh_cell_marks` on every refresh:
+- **Mine** — under the art (where the name used to be): every one of my five pilots whose mastery
+  with that mech is tier ≥ `ADEPT_TIER` (2 = 능숙), not only the natural rider; seat order, max 5.
+- **Enemy** — over the art's top-right: the enemy's 능숙+ pilots, highest mastery first (ties by
+  seat), max `ENEMY_DOTS_MAX` (2); only while analysis reveals mastery (`_show_enemy_likely`,
+  `StaffSystem.analysis_tier >= 2`).
+- **Highlight** — my pick turn → my badges (accent ring, full opacity), my ban turn → the enemy
+  badges; otherwise (the other row / opponent's turns) side-colour ring, dimmed.
+- Replaces the old cell tags: `예상 픽` / `추천 밴` (top-right) and my rider's tier (bottom-left) are
+  gone, and so are the analyst's recommended bans (`_analyst_bans`, const `MASTERY_ANALYST_BANS`,
+  keys `match.ban_pick.tag_expected_pick` · `intel_analyst_ban` deprecated). Banning an enemy main
+  is still the natural mastery penalty — that pilot falls back to a lower-mastery machine.
+- The AI is untouched: `_ai_rank` reads mastery directly (`MASTERY_AI_PICK_W` / `_BAN_W`).
 
 ## Quirks (§14 T1)
 Active while `QuirkSystem.is_enabled(season_state)` (`_quirk_on`, set in `_setup_mastery`). **My

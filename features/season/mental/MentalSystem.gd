@@ -62,6 +62,31 @@ static func trust(state: Dictionary, pilot_id: int) -> int:
 	return int((state.get("trust", {}) as Dictionary).get(str(pilot_id), 0))
 
 
+## Trust is shown as a **level** (1 .. `TRUST_LEVEL_MAX`) plus the progress toward the next one.
+## The stored value stays the 0 .. `TRUST_MAX` points — events add / test points (`trust:+4`,
+## `trust>=N`); only the display and the outing gate read levels. Each level is
+## `TRUST_PER_LEVEL` points; at `TRUST_MAX` the top level shows a full bar.
+static func trust_level(state: Dictionary, pilot_id: int) -> int:
+	return level_of_trust(trust(state, pilot_id))
+
+
+static func trust_progress(state: Dictionary, pilot_id: int) -> float:
+	return progress_of_trust(trust(state, pilot_id))
+
+
+static func level_of_trust(points: int) -> int:
+	var per: int = maxi(1, ConstTable.int_of("TRUST_PER_LEVEL"))
+	return clampi(1 + maxi(0, points) / per, 1, ConstTable.int_of("TRUST_LEVEL_MAX"))
+
+
+## 0..1 share of the current level filled (1.0 at the top level once `TRUST_MAX` is reached).
+static func progress_of_trust(points: int) -> float:
+	var per: int = maxi(1, ConstTable.int_of("TRUST_PER_LEVEL"))
+	var lv: int = level_of_trust(points)
+	var into: int = maxi(0, points) - (lv - 1) * per
+	return clampf(float(into) / float(per), 0.0, 1.0)
+
+
 static func outings(state: Dictionary, pilot_id: int) -> int:
 	return int((state.get("outings", {}) as Dictionary).get(str(pilot_id), 0))
 
@@ -109,9 +134,9 @@ static func add_trust(state: Dictionary, pilot_id: int, delta: int) -> int:
 
 # ── Action gates ─────────────────────────────────────────────────────────────
 # No weekly count limits: an interview is always possible, an outing once the
-# pilot's trust reaches `TRUST_OUTING_MIN`. The only cap is one action per afternoon.
+# pilot's trust level reaches `TRUST_OUTING_LEVEL`. The only cap is one action per afternoon.
 static func outing_unlocked(state: Dictionary, pilot_id: int) -> bool:
-	return trust(state, pilot_id) >= ConstTable.int_of("TRUST_OUTING_MIN")
+	return trust_level(state, pilot_id) >= ConstTable.int_of("TRUST_OUTING_LEVEL")
 
 
 static func can_outing(state: Dictionary, pilot_id: int) -> bool:

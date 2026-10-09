@@ -25,8 +25,12 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
 `features/season/press/MessengerView.gd`. The evening card + incident card live on the week screen (`features/season/week/`).
 
 ## Rules
-- **Trust** `{"<pid>": int}` for my 5 pilots, clamped `[TRUST_MIN, TRUST_MAX]`, starts at `TRUST_START`.
-  It affects **only** outing unlock (`TRUST_OUTING_MIN`) and the true ending — no match stat effect.
+- **Trust** `{"<pid>": int}` for my 5 pilots, clamped `[TRUST_MIN, TRUST_MAX]` points, starts at `TRUST_START` (0).
+  **Shown as a level** 1 .. `TRUST_LEVEL_MAX` (5) + progress toward the next: every `TRUST_PER_LEVEL` (25) points is one
+  level, `TRUST_MAX` = top level with a full bar (`MentalSystem.trust_level` / `trust_progress`, pure helpers
+  `level_of_trust` / `progress_of_trust`). Events still add and test **points** (`trust:+4`, `trust>=N`); result chips
+  show the change as level progress (`MentalEvents.trust_delta_text`: +4 → `+16%`) and add a `trust_level` note when
+  the level changes. It affects **only** outing unlock (level ≥ `TRUST_OUTING_LEVEL`) and the true ending — no match stat effect.
 - **A training day** (Mon–Fri) has three halves after the morning training (`features/season/week/README.md`):
   **morning talk** (one pilot, no outing) → **afternoon** (interview / outing) → **evening** (forced incident).
 - **Morning talk** (훈련 소감, one per morning, record `days["<day>"].talk`): opened by `begin_morning` when the
@@ -40,7 +44,7 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   Leaving the afternoon without choosing records a pass. Manager-only — staff never interview or go out.
   - **No weekly count limits** (removed 2026-10): an interview is always possible; the only cap is
     one action per afternoon.
-  - Outing: only with a pilot at trust ≥ `TRUST_OUTING_MIN`.
+  - Outing: only with a pilot at trust level ≥ `TRUST_OUTING_LEVEL`.
     Effects: the row's clauses (trust +, `pmod:all:+N:-1` until next match) + `outings[pid] += 1` +
     **next training day** EXP × `MENTAL_OUTING_EXP_MULT` for that pilot
     (`training_exp_mult(state, pid, day)`; `TrainingBoard` (M3) multiplies it; a Friday outing
@@ -127,7 +131,7 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
 }
 ```
 `outcome` = `{checked, ok, chance, pilot_id, partner_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
-(D7): note dicts are `{type: trust|trust_all|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
+(D7): note dicts are `{type: trust|trust_all|trust_level|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
 `MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
 A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력치", shared with the training tiles).
@@ -201,7 +205,7 @@ formats them (keys `mental.ui.preview.*`). The activity's own stress relief is t
 out. The press conference shows the same line under its answers (`MessengerView.open(..., previews)`, judge = manager).
 
 ## API (static, `state` = `season_state`)
-`init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `outings` · `add_trust` ·
+`init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `trust_level` · `trust_progress` · `outings` · `add_trust` ·
 `true_ending_pilots` · `my_pilot_ids` · `outing_unlocked` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
 `finish_evening(state, day, choice)` · `begin_morning` / `morning_started` / `talk` / `talk_done` / `can_talk` /
 `talk_partner` / `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` · `begin_dusk` /

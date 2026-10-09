@@ -73,7 +73,7 @@ static func stat_note(i: int) -> String:
 	return Loc.t(String(STAT_NOTES[i]))  # l10n-dynamic: term.stat.*.note
 
 ## 성장 계수 배율의 기준점 — 이 값에서 배율이 정확히 1.0 이 되고, 그 1.0 이
-## 지금의 밸런스(`BattleSim.GROWTH_ATK_PER_SCORE` 그대로)다.
+## 지금의 밸런스(`BattleSim.growth_curve` 그대로)다.
 ##
 ## **스탯 범위의 한가운데가 아니라 실측에서 나온 값이다** — `players.csv` 선수들의
 ## 성장 계수 평균에 맞췄다(표가 스탯 범위의 한가운데가 아니라 위쪽에 몰려 있다).

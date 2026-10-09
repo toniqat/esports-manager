@@ -550,6 +550,13 @@ tx_RZN79649QG,MATCH MVP
 tx_TWDEFMDMTZ,In-game
 tx_TJEJTTZ9PP,Pilot
 tx_840PD89SBP,Mech
+tx_YGX9KDFT51,Gain {pct}%
+tx_6TJEJMS5G0,Growth Spikes
+tx_DCPZE5FEBQ,Next Spike
+tx_ECA0V7N5CG,ATK Increase
+tx_9BD5WJRJ16,Max HP Increase
+tx_92JKM782CD,"ATK and Max HP rise with growth points, with a big jump every {step}k.\nThe higher the pilot's {atk_growth} ATK Growth and {hp_growth} HP Growth, the more ATK and Max HP each growth point gives."
+tx_33SA211TC1,Bonus
 tx_Q2YD01V4X9,"When the target joins an engage, the caster joins too"
 tx_8224R3117V,"When attacked, reduce that damage by {mech_reactive_armor_cut_pct}% and lose 1. All of it is lost on leaving the battlefield"
 tx_M9AXFZ0YJD,Damage taken from the caster +{mark_target}%. Setting a new Mark releases the previous one
@@ -805,6 +812,9 @@ tx_2A43E3P03W,FIGHTER
 tx_QFDE088804,ASSASSIN
 tx_46B6F94E0X,SUPPORT
 tx_WYAR6ATGZK,SNIPER
+tx_51C591RCKG,Threat
+tx_FVQ03DD4B3,Overall
+tx_EE9ZYA8C66,No main mech
 tx_MR5VKS3AHG,Overload
 tx_C214C4GTV6,Deploy Reactive Armor
 tx_4AGJGY73MM,Pain and Pleasure
@@ -1169,6 +1179,7 @@ tx_2XVW6DND6C,...Thank you.
 tx_T0XXC81CWK,"{name2}, look after them today."
 tx_6GSWJZY616,&Leave it to me.
 tx_94NECDHB76,&Honestly I'm a bit worn out too.
+tx_2HXM8CJ9R6,{name} trust Lv.{n}
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1600,9 +1611,9 @@ tx_55ZT5D24ZK,Quirk #{id}
 tx_0H7MR6XZ5Q,Start Match
 tx_QBJC7HSWEH,End Week →
 tx_BG13VH48VC,Meetings {iv}/{iv_max} · Outings {out}/{out_max}
-tx_R4XWZFXHFD,Trust {trust} · Outings {outings}
+tx_R4XWZFXHFD,Trust Lv.{trust} · Outings {outings}
 tx_G9WWN59WGH,Outing (used up)
-tx_QYSSXAFB3S,Outing (Trust {n}+)
+tx_QYSSXAFB3S,Outing (Trust Lv.{n}+)
 tx_0TJBQGEP0N,Meeting (used up)
 tx_M4WBEB9G7X,This evening: Rested
 tx_H8MV6KQN83,This evening: Meeting with {name}
@@ -1637,7 +1648,7 @@ tx_BVDJ9Q0CSD,"A meeting or an outing is still possible. If you move on now, thi
 tx_CGHZDAMEAR,Skip
 tx_C3T5QMKS85,Stats
 tx_1EN72EY6WJ,Total {n}
-tx_ETEBEXQ310,Trust {n} / {max}
+tx_ETEBEXQ310,Trust Lv.{n} ({pct}%)
 tx_S8N31JKDV7,{n} {plural:n|outing|outings}
 tx_BW7K6B2QKP,Quirks
 tx_K1AJHH3AP3,No quirks equipped
@@ -1653,7 +1664,7 @@ tx_SJMNVE78AH,Tap a player on the map to hear how training went (once a morning)
 tx_1SN8VDP0S4,No one to talk to this morning
 tx_G18Q9X83C8,Talk
 tx_7FRMF2A3ZK,Joint training · with {name}
-tx_0ZK5QSV26D,Trust {trust}
+tx_0ZK5QSV26D,Trust Lv.{trust}
 tx_Y30YG2P1AK,Morning: Talk with {name}
 tx_5Y82DHJ5DX,Morning: Talk with {name} and {name2}
 tx_444WVNHT09,{day} morning · After training

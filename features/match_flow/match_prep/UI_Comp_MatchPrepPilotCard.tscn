@@ -1,0 +1,186 @@
+[gd_scene load_steps=5 format=3 uid="uid://fcw3e6mw83b2"]
+
+[ext_resource type="Script" path="res://features/match_flow/match_prep/MatchPrepPilotCard.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://crhnccjwqx1as" path="res://features/season/UI_Comp_SeasonPilotCard.tscn" id="3_season_card"]
+[ext_resource type="PackedScene" uid="uid://cuvnx8d6v5ou0" path="res://resources/UI_Comp_PositionBadge.tscn" id="4_badge"]
+
+[node name="MatchPrepPilotCard" type="PanelContainer"]
+editor_description = "PREP pilot card (five per team in a row, seat order). Width comes from the row (expand), height = content. Own team: SeasonPilotCard part (trust ring / level pill, stress). Opponent: EnemyTop (badge + portrait), red Warn chip when the analyst flags the pilot. Both: stat total (big) + up to two mech chips. Tap = pressed(pilot_id)."
+offset_right = 190.0
+offset_bottom = 330.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_type_variation = &"MatchPrepPilotCard"
+script = ExtResource("1_script")
+
+[node name="Box" type="VBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="SeasonPilotCard_Own" parent="Box" instance=ExtResource("3_season_card")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd _ready() · fill()
+Own team only: the season card (badge, portrait in the trust ring, level pill, stress, note) drawn without its own card (MatchPrepCardInner)."
+visible = false
+layout_mode = 2
+theme_type_variation = &"MatchPrepCardInner"
+
+[node name="EnemyTop" type="Control" parent="Box"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd fill()
+Opponent only: badge + portrait at the same spots as the season card (no trust ring / stress)."
+custom_minimum_size = Vector2(0, 196)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgeSlot" type="CenterContainer" parent="Box/EnemyTop"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 12.0
+offset_bottom = 42.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="PositionBadge_Role" parent="Box/EnemyTop/BadgeSlot" instance=ExtResource("4_badge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd fill()"
+layout_mode = 2
+
+[node name="Portrait" type="Control" parent="Box/EnemyTop"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd _draw_portrait()
+Slot for the round portrait with the role-coloured rim (code: OutgameTheme.add_round_portrait, diameter = this width). Same size / spot as the season card's portrait inside its ring."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -58.0
+offset_top = 62.0
+offset_right = 58.0
+offset_bottom = 178.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="OverallKey" type="Label" parent="Box"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 18
+text = "tx_FVQ03DD4B3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Overall" type="Label" parent="Box"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd fill()
+Stat total, big: exact / ≈ / ? by reveal tier (OpponentIntel row total_text). Code switches HeadingLabel ↔ FaintLabel."
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 46
+text = "536"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MechGap" type="Control" parent="Box"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="MechPad" type="MarginContainer" parent="Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="Mechs" type="HBoxContainer" parent="Box/MechPad"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd _fill_mechs()
+Up to two main-mech chips side by side (MechChip0..1, each child Text). Code hides unused chips."
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="MechChip0" type="PanelContainer" parent="Box/MechPad/Mechs"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"MatchPrepMechChip"
+
+[node name="Text" type="Label" parent="Box/MechPad/Mechs/MechChip0"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 15
+text = "Headsman"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="MechChip1" type="PanelContainer" parent="Box/MechPad/Mechs"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"MatchPrepMechChip"
+
+[node name="Text" type="Label" parent="Box/MechPad/Mechs/MechChip1"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 15
+text = "Reaper"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="BottomPad" type="Control" parent="Box"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Overlay" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Warn" type="PanelContainer" parent="Overlay"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd fill()
+Red '경계 대상' chip straddling the card's top-right corner (clear of the centred position badge). Shown on the opponent pilot the analyst names."
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -96.0
+offset_top = -16.0
+offset_right = -6.0
+offset_bottom = 12.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"MatchPrepWarnChip"
+
+[node name="Text" type="Label" parent="Overlay/Warn"]
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "tx_51C591RCKG"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Hit" type="Button" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd _ready()
+Tap target over the whole card → pressed(pilot_id). PASS keeps drag scrolling of the PREP scroll."
+layout_mode = 2
+mouse_filter = 1
+focus_mode = 0
+mouse_default_cursor_shape = 2
+flat = true

@@ -3,8 +3,8 @@ extends Panel
 
 # Small vertical pilot card shown five in a row (seat order) on the season hub and at the
 # bottom of the week screen: position badge on top, round portrait inside a **trust ring**
-# (`TrustRing`, trust / TRUST_MAX in the trust band colour) with the trust number on a pill at
-# its bottom-right, then the stress line and one emphasised note line (hub: the mood when
+# (`TrustRing`, progress toward the next trust level in the trust band colour) with the trust
+# **level** on a pill at its bottom-right (`MentalSystem.level_of_trust` / `progress_of_trust`), then the stress line and one emphasised note line (hub: the mood when
 # shaken; week: that day's stress change). Tapping the card emits `pressed(pilot_id)`; the
 # screens open `SeasonPilotDetail` with it.
 #
@@ -34,23 +34,23 @@ func set_tappable(on: bool) -> void:
 	(%Hit as Button).visible = on
 
 
-## Fills the card. `trust` / `stress` are the run values (`MentalSystem.trust`,
-## `StressSystem.value`). The note line shows the mood when shaken, else stays empty —
+## Fills the card. `trust` / `stress` are the run values (`MentalSystem.trust` points — shown
+## as level + progress here, `StressSystem.value`). The note line shows the mood when shaken, else stays empty —
 ## callers that have something to say there (the week's stress change) call `set_note` after.
 func show_pilot(pid: int, role: int, trust: int, stress: int) -> void:
 	pilot_id = pid
 	(%PositionBadge_Role as PositionBadge).set_role(role)
 	_draw_portrait(PilotImages.circle_for(pid))
-	var t_max: int = maxi(1, ConstTable.int_of("TRUST_MAX"))
-	var col: Color = HubView.trust_color(trust)
+	var level: int = MentalSystem.level_of_trust(trust)
+	var col: Color = HubView.trust_color(level)
 	var ring: TrustRing = %Ring
-	ring.ratio = float(trust) / float(t_max)
+	ring.ratio = MentalSystem.progress_of_trust(trust)
 	ring.color = col
 	var pill: Panel = %TrustPill
 	pill.visible = true
 	pill.add_theme_stylebox_override("panel",
 			OutgameTheme.flat_style(col, int(pill.custom_minimum_size.y * 0.5)))
-	(%TrustText as Label).text = "%d" % trust
+	(%TrustText as Label).text = "%d" % level
 	var shaken: bool = StressSystem.is_over(stress)
 	var sl: Label = %Stress
 	sl.text = Loc.t(L.MENTAL_UI_STRESS_VALUE, {"n": stress})

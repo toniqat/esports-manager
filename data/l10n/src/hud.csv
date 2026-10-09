@@ -48,10 +48,10 @@ tx_JB2XA9GEHD,hud.pilot_detail.row.base_max_hp,active,pilot detail info row labe
 tx_KKM3DF9426,hud.pilot_detail.row.growth,active,pilot detail info row label,,,성장,Growth,draft,705103b6
 tx_RBMEVC2P2S,hud.pilot_detail.row.current_hp,active,pilot detail info row label,,,{tx_D6A8HQG31W} {tx_0KSNX63V29},{tx_D6A8HQG31W} {tx_0KSNX63V29},draft,1718a0e2
 tx_07SNADVFZF,hud.pilot_detail.row.base_atk,active,pilot detail info row label,,,{tx_HKC6TKSA2K} {tx_DM2CD6EQG8},{tx_HKC6TKSA2K} {tx_DM2CD6EQG8},draft,d29f3082
-tx_75P2CDB8G1,hud.pilot_detail.row.temp_effect,active,pilot detail info row label,,,일시 효과,Temporary Effect,draft,1549f070
+tx_75P2CDB8G1,hud.pilot_detail.row.temp_effect,deprecated,pilot detail info row label,,,일시 효과,Temporary Effect,draft,1549f070
 tx_205QKFD76D,hud.pilot_detail.row.final,active,pilot detail info row label,,,최종,Final,draft,72038235
 tx_HKC6TKSA2K,hud.pilot_detail.row.base,active,pilot detail info row label,,,기본,Base,draft,7f1d8c41
-tx_50MCWKXH27,hud.pilot_detail.row.special,active,pilot detail info row label,,,특수 능력,Special Ability,draft,06e7189b
+tx_50MCWKXH27,hud.pilot_detail.row.special,deprecated,pilot detail info row label,,,특수 능력,Special Ability,draft,06e7189b
 tx_9CFJV5MVD2,hud.pilot_detail.row.ingame_gain,active,pilot detail info row label,,,인게임 증가,In-game Gain,draft,8f79b36e
 tx_HEAG7E5FVG,hud.pilot_detail.row.vs_equal,active,pilot detail info row label,,,대등한 상대에게,Vs. an equal opponent,draft,526f30fe
 tx_2383X7Y4A3,hud.pilot_detail.row.mech_hp,active,pilot detail info row label,,,기체 {tx_0KSNX63V29},Mech {tx_0KSNX63V29},draft,033eed31
@@ -95,3 +95,10 @@ tx_RZN79649QG,hud.mvp_view.title,active,UI_View_MvpView.tscn Root/SafeArea/Title
 tx_TWDEFMDMTZ,hud.pilot_detail_view.tab_ingame,active,UI_View_PilotDetailView.tscn InfoColumn/Column/StatGroup/TabsMargin/Tabs/TabIngame text,,,인게임,In-game,draft,966f4e6f
 tx_TJEJTTZ9PP,hud.pilot_detail_view.tab_pilot,active,UI_View_PilotDetailView.tscn InfoColumn/Column/StatGroup/TabsMargin/Tabs/TabPilot text,,,파일럿,Pilot,draft,c5aaefd4
 tx_840PD89SBP,hud.pilot_detail_view.tab_mech,active,UI_View_PilotDetailView.tscn InfoColumn/Column/StatGroup/TabsMargin/Tabs/TabMech text,,,메크,Mech,draft,9b9c1200
+tx_YGX9KDFT51,hud.pilot_detail.header.gain_rate,deprecated,"pilot detail header, under the growth points: current accrual multiplier",,,적립 {pct}%,Gain {pct}%,draft,4d1d25de
+tx_6TJEJMS5G0,hud.pilot_detail.row.spikes,deprecated,pilot detail info row label (value N / M),,,성장 도약,Growth Spikes,draft,b2e9c55f
+tx_DCPZE5FEBQ,hud.pilot_detail.row.next_spike,deprecated,pilot detail info row label (value e.g. 30k),,,다음 도약,Next Spike,draft,41f533a6
+tx_ECA0V7N5CG,hud.pilot_detail.row.atk_gain,deprecated,pilot detail info row label (value +N%),,,{tx_DM2CD6EQG8} 증가,{tx_DM2CD6EQG8} Increase,draft,1a5bbe5e
+tx_9BD5WJRJ16,hud.pilot_detail.row.max_hp_gain,deprecated,pilot detail info row label (value +N%),,,{tx_CT45F83FMW} 증가,{tx_CT45F83FMW} Increase,draft,d1272ca2
+tx_92JKM782CD,hud.pilot_detail.note.score,active,pilot detail growth-points plate note; {atk_growth} / {hp_growth} = keyword icon,,,"성장치에 따라 {tx_DM2CD6EQG8}과 {tx_CT45F83FMW}이 증가합니다. {step}k마다 크게 성장합니다.\n파일럿의 {atk_growth} {tx_NZ8J811NK6}과 {hp_growth} {tx_9SGTNE082E}이 높을수록, 성장치에 따른 {tx_DM2CD6EQG8}과 {tx_CT45F83FMW} 상승량이 증가합니다.","{tx_DM2CD6EQG8} and {tx_CT45F83FMW} rise with growth points, with a big jump every {step}k.\nThe higher the pilot's {atk_growth} {tx_NZ8J811NK6} and {hp_growth} {tx_9SGTNE082E}, the more {tx_DM2CD6EQG8} and {tx_CT45F83FMW} each growth point gives.",draft,e345e64d
+tx_33SA211TC1,hud.pilot_detail.row.effect_gain,active,pilot detail stat plate row under growth: total added by skill / passive / card effects (value +N),,,증가,Bonus,draft,887d85fa

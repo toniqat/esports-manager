@@ -789,6 +789,23 @@ static func _add_screen_variations(th: Theme) -> void:
 
 	# match_flow/match_prep — 분석가 메모 (MatchPrep · 리그 팀 상세)
 	_add_derived(th, "IntelAnalystNote", &"SunkPanel", flat_style(ACCENT_DIM, 14))
+	# PREP pilot card (`UI_Comp_MatchPrepPilotCard`): the card itself (no padding — the scene
+	# places its parts), the embedded `SeasonPilotCard` drawn without its own card, the red
+	# "경계 대상" chip and the small mech chips.
+	_add_derived(th, "MatchPrepPilotCard", &"Card", card_style(CARD_RADIUS))
+	_add_derived(th, "MatchPrepCardInner", &"Card", StyleBoxEmpty.new())
+	var warn := flat_style(NEGATIVE, CHIP_RADIUS)
+	warn.content_margin_left = 10.0
+	warn.content_margin_right = 10.0
+	warn.content_margin_top = 2.0
+	warn.content_margin_bottom = 2.0
+	_add_derived(th, "MatchPrepWarnChip", &"AccentChip", warn)
+	var mech_chip := flat_style(SURFACE_SUNK, 8)
+	mech_chip.content_margin_left = 4.0
+	mech_chip.content_margin_right = 4.0
+	mech_chip.content_margin_top = 2.0
+	mech_chip.content_margin_bottom = 2.0
+	_add_derived(th, "MatchPrepMechChip", &"SunkPanel", mech_chip)
 
 	# meta/collection · meta/manager — 컬렉션 칸 · 프리셋 칩 · 특성 블록 (R2a)
 	# 버튼 판은 상태마다 같은 판 — 상태(보유 · 선택 · 장착 · 잠김 · 칸 초과)는 코드가 이름만 바꾼다.

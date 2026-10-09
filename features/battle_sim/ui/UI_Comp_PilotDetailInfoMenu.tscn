@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dssloojttpuvm"]
+[gd_scene load_steps=3 format=3 uid="uid://dssloojttpuvm"]
 
 [ext_resource type="Theme" uid="uid://dmrfge5o5tftu" path="res://resources/BattleTheme.tres" id="1_theme"]
+[ext_resource type="Script" uid="uid://d0yoylvniwlnv" path="res://features/battle_sim/ui/PilotDetailScoreBar.gd" id="2_bar"]
 
 [node name="PilotDetailInfoMenu" type="PanelContainer"]
 auto_translate_mode = 2
@@ -25,19 +26,47 @@ mouse_filter = 2
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _build_menu_content()"
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
+anchors_preset = -1
+anchor_right = 0.68
 offset_bottom = 36.0
 grow_horizontal = 2
 theme_type_variation = &"BattleHeaderLabel"
 theme_override_font_sizes/font_size = 28
 text = "전장 명중"
 vertical_alignment = 1
+clip_text = true
+
+[node name="TitleValue" type="Label" parent="VBox/HeadBox"]
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _build_menu_content()
+스탯 판의 최종 값 — 제목 줄 맨 오른쪽(체력 = 최대 체력). 스탯이 아닌 판(효과 · 카드 · 성장치)에서는 숨긴다."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+offset_bottom = 36.0
+grow_horizontal = 0
+theme_type_variation = &"BattleHeaderLabel"
+theme_override_font_sizes/font_size = 28
+text = "55"
+horizontal_alignment = 2
+vertical_alignment = 1
+clip_text = true
 
 [node name="HeadGap" type="Control" parent="VBox"]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 mouse_filter = 2
+
+[node name="ScoreBar" type="Control" parent="VBox"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _build_menu_content()
+성장치 판에서만 보인다 — 0 ~ GROWTH_SPIKE_MAX 막대 + 도약 눈금(PilotDetailScoreBar, _draw). 높이 58 = 막대 + 눈금 글자 + 아래 여백."
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("2_bar")
 
 [node name="Rows" type="VBoxContainer" parent="VBox"]
 unique_name_in_owner = true
@@ -69,3 +98,19 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 mouse_filter = 2
+
+[node name="FxGap" type="Control" parent="VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="FxGrid" type="GridContainer" parent="VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _build_menu_content()
+이 스탯에 걸린 효과(스킬 · 메크 패시브 · 카드) 칸(UI_Comp_PilotDetailStatFx)을 코드가 채운다. 4열 × 72 + 간격 12 = 324 ≤ 판 안쪽 332. 효과가 없으면 FxGap 과 함께 숨긴다."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 10
+columns = 4

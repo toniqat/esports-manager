@@ -9,12 +9,20 @@ extends Control
 #     따로 메울 필요가 없다). 아래쪽은 `OutgameTheme.fit_bottom_bar(%Start, %Safe)` 가 맡는다 —
 #     `%Safe` 를 아래 인셋만큼 올리고, 하단 바(`BarPrimaryButton`, 모서리 0 은 변형 몫)는
 #     인셋 자리까지 내려가 그 높이만큼 아래 여백을 갖는다(기기 값이라 변형이 아니라 코드).
-#   • 두 팀 구역의 내용 — `%IntelView_EnemyIntel` / `%IntelView_OwnIntel` 은 `IntelView` 씬 인스턴스(리그 팀
-#     상세와 공용, 컨테이너라 높이는 내용대로)이고, 여기서는 `show_intel` 로 채우기만 한다.
+#   • 상대 팀 분석 머리 — `%IntelView_EnemyIntel` 은 `IntelView` 씬 인스턴스(리그 팀 상세와 공용)를
+#     `show_rows = false` 로 둔 것: 분석 단계 칩 · 분석 메모만 보인다.
+#   • 두 팀의 선수 — `%EnemyCards` / `%OwnCards` 의 `MatchPrepPilotCard` 다섯 장(자리 순서)을
+#     `OpponentIntel.build()` 의 행으로 채운다(공개 단계는 그 행이 이미 지킨다). 카드를 누르면
+#     상세 시트: 내 선수 = `SeasonPilotDetail`, 상대(또는 런 밖의 내 선수) = `MatchPrepPilotDetail`.
 
 signal start_pressed
 
 const SCENE_PATH: String = "res://features/match_flow/match_prep/UI_View_MatchPrepView.tscn"
+
+var _state: Dictionary = {}
+## pilot_id → [intel (`OpponentIntel.build()`), row] of the card last filled — the detail sheet
+## shows exactly what that card's reveal tier allows.
+var _shown: Dictionary = {}
 
 
 static func create() -> MatchPrepView:
@@ -28,6 +36,9 @@ func _ready() -> void:
 	OutgameTheme.fit_bottom_bar(start, safe)
 	start.pressed.connect(func() -> void: start_pressed.emit())
 	DragScroll.attach(%Scroll)
+	for box in [%EnemyCards, %OwnCards]:
+		for c in (box as Node).get_children():
+			(c as MatchPrepPilotCard).pressed.connect(_on_card_pressed)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -37,8 +48,42 @@ func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
 	%Matchup.text = "%s  vs  %s" % [player_team_name, enemy_team_name]
 	%EnemyTitle.text = Loc.t(L.MATCH_PREP_ENEMY_TITLE, {"team": enemy_team_name})
 	%OwnTitle.text = Loc.t(L.MATCH_PREP_OWN_TITLE, {"team": player_team_name})
-	(%IntelView_EnemyIntel as IntelView).show_intel(OpponentIntel.build(state, enemy_roster, false))
-	(%IntelView_OwnIntel as IntelView).show_intel(OpponentIntel.build(state, player_roster, true))
+	_state = state
+	_shown.clear()
+	var enemy: Dictionary = OpponentIntel.build(state, enemy_roster, false)
+	(%IntelView_EnemyIntel as IntelView).show_intel(enemy)
+	_fill_cards(%EnemyCards, enemy)
+	_fill_cards(%OwnCards, OpponentIntel.build(state, player_roster, true))
+
+
+## Five cards of one team in seat order (the intel rows already are); missing pilots hide
+## their card.
+func _fill_cards(box: Node, intel: Dictionary) -> void:
+	var rows: Array = intel["rows"]
+	var own: bool = bool(intel["own"])
+	var threat: int = int(intel.get("threat_pilot_id", -1))
+	var cards: Array = box.get_children()
+	for i in cards.size():
+		var card := cards[i] as MatchPrepPilotCard
+		card.visible = i < rows.size()
+		if not card.visible:
+			continue
+		var row: Dictionary = rows[i]
+		var pid: int = int(row["pilot_id"])
+		card.fill(row, own, MentalSystem.trust(_state, pid) if own else 0,
+				StressSystem.value(_state, pid) if own else 0, pid == threat)
+		_shown[pid] = [intel, row]
+
+
+func _on_card_pressed(pid: int) -> void:
+	var entry: Array = _shown.get(pid, [])
+	if entry.is_empty():
+		return
+	var intel: Dictionary = entry[0]
+	if bool(intel["own"]) and MentalEvents.pilot_of(_state, pid) != null:
+		SeasonPilotDetail.open(self, pid)
+	else:
+		MatchPrepPilotDetail.open(self, intel, entry[1])
 
 
 ## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 다음 경기 상대(미리보기 전용

@@ -333,3 +333,4 @@ tx_2XVW6DND6C,mental.j03.j03_c0_s0,active,mental_texts.csv text (id=J03_C0_S0),,
 tx_T0XXC81CWK,mental.j03.j03_c1,active,mental_texts.csv text (id=J03_C1),,,"{name2}, 네가 오늘 좀 챙겨 줘.","{name2}, look after them today.",draft,5544566c
 tx_6GSWJZY616,mental.j03.j03_c1_s0,active,mental_texts.csv text (id=J03_C1_S0),,,&맡겨 주세요.,&Leave it to me.,draft,563876db
 tx_94NECDHB76,mental.j03.j03_c1_s1,active,mental_texts.csv text (id=J03_C1_S1),,,&저도 사실 좀 힘든데요.,&Honestly I'm a bit worn out too.,draft,91cf49af
+tx_2HXM8CJ9R6,mental.ui.note.trust_level,active,Mental result chip when a pilot's trust level changes (MentalEvents.note_text) — alias 4 segments,,,{name} 신뢰도 Lv.{n},{name} trust Lv.{n},draft,4777462d

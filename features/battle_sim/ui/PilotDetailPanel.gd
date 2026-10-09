@@ -64,6 +64,9 @@ const FX_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_Pilo
 const BAND_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailCardBand.tscn")
 const MENU_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailInfoMenu.tscn")
 const MENU_ROW_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailInfoRow.tscn")
+const STAT_FX_SCENE: PackedScene = preload("res://features/battle_sim/ui/UI_Comp_PilotDetailStatFx.tscn")
+## Info-target key of the header score button (growth-points plate with the 0 ~ max bar).
+const SCORE_KEY: String = "score"
 
 ## 탭 셋. 인게임 = 지금 이 전장에서의 상태, 파일럿 = 사람의 능력치 + 파일럿
 ## 카드, 메크 = 기체의 능력치 + 메크 카드. 예전의 "전환" 버튼(파일럿 ↔ 메크
@@ -153,9 +156,10 @@ const MENU_PAD := Vector2(20.0, 16.0)
 const MENU_GAP_X: float = 16.0
 ## 설명 글 속 아이콘이 파내는 판 바탕색 = 판 색.
 const MENU_BG := BattleTheme.MENU_BG
-## 설명 글의 `{attack}` · `{engage}` 자리에 서는 아이콘.
+## 설명 글의 `{attack}` · `{engage}` · `{atk_growth}` · `{hp_growth}` 자리에 서는 아이콘.
 const MENU_NOTE_ICON: Dictionary = {
 	"attack": KeywordIcon.ATTACK, "engage": KeywordIcon.ENGAGE,
+	"atk_growth": KeywordIcon.ATK_GROWTH, "hp_growth": KeywordIcon.HP_GROWTH,
 }
 ## 판 아래의 설명 글 크기(`PilotDetailNoteText`) — 아이콘 크기를 여기서 낸다.
 const MENU_NOTE_FONT: int = BattleTheme.FONT_CAPTION
@@ -248,6 +252,9 @@ var _tab_buttons: Array = []          # Array[Button], Tab 순서
 # 머리글(이름 · 기체명 · 성장치)은 **탭과 무관**하므로 열 때 한 번만 채우고
 # `refresh()` 가 숫자만 고친다.
 var _growth_label: Label = null
+## Accrual multiplier line under the score, and the score button itself (info target "score").
+var _growth_rate_label: Label = null
+var _score_btn: Button = null
 ## 파일럿 스킬 블록의 상태 줄과 사용 버튼. `refresh()` 가 이 둘만 다시 쓴다 —
 ## 트리를 다시 세우면 카드 노드가 매 갱신마다 인스턴스화된다. 패시브 스킬 ·
 ## 스킬 없는 파일럿 · 인게임이 아닌 탭에서는 버튼이 null 이다.
@@ -346,6 +353,8 @@ func close() -> void:
 	_fx_keys.clear()
 	_reset_fan()
 	_growth_label = null
+	_growth_rate_label = null
+	_score_btn = null
 	_skill_status = null
 	_skill_use_btn = null
 	_tab_buttons.clear()
@@ -387,8 +396,7 @@ func can_open() -> bool:
 func refresh() -> void:
 	if not is_active():
 		return
-	if _growth_label != null and is_instance_valid(_growth_label):
-		_growth_label.text = BattleSim.fmt_score(_pilot.score)
+	_fill_score()
 	_refresh_skill_block()
 	# 스킬 상태 줄이 생기거나 사라져야 하면(쿨타임이 막 끝남 / 막 씀) 판 높이가
 	# 바뀌므로 본문을 다시 세운다.
@@ -424,6 +432,9 @@ func _build() -> void:
 	_fan_hits = _view.get_node("%CardFanHits")
 	_menu_root = _view.get_node("%InfoMenu")
 	_growth_label = _view.get_node("%Growth")
+	_growth_rate_label = _view.get_node("%GrowthRate")
+	_score_btn = _view.get_node("%ScoreButton")
+	_score_btn.pressed.connect(_on_target_pressed.bind(SCORE_KEY))
 
 	# 딤 = "바깥". 탭 · 칩 · 카드 · 사용 버튼이 아닌 곳을 누르면 여기로 떨어져
 	# 상세 화면이 닫힌다(`_on_dim_input`). 판과 글자는 전부 IGNORE 라 판
@@ -622,6 +633,8 @@ func _on_tab_pressed(idx: int) -> void:
 # 컨테이너가 내용에 맞춘다.
 func _rebuild_body() -> void:
 	_targets.clear()
+	# The header score button lives outside the body but opens the same info plate.
+	_targets[SCORE_KEY] = {"button": _score_btn, "style": TargetStyle.CHIP}
 	_fan_hover = -1
 	_fx_keys = _fx_signature()
 	_clear_children(_view.get_node("%Chips"))
@@ -679,11 +692,24 @@ static func _clear_children(node: Node) -> void:
 func _fill_header() -> void:
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = _mech()
-	_growth_label.text = BattleSim.fmt_score(_pilot.score)
+	_fill_score()
 	(_view.get_node("%Name") as Label).text = pd.name if pd != null else _bs.pilot_label(_pilot)
 	(_view.get_node("%Mech") as Label).text = mech.name if mech != null \
 			else Loc.t(L.HUD_PILOT_DETAIL_NO_MECH)
 	_fill_stress()
+
+
+## Header right side — growth points + the accrual bonus over the base rate (`+N%`, `+0%` with no effect).
+func _fill_score() -> void:
+	if _growth_label != null and is_instance_valid(_growth_label):
+		_growth_label.text = BattleSim.fmt_score(_pilot.score)
+	if _growth_rate_label != null and is_instance_valid(_growth_rate_label):
+		_growth_rate_label.text = _gain_bonus_text()
+
+
+## Accrual multiplier as a signed bonus over 1.0 (`BattleSim.growth_accrual_mult` 1.2 → `+20%`).
+func _gain_bonus_text() -> String:
+	return "%+d%%" % roundi((_bs.growth_accrual_mult(_pilot) - 1.0) * 100.0)
 
 
 ## 머리 셋째 줄 — "스트레스 N · 상태". 스트레스가 있는 파일럿(내 다섯)만, 아니면 줄을 숨긴다.
@@ -860,9 +886,9 @@ func _chip_value(key: String) -> String:
 		"atk", "m_atk":
 			return str(_pilot.atk)
 		"hit":
-			return str(_bs.sim_core.lane_adjusted(_pilot.hit, _pilot))
+			return str(_bs.sim_core.effective_hit(_pilot))
 		"eva":
-			return str(_bs.sim_core.lane_adjusted(_pilot.evasion, _pilot))
+			return str(_bs.sim_core.effective_evasion(_pilot))
 		"presence", "m_presence":
 			return str(_pilot.presence + maxi(0, _presence_delta()))
 		"e_hit":
@@ -1552,6 +1578,19 @@ func _build_menu_content(animate: bool = false) -> void:
 	var panel := MENU_SCENE.instantiate() as Control
 	_menu_root.add_child(panel)
 	(panel.get_node("%Title") as Label).text = _target_title(_menu_key)
+	var title_value: Label = panel.get_node("%TitleValue")
+	title_value.text = _title_value(_menu_key)
+	title_value.visible = title_value.text != ""
+	var effects: Array = _stat_effects(_menu_key)
+	var fx_grid: Control = panel.get_node("%FxGrid")
+	fx_grid.visible = not effects.is_empty()
+	panel.get_node("%FxGap").visible = fx_grid.visible
+	for raw in effects:
+		_make_stat_fx(fx_grid, raw as Dictionary)
+	var bar := panel.get_node("%ScoreBar") as PilotDetailScoreBar
+	bar.visible = _menu_key == SCORE_KEY
+	if bar.visible:
+		bar.setup(_pilot.score, BattleSim.GROWTH_SPIKE_STEP, BattleSim.GROWTH_SPIKE_MAX)
 	var rows: Control = panel.get_node("%Rows")
 	for row in _menu_rows(_menu_key):
 		var line := MENU_ROW_SCENE.instantiate() as Control
@@ -1694,6 +1733,8 @@ static func _animate_desc_in(box: Control) -> void:
 ## 정보 패널의 제목. 접두사가 종류를 가른다 — 스탯은 칩 이름, 효과는 온전한
 ## 효과 이름(썸네일에는 두 글자 약칭밖에 없다), 카드는 카드 이름.
 func _target_title(key: String) -> String:
+	if key == SCORE_KEY:
+		return Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH_POINTS)
 	if key.begins_with("fx:"):
 		for raw in _effect_defs():
 			var d: Dictionary = raw as Dictionary
@@ -1718,16 +1759,20 @@ func _card_of(key: String) -> CardData:
 func _menu_rows(key: String) -> Array:
 	if key.begins_with("fx:"):
 		return _fx_rows(key)
+	if key == SCORE_KEY:
+		return _score_rows()
 	var pd: PlayerData = _bs.player_data_for(_pilot)
 	var mech: MechData = _mech()
 	match key:
+		# Final values sit on the plate's title line (`_title_value`); the rows are the
+		# breakdown — base, growth, then `증가` = everything the effect cells below add.
 		"hp":
 			var rows: Array = [
 				[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE_MAX_HP), str(_pilot.base_max_hp)],
 				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH), "+%d%%  (+%d)" % [roundi(_pilot.growth_hp * 100.0),
-						_pilot.max_hp - _pilot.base_max_hp]],
-				[Loc.t(L.TERM_COMBAT_MAX_HP), str(_pilot.max_hp)],
-				[Loc.t(L.HUD_PILOT_DETAIL_ROW_CURRENT_HP), str(_pilot.hp)]]
+						_growth_amount("hp")]]]
+			_append_gain_row(rows, "hp")
+			rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_CURRENT_HP), str(_pilot.hp)])
 			if _pilot.shield > 0:
 				rows.append([Loc.t(L.TERM_COMBAT_SHIELD), "+%d" % _pilot.shield])
 			return rows
@@ -1735,30 +1780,26 @@ func _menu_rows(key: String) -> Array:
 			var rows_atk: Array = [
 				[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE_ATK), str(_pilot.base_atk)],
 				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH), "+%d%%  (+%d)" % [roundi(_pilot.growth * 100.0),
-						roundi(float(_pilot.base_atk) * _pilot.growth)]]]
-			if _pilot.atk_buff != 0:
-				rows_atk.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_TEMP_EFFECT), "%+d" % _pilot.atk_buff])
-			rows_atk.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL), str(_pilot.atk)])
+						_growth_amount("atk")]]]
+			_append_gain_row(rows_atk, "atk")
 			return rows_atk
-		"hit", "eva":
-			var base: int = _pilot.hit if key == "hit" else _pilot.evasion
-			var rows_h: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(base)]]
-			if not is_zero_approx(_pilot.lane_stat_mod):
-				rows_h.append([Loc.t(L.HUD_PILOT_DETAIL_FX_LANE_TITLE), "%+d%%%s" % [
-					roundi(_pilot.lane_stat_mod * 100.0),
-					_remain_txt(_pilot.lane_stat_expire_turn, false)]])
-			rows_h.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL), str(_bs.sim_core.lane_adjusted(base, _pilot))])
+		"hit", "eva", "presence":
+			var rows_h: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(_stat_base(key))]]
+			_append_gain_row(rows_h, key)
 			return rows_h
-		"presence":
-			var rows_p: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(_pilot.presence)]]
-			if _presence_delta() > 0:
-				rows_p.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_SPECIAL), "%+d" % _presence_delta()])
-			return rows_p
 		_:
 			pass
 	if key in PlayerData.STAT_KEYS:
 		if pd == null:
 			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), "—"]]
+		# The growth coefficients show what the current score already bought:
+		# stat value + (attack / max HP gained from growth).
+		if key == "atk_growth":
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH_POINTS), "%d  (+%d)" % [int(pd.atk_growth),
+					roundi(float(_pilot.base_atk) * _pilot.growth)]]]
+		if key == "hp_growth":
+			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH_POINTS), "%d  (+%d)" % [int(pd.hp_growth),
+					roundi(float(_pilot.base_max_hp) * _pilot.growth_hp)]]]
 		# 선수 스탯은 **경기 중에 변하지 않는다** — 주간 훈련으로만 오른다.
 		# 그래서 기본값과 최종값이 언제나 같고 증가분 줄이 따로 없다.
 		return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_BASE), str(int(pd.get(key)))], [Loc.t(L.HUD_PILOT_DETAIL_ROW_INGAME_GAIN), Loc.t(L.UI_WORD_NONE)]]
@@ -1772,17 +1813,284 @@ func _menu_rows(key: String) -> Array:
 					[Loc.t(L.HUD_PILOT_DETAIL_ROW_VS_EQUAL), "%d%%" % roundi(
 							PilotData.hit_chance(_pilot.engage_eva, _pilot.engage_eva) * 100.0)]]
 		"m_hp":
-			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_HP), str(mech.hp) if mech != null else "—"],
-					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_MAX_HP), str(_pilot.base_max_hp)],
-					[Loc.t(L.UI_WORD_CURRENT), "%d / %d" % [_pilot.hp, _pilot.max_hp]]]
+			var rows_mh: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_HP), str(mech.hp) if mech != null else "—"],
+					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_MAX_HP), str(_pilot.base_max_hp)]]
+			_append_gain_row(rows_mh, "hp")
+			rows_mh.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_CURRENT_HP), str(_pilot.hp)])
+			return rows_mh
 		"m_atk":
-			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_ATK), str(mech.atk) if mech != null else "—"],
-					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_ATK), str(_pilot.base_atk)],
-					[Loc.t(L.UI_WORD_CURRENT), str(_pilot.atk)]]
+			var rows_ma: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_ATK), str(mech.atk) if mech != null else "—"],
+					[Loc.t(L.HUD_PILOT_DETAIL_ROW_PILOT_BASE_ATK), str(_pilot.base_atk)]]
+			_append_gain_row(rows_ma, "atk")
+			return rows_ma
 		"m_presence":
-			return [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_PRESENCE), str(mech.presence) if mech != null else "—"],
-					[Loc.t(L.UI_WORD_CURRENT), str(_pilot.presence)]]
+			var rows_mp: Array = [[Loc.t(L.HUD_PILOT_DETAIL_ROW_MECH_PRESENCE), str(mech.presence) if mech != null else "—"]]
+			_append_gain_row(rows_mp, "presence")
+			return rows_mp
 	return []
+
+
+# ─── 스탯 판: 최종 값 · 효과 칸 ──────────────────────────────────────────────
+## Chip key → the in-game stat whose effects its plate lists (mech tab chips show the
+## same values as the in-game ones). Pilot-tab stats and engage hit / evasion have no
+## in-match effects, so they are not here.
+const STAT_FX_KEY := {
+	"hp": "hp", "m_hp": "hp", "atk": "atk", "m_atk": "atk",
+	"presence": "presence", "m_presence": "presence", "hit": "hit", "eva": "eva",
+}
+const FX_LANE_UP_COLOR := Color(1.00, 0.62, 0.48)
+const FX_LANE_DOWN_COLOR := Color(0.55, 0.82, 1.00)
+const FX_PASSIVE_COLOR := Color(0.72, 0.84, 1.00)
+## Kind → l10n key of its two-character label (residual cells, `_append_residual_fx` too).
+const FX_KIND_SHORT := {
+	PilotData.FX_MAX_HP: L.HUD_PILOT_DETAIL_FX_HP_SHORT,
+	PilotData.FX_ATK: L.HUD_PILOT_DETAIL_FX_ATK_SHORT,
+	PilotData.FX_ATK_PCT: L.HUD_PILOT_DETAIL_FX_ATK_PCT_SHORT,
+	PilotData.FX_HP_PCT: L.HUD_PILOT_DETAIL_FX_HP_PCT_SHORT,
+}
+
+
+## The final value on a stat plate's title line — the chip value, except HP = max HP.
+## "" for plates that are not a stat (effects · cards · growth points): the label hides.
+func _title_value(key: String) -> String:
+	if key == "hp" or key == "m_hp":
+		return str(_pilot.max_hp)
+	if CHIP_ICONS.has(key) or key in PlayerData.STAT_KEYS:
+		return _chip_value(key)
+	return ""
+
+
+## Stat value before growth and effects.
+func _stat_base(stat: String) -> int:
+	match stat:
+		"hp":
+			return _pilot.base_max_hp
+		"atk":
+			return _pilot.base_atk
+		"hit":
+			return _pilot.hit
+		"eva":
+			return _pilot.evasion
+		"presence":
+			return _pilot.presence
+	return 0
+
+
+## What growth points added — attack / max HP only.
+func _growth_amount(stat: String) -> int:
+	match stat:
+		"hp":
+			return roundi(float(_pilot.base_max_hp) * _pilot.growth_hp)
+		"atk":
+			return roundi(float(_pilot.base_atk) * _pilot.growth)
+	return 0
+
+
+## Final value — the same numbers the chips and the title line show.
+func _stat_final(stat: String) -> int:
+	match stat:
+		"hp":
+			return _pilot.max_hp
+		"atk":
+			return _pilot.atk
+		"hit":
+			return _bs.sim_core.effective_hit(_pilot)
+		"eva":
+			return _bs.sim_core.effective_evasion(_pilot)
+		"presence":
+			return _pilot.presence + maxi(0, _presence_delta())
+	return 0
+
+
+## `증가` row under `성장` = final − base − growth, so the rows always add up to the title
+## value — multipliers compounding on each other and rounding land here, not in the
+## cells. Only when at least one effect is on.
+func _append_gain_row(rows: Array, stat: String) -> void:
+	if _stat_effects_of(stat).is_empty():
+		return
+	var gain: int = _stat_final(stat) - _stat_base(stat) - _growth_amount(stat)
+	rows.append([Loc.t(L.HUD_PILOT_DETAIL_ROW_EFFECT_GAIN), "%+d" % gain])
+
+
+func _stat_effects(key: String) -> Array:
+	if not STAT_FX_KEY.has(key):
+		return []
+	return _stat_effects_of(String(STAT_FX_KEY[key]))
+
+
+## Every effect on `stat` right now, one cell each: `{art, icon, short, color, has_pct,
+## pct, flat}`. A multiplier's `flat` is (base + growth) × pct — the agreed split; the
+## exact total is the `증가` row. Sources mirror `BattleSim.refresh_growth_stats`
+## (attack / max HP) and `SimulationCore.effective_hit` / `effective_evasion`.
+func _stat_effects_of(stat: String) -> Array:
+	var out: Array = []
+	var sk: PilotSkillSystem = _bs.skill
+	var ms: MechSkillSystem = _bs.mech_skill
+	match stat:
+		"atk":
+			var ba: float = float(_pilot.base_atk) * (1.0 + _pilot.growth)
+			if sk != null:
+				_add_pct_fx(out, _skill_src(), sk.atk_mult(_pilot) - 1.0, ba)
+			if ms != null:
+				_add_pct_fx(out, _passive_src(), ms.atk_mult(_pilot) - 1.0, ba)
+			_add_ledger_fx(out, PilotData.FX_ATK_PCT, _pilot.bonus_atk_mult, ba)
+			_add_ledger_fx(out, PilotData.FX_ATK, float(_pilot.bonus_atk_flat), ba)
+			if _pilot.atk_buff != 0:
+				_add_flat_fx(out, _text_src(L.HUD_PILOT_DETAIL_FX_ATK_SHORT,
+						FX_KIND_COLOR[PilotData.FX_ATK] as Color), _pilot.atk_buff)
+			if ms != null:
+				_add_flat_fx(out, _passive_src(), ms.bulk_power_atk(_pilot, _pilot.max_hp))
+		"hp":
+			var bh: float = float(_pilot.base_max_hp) * (1.0 + _pilot.growth_hp)
+			if sk != null:
+				_add_pct_fx(out, _skill_src(), sk.hp_mult(_pilot) - 1.0, bh)
+			_add_ledger_fx(out, PilotData.FX_HP_PCT, _pilot.bonus_max_hp_mult, bh)
+			_add_ledger_fx(out, PilotData.FX_MAX_HP, float(_pilot.bonus_max_hp), bh)
+		"hit", "eva":
+			var b: float = float(_stat_base(stat))
+			if not is_zero_approx(_pilot.lane_stat_mod):
+				_add_pct_fx(out, _card_src(String(_pilot.fx_src.get("lane", "")),
+						L.HUD_PILOT_DETAIL_FX_LANE_SHORT,
+						FX_LANE_UP_COLOR if _pilot.lane_stat_mod > 0.0 else FX_LANE_DOWN_COLOR),
+						_pilot.lane_stat_mod, b)
+			if sk != null:
+				# The skill's lane share (inside `lane_adjusted`) and its roll multiplier, as one cell.
+				var roll_m: float = sk.hit_mult(_pilot) if stat == "hit" else sk.evasion_mult(_pilot)
+				_add_pct_fx(out, _skill_src(), (1.0 + sk.lane_stat_add(_pilot)) * roll_m - 1.0, b)
+			if stat == "hit" and _bs.card_phase != null:
+				var conf: Array = _bs.card_phase.hand_confidence_cards(_pilot)
+				if not conf.is_empty():
+					_add_pct_fx(out, _card_src((conf[0] as CardData).card_uid(),
+							L.HUD_PILOT_DETAIL_FX_LANE_SHORT, FX_LANE_UP_COLOR),
+							_bs.card_phase.hand_hit_add(_pilot), b)
+			if stat == "eva" and not is_zero_approx(_pilot.eva_card_mod):
+				_add_pct_fx(out, _card_src(String(_pilot.fx_src.get("eva", "")),
+						L.HUD_PILOT_DETAIL_FX_EVA_SHORT, FX_LANE_DOWN_COLOR), _pilot.eva_card_mod, b)
+		"presence":
+			if sk != null:
+				_add_flat_fx(out, _skill_src(), maxi(0, _presence_delta()))
+	return out
+
+
+## One cell per `persistent_fx` ledger line of `kind` (the card that left it), then the
+## residual the ledger does not explain (mech passives pushing `bonus_*` directly).
+func _add_ledger_fx(out: Array, kind: String, total: float, basis: float) -> void:
+	var is_pct: bool = kind in FX_PCT_KINDS
+	var color: Color = FX_KIND_COLOR.get(kind, Color(0.86, 0.86, 0.90)) as Color
+	for raw in _pilot.persistent_fx:
+		var e: Dictionary = raw as Dictionary
+		if String(e["kind"]) != kind:
+			continue
+		var src: Dictionary = _card_src(String(e["src"]), String(FX_KIND_SHORT.get(kind, "")), color)
+		if is_pct:
+			_add_pct_fx(out, src, float(e["amount"]), basis)
+		else:
+			_add_flat_fx(out, src, roundi(float(e["amount"])))
+	var rest: float = total - _pilot.persistent_fx_total(kind)
+	if is_zero_approx(rest):
+		return
+	var has_passive: bool = _bs.mech_skill != null and _bs.mech_skill.passive_key(_pilot) != ""
+	var rest_src: Dictionary = _passive_src() if has_passive \
+			else _text_src(String(FX_KIND_SHORT.get(kind, "")), color)
+	if is_pct:
+		_add_pct_fx(out, rest_src, rest, basis)
+	else:
+		_add_flat_fx(out, rest_src, roundi(rest))
+
+
+func _add_pct_fx(out: Array, src: Dictionary, pct: float, basis: float) -> void:
+	if is_zero_approx(pct):
+		return
+	var d: Dictionary = src.duplicate()
+	d["has_pct"] = true
+	d["pct"] = pct
+	d["flat"] = roundi(basis * pct)
+	out.append(d)
+
+
+func _add_flat_fx(out: Array, src: Dictionary, amount: int) -> void:
+	if amount == 0:
+		return
+	var d: Dictionary = src.duplicate()
+	d["has_pct"] = false
+	d["pct"] = 0.0
+	d["flat"] = amount
+	out.append(d)
+
+
+## Cell look for a card source: its art when the uid resolves, else two characters
+## of its name, else the `fallback_short` label.
+func _card_src(uid: String, fallback_short: String, color: Color) -> Dictionary:
+	var card_name: String = CardData.name_of_uid(uid) if uid != "" else ""
+	var src: Dictionary = _text_src(fallback_short, color)
+	src["art"] = CardImages.art_for(uid) if uid != "" else null
+	if card_name != "":
+		src["short"] = _fx_short(card_name)
+	return src
+
+
+## Cell look for the pilot skill — its icon glyph, else two characters of its name.
+func _skill_src() -> Dictionary:
+	var sk: PilotSkillSystem = _bs.skill
+	var src: Dictionary = {"art": null, "short": _fx_short(sk.skill_name(_pilot)),
+			"color": BattleTheme.SKILL_TILE_ICON}
+	src["icon"] = SkillImages.icon_for(String(sk.def_for(_pilot).get("key", "")))
+	return src
+
+
+## Cell look for the mech passive — two characters of its name (no passive art yet).
+func _passive_src() -> Dictionary:
+	var def: Dictionary = _bs.mech_skill.passive_def(_pilot)
+	var name_key: String = String(def.get("name_key", ""))
+	var passive_name: String = Loc.t(name_key) if name_key != "" else ""  # l10n-dynamic: mech_passive.*.name
+	return {"art": null, "icon": null, "short": _fx_short(passive_name), "color": FX_PASSIVE_COLOR}
+
+
+func _text_src(short_key: String, color: Color) -> Dictionary:
+	var short_txt: String = Loc.t(short_key) if short_key != "" else ""  # l10n-dynamic: hud.pilot_detail.fx.*.short
+	return {"art": null, "icon": null, "short": short_txt, "color": color}
+
+
+## One effect cell (`UI_Comp_PilotDetailStatFx.tscn`) — the lasting-effect thumbnail
+## with its value text off, then +N% (multipliers only) and +N under it.
+func _make_stat_fx(grid: Control, d: Dictionary) -> void:
+	var cell := STAT_FX_SCENE.instantiate() as Control
+	grid.add_child(cell)
+	var thumb: Control = cell.get_node("%PilotDetailFxThumb_Icon")
+	for n in ["%Band", "%BandValue", "%Value"]:
+		thumb.get_node(n).visible = false
+	var art: Texture2D = d.get("art") as Texture2D
+	var icon: Texture2D = d.get("icon") as Texture2D
+	var art_rect: TextureRect = thumb.get_node("%Art")
+	art_rect.visible = art != null
+	art_rect.texture = art
+	var icon_rect: TextureRect = cell.get_node("%Icon")
+	icon_rect.visible = art == null and icon != null
+	icon_rect.texture = icon
+	icon_rect.modulate = BattleTheme.SKILL_TILE_ICON
+	var short_lbl: Label = thumb.get_node("%Short")
+	short_lbl.visible = art == null and icon == null
+	short_lbl.text = String(d["short"])
+	short_lbl.add_theme_color_override("font_color", d["color"] as Color)
+
+	var pct_lbl: Label = cell.get_node("%Pct")
+	pct_lbl.visible = bool(d["has_pct"])
+	pct_lbl.text = "%+d%%" % roundi(float(d["pct"]) * 100.0)
+	pct_lbl.theme_type_variation = _sign_variation(float(d["pct"]))
+	var flat_lbl: Label = cell.get_node("%Flat")
+	flat_lbl.text = "%+d" % int(d["flat"])
+	flat_lbl.theme_type_variation = _sign_variation(float(d["flat"]))
+
+
+static func _sign_variation(v: float) -> StringName:
+	return &"BattleNegativeLabel" if v < 0.0 else &"BattlePositiveLabel"
+
+
+## Growth-points plate rows (the bar above them is `%ScoreBar`).
+func _score_rows() -> Array:
+	return [
+		[Loc.t(L.HUD_PILOT_DETAIL_ROW_GROWTH_POINTS), BattleSim.fmt_score(_pilot.score)],
+		[Loc.t(L.HUD_PILOT_DETAIL_ROW_GAIN_RATE), _gain_bonus_text()]]
 
 
 ## 지속 효과 하나의 내역. 값 자체는 썸네일에 이미 찍혀 있으므로 여기서는
@@ -1796,8 +2104,8 @@ func _fx_rows(key: String) -> Array:
 			return [
 				[Loc.t(L.HUD_PILOT_DETAIL_ROW_HIT_EVA), "%+d%%" % roundi(_pilot.lane_stat_mod * 100.0)],
 				[Loc.t(L.UI_WORD_TIME_LEFT), _remain_label(_pilot.lane_stat_expire_turn, false)],
-				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_HIT), str(_bs.sim_core.lane_adjusted(_pilot.hit, _pilot))],
-				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_EVA), str(_bs.sim_core.lane_adjusted(_pilot.evasion, _pilot))]]
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_HIT), str(_bs.sim_core.effective_hit(_pilot))],
+				[Loc.t(L.HUD_PILOT_DETAIL_ROW_FINAL_EVA), str(_bs.sim_core.effective_evasion(_pilot))]]
 		"fx:rate":
 			return [
 				[Loc.t(L.HUD_PILOT_DETAIL_ROW_GAIN_RATE), "%+d%%" % roundi((_pilot.growth_rate_mult - 1.0) * 100.0)],
@@ -1892,6 +2200,8 @@ func _menu_note(key: String) -> String:
 		return Loc.t(String(STAT_NOTES[key]))  # l10n-dynamic: hud.pilot_detail.note.*
 	if key in PlayerData.STAT_KEYS:
 		return PlayerData.stat_note(PlayerData.STAT_KEYS.find(key))
+	if key == SCORE_KEY:
+		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_SCORE, {"step": roundi(BattleSim.GROWTH_SPIKE_STEP)})
 	if key.begins_with("fx:src:"):
 		return Loc.t(L.HUD_PILOT_DETAIL_NOTE_FX_CARD)
 	if key.begins_with("fx:rest:"):

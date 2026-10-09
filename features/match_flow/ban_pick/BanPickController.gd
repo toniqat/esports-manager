@@ -160,6 +160,11 @@ const AI_HOVER_MAX_COUNT: int = 2
 ## 집어 볼 후보를 고르는 상위 몇 대.
 const AI_CONSIDER_TOP: int = 5
 
+## Mastery tier a pilot needs to get a badge on a grid cell (2 = 능숙).
+const ADEPT_TIER: int = 2
+## Enemy badges per cell at most.
+const ENEMY_DOTS_MAX: int = 2
+
 @onready var _mf: MatchFlow = get_parent() as MatchFlow
 @onready var _gm: Node = get_node("/root/GameManager")
 
@@ -185,10 +190,13 @@ var _mastery_on: bool = false
 var _quirk_on: bool = false
 ## Analysis reveals the enemy's likely picks (`StaffSystem.analysis_tier >= 2`).
 var _show_enemy_likely: bool = false
-## Analysis is delegated → the analyst also marks recommended bans.
-var _show_analyst_bans: bool = false
-## mech_id(int) → {"pilot": String, "value": int} — each enemy pilot's top mech.
+## mech_id(int) → {"pilot": String, "value": int} — each enemy pilot's top mech (sheet line).
 var _enemy_likely: Dictionary = {}
+## Grid cell pilot badges (mastery tier >= `ADEPT_TIER`, fixed for the whole draft):
+## mech_id(int) → my pilot ids in seat order (≤ 5) / enemy pilot ids best first (≤ 2,
+## only while `_show_enemy_likely`).
+var _my_adept: Dictionary = {}
+var _enemy_adept: Dictionary = {}
 ## The enemy's mech slots are re-seated by pilot (assign step) — only then does
 ## a seat's mastery label describe the right pilot.
 var _enemy_seated: bool = false
@@ -291,12 +299,13 @@ func _setup_mastery() -> void:
 	_mastery_on = MechMastery.is_enabled(s)
 	_quirk_on = QuirkSystem.is_enabled(s)
 	_enemy_likely = {}
+	_my_adept = {}
+	_enemy_adept = {}
 	_show_enemy_likely = false
-	_show_analyst_bans = false
 	if not _mastery_on:
 		return
 	_show_enemy_likely = StaffSystem.analysis_tier(s) >= 2
-	_show_analyst_bans = StaffSystem.is_delegated(s, "analysis")
+	_setup_adept()
 	for raw in _rosters.get(_other_side(_player_side), []):
 		var pd := raw as PlayerData
 		if pd == null:
@@ -325,25 +334,37 @@ func _rider_for(side: int, m: MechData) -> PlayerData:
 	return roster[m.role] as PlayerData
 
 
-## Analyst's recommended bans right now: the highest-mastery enemy likely picks
-## that are still legal, while I still have bans left. Empty when not delegated.
-func _analyst_bans() -> Array:
-	if not _show_analyst_bans or _assign_mode:
-		return []
-	if (_side_bans.get(_player_side, []) as Array).size() >= 2:
-		return []
-	var rows: Array = []
-	for k in _enemy_likely.keys():
-		if _is_legal(int(k)):
-			rows.append([int((_enemy_likely[k] as Dictionary)["value"]), int(k)])
-	rows.sort_custom(func(a, b):
-		if int(a[0]) != int(b[0]):
-			return int(a[0]) > int(b[0])
-		return int(a[1]) < int(b[1]))
-	var out: Array = []
-	for r in rows.slice(0, ConstTable.int_of("MASTERY_ANALYST_BANS")):
-		out.append(int(r[1]))
-	return out
+## Grid badges: for every mech, my pilots (seat order) and — when analysis reveals
+## mastery — the enemy's pilots (highest mastery first, ties by seat) at `ADEPT_TIER`+.
+func _setup_adept() -> void:
+	var enemy_side: int = _other_side(_player_side)
+	var enemy_rows: Dictionary = {}   # mech_id → [[value, seat, pid]]
+	for m_raw in _all_mechs:
+		var mid: int = (m_raw as MechData).id
+		var mine: Array = []
+		var theirs: Array = []
+		for st in range(SLOT_COUNT):
+			var pd: PlayerData = _pilot_at(_player_side, st)
+			if pd != null and MechMastery.tier_of(_mastery(pd, mid)) >= ADEPT_TIER:
+				mine.append(pd.id)
+			if not _show_enemy_likely:
+				continue
+			var ed: PlayerData = _pilot_at(enemy_side, st)
+			if ed == null:
+				continue
+			var v: int = _mastery(ed, mid)
+			if MechMastery.tier_of(v) >= ADEPT_TIER:
+				theirs.append([v, st, ed.id])
+		theirs.sort_custom(func(a, b):
+			if int(a[0]) != int(b[0]):
+				return int(a[0]) > int(b[0])
+			return int(a[1]) < int(b[1]))
+		var ids: Array = []
+		for e in theirs.slice(0, ENEMY_DOTS_MAX):
+			ids.append(int(e[2]))
+		_my_adept[mid] = mine
+		enemy_rows[mid] = ids
+	_enemy_adept = enemy_rows
 
 
 ## Mastery rows for `MechDetailPanel`: every pilot of `side` (seat order) with
@@ -562,7 +583,8 @@ func _refresh_filter_tabs() -> void:
 
 
 # ── 메크 격자 ────────────────────────────────────────────────────────────────
-## 칸 하나 = `UI_Comp_BanPickMechCell.tscn` — **정사각 초상화 + 아래 이름 한 줄**이 전부다.
+## 칸 하나 = `UI_Comp_BanPickMechCell.tscn` — **정사각 초상화 + 아래 파일럿 배지 줄**(능숙 이상인
+## 내 선수, 이름은 없다 — 시트 / `MechDetailPanel` 이 들고 있다).
 ## 숫자와 패시브 설명은 한 번 눌러 여는 시트가 통째로 들고 있다. 칸 높이가 정해지면
 ## 격자가 보여 줄 4.5 줄이 정해지므로 픽창 높이도 여기서 맞춘다(`fit_pane`).
 func _build_grid() -> void:
@@ -572,7 +594,7 @@ func _build_grid() -> void:
 		var cell := BanPickMechCell.create()
 		_view.grid.add_child(cell)
 		var has_role: bool = m.role >= 0 and m.role < ROLE_INITIALS.size()
-		cell.setup(m.name, _mech_thumb(m.id),
+		cell.setup(_mech_thumb(m.id),
 				String(ROLE_INITIALS[m.role]) if has_role else "",
 				(ROLE_COLORS[m.role] as Color) if has_role else Color.WHITE)
 		cell.pressed.connect(_on_mech_pressed.bind(m.id))
@@ -580,18 +602,6 @@ func _build_grid() -> void:
 		cell_h = cell.custom_minimum_size.y
 	_view.fit_pane(cell_h)
 	_apply_filter()
-
-
-## A small filled tag on a grid cell, hidden when `text` is empty.
-func _set_cell_tag(panel: Panel, label: Label, text: String, bg: Color) -> void:
-	if panel == null:
-		return
-	panel.visible = text != ""
-	if text == "":
-		return
-	panel.add_theme_stylebox_override("panel", OutgameTheme.flat_style(bg, 8))
-	if label != null:
-		label.text = text
 
 
 ## 필터를 적용한다. 걸러진 칸은 숨기고 **자리도 비운다** — 빈 칸을 남기면 그
@@ -677,17 +687,10 @@ func _fill_sheet_mastery(m: MechData) -> void:
 		rider_lbl.text = Loc.t(L.MATCH_BAN_PICK_RIDER_QUIRK if qt > 0 else L.MATCH_BAN_PICK_RIDER,
 				rider_args)
 		rider_lbl.add_theme_color_override("font_color", MechMastery.tier_color(t))
-	var intel: String = ""
-	if m.id in _analyst_bans():
-		intel = Loc.t(L.MATCH_BAN_PICK_INTEL_ANALYST_BAN,
+	if _show_enemy_likely and _enemy_likely.has(m.id):
+		intel_lbl.text = Loc.t(L.MATCH_BAN_PICK_INTEL_ENEMY_PICK,
 				{"pilot": String((_enemy_likely[m.id] as Dictionary)["pilot"])})
-	elif _show_enemy_likely and _enemy_likely.has(m.id):
-		intel = Loc.t(L.MATCH_BAN_PICK_INTEL_ENEMY_PICK,
-				{"pilot": String((_enemy_likely[m.id] as Dictionary)["pilot"])})
-	if intel != "":
-		intel_lbl.text = intel
-		intel_lbl.add_theme_color_override("font_color",
-				OutgameTheme.ACCENT_TEXT if m.id in _analyst_bans() else RED_COLOR)
+		intel_lbl.add_theme_color_override("font_color", RED_COLOR)
 
 
 ## 메크 카드들을 손패와 **같은 노드**(`Card.tscn`)로 늘어놓는다 — 따로 그린
@@ -812,7 +815,9 @@ func _refresh_ui() -> void:
 func _refresh_grid_cells() -> void:
 	var blue_picks: Array = _picks_of(GameEnums.DraftSide.BLUE)
 	var red_picks: Array  = _picks_of(GameEnums.DraftSide.RED)
-	var rec_bans: Array = _analyst_bans()
+	var my_turn: bool = _is_player_turn()
+	var focus_mine: bool = my_turn and _current_kind() == ACTION_PICK
+	var focus_enemy: bool = my_turn and _current_kind() == ACTION_BAN
 	for id in _cells.keys():
 		var cell: BanPickMechCell = _cells[id]
 		var veil: ColorRect = cell.veil
@@ -844,28 +849,20 @@ func _refresh_grid_cells() -> void:
 			veil.visible = false
 			tag.visible = false
 			art.modulate = Color(1, 1, 1)
-		_refresh_cell_marks(cell, mid, rec_bans)
+		_refresh_cell_marks(cell, mid, focus_mine, focus_enemy)
 
 
-## Mastery / analysis tags of one grid cell. Taken (banned / picked) cells show
-## none — the slab already says everything.
-func _refresh_cell_marks(cell: BanPickMechCell, mid: int, rec_bans: Array) -> void:
+## Pilot badges of one grid cell — my 능숙+ pilots under the art, the enemy's (analysis
+## tier >= 2) over its top-right; the row of whoever my current move works against is
+## highlighted (my pick → mine, my ban → theirs). Taken (banned / picked) cells show none —
+## the slab already says everything.
+func _refresh_cell_marks(cell: BanPickMechCell, mid: int, focus_mine: bool,
+		focus_enemy: bool) -> void:
 	var available: bool = _is_legal(mid)
-	var intel_txt: String = ""
-	var intel_col: Color = OutgameTheme.ACCENT
-	if available and mid in rec_bans:
-		intel_txt = Loc.t(L.MATCH_BAN_PICK_TAG_REC_BAN)
-	elif available and _show_enemy_likely and _enemy_likely.has(mid):
-		intel_txt = Loc.t(L.MATCH_BAN_PICK_TAG_EXPECTED_PICK)
-		intel_col = RED_COLOR
-	_set_cell_tag(cell.intel, cell.intel_label, intel_txt, intel_col)
-	var mine_txt: String = ""
-	var t: int = 0
-	if available and _mastery_on:
-		t = MechMastery.tier_of(_mastery(_rider_for(_player_side, _find_mech(mid)), mid))
-		if t >= 2:
-			mine_txt = MechMastery.tier_name(t)
-	_set_cell_tag(cell.mine, cell.mine_label, mine_txt, MechMastery.tier_color(t))
+	cell.set_pilot_dots(_my_adept.get(mid, []) if available else [],
+			_enemy_adept.get(mid, []) if available else [],
+			_side_color(_player_side), _side_color(_other_side(_player_side)),
+			focus_mine, focus_enemy)
 
 
 ## 칸 테두리 — 내가 시트로 열어 본 칸은 앰버, **상대가 집어 보고 있는 칸**은

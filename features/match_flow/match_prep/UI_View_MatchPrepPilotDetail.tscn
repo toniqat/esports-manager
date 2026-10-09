@@ -1,0 +1,44 @@
+[gd_scene load_steps=4 format=3 uid="uid://be1wc0hy0afvd"]
+
+[ext_resource type="Script" path="res://features/match_flow/match_prep/MatchPrepPilotDetail.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://dhrhg3nkxunca" path="res://features/match_flow/match_prep/UI_Comp_IntelPilotRow.tscn" id="3_row"]
+
+[node name="MatchPrepPilotDetail" type="VBoxContainer"]
+editor_description = "PREP opponent pilot detail — HubSheet body (MatchPrepPilotDetail.open). Top-wide over the body; 16 short of the right edge (room for the sheet's scroll bar). The sheet's scroll height follows this node's height."
+anchors_preset = 10
+anchor_right = 1.0
+offset_right = -16.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 0
+script = ExtResource("1_script")
+
+[node name="Tier" type="Label" parent="."]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotDetail.gd show_detail()
+Reveal tier of the opponent (hidden for my pilot)."
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 22
+text = "분석 2단계 · 스탯 · 주력 메크"
+clip_text = true
+
+[node name="TierGap" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="IntelPilotRow_Pilot" parent="." instance=ExtResource("3_row")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — MatchPrepPilotDetail.gd show_detail()
+The pilot as one intel row: six stats by reveal tier, mech line (tier 2+), card line (tier 3)."
+layout_mode = 2
+
+[node name="Tail" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2

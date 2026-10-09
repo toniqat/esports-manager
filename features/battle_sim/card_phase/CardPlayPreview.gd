@@ -250,7 +250,7 @@ func _compute_spec(cd: CardData, caster: PilotData, target: Variant) -> Dictiona
 				if cell != null and caster != null \
 						and _bs.sim_core.camp_charged(cell as Vector2i):
 					field["soul"] = {"cell": cell, "pilot": caster,
-							"amount": _bs.SCORE_JUNGLE_CAMP}
+							"amount": _bs.jungle_camp_score()}
 			"retreat_turret":
 				if caster != null and caster.alive:
 					var to: Vector2i = cp.nearest_own_turret_cell(caster)

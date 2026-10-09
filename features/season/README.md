@@ -132,7 +132,7 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 | Node                     | Script                                       | Purpose                                                          |
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
-| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (trust / `TRUST_MAX`, band colour `HubView.trust_color`: grey < `TRUST_OUTING_MIN`, green from there, amber past halfway to `TRUST_MAX`) with the trust number at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
+| HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + "이번 주 시작" (Start this week) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (progress toward the next trust level, band colour `HubView.trust_color(level)`: grey < `TRUST_OUTING_LEVEL`, green from there, amber past halfway to `TRUST_LEVEL_MAX`) with the trust **level** at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
 | *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row): see "Pilot card · detail sheet" below. |
 | *(overlay)* SeasonPilotDetail | `SeasonPilotDetail.gd` + `UI_View_SeasonPilotDetail.tscn` | Pilot detail `HubSheet` body, opened by tapping a pilot portrait / card anywhere in a run (hub, week screen, training board headers). See below. |
 | PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen right before the week starts (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
@@ -246,13 +246,13 @@ SeasonPilotCard (Panel · Card, min h 256, width from the row · SeasonPilotCard
 └ %Hit flat Button over the card → pressed(pilot_id)
 
 SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.gd)
-├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust · %Outings · %Mood
+├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust (`신뢰도 Lv.N (P%)`) · %Outings · %Mood
 ├ StatsTitle · %Stats ─ Stat0..5 (Line: Name (Body 26) · Value (Title 30)) + Note (Caption 18, stat_note)
 ├ QuirksTitle · %QuirksEmpty · %Quirks ─ %QuirkLine template ("name · effect", grade colour)
 └ ResearchTitle · %Research (research mech · tier (value / max), tier colour) · Tail
 ```
 
-- API: `SeasonPilotCard.show_pilot(pid, role, trust, stress)` / `show_empty(role)` / `set_note(text, variation)` /
+- API: `SeasonPilotCard.show_pilot(pid, role, trust, stress)` (`trust` = points; the card shows the level on the pill and the progress on the ring) / `show_empty(role)` / `set_note(text, variation)` /
   `pulse_note()` / `set_tappable(on)`; `SeasonPilotDetail.open(host, pilot_id) -> HubSheet` (null for an unknown id).
 - `TrustRing` (`@tool` `_draw` widget): `width` (scene), `ratio` · `color` (code). Track = `SURFACE_SUNK`, arc from 12 o'clock.
 

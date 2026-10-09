@@ -987,7 +987,7 @@ func _add_afternoon_card() -> void:
 		(card.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, _sel_pid)
 		var trust: Label = card.get_node("%Trust")
 		trust.text = Loc.t(L.SEASON_WEEK_SLOT_TRUST,
-				{"trust": MentalSystem.trust(s, _sel_pid), "outings": MentalSystem.outings(s, _sel_pid)})
+				{"trust": MentalSystem.trust_level(s, _sel_pid), "outings": MentalSystem.outings(s, _sel_pid)})
 		if MentalSystem.outing_unlocked(s, _sel_pid):
 			trust.theme_type_variation = &"AccentLabel"
 
@@ -996,7 +996,7 @@ func _add_afternoon_card() -> void:
 	var can_out: bool = picked and MentalSystem.can_outing(s, _sel_pid)
 	var out_text: String = Loc.t(L.TERM_ACTIVITY_OUTING)
 	if picked and not MentalSystem.outing_unlocked(s, _sel_pid):
-		out_text = Loc.t(L.SEASON_WEEK_OUTING_NEED_TRUST, {"n": ConstTable.int_of("TRUST_OUTING_MIN")})
+		out_text = Loc.t(L.SEASON_WEEK_OUTING_NEED_TRUST, {"n": ConstTable.int_of("TRUST_OUTING_LEVEL")})
 	var interview: Button = card.get_node("%Interview")
 	interview.text = Loc.t(L.TERM_ACTIVITY_INTERVIEW)
 	interview.disabled = not picked
@@ -1066,7 +1066,7 @@ func _add_talk_card() -> void:
 			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_WITH, {"name": MentalEvents.pilot_name(s, partner)})
 			with_lbl.theme_type_variation = &"AccentLabel"
 		else:
-			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_SOLO, {"trust": MentalSystem.trust(s, _sel_pid)})
+			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_SOLO, {"trust": MentalSystem.trust_level(s, _sel_pid)})
 	var btn: Button = card.get_node("%Talk")
 	btn.disabled = not picked
 	btn.pressed.connect(_on_talk_pressed)

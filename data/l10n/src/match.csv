@@ -22,7 +22,7 @@ tx_2C7Y2JDD7V,match.ban_pick.sheet_stats,active,mech sheet stat line,,,{role}   
 tx_S32JTGTHEG,match.ban_pick.sheet_cards_header,active,mech sheet card row header,,,{tx_QH1DC5S3H2}  {n}종   ·   카드를 누르면 설명,Mech Cards  {n} {plural:n|type|types}   ·   Tap a card for details,draft,6f2dbd9e
 tx_J3FQW65YX4,match.ban_pick.rider,active,sheet: my rider mastery,,,{name}  {tier} {value}  ({tx_FV39P9GPAJ} {bonus}),{name}  {tier} {value}  ({tx_FV39P9GPAJ} {bonus}),draft,b834e54a
 tx_GKJ2J8BS4G,match.ban_pick.rider_quirk,active,sheet: my rider mastery + quirk bonus,,,{name}  {tier} {value}  ({tx_FV39P9GPAJ} {bonus} · 기벽 +{quirk}),{name}  {tier} {value}  ({tx_FV39P9GPAJ} {bonus} · quirks +{quirk}),draft,a2744f67
-tx_ZFKRFPCAS2,match.ban_pick.intel_analyst_ban,active,sheet intel line,,,분석가 추천 밴: {pilot} 의 주력,Analyst's ban pick: {pilot}'s main,draft,c5d6cfd4
+tx_ZFKRFPCAS2,match.ban_pick.intel_analyst_ban,deprecated,sheet intel line,,,분석가 추천 밴: {pilot} 의 주력,Analyst's ban pick: {pilot}'s main,draft,c5d6cfd4
 tx_ZKEE3G9T6P,match.ban_pick.intel_enemy_pick,active,sheet intel line,,,상대 예상 픽: {pilot},Expected opponent pick: {pilot},draft,906ea8a9
 tx_15SXME7CFS,match.ban_pick.generated_only,active,card count badge for count 0 cards,,,생성 전용,Generated only,draft,55fd0e1c
 tx_WCXP7CPSKQ,match.ban_pick.confirm_ban,active,sheet confirm button,,,밴 확정,Confirm Ban,draft,e5d5b988
@@ -30,7 +30,7 @@ tx_ZEXW72B4FP,match.ban_pick.confirm_pick,active,sheet confirm button,,,픽 확�
 tx_76TDNRXT2H,match.ban_pick.opponent_turn,active,sheet confirm button (disabled),,,상대 차례,Opponent's Turn,draft,8ed595bd
 tx_ZPK44AJ0YK,match.ban_pick.unavailable,active,sheet confirm button (disabled),,,선택 불가,Unavailable,draft,3f138387
 tx_YY1PTH9QJN,match.ban_pick.tag_rec_ban,active,grid cell tag,,,추천 밴,Rec. Ban,draft,e32140df
-tx_HF3CR7Q56F,match.ban_pick.tag_expected_pick,active,grid cell tag,,,예상 픽,Exp. Pick,draft,288e3098
+tx_HF3CR7Q56F,match.ban_pick.tag_expected_pick,deprecated,grid cell tag,,,예상 픽,Exp. Pick,draft,288e3098
 tx_TZBXEJKN0V,match.ban_pick.quirk_bonus,active,mech slot quirk tag,,,기벽 +{n},Quirk +{n},draft,844cc5b5
 tx_SSCFWKVHRS,match.ban_pick.banner.my_ban,active,turn banner,,,내 차례 밴,Your Ban,draft,d54e6c51
 tx_EGTM3JJJMY,match.ban_pick.banner.my_pick,active,turn banner,,,내 차례 픽,Your Pick,draft,5a68a052
@@ -60,3 +60,6 @@ tx_2A43E3P03W,match.ban_pick.role.fighter,active,"Mech role tag on ban/pick filt
 tx_QFDE088804,match.ban_pick.role.assassin,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,ASSASSIN,ASSASSIN,draft,951d8ef2
 tx_46B6F94E0X,match.ban_pick.role.support,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,SUPPORT,SUPPORT,draft,0e5b114f
 tx_WYAR6ATGZK,match.ban_pick.role.sniper,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,SNIPER,SNIPER,draft,77a2ac8b
+tx_51C591RCKG,match.prep.warn_badge,active,PREP pilot card red badge on the opponent pilot the analyst flags,6,,경계 대상,Threat,draft,6074eff5
+tx_FVQ03DD4B3,match.prep.overall,active,PREP pilot card caption above the big stat total,,,종합,Overall,draft,f7c86d76
+tx_EE9ZYA8C66,match.prep.no_mech,active,PREP pilot card mech chip row when the pilot has no mech,,,주력 메크 없음,No main mech,draft,e22b486d

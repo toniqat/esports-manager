@@ -77,12 +77,12 @@ columns = 6
 [node name="Column" type="VBoxContainer" parent="InfoColumn"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _column
-오른쪽 정보 칼럼 — 머리글 / 탭 + 스탯 판 / 파일럿 스킬 판, 판 사이 16. 위끝 362 에서 아래로 자란다(탭 바 윗변 562 가 고정이라 머리글이 늘면 위끝을 올린다)."
+오른쪽 정보 칼럼 — 머리글 / 탭 + 스탯 판 / 파일럿 스킬 판, 판 사이 16. 위끝 410 에서 아래로 자란다(탭 바 윗변 562 가 고정이라 머리글이 늘면 위끝을 올린다)."
 layout_mode = 1
 offset_left = 578.0
-offset_top = 362.0
+offset_top = 410.0
 offset_right = 1074.0
-offset_bottom = 362.0
+offset_bottom = 410.0
 mouse_filter = 2
 theme_override_constants/separation = 16
 
@@ -91,37 +91,69 @@ layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"BattlePanel"
 
-[node name="HeaderBody" type="VBoxContainer" parent="InfoColumn/Column/Header"]
+[node name="HeaderRow" type="HBoxContainer" parent="InfoColumn/Column/Header"]
+editor_description = "머리글 한 줄 — 왼쪽 이름 · 기체명 · 스트레스, 오른쪽 성장치 버튼."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="HeaderBody" type="VBoxContainer" parent="InfoColumn/Column/Header/HeaderRow"]
 auto_translate_mode = 2
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="GrowthBox" type="Control" parent="InfoColumn/Column/Header/HeaderBody"]
-custom_minimum_size = Vector2(0, 48)
+[node name="ScoreButton" type="Button" parent="InfoColumn/Column/Header/HeaderRow"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _score_btn
+성장치 + 적립 배율. 누르면 왼쪽에 성장치 판(0 ~ 50k 막대 · 도약 눈금)이 열린다 — 정보 대상 \"score\"(강조 = BattleChipButtonOn)."
+custom_minimum_size = Vector2(156, 88)
 layout_mode = 2
-mouse_filter = 2
+size_flags_vertical = 0
+focus_mode = 0
+theme_type_variation = &"BattleChipButton"
 
-[node name="Growth" type="Label" parent="InfoColumn/Column/Header/HeaderBody/GrowthBox"]
+[node name="Growth" type="Label" parent="InfoColumn/Column/Header/HeaderRow/ScoreButton"]
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _growth_label"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 48.0
+offset_top = 4.0
+offset_bottom = 54.0
 grow_horizontal = 2
+mouse_filter = 2
 theme_type_variation = &"BattleGrowthLabel"
 text = "1.00k"
 horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
 
-[node name="NameBox" type="Control" parent="InfoColumn/Column/Header/HeaderBody"]
+[node name="GrowthRate" type="Label" parent="InfoColumn/Column/Header/HeaderRow/ScoreButton"]
+editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _growth_rate_label
+적립 배율(BattleSim.growth_accrual_mult) — \"적립 120%\"."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 54.0
+offset_bottom = 84.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"BattleKeyLabel"
+text = "Gain 100%"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="NameBox" type="Control" parent="InfoColumn/Column/Header/HeaderRow/HeaderBody"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Name" type="Label" parent="InfoColumn/Column/Header/HeaderBody/NameBox"]
+[node name="Name" type="Label" parent="InfoColumn/Column/Header/HeaderRow/HeaderBody/NameBox"]
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd"
 unique_name_in_owner = true
 layout_mode = 1
@@ -134,12 +166,12 @@ text = "Evelyn"
 vertical_alignment = 1
 clip_text = true
 
-[node name="MechBox" type="Control" parent="InfoColumn/Column/Header/HeaderBody"]
+[node name="MechBox" type="Control" parent="InfoColumn/Column/Header/HeaderRow/HeaderBody"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Mech" type="Label" parent="InfoColumn/Column/Header/HeaderBody/MechBox"]
+[node name="Mech" type="Label" parent="InfoColumn/Column/Header/HeaderRow/HeaderBody/MechBox"]
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -152,7 +184,7 @@ text = "Juggernaut"
 vertical_alignment = 1
 clip_text = true
 
-[node name="StressBox" type="Control" parent="InfoColumn/Column/Header/HeaderBody"]
+[node name="StressBox" type="Control" parent="InfoColumn/Column/Header/HeaderRow/HeaderBody"]
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _fill_stress()
 스트레스 줄 자리 — 스트레스가 없는 파일럿(상대 · 단독 실행)이면 코드가 숨긴다."
 unique_name_in_owner = true
@@ -160,7 +192,7 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Stress" type="Label" parent="InfoColumn/Column/Header/HeaderBody/StressBox"]
+[node name="Stress" type="Label" parent="InfoColumn/Column/Header/HeaderRow/HeaderBody/StressBox"]
 editor_description = "[필수] 지우면 오류 — PilotDetailPanel.gd _fill_stress()
 변형은 코드가 상태에 따라 StressMood*Label / BattleSubLabel 로 바꾼다."
 unique_name_in_owner = true

@@ -310,7 +310,7 @@ func _front_boundary_index(team: int, lane: int, order: Dictionary) -> int:
 
 # ─── 성장치 적립: 정글 캠프 ──────────────────────────────────────────────────
 ## 정글러의 기본 수입. 자기 팀 소유(또는 아직 중립인) 정글 칸에 **차 있는 캠프**
-## 를 밟으면 `SCORE_JUNGLE_CAMP` 를 먹고, 그 칸은 `JUNGLE_CAMP_RESPAWN_TURNS`
+## 를 밟으면 `BattleSim.jungle_camp_score()` 를 먹고, 그 칸은 `JUNGLE_CAMP_RESPAWN_TURNS`
 ## 뒤에나 다시 찬다. 그래서 정글러는 한자리에 머물 수 없고 계속 순회해야 한다.
 ##
 ## 적 소유 칸의 캠프는 못 먹는다 — 적 정글을 **점령**해야(중립 칸을 먼저 밟거나
@@ -346,9 +346,10 @@ func harvest_camp_under(p: PilotData) -> bool:
 	# 화면에 남지 않는다 — 순회 리듬이 곧 정글러의 플레이인데 그 한 박자가
 	# 안 보였다. 전선 체류(매 턴 · 열 명)는 여전히 조용한 쪽이다: 그건 배경이
 	# 되어 정작 큰 한 건을 묻는다.
-	_bs.award_score(p, _bs.SCORE_JUNGLE_CAMP)
+	var camp: float = _bs.jungle_camp_score()
+	_bs.award_score(p, camp)
 	_bs.blog.log_event("CAMP", "%-4s 캠프 획득 %s (+%.2fk → %.2fk, 재생성 %d턴)"  # l10n-ignore
-			% [_bs.pilot_label(p), str(p.grid_pos), _bs.SCORE_JUNGLE_CAMP,
+			% [_bs.pilot_label(p), str(p.grid_pos), camp,
 				p.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
 	return true
 
@@ -364,9 +365,10 @@ func steal_camp_point(cell: Vector2i, thief: PilotData) -> bool:
 		return false
 	_bs.jungle_camps[cell] = _bs.turn_count + _bs.JUNGLE_CAMP_RESPAWN_TURNS
 	# 밟아서 먹는 것과 같은 값 · 같은 시계 · 같은 팝업.
-	_bs.award_score(thief, _bs.SCORE_JUNGLE_CAMP)
+	var camp: float = _bs.jungle_camp_score()
+	_bs.award_score(thief, camp)
 	_bs.blog.log_event("CAMP", "%-4s 캠프 약탈 %s (+%.2fk → %.2fk, 재생성 %d턴)"  # l10n-ignore
-			% [_bs.pilot_label(thief), str(cell), _bs.SCORE_JUNGLE_CAMP,
+			% [_bs.pilot_label(thief), str(cell), camp,
 				thief.score, _bs.JUNGLE_CAMP_RESPAWN_TURNS])
 	return true
 
@@ -722,19 +724,37 @@ func _bond_average(p: PilotData, want_hit: bool) -> int:
 ## `bond_share` 는 자동 교전(`field_roll_hit`)만 켠다 — 결속 묶음의 평균 스탯.
 func hit_chance_of(attacker: PilotData, defender: PilotData,
 		bond_share: bool = false) -> float:
-	var sk: PilotSkillSystem = _bs.skill
-	var hit_m: float = sk.hit_mult(attacker)      if sk != null else 1.0
-	var eva_m: float = sk.evasion_mult(defender)  if sk != null else 1.0
-	# 카드 쪽 두 배율 — [자신감] 을 손에 든 공격자의 명중, [소극적인 태세] 가 건
-	# 방어자의 회피. 스킬 배율과 곱으로 쌓인다.
-	if _bs.card_phase != null:
-		hit_m *= 1.0 + _bs.card_phase.hand_hit_add(attacker)
-	eva_m *= 1.0 + defender.eva_card_mod
 	var base_hit: int = bond_shared_hit(attacker) if bond_share else attacker.hit
 	var base_eva: int = bond_shared_evasion(defender) if bond_share else defender.evasion
-	var atk_stat := maxi(1, roundi(float(lane_adjusted(base_hit, attacker)) * hit_m))
-	var def_stat := maxi(1, roundi(float(lane_adjusted(base_eva, defender)) * eva_m))
-	return PilotData.hit_chance(atk_stat, def_stat)
+	return PilotData.hit_chance(effective_hit(attacker, base_hit),
+			effective_evasion(defender, base_eva))
+
+
+## Battlefield hit as the roll uses it: `lane_adjusted` × pilot skill `hit_mult` ×
+## (1 + [자신감] held in hand). `base` < 0 = the pilot's own `hit` (the detail panel chip).
+func effective_hit(p: PilotData, base: int = -1) -> int:
+	var b: int = p.hit if base < 0 else base
+	return maxi(1, roundi(float(lane_adjusted(b, p)) * hit_mult_total(p)))
+
+
+## Battlefield evasion as the roll uses it: `lane_adjusted` × pilot skill `evasion_mult` ×
+## (1 + `eva_card_mod`, [소극적인 태세]).
+func effective_evasion(p: PilotData, base: int = -1) -> int:
+	var b: int = p.evasion if base < 0 else base
+	return maxi(1, roundi(float(lane_adjusted(b, p)) * evasion_mult_total(p)))
+
+
+## Skill × card hit multiplier — they stack multiplicatively.
+func hit_mult_total(p: PilotData) -> float:
+	var m: float = _bs.skill.hit_mult(p) if _bs.skill != null else 1.0
+	if _bs.card_phase != null:
+		m *= 1.0 + _bs.card_phase.hand_hit_add(p)
+	return m
+
+
+func evasion_mult_total(p: PilotData) -> float:
+	var m: float = _bs.skill.evasion_mult(p) if _bs.skill != null else 1.0
+	return m * (1.0 + p.eva_card_mod)
 
 
 ## 라인전 스탯 배율을 먹인 hit / evasion 값. 최소 1 을 보장해 −100% 같은 값이

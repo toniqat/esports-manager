@@ -550,6 +550,13 @@ tx_RZN79649QG,MATCH MVP
 tx_TWDEFMDMTZ,인게임
 tx_TJEJTTZ9PP,파일럿
 tx_840PD89SBP,메크
+tx_YGX9KDFT51,적립 {pct}%
+tx_6TJEJMS5G0,성장 도약
+tx_DCPZE5FEBQ,다음 도약
+tx_ECA0V7N5CG,공격력 증가
+tx_9BD5WJRJ16,최대 체력 증가
+tx_92JKM782CD,"성장치에 따라 공격력과 최대 체력이 증가합니다. {step}k마다 크게 성장합니다.\n파일럿의 {atk_growth} 공격 성장과 {hp_growth} 체력 성장이 높을수록, 성장치에 따른 공격력과 최대 체력 상승량이 증가합니다."
+tx_33SA211TC1,증가
 tx_Q2YD01V4X9,대상이 교전에 참여하면 시전자도 함께 참여한다
 tx_8224R3117V,공격당하면 그 피해를 {mech_reactive_armor_cut_pct}% 줄이고 1 사라진다. 전장을 떠나면 모두 사라진다
 tx_M9AXFZ0YJD,시전자에게 받는 피해 +{mark_target}%. 새 목표{eul} 정하면 이전 목표{eun} 풀린다
@@ -805,6 +812,9 @@ tx_2A43E3P03W,FIGHTER
 tx_QFDE088804,ASSASSIN
 tx_46B6F94E0X,SUPPORT
 tx_WYAR6ATGZK,SNIPER
+tx_51C591RCKG,경계 대상
+tx_FVQ03DD4B3,종합
+tx_EE9ZYA8C66,주력 메크 없음
 tx_MR5VKS3AHG,과적재
 tx_C214C4GTV6,반응 장갑 전개
 tx_4AGJGY73MM,고통과 쾌감
@@ -1169,6 +1179,7 @@ tx_2XVW6DND6C,…고마워요.
 tx_T0XXC81CWK,"{name2}, 네가 오늘 좀 챙겨 줘."
 tx_6GSWJZY616,&맡겨 주세요.
 tx_94NECDHB76,&저도 사실 좀 힘든데요.
+tx_2HXM8CJ9R6,{name} 신뢰도 Lv.{n}
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1600,9 +1611,9 @@ tx_55ZT5D24ZK,기벽 #{id}
 tx_0H7MR6XZ5Q,경기 시작
 tx_QBJC7HSWEH,주 마감 →
 tx_BG13VH48VC,면담 {iv}/{iv_max} · 외출 {out}/{out_max}
-tx_R4XWZFXHFD,신뢰 {trust} · 외출 {outings}
+tx_R4XWZFXHFD,신뢰 Lv.{trust} · 외출 {outings}
 tx_G9WWN59WGH,외출 (이번 주 끝)
-tx_QYSSXAFB3S,외출 (신뢰 {n}↑)
+tx_QYSSXAFB3S,외출 (신뢰 Lv.{n}↑)
 tx_0TJBQGEP0N,면담 (이번 주 끝)
 tx_M4WBEB9G7X,오늘 저녁: 쉬었습니다
 tx_H8MV6KQN83,오늘 저녁: {name} 면담
@@ -1637,7 +1648,7 @@ tx_BVDJ9Q0CSD,아직 면담이나 외출을 할 수 있습니다. 이대로 넘�
 tx_CGHZDAMEAR,건너뛰기
 tx_C3T5QMKS85,능력치
 tx_1EN72EY6WJ,종합 {n}
-tx_ETEBEXQ310,신뢰도 {n} / {max}
+tx_ETEBEXQ310,신뢰도 Lv.{n} ({pct}%)
 tx_S8N31JKDV7,외출 {n}회
 tx_BW7K6B2QKP,기벽
 tx_K1AJHH3AP3,장착한 기벽 없음
@@ -1653,7 +1664,7 @@ tx_SJMNVE78AH,지도에서 훈련 소감을 들을 선수를 누르세요 (오�
 tx_1SN8VDP0S4,오늘 오전에는 만날 수 있는 선수가 없습니다
 tx_G18Q9X83C8,만남
 tx_7FRMF2A3ZK,합동 훈련 · {name}{wa} 함께
-tx_0ZK5QSV26D,신뢰 {trust}
+tx_0ZK5QSV26D,신뢰 Lv.{trust}
 tx_Y30YG2P1AK,오전: {name} 만남
 tx_5Y82DHJ5DX,오전: {name} · {name2} 만남
 tx_444WVNHT09,{day} 오전 · 훈련 소감

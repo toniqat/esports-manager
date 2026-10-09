@@ -93,9 +93,9 @@ tx_55ZT5D24ZK,season.week.quirk_unknown,active,Quirk name fallback (no table row
 tx_0H7MR6XZ5Q,season.week.btn_start_match,active,WeekProgressView bottom button,,,경기 시작,Start Match,draft,dfb0f596
 tx_QBJC7HSWEH,season.week.btn_end_week,active,WeekProgressView bottom button,,,주 마감 →,End Week →,draft,db903e37
 tx_BG13VH48VC,season.week.evening_limits,deprecated,Evening card weekly limits,,,면담 {iv}/{iv_max} · 외출 {out}/{out_max},Meetings {iv}/{iv_max} · Outings {out}/{out_max},draft,118364ac
-tx_R4XWZFXHFD,season.week.slot_trust,active,Evening card pilot slot,,,신뢰 {trust} · 외출 {outings},Trust {trust} · Outings {outings},draft,ca47eadd
+tx_R4XWZFXHFD,season.week.slot_trust,active,Evening card pilot slot,,,신뢰 Lv.{trust} · 외출 {outings},Trust Lv.{trust} · Outings {outings},draft,25252129
 tx_G9WWN59WGH,season.week.outing_week_done,deprecated,"Evening card button, disabled",,,외출 (이번 주 끝),Outing (used up),draft,34877dad
-tx_QYSSXAFB3S,season.week.outing_need_trust,active,"Evening card button, disabled",,,외출 (신뢰 {n}↑),Outing (Trust {n}+),draft,5f7c5a3d
+tx_QYSSXAFB3S,season.week.outing_need_trust,active,"Evening card button, disabled",,,외출 (신뢰 Lv.{n}↑),Outing (Trust Lv.{n}+),draft,ed5169b2
 tx_0TJBQGEP0N,season.week.interview_week_done,deprecated,"Evening card button, disabled",,,면담 (이번 주 끝),Meeting (used up),draft,c8709aca
 tx_M4WBEB9G7X,season.week.evening_rested,deprecated,Evening done card head,,,{tx_191AFE0BN2}: 쉬었습니다,This evening: Rested,draft,a35579f8
 tx_H8MV6KQN83,season.week.evening_interview,deprecated,Evening done card head,,,{tx_191AFE0BN2}: {name} 면담,This evening: Meeting with {name},draft,b7a72631
@@ -130,7 +130,7 @@ tx_BVDJ9Q0CSD,season.week.skip.body,active,Confirm popup body: Next pressed whil
 tx_CGHZDAMEAR,season.week.skip.confirm,active,Confirm popup confirm button: skip the afternoon,,,건너뛰기,Skip,draft,88130ab9
 tx_C3T5QMKS85,season.pilot_detail.stats,active,SeasonPilotDetail sheet section title: the pilot's six stats,,,능력치,Stats,draft,9e9117d0
 tx_1EN72EY6WJ,season.pilot_detail.total,active,SeasonPilotDetail head: sum of the six stats,,,종합 {n},Total {n},draft,7cf12880
-tx_ETEBEXQ310,season.pilot_detail.trust,active,SeasonPilotDetail head: trust now / max,,,신뢰도 {n} / {max},Trust {n} / {max},draft,360450d7
+tx_ETEBEXQ310,season.pilot_detail.trust,active,SeasonPilotDetail head: trust level and progress toward the next level,,,신뢰도 Lv.{n} ({pct}%),Trust Lv.{n} ({pct}%),draft,1c07a7c8
 tx_S8N31JKDV7,season.pilot_detail.outings,active,SeasonPilotDetail head: outings with this pilot so far this run,,,외출 {n}회,{n} {plural:n|{tx_ZGP8KW41CF}|{tx_5A9Y0AJYCD}},draft,fd1075fb
 tx_BW7K6B2QKP,season.pilot_detail.quirks,active,SeasonPilotDetail sheet section title: equipped quirks,,,기벽,Quirks,draft,df890c72
 tx_K1AJHH3AP3,season.pilot_detail.quirks_none,active,SeasonPilotDetail: quirk section when the pilot has none,,,장착한 기벽 없음,No quirks equipped,draft,47075c35
@@ -146,7 +146,7 @@ tx_SJMNVE78AH,season.week.talk_pick,active,"Morning talk card hint, no pilot sel
 tx_1SN8VDP0S4,season.week.talk_none,active,"Morning talk card hint, nobody can be met",,,오늘 오전에는 만날 수 있는 선수가 없습니다,No one to talk to this morning,draft,2e6f3cac
 tx_G18Q9X83C8,season.week.talk_button,active,Morning talk card button,,,만남,Talk,draft,2036fe09
 tx_7FRMF2A3ZK,season.week.talk_with,active,Morning talk card line under the picked pilot: who trained with them (both come to the talk),,,합동 훈련 · {name}{wa} 함께,Joint training · with {name},draft,edd6560f
-tx_0ZK5QSV26D,season.week.talk_solo,active,Morning talk card line under the picked pilot (no joint training),,,신뢰 {trust},Trust {trust},draft,29c151a6
+tx_0ZK5QSV26D,season.week.talk_solo,active,Morning talk card line under the picked pilot (no joint training),,,신뢰 Lv.{trust},Trust Lv.{trust},draft,b9338b10
 tx_Y30YG2P1AK,season.week.talk_done,active,Morning talk done card head,,,오전: {name} 만남,Morning: Talk with {name},draft,b1c5af30
 tx_5Y82DHJ5DX,season.week.talk_done_pair,active,"Morning talk done card head, joint training pair",,,오전: {name} · {name2} 만남,Morning: Talk with {name} and {name2},draft,2e303f79
 tx_444WVNHT09,season.week.sub_talk,active,"Dialogue overlay subtitle, morning talk",,,{day} 오전 · 훈련 소감,{day} morning · After training,draft,399ad258

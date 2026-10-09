@@ -83,15 +83,15 @@ func _bind() -> void:
 
 
 # ── Trust (M7 data, shown since §14 T4) ──────────────────────────────────────
-## Trust band colour. Thresholds come from the mental consts — no new numbers:
-## below `TRUST_OUTING_MIN` grey (no outing yet), from there green (outing unlocked),
-## past halfway between that and `TRUST_MAX` amber (close bond).
-static func trust_color(value: int) -> Color:
-	var outing_min: int = ConstTable.int_of("TRUST_OUTING_MIN")
-	var high: int = outing_min + int(float(ConstTable.int_of("TRUST_MAX") - outing_min) * 0.5)
-	if value >= high:
+## Trust band colour by **level** (`MentalSystem.trust_level`). Thresholds come from the mental
+## consts — no new numbers: below `TRUST_OUTING_LEVEL` grey (no outing yet), from there green
+## (outing unlocked), past halfway between that and `TRUST_LEVEL_MAX` amber (close bond).
+static func trust_color(level: int) -> Color:
+	var outing_lv: int = ConstTable.int_of("TRUST_OUTING_LEVEL")
+	var high: float = float(outing_lv) + float(ConstTable.int_of("TRUST_LEVEL_MAX") - outing_lv) * 0.5
+	if float(level) >= high:
 		return OutgameTheme.ACCENT
-	if value >= outing_min:
+	if level >= outing_lv:
 		return OutgameTheme.POSITIVE
 	return OutgameTheme.TEXT_SUB
 

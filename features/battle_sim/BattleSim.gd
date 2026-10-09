@@ -931,18 +931,16 @@ func _award_kill_bounty(dead_team: int) -> void:
 # 따도 포탑을 밀어도 스탯이 1도 변하지 않았고, 게다가 `atk` 와 `max_hp` 가 같은
 # 비율로 자라 교전 타수가 영원히 그대로였다.
 #
-# 적립처는 셋뿐이다.
-#   • **전선 체류** — 살아서 자기 레인의 전선(양 팀 최전방 포탑 사이) 안에
-#     서 있는 턴마다 `SCORE_FRONTLINE_PER_TURN`. 수입의 대부분이 여기서 나온다.
-#   • **정글 캠프** — 정글러가 자기 팀 소유(또는 중립) 정글 칸의 살아 있는
-#     캠프를 밟으면 `SCORE_JUNGLE_CAMP`. 캠프는 `JUNGLE_CAMP_RESPAWN_TURNS`
-#     마다 되살아나므로 정글러는 쉬지 않고 순회해야 라이너만큼 번다.
-#   • **처치 현상금** — 라스트힛이 전액, 그 대상에게 피해를 넣은 아군이
-#     피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE` 를 더 받는다(어시스트).
-#     아래 `mark_pilot_dead`.
-#
-# 포탑/HQ **피해**는 더 이상 점수를 주지 않는다 — 피해가 고정값으로 바뀌면서
-# 한 경기에 굴러 봐야 노이즈 수준이었다. 대신 **철거**에 한 번 지급한다.
+# Income sources:
+#   • **Front-line presence** — `SCORE_FRONTLINE_PER_TURN` for every turn alive
+#     inside your own lane's front line. Most income comes from here.
+#   • **Jungle camp** — `jungle_camp_score()` per camp (jungler). Starts at
+#     `SCORE_JUNGLE_CAMP_START_MULT` of `SCORE_JUNGLE_CAMP` and climbs with game turns.
+#   • **Kill** — a fixed reward `kill_reward()` that rises with game turns, split
+#     by live damage share among everyone who damaged the victim (last hit included);
+#     the last hit alone also takes the bounty (`kill_bounty`). `_payout_kill_bounty`.
+#   • **Turret damage** — `SCORE_TURRET_FULL` per whole turret, paid per HP point
+#     chipped off (`score_turret_damage`). HQ damage pays nothing.
 #
 # 값은 data/csv/const.csv — ConstTable 로 읽는다.
 ## 개시값.
@@ -988,7 +986,15 @@ static var SCORE_FRONTLINE_PER_TURN: float = ConstTable.num("SCORE_FRONTLINE_PER
 ##
 ## 이후 재생성 주기를 한 턴 늦추면서 값을 보전하지 않고 오히려 깎았다 — 정글러의
 ## 몫 자체를 줄인 의도된 너프다.
+##
+## This is the **100% value**; a camp actually pays `jungle_camp_score()` — it opens at
+## `SCORE_JUNGLE_CAMP_START_MULT` (an early-jungle nerf) and gains `SCORE_JUNGLE_CAMP_STEP`
+## every `SCORE_JUNGLE_CAMP_STEP_TURNS` game turns until `SCORE_JUNGLE_CAMP_CAP_TURN`.
 static var SCORE_JUNGLE_CAMP: float = ConstTable.num("SCORE_JUNGLE_CAMP")
+static var SCORE_JUNGLE_CAMP_START_MULT: float = ConstTable.num("SCORE_JUNGLE_CAMP_START_MULT")
+static var SCORE_JUNGLE_CAMP_STEP: float = ConstTable.num("SCORE_JUNGLE_CAMP_STEP")
+static var SCORE_JUNGLE_CAMP_STEP_TURNS: int = ConstTable.int_of("SCORE_JUNGLE_CAMP_STEP_TURNS")
+static var SCORE_JUNGLE_CAMP_CAP_TURN: int = ConstTable.int_of("SCORE_JUNGLE_CAMP_CAP_TURN")
 ## 캠프가 다시 차오르기까지의 턴 수. 주기가 한쪽 정글의 칸 수와 같으면 **매 턴
 ## 정확히 한 칸**이 되살아나 정글러가 발밑을 뜰 이유가 없다 — 주기가 그보다
 ## 길어야 그 칸이 비어 있는 구간이 생겨 반대쪽으로 넘어가는 순회가 강제된다.
@@ -1006,23 +1012,21 @@ static var JUNGLE_CAMP_RESPAWN_TURNS: int = ConstTable.int_of("JUNGLE_CAMP_RESPA
 ## 않았다). 할인이 붙으면 방치된 쪽이 주기적으로 가장 싸져 정글러가 좌우를
 ## 오가는 **순회**가 된다.
 static var JUNGLE_CAMP_STALE_PER_STEP: int = ConstTable.int_of("JUNGLE_CAMP_STALE_PER_STEP")
-## 처치 기본 현상금 — 누구를 잡아도 이만큼은 나온다.
+## Kill fixed reward at turn 0. It grows by `SCORE_KILL_STEP` every
+## `SCORE_KILL_STEP_TURNS` game turns, frozen from `SCORE_KILL_CAP_TURN` on
+## (`kill_reward()`) — a late kill is worth more, like a MOBA's growing kill gold.
 static var SCORE_KILL_BASE: float = ConstTable.num("SCORE_KILL_BASE")
-## 앞서가는 적 현상금. 피해자가 처치자 팀 평균보다 앞선 만큼의 이 비율이
-## 기본값(`SCORE_KILL_BASE`) 위에 얹힌다 — 크게 앞선 에이스일수록 비싸다.
+static var SCORE_KILL_STEP: float = ConstTable.num("SCORE_KILL_STEP")
+static var SCORE_KILL_STEP_TURNS: int = ConstTable.int_of("SCORE_KILL_STEP_TURNS")
+static var SCORE_KILL_CAP_TURN: int = ConstTable.int_of("SCORE_KILL_CAP_TURN")
+## Bounty on a leader: this share of how far the victim is ahead of the killer team's
+## average (never negative). Paid to the **last hit only**, on top of its share of the
+## fixed reward — catching a fed ace pays the one who closed it.
 static var SCORE_KILL_BOUNTY_RATE: float = ConstTable.num("SCORE_KILL_BOUNTY_RATE")
-## 어시스트 전원이 나눠 갖는 현상금의 상한 비율. 각자의 몫은
-## `현상금 × SCORE_ASSIST_MAX_SHARE × (내 피해 / 그 대상이 이번 생에 받은 총 피해)`
-## 라, 라스트힛만 넣고 딜을 안 넣은 파일럿과 끝까지 두들긴 파일럿이 구분된다.
-static var SCORE_ASSIST_MAX_SHARE: float = ConstTable.num("SCORE_ASSIST_MAX_SHARE")
-## 포탑 한 기를 처음부터 끝까지 갈아 냈을 때 그 레인이 벌어 가는 성장치 총액.
-##
-## 예전에는 이 값이 **철거하는 순간** 마지막 한 대를 넣은 파일럿에게 통째로
-## 갔다(`SCORE_TURRET_KILL`). 그러면 여러 턴 동안 밀어붙인 파일럿과 마지막 한
-## 대를 넣은 파일럿의 몫이 같았고, 포탑을 반쯤 갈아 놓고 죽은 사람은 한 푼도 못
-## 받았다 — 공성은 한 번의 사건이 아니라 여러 턴에 걸친 노동이다. 지금은
-## **깎아 낸 체력 1점당**으로 쪼개 실제로 민 만큼 나눠 갖는다
-## (`score_turret_damage`). 총액은 그대로라 포탑 하나의 값어치는 안 달라졌다.
+## Growth points a lane earns by grinding one turret from full to zero, split by HP
+## removed (`score_turret_damage`) — a siege is work over many turns, so whoever pushed
+## gets paid for it, not just the pilot who landed the last hit (the old
+## `SCORE_TURRET_KILL` lump sum).
 static var SCORE_TURRET_FULL: float = ConstTable.num("SCORE_TURRET_FULL")
 ## 처치 관여(어시스트)가 살아 있는 기간(턴). 이보다 오래된 피해는 현상금
 ## 배분에서도 킬로그 명단에서도 빠진다 — 한참 전에 한 대 긁어 놓은 것이
@@ -1050,18 +1054,104 @@ const SCORE_POPUP_DUR := 1.10
 ## 떠도 서로를 덮지 않는다.
 const SCORE_POPUP_RISE_PX := 72.0
 
-# ─── 성장 환산 (성장치 → 스탯) ───────────────────────────────────────────────
-# **공격력이 체력보다 몇 배 빠르게 자란다.** 이 비대칭이 성장 체감의 전부다 —
-# 둘이 같은 비율이면 `atk/max_hp` 가 불변이라 "몇 대 맞아야 죽는가"가 경기가
-# 끝나도 1타도 안 줄어든다(예전 설계의 구조적 결함).
+# ─── Growth conversion (growth points → stats) ───────────────────────────────
+# **Attack and HP currently share the same curve constants** (`GROWTH_ATK_CURVE` =
+# `GROWTH_HP_CURVE`, `GROWTH_SPIKE_ATK` = `GROWTH_SPIKE_HP`; mech base attack was doubled
+# to make up for the slower attack growth). With equal rates `atk / max_hp` only moves
+# through the pilots' two growth coefficients and flat bonuses, so "hits to kill" between
+# equally grown pilots stays roughly the same all game long.
 #
-# 기준점: 목표 성장치(개시분을 뺀 몫)에서 공격력 배율이 체력 배율보다 훨씬 크게
-# 오르도록 두 계수를 잡았다 — 그래서 성장할수록 교전 타수가 줄고, 체력이 낮은
-# 스나이퍼는 잘 큰 캐리에게 몇 대 만에 무너진다. 두 계수는 "목표 배율 증가분 /
-# 목표 성장치(개시분 제외)" 로 계산한 1k 당 증가율이다.
-# 값은 data/csv/const.csv — ConstTable 로 읽는다.
-static var GROWTH_ATK_PER_SCORE: float = ConstTable.num("GROWTH_ATK_PER_SCORE")
-static var GROWTH_HP_PER_SCORE:  float = ConstTable.num("GROWTH_HP_PER_SCORE")
+# The curve (`growth_curve`), with g = score − SCORE_START in k and C = GROWTH_CURVE_SCALE:
+#   smooth: slope K · D^i / (C + g), i = spikes reached (piecewise log, never capped)
+#   + spike × (thresholds reached) — a step at every GROWTH_SPIKE_STEP k of absolute
+#     score up to GROWTH_SPIKE_MAX; D = GROWTH_SPIKE_SLOPE_DECAY flattens the slope after each.
+# K / spike are GROWTH_ATK_CURVE / GROWTH_SPIKE_ATK (attack) and GROWTH_HP_CURVE /
+# GROWTH_SPIKE_HP (max HP). The log keeps a fed carry from snowballing while the spikes give
+# milestones to play for. Reference (both stats): ≈ +27% at 10k, +50% at 25k, +76% at 50k,
+# +87% at 100k. The pilot's growth coefficient (`atk_growth_mult` / `hp_growth_mult`) multiplies
+# the result. Values live in data/csv/const.csv (ConstTable).
+static var GROWTH_CURVE_SCALE: float = ConstTable.num("GROWTH_CURVE_SCALE")
+static var GROWTH_ATK_CURVE: float = ConstTable.num("GROWTH_ATK_CURVE")
+static var GROWTH_HP_CURVE: float = ConstTable.num("GROWTH_HP_CURVE")
+static var GROWTH_SPIKE_STEP: float = ConstTable.num("GROWTH_SPIKE_STEP")
+static var GROWTH_SPIKE_MAX: float = ConstTable.num("GROWTH_SPIKE_MAX")
+static var GROWTH_SPIKE_ATK: float = ConstTable.num("GROWTH_SPIKE_ATK")
+static var GROWTH_SPIKE_HP: float = ConstTable.num("GROWTH_SPIKE_HP")
+## The smooth slope is multiplied by this once per spike reached — growth keeps getting
+## harder after every milestone (D in the curve).
+static var GROWTH_SPIKE_SLOPE_DECAY: float = ConstTable.num("GROWTH_SPIKE_SLOPE_DECAY")
+
+
+## Growth multiplier gain (before the pilot's growth coefficient) at `score` (k):
+## attack share, or max-HP share when `is_hp`. The single curve — the stat recompute and
+## the detail panel both read it.
+static func growth_curve(score: float, is_hp: bool) -> float:
+	var k: float = GROWTH_HP_CURVE if is_hp else GROWTH_ATK_CURVE
+	var spike: float = GROWTH_SPIKE_HP if is_hp else GROWTH_SPIKE_ATK
+	var c: float = maxf(0.001, GROWTH_CURVE_SCALE)
+	# Piecewise log: segment i (between spike thresholds i and i + 1; the last one is
+	# open-ended) has slope K · D^i / (C + g). Each segment integrates to
+	# K · D^i · [ln(C + hi − START) − ln(C + lo − START)] over the part the score entered.
+	var smooth: float = 0.0
+	var n: int = spike_count()
+	for i in n + 1:
+		var lo: float = maxf(SCORE_START, GROWTH_SPIKE_STEP * float(i))
+		var hi: float = score if i == n else minf(score, GROWTH_SPIKE_STEP * float(i + 1))
+		if hi <= lo:
+			if score <= lo:
+				break
+			continue
+		smooth += k * pow(GROWTH_SPIKE_SLOPE_DECAY, float(i)) \
+				* (log(c + hi - SCORE_START) - log(c + lo - SCORE_START))
+	return smooth + spike * float(spikes_reached(score))
+
+
+## Spike thresholds (`GROWTH_SPIKE_STEP`, 2 × step … up to `GROWTH_SPIKE_MAX`) at or below `score`.
+static func spikes_reached(score: float) -> int:
+	if GROWTH_SPIKE_STEP <= 0.0:
+		return 0
+	return clampi(int(floor(score / GROWTH_SPIKE_STEP + 0.000001)), 0, spike_count())
+
+
+## How many spike thresholds exist in total (50 / 10 = 5).
+static func spike_count() -> int:
+	if GROWTH_SPIKE_STEP <= 0.0:
+		return 0
+	return int(floor(GROWTH_SPIKE_MAX / GROWTH_SPIKE_STEP + 0.000001))
+
+
+## Fixed kill reward right now — `SCORE_KILL_BASE` + `SCORE_KILL_STEP` per
+## `SCORE_KILL_STEP_TURNS` elapsed turns, frozen at `SCORE_KILL_CAP_TURN`.
+func kill_reward() -> float:
+	var t: int = mini(turn_count, SCORE_KILL_CAP_TURN)
+	return SCORE_KILL_BASE + SCORE_KILL_STEP * float(floori(float(t) / float(maxi(1, SCORE_KILL_STEP_TURNS))))
+
+
+## Bounty the last hit takes on top of its share: `SCORE_KILL_BOUNTY_RATE` of how far
+## `victim` is ahead of `killer_team`'s average, never negative.
+func kill_bounty(victim: PilotData, killer_team: int) -> float:
+	return maxf(0.0, victim.score - team_avg_score(killer_team)) * SCORE_KILL_BOUNTY_RATE
+
+
+## One jungle camp right now — `SCORE_JUNGLE_CAMP` × (`SCORE_JUNGLE_CAMP_START_MULT` +
+## `SCORE_JUNGLE_CAMP_STEP` per `SCORE_JUNGLE_CAMP_STEP_TURNS` turns, frozen at
+## `SCORE_JUNGLE_CAMP_CAP_TURN`). Walking onto a camp, 약탈 and the card preview all read this.
+func jungle_camp_score() -> float:
+	var t: int = mini(turn_count, SCORE_JUNGLE_CAMP_CAP_TURN)
+	var steps: int = floori(float(t) / float(maxi(1, SCORE_JUNGLE_CAMP_STEP_TURNS)))
+	return SCORE_JUNGLE_CAMP * (SCORE_JUNGLE_CAMP_START_MULT + SCORE_JUNGLE_CAMP_STEP * float(steps))
+
+
+## Effective growth-point **accrual multiplier** of `p` (1.0 = 100%): the expiring card
+## slot (`growth_rate_mult`) + the permanent bonus (`growth_rate_bonus`, 용 보상 …) + the
+## pilot skill share + the [골드러시] hand share. `add_score` multiplies gains by it and
+## the detail panel header shows it.
+func growth_accrual_mult(p: PilotData) -> float:
+	if p == null:
+		return 1.0
+	var skill_add: float = skill.growth_rate_add(p) if skill != null else 0.0
+	var hand_add: float = card_phase.hand_growth_add(p) if card_phase != null else 0.0
+	return p.growth_rate_mult + p.growth_rate_bonus + skill_add + hand_add
 
 
 ## 모든 성장치 변동이 지나는 한 지점. 하한만 지키고(상한 없음), **적립 배율**
@@ -1077,14 +1167,9 @@ func add_score(p: PilotData, delta: float) -> float:
 	if p == null or is_zero_approx(delta):
 		return 0.0
 	if delta > 0.0:
-		# 만료형 슬롯(`growth_rate_mult`) + 영구 가산분(`growth_rate_bonus`, 용
-		# 보상) + 파일럿 스킬 가산분(축적 / 사냥의 보상 / 위치 고정 / 경쟁 심리).
-		# 셋을 합쳐 한 번에 곱하므로 라인전 카드가 오브젝트 보상이나 스킬을
-		# 덮어쓰지 않는다 — PilotData.growth_rate_bonus 주석 참조.
-		var skill_add: float = skill.growth_rate_add(p) if skill != null else 0.0
-		# [골드러시] — 손에 들고 있는 동안 토큰 수만큼 적립 배율이 붙는다.
-		var hand_add: float = card_phase.hand_growth_add(p) if card_phase != null else 0.0
-		delta *= p.growth_rate_mult + p.growth_rate_bonus + skill_add + hand_add
+		# Summed shares multiplied once (`growth_accrual_mult`), so a laning card never
+		# overwrites an objective reward or a skill — see PilotData.growth_rate_bonus.
+		delta *= growth_accrual_mult(p)
 	# 매혹([매혹] 카드) — 이 파일럿이 버는 만큼을 걸어 둔 쪽이 **그대로 한 벌
 	# 더** 번다. 복사이지 이전이 아니라서 원래 주인의 몫은 줄지 않는다. 복사본에
 	# 다시 링크가 걸려 있어도 한 겹에서 끊는다(`_score_link_depth`) — A→B→A 같은
@@ -1149,13 +1234,12 @@ func flush_score_popups() -> void:
 func refresh_growth_stats(p: PilotData) -> void:
 	if p == null:
 		return
-	var gained: float = maxf(0.0, p.score - SCORE_START)
 	# 선수의 **성장 계수**(`PlayerData.atk_growth` / `hp_growth`)가 여기서
 	# 곱해진다. 주간 훈련이 바꾸는 것은 개시 스탯이 아니라 **경기가 흘러가는
 	# 기울기**다 — 계수가 높은 선수는 같은 성장치로 더 많이 변한다. 1.0 이
 	# 기준(스탯 50)이므로 밸런스가 기본값에서 저절로 밀리지 않는다.
-	p.growth    = gained * GROWTH_ATK_PER_SCORE * p.atk_growth_mult
-	p.growth_hp = gained * GROWTH_HP_PER_SCORE * p.hp_growth_mult
+	p.growth    = growth_curve(p.score, false) * p.atk_growth_mult
+	p.growth_hp = growth_curve(p.score, true) * p.hp_growth_mult
 	# 파일럿 스킬의 스탯 배율은 **여기**에 얹는다 — `atk` 를 직접 밀면 다음
 	# 재계산에 통째로 지워지고, 충전이 오르내릴 때마다 원본이 깎여 나간다.
 	var s_atk: float = skill.atk_mult(p) if skill != null else 1.0
@@ -1343,32 +1427,31 @@ func live_damage_credit(victim: PilotData) -> Dictionary:
 	return out
 
 
-## 처치 현상금 정산. 라스트힛(`killer`)이 전액을 받고, 그 대상에게 피해를 넣은
-## 다른 아군이 **피해 비례로 최대 `SCORE_ASSIST_MAX_SHARE`** 를 더 받는다.
-## 분모는 피해자가 이번 생에 받은 총 피해라, 라스트힛이 딜의 대부분을 넣었다면
-## 어시스트 총합은 상한에 한참 못 미친다.
+## Kill settlement. The last hit (`killer`) takes the **whole** fixed reward (`kill_reward()`)
+## plus the bounty (`kill_bounty`). Every other pilot who damaged the victim (assist) takes the
+## fixed reward × **its live damage share** (`live_damage_credit` — my damage / total damage,
+## the last hit's damage counts in the denominator). Each pilot gets one popup with its total.
 ##
-## `killer` 가 null 이어도(포탑 처치) 어시스트는 지급된다 — 끝까지 두들긴
-## 사람에게 아무것도 안 주는 쪽이 더 이상하다.
+## With `killer` null (turret kill) the damage dealers are still paid their assist shares.
 func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 	var killer_team: int = killer.team if killer != null else 1 - victim.team
-	var lead: float = maxf(0.0, victim.score - team_avg_score(killer_team))
-	var bounty: float = SCORE_KILL_BASE + lead * SCORE_KILL_BOUNTY_RATE
+	var reward: float = kill_reward()
+	var bounty: float = kill_bounty(victim, killer_team)
 	# **만료를 지난 피해는 분모에도 안 들어간다** — 관여 기간(`SCORE_ASSIST_WINDOW_TURNS`) 전에 긁어 놓은 딜이
 	# 분모를 부풀리면 정작 지금 잡은 사람들의 몫이 조용히 깎인다.
 	var credit: Dictionary = live_damage_credit(victim)
 	var total_dmg: float = 0.0
 	for raw in credit.keys():
 		total_dmg += float(credit[raw])
-	if killer != null:
-		award_score(killer, bounty)
+	var pay: Dictionary = {}   # PilotData → growth points
 	if total_dmg > 0.0:
 		for raw in credit.keys():
-			var a := raw as PilotData
-			if a == killer:
-				continue
-			var share: float = float(credit[a]) / total_dmg
-			award_score(a, bounty * SCORE_ASSIST_MAX_SHARE * share)
+			if raw != killer:
+				pay[raw] = reward * float(credit[raw]) / total_dmg
+	if killer != null:
+		pay[killer] = reward + bounty
+	for raw in pay.keys():
+		award_score(raw as PilotData, float(pay[raw]))
 	victim.damage_credit.clear()
 
 
@@ -1376,7 +1459,7 @@ func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 ## 오버킬까지 값으로 치면 마지막 한 대에 인원이 몰릴수록 포탑 총액이 불어난다.
 ##
 ## 한 점당 값은 `SCORE_TURRET_FULL / TURRET_HP` 라, 한 기를 통째로 갈아 내면
-## 예전의 철거 일시불과 정확히 같은 총액이 나온다.
+## 정확히 `SCORE_TURRET_FULL` 이 나온다.
 func score_turret_damage(attacker: PilotData, hp_removed: int) -> void:
 	if attacker == null or hp_removed <= 0:
 		return

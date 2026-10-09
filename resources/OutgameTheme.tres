@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=162 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=166 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -638,6 +638,45 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxEmpty" id="MatchPrepCardInner_panel"]
+
+[sub_resource type="StyleBoxFlat" id="MatchPrepMechChip_panel"]
+content_margin_left = 4.0
+content_margin_top = 2.0
+content_margin_right = 4.0
+content_margin_bottom = 2.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="MatchPrepPilotCard_panel"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.11, 0.11, 0.18, 0.1)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="MatchPrepWarnChip_panel"]
+content_margin_left = 10.0
+content_margin_top = 2.0
+content_margin_right = 10.0
+content_margin_bottom = 2.0
+bg_color = Color(0.878, 0.271, 0.271, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="MessengerAnswerButton_disabled"]
 content_margin_left = 22.0
@@ -2094,6 +2133,14 @@ ManagerPresetChipOn/styles/hover = SubResource("ManagerPresetChipOn_disabled")
 ManagerPresetChipOn/styles/hover_pressed = SubResource("ManagerPresetChipOn_disabled")
 ManagerPresetChipOn/styles/normal = SubResource("ManagerPresetChipOn_disabled")
 ManagerPresetChipOn/styles/pressed = SubResource("ManagerPresetChipOn_disabled")
+MatchPrepCardInner/base_type = &"Card"
+MatchPrepCardInner/styles/panel = SubResource("MatchPrepCardInner_panel")
+MatchPrepMechChip/base_type = &"SunkPanel"
+MatchPrepMechChip/styles/panel = SubResource("MatchPrepMechChip_panel")
+MatchPrepPilotCard/base_type = &"Card"
+MatchPrepPilotCard/styles/panel = SubResource("MatchPrepPilotCard_panel")
+MatchPrepWarnChip/base_type = &"AccentChip"
+MatchPrepWarnChip/styles/panel = SubResource("MatchPrepWarnChip_panel")
 MessengerAnswerButton/base_type = &"GhostButton"
 MessengerAnswerButton/styles/disabled = SubResource("MessengerAnswerButton_disabled")
 MessengerAnswerButton/styles/focus = SubResource("MessengerAnswerButton_focus")

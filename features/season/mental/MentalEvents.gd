@@ -531,8 +531,12 @@ static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 	match String(c["type"]):
 		"trust":
 			if pilot_id >= 0:
+				var lv_before: int = MentalSystem.trust_level(state, pilot_id)
 				var d: int = MentalSystem.add_trust(state, pilot_id, int(c["delta"]))
 				notes.append({"type": "trust", "pid": pilot_id, "delta": d})
+				var lv_after: int = MentalSystem.trust_level(state, pilot_id)
+				if lv_after != lv_before:
+					notes.append({"type": "trust_level", "pid": pilot_id, "level": lv_after})
 		"trust_all":
 			for pid in MentalSystem.my_pilot_ids(state):
 				MentalSystem.add_trust(state, int(pid), int(c["delta"]))
@@ -575,6 +579,12 @@ static func outcome_view(state: Dictionary, outcome: Dictionary) -> Dictionary:
 			"notes": note_texts(state, outcome.get("notes", []))}
 
 
+## Trust points shown as level progress: `+4` points → `+16%` of one level (`TRUST_PER_LEVEL`).
+static func trust_delta_text(points: int) -> String:
+	var pct: int = roundi(float(points) * 100.0 / float(maxi(1, ConstTable.int_of("TRUST_PER_LEVEL"))))
+	return "%+d%%" % pct
+
+
 ## Note dicts (see `apply_choice`) → player-facing chips.
 static func note_texts(state: Dictionary, notes: Array) -> Array:
 	var out: Array = []
@@ -591,9 +601,12 @@ static func note_text(state: Dictionary, n: Dictionary) -> String:
 	match String(n.get("type", "")):
 		"trust":
 			return Loc.t(L.MENTAL_UI_NOTE_TRUST,
-					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
+					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": trust_delta_text(delta)})
 		"trust_all":
-			return Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": _signed(delta)})
+			return Loc.t(L.MENTAL_UI_NOTE_TRUST_ALL, {"delta": trust_delta_text(delta)})
+		"trust_level":
+			return Loc.t(L.MENTAL_UI_NOTE_TRUST_LEVEL,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "n": int(n.get("level", 1))})
 		"stress":
 			return Loc.t(L.MENTAL_UI_NOTE_STRESS,
 					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})

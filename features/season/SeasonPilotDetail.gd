@@ -51,8 +51,10 @@ func _bind(sheet: HubSheet, state: Dictionary, pd: PlayerData) -> void:
 
 	(%Total as Label).text = Loc.t(L.SEASON_PILOT_DETAIL_TOTAL, {"n": pd.stat_total()})
 	var tl: Label = %Trust
-	tl.text = Loc.t(L.SEASON_PILOT_DETAIL_TRUST, {"n": trust, "max": ConstTable.int_of("TRUST_MAX")})
-	tl.add_theme_color_override("font_color", HubView.trust_color(trust))
+	var level: int = MentalSystem.level_of_trust(trust)
+	tl.text = Loc.t(L.SEASON_PILOT_DETAIL_TRUST,
+			{"n": level, "pct": roundi(MentalSystem.progress_of_trust(trust) * 100.0)})
+	tl.add_theme_color_override("font_color", HubView.trust_color(level))
 	(%Outings as Label).text = Loc.t(L.SEASON_PILOT_DETAIL_OUTINGS, {"n": MentalSystem.outings(state, pid)})
 	var mood: int = StressSystem.mood_of(state, pid)
 	var ml: Label = %Mood

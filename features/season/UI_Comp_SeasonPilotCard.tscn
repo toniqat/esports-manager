@@ -7,7 +7,7 @@
 
 [node name="SeasonPilotCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "Small vertical pilot card (season hub roster row · week screen bottom row, five in seat order). Width comes from the row (expand), height fixed here. Badge on top, portrait in the trust ring with the trust pill at its bottom-right, stress line, emphasised note line. Tap = pressed(pilot_id) → SeasonPilotDetail."
+editor_description = "Small vertical pilot card (season hub roster row · week screen bottom row, five in seat order). Width comes from the row (expand), height fixed here. Badge on top, portrait in the trust ring (level progress) with the trust level pill at its bottom-right, stress line, emphasised note line. Tap = pressed(pilot_id) → SeasonPilotDetail."
 custom_minimum_size = Vector2(0, 256)
 offset_right = 190.0
 offset_bottom = 256.0
@@ -33,7 +33,7 @@ layout_mode = 2
 [node name="Ring" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-TrustRing: track + arc of trust / TRUST_MAX (colour = trust band, code)."
+TrustRing: track + arc of progress toward the next trust level (colour = trust band, code)."
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -60,7 +60,7 @@ mouse_filter = 2
 [node name="TrustPill" type="Panel" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Trust number pill at the portrait's bottom-right; code paints it in the trust band colour (radius = half the height)."
+Trust level pill at the portrait's bottom-right; code paints it in the trust band colour (radius = half the height)."
 custom_minimum_size = Vector2(56, 34)
 layout_mode = 1
 anchors_preset = 5

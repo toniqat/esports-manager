@@ -1,4 +1,34 @@
 keys,ko
+tx_P2MTN9VDF2,깨달음
+tx_RM8HQHF7RZ,{name}{i} 무언가를 깨달았습니다
+tx_YACHZAA3G1,{name} · {n}번째 깨달음
+tx_SNYGR0A6D8,이번 깨달음으로 무엇을 얻을까요?
+tx_3D94XEY8BS,지금은 얻을 수 있는 것이 없습니다. 이번 깨달음은 넘어갑니다.
+tx_VF3M8S8SGS,카드 강화
+tx_SPHKS5F297,프리셋의 카드 한 장을 강화된 + 카드로 바꿉니다
+tx_XVEKB2ARPN,카드 교체
+tx_MKQQ6S25FH,새 카드 후보 하나와 프리셋의 카드 한 장을 맞바꿉니다
+tx_XRXCJDX7T9,프리셋 추가
+tx_K03F5VX51P,카드 세 장으로 된 새 프리셋을 얻습니다. 경기 전에 골라 쓸 수 있습니다
+tx_VX5DQ2VWFY,훈련 레벨 {n} 이상 필요
+tx_C04CSM6AH9,추가 프리셋이 가득 찼습니다 (최대 {n})
+tx_BBTC2K3EDB,강화할 수 있는 카드가 없습니다
+tx_M26N55RWGQ,교체할 후보가 없습니다
+tx_WVN114Z3KD,강화할 카드를 고르세요
+tx_5Z059Q72G0,강화됨
+tx_FJV4RH5RB5,새 카드 후보
+tx_NM2N0G1CX7,뺄 카드
+tx_CPB8AVTK0N,들일 카드와 뺄 카드를 하나씩 고르세요
+tx_Y7542JPYWV,후보 {n}
+tx_9BJC6ABYHM,새 프리셋을 하나 고르세요
+tx_6KTJD01A88,기본
+tx_4Z7Q89GAKB,프리셋 {n}
+tx_K1RJF50930,{n} / {max}
+tx_T07VH8HG79,깨달음 대기 중
+tx_WDK4ZJ8X7X,카드 프리셋
+tx_2FVH8MVSD4,출전
+tx_GWM9Y2YTZE,출전 프리셋
+tx_D4QK1WR6H2,이번 경기에 쓸 카드 프리셋을 고르세요
 tx_ZXYEA8CBCF,적
 tx_EB4H7Z27VT,아군
 tx_17QG177S23,아군 또는 적
@@ -318,6 +348,190 @@ tx_EPJQNJA7F7,시전자의 성장 점수 {score_cost} 소모 및 대상 공격�
 tx_RHE0637Z32,"대상은 전장 이탈까지 받는 피해 +{dmg_taken}%, 대상의 성장 점수 {bounty}%만큼 [현상금] 지정\n중첩되지 않음"
 tx_70N6FJ3FJ0,공격\n대상의 [현상금] {attack_bounty}%만큼 피해
 tx_1MFHFCFRJE,대상을 시전자의 타일로 이동\n{engage}턴 간 교전\n범위 내 모두 참여
+tx_JZ97VD5T45,몸집 불리기+
+tx_XE9DHPQEJM,최대 체력 +{max_hp}
+tx_A2Q3FWXP5M,강습+
+tx_K586DBV6FN,대상의 타일로 이동\n{engage}턴 간 교전
+tx_CC597DP56V,최첨단 보호+
+tx_PD7VM5AXHE,대상 최대 체력의 {heal_pct}% 회복 및 [반응 장갑] {reactive_armor} 부여
+tx_NFPGHN7ZHR,개시+
+tx_GZG45CRAM0,{engage}턴 간 교전\n범위 내 모두 참여
+tx_3K0P7GYTGB,주먹다짐+
+tx_J5RMJQF0N6,대상과 자신이 {mutual_attack}회씩 서로 공격\n대상의 공격은 필중
+tx_DV1RXS0X1N,제압 전투+
+tx_KPN26AFNV8,{engage}턴 간 교전\n범위 내 모두 참여
+tx_RCWR35FG9P,승전보+
+tx_CH3CJG3PWK,"뽑기 {draw}장, 전략 점수 +{strategy}"
+tx_05ECQCD8KZ,돌격+
+tx_Y9YJNBZHYG,대상의 타일로 이동\n{engage}턴 간 교전
+tx_DPK4BZFG0S,질주+
+tx_HZG461P7Q4,이동\n뽑기 {draw}장
+tx_TGJWVJR5JR,격렬한 돌진+
+tx_9WPCZ238JZ,밀기 {push}\n도중에 적이 없을 경우 추가 밀기 {push_bonus_clear}
+tx_FHE4ABGWPK,우세한 전장+
+tx_6Q8X10GJV0,{engage}턴 간 교전\n범위 내 모두 참여\n교전에서 생존할 시 처치한 적 1명마다 손에 [철거] {gen_hand_count}장 생성
+tx_Z37JECA1CJ,철거+
+tx_X609XB66A3,공격
+tx_S39W0QN8YC,일격+
+tx_QPAFVRFYD1,"공격\n명중 시 뽑기 {draw}장, 토큰 +{charge}"
+tx_31QTHCDFZF,휩쓸기+
+tx_07Y2E1MTXX,이동\n이후 범위 내 모든 적 또는 포탑 공격\n명중 1회마다 토큰 +{charge}
+tx_1V35335T2V,처형+
+tx_DH2AXN8DPE,토큰 {execute_charge} 미만일 때 이 카드 제거\n토큰{eul} 모두 소모해 최대 체력 {execute}% 이하인 대상 처치
+tx_GKZ1ZFJQHA,유령의 올가미+
+tx_3W0F1RSFTB,공격 {attack}회
+tx_0RSSRHRR36,리부트+
+tx_5Q8F5Q3MCP,토큰 +{charge}\n[단계 A] 찾기 {search_card_count}장
+tx_N73HX9PZ6G,단계 B+
+tx_A0V88EV4AA,"[목표]가 부여된 적 주변 {engage_self_range}칸 이내 {engage}턴 간 교전\n교전에서 적이 처치되면 덱에 [단계 C] {phase_b_count}장 생성, 아니면 [단계 A] {phase_b_count}장 생성"
+tx_1DJBMWER36,즉발 베기+
+tx_4WPBRP047M,이동\n이후 범위 내 모든 적 공격
+tx_SCGQR9B6A6,약자 멸시+
+tx_Z9JK8GAEQ0,소지 중: 교전 시작 시 토큰{eul} 모두 소모해 체력{i} 가장 적은 적을 공격력 {engage_contempt_dmg_mult_pct}%로 공격 {charge|충전 횟수}회\n그 교전이 끝나면 이 카드를 버린다
+tx_9EAJBFQJVF,전격전+
+tx_D9T28SG01T,[약자 멸시] 찾기 {search_card_count}장\n이동\n이후 {engage}턴 간 교전\n범위 내 모두 참여
+tx_ECZZ9WZF5M,질풍+
+tx_C3RPF8TPJG,"손의 가장 오른쪽 카드 {discard_right}장 버리기, 뽑기 {draw}장\n대상 위치로 이동해 대상 공격\n이번 작전 단계{i} 끝나면 이전 위치로 복귀"
+tx_TRG79GWGB9,신속+
+tx_SFP4J90R9Y,손의 가장 오른쪽 카드 {discard_right}장 버리기\n이번 작전 단계에서 피해를 입힌 적들을 다시 공격
+tx_4XE6F2HTQ8,최면+
+tx_FYV7TG9CND,대상 {move_target}칸 이동
+tx_H3BJ4XHWE5,매혹+
+tx_512ED91TF9,{growth_link}턴 동안 대상이 얻는 성장 점수{wa} 동일한 성장 점수 획득
+tx_WEBXM7XCK1,매혹적인 침공+
+tx_Q0AKY96208,범위 내 모든 적을 시전자 타일로 이동\n{engage}턴 간 교전\n시전자 주변 {engage_self_range}칸 모두 참여
+tx_W7JVVC8XY1,투자+
+tx_7KXMX850TW,버리기 {discard}장\n덱에 [공격 명령] {gen_deck_count}장 생성
+tx_7R5G80RC19,공격 명령+
+tx_65SA98SJ4Q,아군 또는 적이 처치될 때마다 이 카드를 손에 {mech_death_hand_cards}장 생성\n대상 체력 {heal_pct}% 회복 및 대상 범위 내 모든 적 공격
+tx_3R4H4NYZ7T,간보기+
+tx_SJRS57V5FN,"공격\n명중 시 대상 범위 내 {engage}턴 간 교전, 빗나갈 시 전략 점수 +{strategy}"
+tx_R7575C94N8,지원 보호+
+tx_TVG5VVAQ4M,대상에게 시전자 공격력의 {shield_atk}% 보호막 부여
+tx_D036GRATGM,수호+
+tx_4NP86Z0FQ9,전장 내 모든 아군에게 시전자 공격력의 {shield_atk}% 보호막 부여
+tx_TK2KR0BWZJ,지원 보호++
+tx_QZNQTB471B,대상에게 시전자 공격력의 {shield_atk}% 보호막 부여
+tx_WE7DZKZ2W9,탈진+
+tx_3VBN9596WB,공격\n명중 시 대상은 이번 작전 단계 동안 교전 참여 불가
+tx_8AE47DKG31,변덕+
+tx_P03D3JNDC6,버린 더미에서 뽑기 {draw_discard}장\n이번 작전 단계 동안 해당 카드들 비용 -{draw_discard_cost_reduce}
+tx_2XMZQG39HH,강타+
+tx_G2N67CE92B,대상이 다음 교전에서 적에게 피해를 주면 그 적을 [기절]\n한 교전 내에 같은 적에게 두 번 이상 적용되지 않음
+tx_4F07P68HR7,붉은 가루+
+tx_4M9BGB3BSR,시전자의 성장 점수 {score_cost} 소모 및 대상 최대 체력 +{max_hp}
+tx_WAXV6SG774,녹색 병+
+tx_D3JHAMXCWF,시전자의 성장 점수 {score_cost} 소모 및 대상 공격력 +{atk_add}
+tx_VEG14GRCC8,파란 약+
+tx_7MFR4HDM31,시전자의 성장 점수 {score_cost} 소모 및 대상이 전장 이탈까지 성장 효율 +{growth_eff}%
+tx_8A0501SEQF,확신+
+tx_S0566TVC3N,공격\n대상의 [현상금] {attack_bounty}%만큼 피해
+tx_E99ZBQY56X,죽음의 손가락+
+tx_VTYG95KB5T,"대상은 전장 이탈까지 받는 피해 +{dmg_taken}%, 대상의 성장 점수 {bounty}%만큼 [현상금] 지정\n중첩되지 않음"
+tx_HBEA3PM245,사형 선고+
+tx_D0J57B8671,대상을 시전자의 타일로 이동\n{engage}턴 간 교전\n범위 내 모두 참여
+tx_YTB6MM3BN5,천공의 일격+
+tx_CFV87QA430,공격
+tx_G59QCK78QE,천둥 폭풍+
+tx_M955S9RJHM,전장 내 모든 적 공격
+tx_6T82HVJRHH,스캐빈저+
+tx_ZAT1BDHSWG,버린 더미에서 찾기 {search_discard}장
+tx_PC7S51RE6M,로켓 펀치+
+tx_ZW9G1CSZYT,"공격\n명중 시 전략 점수 +{strategy}, [캐시] 찾기 {search_card_count}장"
+tx_SA8BGV2NGQ,스캐빈저++
+tx_V6MAF90SXW,버린 더미에서 찾기 {search_discard}장
+tx_PND91G8FKJ,미사일+
+tx_NHNA66P70E,토큰{eul} 모두 소모해 대상 타일의 모든 적 공격 {charge|충전 횟수}회
+tx_4PSR1KAX72,미사일 준비+
+tx_G8AMQQDD59,[미사일] 찾기 {search_card_count}장
+tx_T14KPE6RBJ,정밀 폭격+
+tx_MM017581DJ,대상 범위 내 모든 적과 포탑 공격\n명중 1회마다 손에 소멸·휘발성 [미사일] {gen_hand_count}장 생성
+tx_5F1G3CZBWA,결속+
+tx_P5XP2VGCRN,"시전자 및 대상이 전투 이탈 시까지 서로 [추적]\n대상 변경 시, 이전 효과는 사라짐"
+tx_764XKZ5X1R,전장 강타+
+tx_W5P4RWANWC,토큰{eul} 모두 소모해 전장 내 무작위 적 공격 {charge+{attack_base}|충전 횟수+{attack_base}}회
+tx_0M9XTVT6FW,전장 강타++
+tx_FXBB8GSVMW,토큰{eul} 모두 소모해 전장 내 무작위 적 공격 {charge+{attack_base}|충전 횟수+{attack_base}}회
+tx_43GRHHZPYE,테러+
+tx_X0X56P8Q0C,범위 내 모든 적 공격\n1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
+tx_VRR6FN92HF,파괴+
+tx_NAQ0QTZAZ3,대상 범위 내 모든 적 공격\n1회 이상 명중 시 손에 [락온] {gen_hand_count}장 생성
+tx_QB61SM28PZ,교전 개시+
+tx_3FSESX21J9,{engage}턴 간 교전\n범위 내 모두 참여
+tx_JZ50SJ63T3,완벽한 기회+
+tx_CBQ63MM7YW,{engage}턴 간 교전\n범위 내 모두 참여
+tx_NYB7ZYHPPS,전투 준비+
+tx_36WW7XPFF9,이동\n다음 교전 카드 비용 -{cost_reduce_engage}
+tx_798W2QJ3P5,정밀 이동+
+tx_CEW1SV939X,이동\n이 게임 동안 비용 +{self_cost}
+tx_8E1DY3VZA8,찌르기+
+tx_HP8XQ8VYQJ,공격
+tx_217H7VTNPE,정밀 공격+
+tx_9TRK49GFR3,필중 공격
+tx_N6S9M4NWGG,연속 공격+
+tx_94BH6AYHEN,공격\n명중 시 이 카드 효과를 반복
+tx_2GHFSBC8HJ,전진+
+tx_EWN25NPTKH,전진 {advance}
+tx_31PY5QXR4R,교환+
+tx_M8TADDM7JJ,"뽑기 {draw}장, 버리기 {discard}장"
+tx_9M0FC6C3AN,조정+
+tx_QJMKVSTBRS,"뽑기 {draw}장, 전략 점수 +{strategy}"
+tx_M82HXCWGBM,임기응변+
+tx_EF0GCJR3ZE,찾기 {search}장
+tx_Y34VZKW71R,재빠른 사고+
+tx_YNHNJ0HHG1,뽑기 {draw}장
+tx_EZPP3JHRDX,집중+
+tx_EMQCJ5V6F4,이번 작전 단계에서 뽑는 카드 비용 -{cost_reduce_draw_phase}
+tx_PT8C05X6KK,사전 준비+
+tx_VC7VADCPBV,손의 모든 카드 비용 -{cost_reduce_hand}
+tx_2C8ADSMGZH,아드레날린+
+tx_SMMBZEJNJ6,전략 점수 +{strategy}\n다음 작전 단계 시작 시 전략 점수 -{strategy_next_phase_abs}
+tx_XAH4EA2AVK,계획 살인+
+tx_DJN6JA6NT0,"사용 후, 이번 작전 단계에서 적을 처치했다면 전략 점수 +{strategy_on_kill}"
+tx_RJ7WEJKPQC,복귀+
+tx_W57S84RKSK,대상을 본진으로 귀환\n뽑기 {draw}장
+tx_1MKBA7WF7W,보호+
+tx_4JJKAPPA2X,대상 체력 {shield_pct}%의 보호막 부여
+tx_6MJHTTD6N2,약탈+
+tx_0ZH46SV52Z,대상 타일에 남은 성장 점수{eul} 가로챈다
+tx_FPENX7791T,소극적인 태세+
+tx_BGCTK1AXP8,"가장 가까운 아군 포탑으로 이동\n{eva_buff_turns}턴 동안 전장 회피 +{eva_buff}%, 성장 +{growth}%"
+tx_DHE2W5VNM6,공격적인 라인전+
+tx_73T0VKM8AG,{lane_stat_turns}턴 동안 라인전 능력치 +{lane_stat}%
+tx_5BPD3FHMDZ,재고+
+tx_MCD0SBQJ7J,손{eul} 전부 버리기\n버린 수만큼 뽑기\n뽑기 {draw}장
+tx_B1VC0MJ1ZG,완벽한 마무리+
+tx_3C7GWQ3T74,손{eul} 전부 버리기\n다음 작전 단계까지 아군 전원 성장 +{growth_until_phase}%\n작전 단계 종료
+tx_S8TFH85S6D,계획 중시+
+tx_QVDR9QKNRT,손의 카드 {preserve}장을 다음 작전 단계까지 보존
+tx_QGWWT8N2SW,과감한 정리+
+tx_W703C4A8C2,"손 오른쪽 {discard_right}장 버리기, 뽑기 {draw}장"
+tx_DXY930098C,솔로 퍼포먼스+
+tx_VPTN20ZRMR,"다른 파일럿 카드 모두 버린 후, 뽑기 +{draw}\n버린 카드 1장마다 전략 점수 +{strategy_each}"
+tx_603C4R80RM,정글 파밍+
+tx_YMMKCCYAWN,이동
+tx_FXPMEZR6GH,골드러시+
+tx_MSD1AMRQCA,"소지 중: 성장 +{charge*{card_gold_rush_growth_per_token_pct}|토큰 수×{card_gold_rush_growth_per_token_pct}}%\n사용: 이 게임 동안 비용 +{self_cost}, 토큰 +{token}"
+tx_7BE22AMK9H,몰입+
+tx_P1H18DCN6N,"공격력 +{atk_pct}%, 성장 +{growth_perm}%"
+tx_XTHZ7PCG9K,워밍업+
+tx_76BX2KVFZ4,"공격력 +{atk_pct}%, 체력 +{hp_pct}%\n뽑기 {draw}장"
+tx_33N11SFKBM,신중한 예산+
+tx_XN88VGF8SC,{growth_turns}턴 동안 성장 +{growth}%\n작전 단계 중 손에 들어오면 그 작전 단계 동안 비용 0
+tx_0TMYJMSM8J,성장 가속+
+tx_9RXJFTHQ2H,토큰{eul} 모두 소모해 {growth_turns}턴 동안 성장 +{charge*{growth}|충전 횟수×{growth}}%
+tx_81N809KRQ3,대결+
+tx_73WPSRR4S3,{engage}턴 간 교전\n대상 범위 내 모두 참여
+tx_QP6H2735DK,매복+
+tx_MJMMW621WF,이동해 다음 작전 단계까지 그 자리에 머문다\n다음 작전 단계에 시전자의 교전 카드 찾기 {ambush_search}장
+tx_2CMZSSAX00,무모한 돌격+
+tx_EYXSRPZG6F,공격 {attack}회\n대상이 시전자{eul} {retaliate}회 공격
+tx_3G580J7DAT,자신감+
+tx_V8TR0BZ2R9,소지 중: 전장 명중 +{hit_pct}%
+tx_AWY5AA18MG,맑은 정신+
+tx_8BVTS2D6RG,소지 중: 양 옆 카드 비용 -{cut}
+tx_ATJZTWXTHK,준비 태세+
+tx_4PKW6JDBGT,"다음 작전 단계 시작 시 전략 점수 +{strategy_next_phase}, 뽑기 {draw_next_phase}장"
 tx_XJ3733JBC4,능력치
 tx_YD2EQQHJ2J,샐러리
 tx_DWRZXTZQ0S,성장
@@ -789,8 +1003,8 @@ tx_H26DNEN9EX,연구 메크 미지정 {n}명
 tx_AYCQXCCH15,{n} / {total} 지정
 tx_5XP7EXN0MZ,담당: {name}   ·   지식 {value}
 tx_NPNPJYNJ78,획득 배율 ×{mult}
-tx_AVASF1MNRA,등급 보정 (모든 파일럿 능력치)   {tiers}
-tx_9C36WN5CN9,주 마감마다 연구 메크 +{research}  ·  경기에 탄 메크 +{match}  (배율 전)
+tx_AVASF1MNRA,숙련 레벨 보정 (명중 · 회피 4종)   {tiers}
+tx_9C36WN5CN9,주 마감마다 연구 메크 +{research} (배율 전)  ·  Lv3 · Lv4 · Lv5 에서 메크 강화 해금
 tx_0R1EGAX9DP,기벽: 연구 메크가 있으면 주 마감 {pct}% 확률로 획득  ·  {odds}
 tx_9YHCDH1Y7N,연구: {mech}
 tx_KVG9N478Y5,주 마감에 코치가 지정
@@ -798,6 +1012,72 @@ tx_1AFM6E35JF,연구 미지정
 tx_PW12RBBJ9E,숙련 상위  {list}
 tx_1D7T0ZQE77,기벽  {n} / {slots}
 tx_D1SA7C6KSP,최대 {n}칸
+tx_A91DQR5EYH,과적재: 공격력 +1 기준 최대 체력 {from} → {to}
+tx_0VZTRKKM1T,[몸집 불리기] 최대 체력 증가량 상승
+tx_CECSHTRHDG,[강습] 비용 {from} → {to}
+tx_328S8KKGN4,[최첨단 보호] [반응 장갑] 부여량 상승
+tx_6M87RVZT2D,반응 장갑 전개: [반응 장갑] {from} → {to}
+tx_FG3ZVVET6B,[개시] 비용 {from} → {to}
+tx_NZS28E1GKD,고통과 쾌감: 최대 체력 전환 {from}% → {to}%
+tx_FFFTHZKAK1,[주먹다짐] 비용 {from} → {to}
+tx_J0T8P7H58F,[제압 전투] 비용 {from} → {to}
+tx_QH1GNFF2MM,[승전보] 작전 수치 상승
+tx_SBHCNS7K9N,[돌격] 비용 {from} → {to}
+tx_QTRMPCC4SB,[질주] 이동 후 뽑기 1장
+tx_EGKG3JJ9SE,[격렬한 돌진] 밀기 거리 상승
+tx_SWBDM0T8D7,[우세한 전장] 비용 {from} → {to}
+tx_2PSN6X1VRJ,[철거] 쓰지 않고 버려도 [휘발성]로 사라지지 않음
+tx_6W4MM80MXJ,[일격] 비용 {from} → {to}
+tx_W0PWZST0Q2,[휩쓸기] 비용 {from} → {to}
+tx_FXE2HDHMWH,[처형] 처치 기준 최대 체력 비율 상승
+tx_G9DS4C9C47,영혼 수확: 명중당 최대 체력 +{from} → +{to}
+tx_3SKY26YB5B,[유령의 올가미] 비용 {from} → {to}
+tx_7ME1P4A18W,영혼 수확: 명중당 공격력 +{from}% → +{to}%
+tx_B3CJM381VE,오버클럭: 시작 토큰 {from} → {to}
+tx_P4CQ08BM5X,[리부트] 토큰 획득량 상승
+tx_G2KTCFPKVJ,[단계 B] 비용 {from} → {to}
+tx_EFJ7BQ4J0N,[즉발 베기] 비용 {from} → {to}
+tx_FNMB3W7P31,[약자 멸시] 토큰 상한 상승
+tx_PNDT9NM8SV,[전격전] 비용 {from} → {to}
+tx_CFB9HRWCCR,무념: 발동 토큰 {from} → {to}
+tx_G2YHSKQHH4,[질풍] 비용 {from} → {to}
+tx_GH8XBN12YF,[신속] 비용 {from} → {to}
+tx_FBDR27NRJT,[최면] 이동 거리 상승
+tx_4R7YVAHY1R,[매혹] 지속 턴 상승
+tx_1Y4GQW54HV,[매혹적인 침공] 비용 {from} → {to}
+tx_5NCH55X9MV,[투자] 비용 {from} → {to}
+tx_JEXZATQ284,[공격 명령] 회복량 상승
+tx_6M9QB8SER9,[간보기] 비용 {from} → {to}
+tx_P6NFN40F99,[지원 보호] 보호막 상승
+tx_VP05EWZ56R,[수호] 보호막 상승
+tx_XVQS59TH2N,[지원 보호] 비용 {from} → {to}
+tx_TZYYS9ERHF,[탈진] 비용 {from} → {to}
+tx_FYY48D8123,[변덕] 비용 감소량 상승
+tx_GE9HFV4Z0Y,[강타] 비용 {from} → {to}
+tx_FFM4WFQSCN,[붉은 가루] 최대 체력 증가량 상승
+tx_XHZ0BYXBW7,[녹색 병] 공격력 증가량 상승
+tx_E8P091AQP0,[파란 약] 성장 효율 상승
+tx_JWGQ0QQNER,[확신] 비용 {from} → {to}
+tx_AD4256R4W5,[죽음의 손가락] 받는 피해 · [현상금] 상승
+tx_1NXM43KXVJ,[사형 선고] 비용 {from} → {to}
+tx_2TF6YWR0M5,취약 각인: [취약] {from} → {to}
+tx_M6PZ23YC9J,[천공의 일격] 비용 {from} → {to}
+tx_XSGEQVRV9G,[천둥 폭풍] 비용 {from} → {to}
+tx_F1FCA1PFVX,[스캐빈저] 비용 {from} → {to}
+tx_DMVNB14BNK,[로켓 펀치] 비용 {from} → {to}
+tx_4YJ1SVHVZS,[스캐빈저] 찾는 장수 상승
+tx_WMFRSAF3YM,[미사일] 토큰 상한 상승
+tx_TPWWDZTVMF,[미사일 준비] 비용 {from} → {to}
+tx_1469HV9AHA,[정밀 폭격] 비용 {from} → {to}
+tx_17FVFFR8CY,[결속] 비용 {from} → {to}
+tx_VEMW7S91CA,[전장 강타] 기본 공격 횟수 상승
+tx_282RP86MJR,[전장 강타] 비용 {from} → {to}
+tx_NDKXMX6EB0,조준 보정: 명중당 공격력 +{from} → +{to}
+tx_XWA7EKFJNA,[테러] 비용 {from} → {to}
+tx_PBWDAW1MZ6,[파괴] 비용 {from} → {to}
+tx_MG2RP2KA00,Lv{n}
+tx_G5CGK84PBE,다음 강화 {level} · {mech}: {text}
+tx_YQBQKH8GAN,{mech}: 메크 강화 모두 해금
 tx_VDJKS7MNHE,BAN
 tx_VX9Q85PM8S,드래그 드롭으로 메크-파일럿 지정 변경
 tx_6Z915A6SVE,BAN
@@ -805,7 +1085,7 @@ tx_M08KQVQN65,패시브 없음
 tx_MJJHA43Q8J,이 기체에는 고유 카드가 없다
 tx_XVKPY5NPC4,게임 시작
 tx_B3TD0XDDBT,기체 능력치
-tx_3R8J1QNVYD,숙련도 (등급 보정 = 모든 파일럿 능력치)
+tx_3R8J1QNVYD,숙련도 (레벨 보정 = 명중 · 회피 4종)
 tx_1R98FHMXSQ,장착한 기벽 없음
 tx_PY288FR27W,메크 패시브
 tx_DKVRHA76D6,이 기체에는 패시브가 없다
@@ -819,8 +1099,8 @@ tx_5AJE6SAZ26,상대
 tx_GPNME2ADWA,기벽 {n}
 tx_2C7Y2JDD7V,{role}   ·   HP {hp}   ·   ATK {atk}   ·   존재감 {presence}
 tx_S32JTGTHEG,메크 카드  {n}종   ·   카드를 누르면 설명
-tx_J3FQW65YX4,{name}  {tier} {value}  (파일럿 능력치 {bonus})
-tx_GKJ2J8BS4G,{name}  {tier} {value}  (파일럿 능력치 {bonus} · 기벽 +{quirk})
+tx_J3FQW65YX4,{name}  {tier} {value}  (명중 · 회피 {bonus})
+tx_GKJ2J8BS4G,{name}  {tier} {value}  (명중 · 회피 {bonus} · 기벽 +{quirk})
 tx_ZFKRFPCAS2,분석가 추천 밴: {pilot} 의 주력
 tx_ZKEE3G9T6P,상대 예상 픽: {pilot}
 tx_15SXME7CFS,생성 전용
@@ -864,6 +1144,10 @@ tx_FVQ03DD4B3,종합
 tx_EE9ZYA8C66,주력 메크 없음
 tx_P5GRXR0NQ6,밴픽 시작
 tx_E2AWTQEV33,준비 완료
+tx_KG4ED588AK,메크 강화 (숙련 Lv3 · 4 · 5)
+tx_P850G2PZ26,"{pilot} — 숙련 {level}, 해금 {n} / {total}"
+tx_PK6V12WXVN,해금
+tx_B042CJCX8V,잠김
 tx_MR5VKS3AHG,과적재
 tx_C214C4GTV6,반응 장갑 전개
 tx_4AGJGY73MM,고통과 쾌감
@@ -1259,6 +1543,140 @@ tx_98RHXX4CMN,변화를 고려하고 계십니까?
 tx_H15XZER9KR,{name}{eun} 우리 팀의 핵심입니다. 믿습니다.
 tx_FZWDZJM4MJ,본인이 누구보다 잘 알 겁니다.
 tx_DGCV1JP42M,냉정하게 다시 검토하겠습니다.
+tx_HK016C7BN6,이야기
+tx_218TQZXFD8,집중 훈련
+tx_0R7491YTAP,공격성
+tx_B0QVPMTQPG,신중함
+tx_FEBE3HG3TK,운영력
+tx_415VNRQCEY,전투력
+tx_X4Z6RJMZGH,성장력
+tx_BZPQRAK2FA,한계돌파
+tx_7QBNF0Q0DW,진행 중인 한계돌파가 없습니다
+tx_3NCH9K5W6B,코치 포인트 {n} 필요
+tx_TN0T71EKCT,코치 포인트 {n}
+tx_T4J6SR6Z2H,{n}P
+tx_3FGGE155P3,누구를 방문할까요?
+tx_SBR87FT4VQ,무엇을 함께할까요?
+tx_KW9B22X657,집중 훈련 코스를 고르세요
+tx_KD8HT00MQD,집중 훈련 결과
+tx_2XVVB7WQTS,코치 포인트를 써서 두 능력치를 집중 단련합니다
+tx_R7T4K0Y2S7,오늘 아침 훈련 이야기를 나눕니다
+tx_WNWP86AD7S,밴픽과 내일 탈 메크 이야기를 나눕니다
+tx_HVC3644V2Q,오늘 경기 이야기를 나눕니다
+tx_8ZK21GFG9A,편하게 이야기를 나눕니다
+tx_XMFHMDB1VX,스트레스를 크게 풀고 신뢰를 쌓습니다 · 다음 훈련일 EXP 감소
+tx_0SD9XPG1BX,신뢰 Lv.{n}부터 외출할 수 있습니다
+tx_5F27TFDDBC,신뢰 Lv.{trust} · 스트레스 {stress}
+tx_1KK4JVKGME,{name} {stat} {delta}
+tx_T3ENXMYQ3T,{name} 능력치 EXP {delta}
+tx_BA4R5F2VGH,{name} 훈련 EXP {delta}
+tx_KKBC17X819,{name} 훈련 EXP 가득 참
+tx_WTKYZDZ89S,{name} 깨달음 {delta}%
+tx_066H6FVY7G,{name} {mech} 숙련 {delta}
+tx_0M7GASA49J,{name} 한계돌파 · 훈련 Lv.{n}
+tx_394H0Z9JXP,코치 포인트 {delta}
+tx_TZ7X70TQNY,깨달음
+tx_1CE62HA1KP,훈련 EXP
+tx_CGDMGJFED0,숙련
+tx_VE4Y341QPD,능력치 EXP
+tx_7F4B0GFZD2,@늦은 밤의 연습실
+tx_GV27K1VPDW,*밤늦게 연습실에 불이 켜져 있다.
+tx_BJMAQY0286,"아, 감독님… 잠이 안 와서요. 뭔가 잡힐 것 같아요."
+tx_Q9M7R0E478,조금만 더 하고 자.
+tx_ZCS35Z46BT,네! 금방 끝낼게요.
+tx_7NMY2SE273,내일 하자. 지금은 자야 해.
+tx_GWQWZ15NDP,"…네, 알겠어요."
+tx_AQW6WTGRAR,@의외의 조언
+tx_EWV0XQT66Q,옆 팀 선수한테 들은 얘기가 있는데요…
+tx_T7BNJS7HRZ,제 플레이에 딱 맞는 것 같아요.
+tx_TET0WE2T76,흥미롭네. 같이 연구해 보자.
+tx_V3T30EPGSK,역시 감독님이에요!
+tx_DBW2BGB0GK,…생각보다 안 맞네요.
+tx_M1VXEGS7B4,남의 말에 흔들리지 마.
+tx_TTC5NNHPV5,네… 그럴게요.
+tx_6VFK3CV72J,"오늘 훈련, 솔직히 좀 빡셌어요."
+tx_Q98BRPJSVN,그래도 뭔가 감이 오는 것 같기도 하고요.
+tx_W0Z14DRGRK,감이 올 때 한 번 더 밀어붙이자. 내가 봐 줄게.
+tx_JZ5EFEQZXX,"…좋아요, 한 번 더 해 볼게요!"
+tx_W2FRM8R0BT,오늘은 여기까지. 푹 쉬면서 정리하자.
+tx_H6CKVTXX8X,"정말요? 감사합니다, 감독님."
+tx_5W46C53H2W,잘했어. 그 감각 잊지 마.
+tx_DRGWMWTTE1,네! 꼭 기억할게요.
+tx_PHP66PDG2M,"…네, 노력해 볼게요."
+tx_VX509357K0,오늘 확실히 늘었어요! 몸이 가벼워요.
+tx_TC0DHVZRV7,기세 탔을 때 더 하자. 저녁에 한 세트 더.
+tx_2A6T933CQM,"좋아요, 끝까지 가 봐요!"
+tx_WY97KPWG0R,무리하지 말고 오늘은 쉬어.
+tx_MARQQ3RTBF,"네, 내일 더 잘할게요."
+tx_SJE17RVD97,오늘은 아무것도 안 는 것 같아요…
+tx_4YAB4P1BF5,그럴 때일수록 한 번 더. 같이 하자.
+tx_KX2KSP6GRC,…감독님이 같이 해 주시면요.
+tx_TCYBPNF1T2,정체기는 누구나 와. 오늘은 쉬자.
+tx_F54NJ9ZP20,그렇게 말해 주시니 좀 편하네요.
+tx_34QRZWK36Z,솔직히… 좀 지쳤어요.
+tx_3VT59RKFMG,조금만 더 버텨 보자. 오늘 배운 걸 굳히자.
+tx_7H4K5DTPM5,…알겠어요. 해 볼게요.
+tx_GW2JEQZHQ2,지금은 정말 무리예요.
+tx_0TVKNYP75N,오늘은 다 내려놓고 쉬어.
+tx_4GXA8BME14,고마워요. 숨 좀 돌릴게요.
+tx_HNX6ND2X0T,"새로 배운 움직임, 아직 몸에 안 익어요."
+tx_WQSKM4ZE39,익을 때까지 반복이지. 저녁에 한 세트 더.
+tx_5EQ4E4SS9W,"네, 몸에 붙을 때까지요!"
+tx_SWAJWYDKF0,급할 것 없어. 내일 다시 보자.
+tx_7K7VHDN95S,"네, 내일 다시 해 볼게요."
+tx_DWVTVF5K3Z,"내일 탈 메크, 아직 좀 어색해요."
+tx_ABG041CJ2S,오늘 그 메크로 시뮬레이션 한 번 더 돌리자.
+tx_CZY2AXN1EZ,"네, 감 잡아 볼게요."
+tx_MCDQ5CHV4Z,넌 잘 탈 거야. 믿고 맡길게.
+tx_G88SJPBZCQ,믿어 주시는 만큼 해낼게요.
+tx_823WJR70DB,…부담되네요.
+tx_F4ZZMBTDD1,오늘은 푹 자 둬. 내일이 진짜야.
+tx_40HGH4ZS9Y,"네, 일찍 잘게요."
+tx_ABZP4CX6PR,"상대 밴픽 보셨어요? 우리 조합, 잘 맞을까요?"
+tx_EA4DT4VFEN,조합 연습 한 판 더 하고 들어가자.
+tx_F23QYSNPYF,"좋아요, 호흡 맞춰 봐요."
+tx_FHPEQJP0DY,준비는 끝났어. 자신감만 챙겨.
+tx_27ZWX69DNV,네! 내일 보여 드릴게요.
+tx_GR4XB73CWD,"MVP라니, 아직도 실감이 안 나요!"
+tx_HK3CRWJETS,오늘은 네 날이었어. 마음껏 즐겨.
+tx_2F8XPQ8NS6,"헤헤, 오늘만큼은 즐길게요!"
+tx_TGRHJWDW3K,들뜨지 말고 오늘 경기 다시 보자.
+tx_0A5ZEFAMHZ,"네, 잘된 장면도 다시 볼게요."
+tx_TX2P5VDXN6,이겼어요! 근데 제 플레이는 좀 아쉬웠어요.
+tx_7VMY0DVVMG,팀이 이겼잖아. 그거면 돼.
+tx_PJXC55G216,그렇죠! 다음엔 저도 더 잘할게요.
+tx_23APC47XR3,"아쉬운 장면, 같이 짚어 보자."
+tx_WS9B2VRYYE,"네, 바로 보여 드릴게요."
+tx_MCGHZHC008,…이긴 날인데요.
+tx_W2RXVAV0F8,오늘 너무 많이 잡혔어요… 다 제 탓 같아요.
+tx_52HBQZZ518,네 탓 아니야. 팀 경기였어.
+tx_VPB1H9B879,"…감사해요, 감독님."
+tx_HMGK8XYRB3,왜 잡혔는지 같이 보자. 다음엔 안 그래.
+tx_G465G1NMYJ,"네, 똑같이 당하진 않을 거예요."
+tx_J1QVCXZS73,지금은 좀… 보고 싶지 않아요.
+tx_0WHT1QBBMX,졌네요. 분위기가 좀 가라앉았어요.
+tx_V1X72H23BA,털고 일어나자. 다음 주가 있어.
+tx_9TNC1NTS61,"네, 다시 해 봐요."
+tx_YZ0W5CEQ62,패배에서 배울 게 더 많아. 복기하자.
+tx_FTH0EB8PPJ,…맞아요. 하나도 안 놓칠게요.
+tx_V594GHX4FA,오늘 K/D/A 좋았죠? 손이 잘 풀렸어요.
+tx_VCXMXMSK8Z,그 감각 잊지 마. 녹화 다시 보자.
+tx_FXCFD2TVCE,네! 뭐가 잘됐는지 알고 싶어요.
+tx_EKR5AC80YA,잘했어. 오늘은 쉬어.
+tx_4DZ12PB99P,"헤헤, 감사합니다!"
+tx_PGX42AZC1K,*훈련 기록이 며칠째 제자리걸음이다.
+tx_ZJH0CA0S40,감독님… 요즘 아무리 훈련해도 늘지가 않아요.
+tx_YHPXHB3HWK,벽에 막힌 느낌이에요. 뭘 붙잡고 넘어서야 할지 모르겠어요.
+tx_9V9JPV5RBD,>연습만으로는 이제 한계야. 실전에서 넘어 보자. 목표를 하나 정하지.
+tx_5D5M3E8X7K,(목표 고르기 — 게임이 목표 셋으로 바꾼다)
+tx_1E67JN0S47,알겠습니다. 꼭 해내 볼게요!
+tx_CZ4S2C1JXA,*{name}의 연습 화면이 꺼지지 않은 채 새벽까지 켜져 있다.
+tx_91W2DEJYKM,"또 막혔어요. 지난번엔 넘었는데, 이번엔 더 높은 것 같아요."
+tx_JNDEZ4Y7C5,연습량은 그대로인데 손이 안 따라와요.
+tx_KAZNBCDWDE,>벽이 높아졌다는 건 그만큼 올라왔다는 뜻이야. 이번에도 실전에서 깨 보자.
+tx_DBYRHDAACS,(목표 고르기 — 게임이 목표 셋으로 바꾼다)
+tx_F2XVSXXX9X,좋아요. 목표가 생기니 좀 보이는 것 같아요.
+tx_GDSE4N85DZ,이번에도 넘어 보일게요.
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1507,7 +1925,7 @@ tx_5234BFCRX4,제 역할군 메크에서 실력이 온전히 나온다
 tx_BJP0GG5N68,탱커 메크에 타면 무너지지 않는다
 tx_423T378EFS,암살 메크에 타면 급소를 노린다
 tx_HCTF0FH7HK,원딜 메크에 타면 한 발도 허투루 쏘지 않는다
-tx_X44QXQ1EJK,능숙 이상으로 다루는 메크에서 한층 날카로워진다
+tx_X44QXQ1EJK,숙련 Lv3 이상인 메크에서 한층 날카로워진다
 tx_PT2W70YDR1,주력 메크 탑승
 tx_N5C2E6FQ2F,자기 역할군 메크 탑승
 tx_VXEP932PHS,{role} 메크 탑승
@@ -1710,21 +2128,21 @@ tx_CPW05B0HB9,오전
 tx_XXVBB9VYQX,오후
 tx_7YZ50G3EBF,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다
 tx_AWKX6T199K,오전 훈련 결과 · 잠시 후 오전 만남으로 넘어갑니다 (다음 = 건너뛰기)
-tx_CXNA4K157Z,오후 · 선수를 눌러 면담이나 외출을 요청하세요
+tx_CXNA4K157Z,오후 · 선수를 눌러 방문하세요 (하루 한 번)
 tx_7KR285R4ES,오늘 오후 일정을 마쳤습니다
 tx_5W9RGVB4BS,EXP +{n}
 tx_TCFF8QQBA3,스트레스 {delta}
 tx_B7175RYNW5,혼자 외출
 tx_0WX5FQG1PV,숙소 휴식
-tx_MAPMDX9DJ0,지도에서 면담 · 외출할 선수를 누르세요 (하루 한 번)
-tx_ME49NDMB1F,오늘 오후에는 할 수 있는 면담 · 외출이 없습니다
+tx_MAPMDX9DJ0,지도에서 방문할 선수를 누르세요 · 집중 훈련 · 이야기 · 외출 중 하나 (하루 한 번)
+tx_ME49NDMB1F,오늘 오후에는 방문할 수 있는 선수가 없습니다
 tx_NRH0Z789MC,오후: 쉬었습니다
-tx_JT4H7JX5BF,오후: {name} 면담
+tx_JT4H7JX5BF,오후: {name} 방문
 tx_F8B4DZ53XB,오후: {name} 외출
-tx_TB0M24CVNM,{day} 오후 · 면담
+tx_TB0M24CVNM,{day} 오후 · 방문
 tx_7PKEPM8SGK,{day} 오후 · 외출 {n}회째
 tx_G3FNS00AWW,오후 일정을 건너뛸까요?
-tx_BVDJ9Q0CSD,아직 면담이나 외출을 할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.
+tx_BVDJ9Q0CSD,아직 선수를 방문할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.
 tx_CGHZDAMEAR,건너뛰기
 tx_C3T5QMKS85,능력치
 tx_1EN72EY6WJ,종합 {n}
@@ -1757,6 +2175,11 @@ tx_D4H4CEEAQX,저녁 · 조용히 한 주를 마무리합니다
 tx_34NK587JXR,경기 준비
 tx_2PHY0EQHSZ,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일
 tx_3MV5ZYWADH,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다
+tx_W7VJT121B2,오후: {name} 집중 훈련 · {course}
+tx_64BZGJ4BTM,오후: {name}{wa} 이야기
+tx_VTXA6YGJ8E,코치 포인트 {n} / 주간 {max}
+tx_HSPG16C381,{day} 오후 · 이야기
+tx_5CGB20BWXX,{day} 저녁 · 한계돌파
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어
@@ -2137,6 +2560,26 @@ tx_67HRWPCEBE,화력 증강 II
 tx_J7C56J00N6,화력 증강 III
 tx_BFBZYQPMDG,내구 단련 II
 tx_E7XM9N13SW,내구 단련 III
+tx_HBKHP46T46,Lv{n}
+tx_HWDK2ZGNYZ,Lv {n} / {max}
+tx_MQTEGWC568,훈련 EXP {exp} / {need}
+tx_5FXPMDAP4K,한계 도달 — 한계돌파가 필요하다
+tx_800W06DJMX,최고 레벨
+tx_17R6TM4FN4,훈련 레벨
+tx_KGSV1ERB23,한계돌파
+tx_P90CMSBJP0,다음 {n}경기 합산 KDA {kda} 이상
+tx_6GXZRX4SPP,{n}경기 연속 경기 내 처치 1위
+tx_1BSCN8N7FE,{n}경기 동안 {turn}턴 안에 오브젝트 {need}회 획득
+tx_6DMM2FHRF3,다음 경기 MVP
+tx_4C8T8AQG75,{n}경기 연속 경기 내 성장치 획득 1위
+tx_Q8Z751P204,{n}경기 연속 경기 내 포탑 피해 1위
+tx_YZN4NN2KCC,{n}경기 연속 경기 내 보호막·회복량 1위
+tx_T8XRTXGC5D,달성 시 훈련 Lv{n} · 모든 스탯 +{gain}
+tx_N55ME7YEYY,새 목표: {goal}
+tx_JZQ1JZRHPM,목표 — {goal} ({progress})
+tx_0BVZ0NR212,{have}/{need}
+tx_1ZM6HE38ZP,KDA {v} / {need}
+tx_WDHZDJF3V7,{name} 한계돌파 성공 — 훈련 Lv{n} · 모든 스탯 +{gain}
 tx_QQVPQ29K6X,훈련광
 tx_6HSK5W6C20,메크 연구가
 tx_SJVSQJ1HZ2,스폰서 친화

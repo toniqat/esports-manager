@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "9a23bb91-a18b-5bd0-aad7-0ed0568cdf4b": {
+      "id": "9a23bb91-a18b-5bd0-aad7-0ed0568cdf4b",
+      "name": "U04",
+      "start": "ff82e8a0-a282-549b-975e-61c249b35951",
+      "end": "d287d154-a5aa-51c7-b138-9c7099e2c568",
+      "nodes": {
+        "ff82e8a0-a282-549b-975e-61c249b35951": {
+          "localId": 1,
+          "type": "Start",
+          "next": "072c7392-b3dd-56aa-bd66-4d6d5e9b6983"
+        },
+        "d287d154-a5aa-51c7-b138-9c7099e2c568": {
+          "localId": 2,
+          "type": "End"
+        },
+        "072c7392-b3dd-56aa-bd66-4d6d5e9b6983": {
+          "localId": 3,
+          "memoIds": [
+            "7725654c-5280-50f0-91ce-9677d87642d2"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "졌네요. 분위기가 좀 가라앉았어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "We lost. The mood's pretty low."
+                }
+              ]
+            }
+          },
+          "next": "2bd4243d-86bc-5e50-aa54-ab43d51aa060"
+        },
+        "7725654c-5280-50f0-91ce-9677d87642d2": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sun",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=loss",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "072c7392-b3dd-56aa-bd66-4d6d5e9b6983"
+        },
+        "2bd4243d-86bc-5e50-aa54-ab43d51aa060": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "afa8f899-829f-56b2-b71a-247856543257",
+              "text": "털고 일어나자. 다음 주가 있어.",
+              "next": "47dfbd3d-a31e-500d-a43b-6eec591109a9",
+              "attrs": {
+                "effects": "trust:+2;stress:-6"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Shake it off. There's next week."
+                }
+              }
+            },
+            {
+              "id": "91192801-96de-5c33-81ab-81c5136cd49a",
+              "text": "패배에서 배울 게 더 많아. 복기하자.",
+              "next": "4b72daaf-509b-555a-80c6-a8d3b8c06ae1",
+              "attrs": {
+                "effects": "awaken:+8;tlexp:+15;stress:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "A loss teaches more. Let's review."
+                }
+              }
+            }
+          ]
+        },
+        "47dfbd3d-a31e-500d-a43b-6eec591109a9": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 다시 해 봐요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yeah, let's go again."
+                }
+              ]
+            }
+          },
+          "next": "d287d154-a5aa-51c7-b138-9c7099e2c568"
+        },
+        "4b72daaf-509b-555a-80c6-a8d3b8c06ae1": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…맞아요. 하나도 안 놓칠게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…You're right. I won't miss a thing."
+                }
+              ]
+            }
+          },
+          "next": "d287d154-a5aa-51c7-b138-9c7099e2c568"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "71532f87-85b8-5457-9849-380163dd24fc": {
+      "id": "71532f87-85b8-5457-9849-380163dd24fc",
+      "name": "U05",
+      "start": "4b58d52a-c8f4-5a85-ae04-8a62c1058d19",
+      "end": "19b8afe5-370c-531c-a79c-ed4b102786bb",
+      "nodes": {
+        "4b58d52a-c8f4-5a85-ae04-8a62c1058d19": {
+          "localId": 1,
+          "type": "Start",
+          "next": "bd2f631c-0304-5098-b562-d3ec415e3a16"
+        },
+        "19b8afe5-370c-531c-a79c-ed4b102786bb": {
+          "localId": 2,
+          "type": "End"
+        },
+        "bd2f631c-0304-5098-b562-d3ec415e3a16": {
+          "localId": 3,
+          "memoIds": [
+            "240b1a74-a091-5ea9-aff8-ba1c3e00f88f"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 K/D/A 좋았죠? 손이 잘 풀렸어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "My K/D/A was great today, right? My hands were on fire."
+                }
+              ]
+            }
+          },
+          "next": "b13592f3-1d79-5646-80ad-a79bd46444d4"
+        },
+        "240b1a74-a091-5ea9-aff8-ba1c3e00f88f": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sun",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "kda>=3",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "bd2f631c-0304-5098-b562-d3ec415e3a16"
+        },
+        "b13592f3-1d79-5646-80ad-a79bd46444d4": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "53cab7d1-18db-570d-8c5d-01cc81e4e696",
+              "text": "그 감각 잊지 마. 녹화 다시 보자.",
+              "next": "709897b2-4d44-5502-90a8-e9bd5ac6d33a",
+              "attrs": {
+                "effects": "awaken:+10;stress:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Hold on to that feeling. Let's rewatch the recording."
+                }
+              }
+            },
+            {
+              "id": "cc72e952-4244-5c2f-a5ab-db3f33263d97",
+              "text": "잘했어. 오늘은 쉬어.",
+              "next": "b4909139-9ee1-5196-a5d7-bd5b12f6a18c",
+              "attrs": {
+                "effects": "trust:+2;stress:-6"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Well done. Rest today."
+                }
+              }
+            }
+          ]
+        },
+        "709897b2-4d44-5502-90a8-e9bd5ac6d33a": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네! 뭐가 잘됐는지 알고 싶어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes! I want to know what clicked."
+                }
+              ]
+            }
+          },
+          "next": "19b8afe5-370c-531c-a79c-ed4b102786bb"
+        },
+        "b4909139-9ee1-5196-a5d7-bd5b12f6a18c": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "헤헤, 감사합니다!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hehe, thank you!"
+                }
+              ]
+            }
+          },
+          "next": "19b8afe5-370c-531c-a79c-ed4b102786bb"
+        }
+      }
+    }
+  }
+}

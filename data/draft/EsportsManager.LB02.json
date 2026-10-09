@@ -1,0 +1,192 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "f940d8c0-f443-5c95-9aca-d0e031f63a03": {
+      "id": "f940d8c0-f443-5c95-9aca-d0e031f63a03",
+      "name": "LB02",
+      "start": "ee737d07-8fef-5536-9f60-cf9d459336db",
+      "end": "4817e32d-0160-5e61-bef9-567544e68abb",
+      "nodes": {
+        "ee737d07-8fef-5536-9f60-cf9d459336db": {
+          "localId": 1,
+          "type": "Start",
+          "next": "91338525-78cf-5f91-8c73-467aced90dac"
+        },
+        "91338525-78cf-5f91-8c73-467aced90dac": {
+          "localId": 2,
+          "memoIds": [
+            "93146f71-cb13-5c20-8513-43f576a81921"
+          ],
+          "type": "Dialog",
+          "speaker": null,
+          "lines": [
+            {
+              "kind": "text",
+              "text": "{name}의 연습 화면이 꺼지지 않은 채 새벽까지 켜져 있다."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "{name}'s practice screen is still on at dawn."
+                }
+              ]
+            }
+          },
+          "next": "4c2aefa5-9c5a-5d33-92ba-42e5df946331"
+        },
+        "4c2aefa5-9c5a-5d33-92ba-42e5df946331": {
+          "localId": 3,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "또 막혔어요. 지난번엔 넘었는데, 이번엔 더 높은 것 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'm stuck again. I got past it last time, but this wall feels higher."
+                }
+              ]
+            }
+          },
+          "next": "bbb98f14-7c67-5e21-9b1b-c6c0fb3c61e8"
+        },
+        "bbb98f14-7c67-5e21-9b1b-c6c0fb3c61e8": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "연습량은 그대로인데 손이 안 따라와요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I practice as much as ever, but my hands won't follow."
+                }
+              ]
+            }
+          },
+          "next": "84466fd4-bcda-5d1e-b8d3-6c4b181d9cff"
+        },
+        "84466fd4-bcda-5d1e-b8d3-6c4b181d9cff": {
+          "localId": 5,
+          "type": "Dialog",
+          "speaker": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "벽이 높아졌다는 건 그만큼 올라왔다는 뜻이야. 이번에도 실전에서 깨 보자."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "A higher wall means you've climbed that far. Let's break it in real matches again."
+                }
+              ]
+            }
+          },
+          "next": "3528ce34-56ce-5b0a-9dce-edec4d2b852b"
+        },
+        "3528ce34-56ce-5b0a-9dce-edec4d2b852b": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "698c201f-0ab7-5226-a8b2-c60de71159a0",
+              "text": "(목표 고르기 — 게임이 목표 셋으로 바꾼다)",
+              "next": "3dc2c8cb-3790-512a-99da-802a1629aab6",
+              "i18n": {
+                "En": {
+                  "text": "(Goal pick — the game replaces it with three goals)"
+                }
+              }
+            }
+          ]
+        },
+        "3dc2c8cb-3790-512a-99da-802a1629aab6": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "좋아요. 목표가 생기니 좀 보이는 것 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay. With a goal, I think I can see the way."
+                }
+              ]
+            }
+          },
+          "next": "666ea78a-31f0-58b7-a80a-1edbef3eb39d"
+        },
+        "666ea78a-31f0-58b7-a80a-1edbef3eb39d": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "이번에도 넘어 보일게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'll get past this one too."
+                }
+              ]
+            }
+          },
+          "next": "4817e32d-0160-5e61-bef9-567544e68abb"
+        },
+        "4817e32d-0160-5e61-bef9-567544e68abb": {
+          "localId": 9,
+          "type": "End"
+        },
+        "93146f71-cb13-5c20-8513-43f576a81921": {
+          "localId": 10,
+          "attrs": {
+            "kind": "limit_break",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "tlevel>=2",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "한계돌파 이벤트 설정 — 다시 찾아온 벽 (Lv2 이상)",
+          "attachedTo": "91338525-78cf-5f91-8c73-467aced90dac"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "7feacb30-a95f-59eb-987b-3c385ab25567": {
+      "id": "7feacb30-a95f-59eb-987b-3c385ab25567",
+      "name": "U02",
+      "start": "226551ad-513f-5c36-82cd-00ba00e36615",
+      "end": "28d6495e-de29-5b6b-b4e3-754a3a00f6d1",
+      "nodes": {
+        "226551ad-513f-5c36-82cd-00ba00e36615": {
+          "localId": 1,
+          "type": "Start",
+          "next": "03c13b8c-43b4-5327-ae6e-4204b46f2d7b"
+        },
+        "28d6495e-de29-5b6b-b4e3-754a3a00f6d1": {
+          "localId": 2,
+          "type": "End"
+        },
+        "03c13b8c-43b4-5327-ae6e-4204b46f2d7b": {
+          "localId": 3,
+          "memoIds": [
+            "0ad1c416-6815-5de2-bf2c-14c7de2c3eff"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "이겼어요! 근데 제 플레이는 좀 아쉬웠어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "We won! But my own play was a bit disappointing."
+                }
+              ]
+            }
+          },
+          "next": "abc58d0f-cd47-51a6-af67-50147c0782e5"
+        },
+        "0ad1c416-6815-5de2-bf2c-14c7de2c3eff": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sun",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=win",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "03c13b8c-43b4-5327-ae6e-4204b46f2d7b"
+        },
+        "abc58d0f-cd47-51a6-af67-50147c0782e5": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "bc4bae74-d9c0-5dc7-b4b0-069215d36583",
+              "text": "팀이 이겼잖아. 그거면 돼.",
+              "next": "0746fd3b-5c8b-5d93-b7dd-9d0002a53de0",
+              "attrs": {
+                "effects": "trust:+2;stress:-5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "The team won. That's what matters."
+                }
+              }
+            },
+            {
+              "id": "ae5da9c7-8cb6-55f8-8d44-df5cde7cb0de",
+              "text": "아쉬운 장면, 같이 짚어 보자.",
+              "next": "e2816a39-f256-523b-8f2e-b8753e84135c",
+              "attrs": {
+                "effects": "ok>awaken:+10;ok>trust:+2;ng>stress:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's go over the rough moments together."
+                }
+              }
+            }
+          ]
+        },
+        "0746fd3b-5c8b-5d93-b7dd-9d0002a53de0": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그렇죠! 다음엔 저도 더 잘할게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Right! I'll do better next time too."
+                }
+              ]
+            }
+          },
+          "next": "28d6495e-de29-5b6b-b4e3-754a3a00f6d1"
+        },
+        "e2816a39-f256-523b-8f2e-b8753e84135c": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 바로 보여 드릴게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Sure, let me show you right away."
+                }
+              ]
+            }
+          },
+          "next": "30dd2297-bf74-5978-9f1c-ebb0c874dcda"
+        },
+        "30dd2297-bf74-5978-9f1c-ebb0c874dcda": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…이긴 날인데요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…But we won today."
+                }
+              ]
+            }
+          },
+          "next": "28d6495e-de29-5b6b-b4e3-754a3a00f6d1"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "99fef9e6-f1d7-5314-8ecb-1418e7e09b56": {
+      "id": "99fef9e6-f1d7-5314-8ecb-1418e7e09b56",
+      "name": "U01",
+      "start": "7dd99b45-c618-5e64-9ae3-4d67272ea056",
+      "end": "82b996be-ed38-52ba-adcf-58375ee4a751",
+      "nodes": {
+        "7dd99b45-c618-5e64-9ae3-4d67272ea056": {
+          "localId": 1,
+          "type": "Start",
+          "next": "928c28c8-97c9-53e2-981e-3a1f1d17546c"
+        },
+        "82b996be-ed38-52ba-adcf-58375ee4a751": {
+          "localId": 2,
+          "type": "End"
+        },
+        "928c28c8-97c9-53e2-981e-3a1f1d17546c": {
+          "localId": 3,
+          "memoIds": [
+            "cf87166a-a271-5f43-8c79-1279a78d1fa4"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "MVP라니, 아직도 실감이 안 나요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "MVP… it still hasn't sunk in!"
+                }
+              ]
+            }
+          },
+          "next": "51eb2d01-3ae4-5ce3-af5f-631b082ff85f"
+        },
+        "cf87166a-a271-5f43-8c79-1279a78d1fa4": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sun",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=win;mvp=yes",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "928c28c8-97c9-53e2-981e-3a1f1d17546c"
+        },
+        "51eb2d01-3ae4-5ce3-af5f-631b082ff85f": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "74336c9d-bf1f-51f8-8f70-a8a7bf3a45c3",
+              "text": "오늘은 네 날이었어. 마음껏 즐겨.",
+              "next": "7b8b170c-59d0-5fad-9390-ffe33a4383cf",
+              "attrs": {
+                "effects": "trust:+3;stress:-6"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Today was your day. Enjoy it."
+                }
+              }
+            },
+            {
+              "id": "a48468a6-4ce8-5cad-bd59-57514bab3e00",
+              "text": "들뜨지 말고 오늘 경기 다시 보자.",
+              "next": "5ce887c8-d76e-5aa7-be22-f98f4132d163",
+              "attrs": {
+                "effects": "awaken:+12;tlexp:+20;stress:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Keep a cool head. Let's review today's match."
+                }
+              }
+            }
+          ]
+        },
+        "7b8b170c-59d0-5fad-9390-ffe33a4383cf": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "헤헤, 오늘만큼은 즐길게요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hehe, I'll enjoy it just for today!"
+                }
+              ]
+            }
+          },
+          "next": "82b996be-ed38-52ba-adcf-58375ee4a751"
+        },
+        "5ce887c8-d76e-5aa7-be22-f98f4132d163": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 잘된 장면도 다시 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, I'll study the good plays too."
+                }
+              ]
+            }
+          },
+          "next": "82b996be-ed38-52ba-adcf-58375ee4a751"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "7ce7ddf7-4652-5631-a953-30d92b8fa12f": {
+      "id": "7ce7ddf7-4652-5631-a953-30d92b8fa12f",
+      "name": "A01",
+      "start": "ccca62e9-c8f6-5caf-b87a-3d1118f89014",
+      "end": "26675d37-ee38-50a5-8b6d-bf28d0817a30",
+      "nodes": {
+        "ccca62e9-c8f6-5caf-b87a-3d1118f89014": {
+          "localId": 1,
+          "type": "Start",
+          "next": "00426fdc-751f-57b0-8bb5-a917a1f67205"
+        },
+        "26675d37-ee38-50a5-8b6d-bf28d0817a30": {
+          "localId": 2,
+          "type": "End"
+        },
+        "00426fdc-751f-57b0-8bb5-a917a1f67205": {
+          "localId": 3,
+          "memoIds": [
+            "98267f62-bbda-591d-b60c-29a44a0c899e"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "내일 탈 메크, 아직 좀 어색해요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The mech I'm piloting tomorrow still feels a bit awkward."
+                }
+              ]
+            }
+          },
+          "next": "daaab667-9f66-57ea-82dd-4e8ee2727dd8"
+        },
+        "98267f62-bbda-591d-b60c-29a44a0c899e": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sat",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "00426fdc-751f-57b0-8bb5-a917a1f67205"
+        },
+        "daaab667-9f66-57ea-82dd-4e8ee2727dd8": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "ecb226c5-5b81-573f-90a5-a035f72d8a1f",
+              "text": "오늘 그 메크로 시뮬레이션 한 번 더 돌리자.",
+              "next": "281e2adf-bc45-5c22-bfa4-773f718458ac",
+              "attrs": {
+                "effects": "mastery:+8;stress:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's run one more simulation with it today."
+                }
+              }
+            },
+            {
+              "id": "81dfc5ca-1621-56a4-96d3-98d9ef7f0a61",
+              "text": "넌 잘 탈 거야. 믿고 맡길게.",
+              "next": "beae51e2-cc35-5741-b63b-921a3b0ebc23",
+              "attrs": {
+                "effects": "ok>trust:+3;ok>mastery:+4;ng>trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "You'll do fine. I'm trusting you with it."
+                }
+              }
+            },
+            {
+              "id": "d416cf2e-945d-54ea-a00e-d260fd108713",
+              "text": "오늘은 푹 자 둬. 내일이 진짜야.",
+              "next": "4d0a0b66-91dc-5be3-8ab2-507ee2e092d9",
+              "attrs": {
+                "effects": "stress:-8;trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Sleep well tonight. Tomorrow is what counts."
+                }
+              }
+            }
+          ]
+        },
+        "281e2adf-bc45-5c22-bfa4-773f718458ac": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 감 잡아 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, I'll get the hang of it."
+                }
+              ]
+            }
+          },
+          "next": "26675d37-ee38-50a5-8b6d-bf28d0817a30"
+        },
+        "beae51e2-cc35-5741-b63b-921a3b0ebc23": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "믿어 주시는 만큼 해낼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I'll live up to that trust."
+                }
+              ]
+            }
+          },
+          "next": "a9bf5e44-0b58-5327-9b93-be2b9be876cc"
+        },
+        "a9bf5e44-0b58-5327-9b93-be2b9be876cc": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…부담되네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…That's a lot of pressure."
+                }
+              ]
+            }
+          },
+          "next": "26675d37-ee38-50a5-8b6d-bf28d0817a30"
+        },
+        "4d0a0b66-91dc-5be3-8ab2-507ee2e092d9": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 일찍 잘게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, I'll turn in early."
+                }
+              ]
+            }
+          },
+          "next": "26675d37-ee38-50a5-8b6d-bf28d0817a30"
+        }
+      }
+    }
+  }
+}

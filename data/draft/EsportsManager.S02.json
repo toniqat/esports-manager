@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "4b37ac9b-b61a-52ef-9430-34bb590683cb": {
+      "id": "4b37ac9b-b61a-52ef-9430-34bb590683cb",
+      "name": "S02",
+      "start": "2d4ed96e-99e1-5919-9f57-7353de4b755f",
+      "end": "851bd9df-64ea-588e-a3f2-a9834d02c4f6",
+      "nodes": {
+        "2d4ed96e-99e1-5919-9f57-7353de4b755f": {
+          "localId": 1,
+          "type": "Start",
+          "next": "b6800b59-91d0-5b1e-a04f-a335750ac613"
+        },
+        "851bd9df-64ea-588e-a3f2-a9834d02c4f6": {
+          "localId": 2,
+          "type": "End"
+        },
+        "b6800b59-91d0-5b1e-a04f-a335750ac613": {
+          "localId": 3,
+          "memoIds": [
+            "d068359f-1815-5ef2-abc2-34d0c93fb3a2"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 확실히 늘었어요! 몸이 가벼워요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I definitely improved today! I feel light."
+                }
+              ]
+            }
+          },
+          "next": "1ebcd01b-499e-5fae-90e5-9ec40e3fd389"
+        },
+        "d068359f-1815-5ef2-abc2-34d0c93fb3a2": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "ups>=1",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "b6800b59-91d0-5b1e-a04f-a335750ac613"
+        },
+        "1ebcd01b-499e-5fae-90e5-9ec40e3fd389": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "bcd5b446-03ba-56ec-a018-7d4832d2848d",
+              "text": "기세 탔을 때 더 하자. 저녁에 한 세트 더.",
+              "next": "e42ea708-fa54-5ab6-b93c-a35428c53e4f",
+              "attrs": {
+                "effects": "train_bonus:std;stress:+10;tlexp:+20"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Ride the momentum. One more set tonight."
+                }
+              }
+            },
+            {
+              "id": "51f5e6d9-e7d1-5fd1-a1b2-ce73d100983e",
+              "text": "무리하지 말고 오늘은 쉬어.",
+              "next": "cb6a66a9-b6be-5223-a0aa-636a2ed9b987",
+              "attrs": {
+                "effects": "stress_train:-2;trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Don't overdo it. Rest today."
+                }
+              }
+            }
+          ]
+        },
+        "e42ea708-fa54-5ab6-b93c-a35428c53e4f": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "좋아요, 끝까지 가 봐요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Great, let's go all the way!"
+                }
+              ]
+            }
+          },
+          "next": "851bd9df-64ea-588e-a3f2-a9834d02c4f6"
+        },
+        "cb6a66a9-b6be-5223-a0aa-636a2ed9b987": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 내일 더 잘할게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, I'll do even better tomorrow."
+                }
+              ]
+            }
+          },
+          "next": "851bd9df-64ea-588e-a3f2-a9834d02c4f6"
+        }
+      }
+    }
+  }
+}

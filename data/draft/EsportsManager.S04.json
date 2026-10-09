@@ -1,0 +1,170 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "10a4a436-828f-5545-b3e9-c12b0ec18802": {
+      "id": "10a4a436-828f-5545-b3e9-c12b0ec18802",
+      "name": "S04",
+      "start": "f90deb8f-9f2d-55bc-88ce-cfa31b90c243",
+      "end": "ee62659a-7fd0-5d12-91cb-35adf5f264b3",
+      "nodes": {
+        "f90deb8f-9f2d-55bc-88ce-cfa31b90c243": {
+          "localId": 1,
+          "type": "Start",
+          "next": "604ffc20-7516-58a8-8a72-5c5964578696"
+        },
+        "ee62659a-7fd0-5d12-91cb-35adf5f264b3": {
+          "localId": 2,
+          "type": "End"
+        },
+        "604ffc20-7516-58a8-8a72-5c5964578696": {
+          "localId": 3,
+          "memoIds": [
+            "264e4c64-8b7c-5989-8b6a-445f8e07d71c"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "솔직히… 좀 지쳤어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Honestly… I'm a bit worn out."
+                }
+              ]
+            }
+          },
+          "next": "d4c45152-89df-5f87-b19b-d92978c130d2"
+        },
+        "264e4c64-8b7c-5989-8b6a-445f8e07d71c": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "stress>=60",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "604ffc20-7516-58a8-8a72-5c5964578696"
+        },
+        "d4c45152-89df-5f87-b19b-d92978c130d2": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "73f25c36-7bb2-5243-afb8-5821b767d83f",
+              "text": "조금만 더 버텨 보자. 오늘 배운 걸 굳히자.",
+              "next": "e0b0d6ec-0b1f-57b9-92f9-4f8c3504fec1",
+              "attrs": {
+                "effects": "train_bonus:std;stress:+12;ok>trust:+2;ng>trust:-3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Hang in a little longer. Let's lock in today's lesson."
+                }
+              }
+            },
+            {
+              "id": "f428f221-f9b3-5e31-93de-63a6f24d80ee",
+              "text": "오늘은 다 내려놓고 쉬어.",
+              "next": "d854e77d-4b81-5d55-bc8f-e0d89ba74792",
+              "attrs": {
+                "effects": "stress_train:-2;trust:+3"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let it all go and rest today."
+                }
+              }
+            }
+          ]
+        },
+        "e0b0d6ec-0b1f-57b9-92f9-4f8c3504fec1": {
+          "localId": 6,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…알겠어요. 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Got it. I'll try."
+                }
+              ]
+            }
+          },
+          "next": "4832472a-2605-50e1-aff5-f7bbb6078924"
+        },
+        "4832472a-2605-50e1-aff5-f7bbb6078924": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지금은 정말 무리예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I really can't right now."
+                }
+              ]
+            }
+          },
+          "next": "ee62659a-7fd0-5d12-91cb-35adf5f264b3"
+        },
+        "d854e77d-4b81-5d55-bc8f-e0d89ba74792": {
+          "localId": 8,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "고마워요. 숨 좀 돌릴게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Thanks. I'll catch my breath."
+                }
+              ]
+            }
+          },
+          "next": "ee62659a-7fd0-5d12-91cb-35adf5f264b3"
+        }
+      }
+    }
+  }
+}

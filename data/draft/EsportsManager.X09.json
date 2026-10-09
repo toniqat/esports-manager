@@ -1,0 +1,199 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "4b422f30-0978-5a2b-9b56-bef084603e99": {
+      "id": "4b422f30-0978-5a2b-9b56-bef084603e99",
+      "name": "X09",
+      "start": "ec15cbf0-6034-5639-b9e5-dc99154b1cc0",
+      "end": "bdf4a303-9192-5233-9c42-ae605b08fe0d",
+      "nodes": {
+        "ec15cbf0-6034-5639-b9e5-dc99154b1cc0": {
+          "localId": 1,
+          "type": "Start",
+          "next": "52f70c01-acd3-5327-a75c-55b122642269"
+        },
+        "bdf4a303-9192-5233-9c42-ae605b08fe0d": {
+          "localId": 2,
+          "type": "End"
+        },
+        "52f70c01-acd3-5327-a75c-55b122642269": {
+          "localId": 3,
+          "memoIds": [
+            "709bf54f-4597-5c25-963c-8fc9e11f9b46"
+          ],
+          "type": "Dialog",
+          "speaker": "44bb4f52-930b-5cd4-be80-ddcdf2abc781",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "의외의 조언"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Unexpected advice"
+                }
+              ]
+            }
+          },
+          "next": "0b7bfbcb-9d09-50db-a1f7-8a12c606bcaf"
+        },
+        "0b7bfbcb-9d09-50db-a1f7-8a12c606bcaf": {
+          "localId": 4,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "옆 팀 선수한테 들은 얘기가 있는데요…"
+            },
+            {
+              "kind": "text",
+              "text": "제 플레이에 딱 맞는 것 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I heard something from a player on another team…"
+                },
+                {
+                  "kind": "text",
+                  "text": "I think it fits my play perfectly."
+                }
+              ]
+            }
+          },
+          "next": "d9100b36-8abf-5d8b-83da-c36942a97abc"
+        },
+        "709bf54f-4597-5c25-963c-8fc9e11f9b46": {
+          "localId": 5,
+          "attrs": {
+            "kind": "incident",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "사건 이벤트 설정",
+          "attachedTo": "52f70c01-acd3-5327-a75c-55b122642269"
+        },
+        "d9100b36-8abf-5d8b-83da-c36942a97abc": {
+          "localId": 6,
+          "type": "Select",
+          "options": [
+            {
+              "id": "b7d4a6dd-3cfc-5c04-9ba5-f9c22f3ceb19",
+              "text": "흥미롭네. 같이 연구해 보자.",
+              "next": "14e364b4-3424-5e4e-bee8-845c267ed25f",
+              "attrs": {
+                "effects": "ok>awaken:+12;ok>trust:+2;ng>pmod:all:-1:1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Interesting. Let's study it together."
+                }
+              }
+            },
+            {
+              "id": "24d2ad5c-7150-5f4c-bbd5-182befeb150f",
+              "text": "남의 말에 흔들리지 마.",
+              "next": "e8d66c25-661c-5638-a1e7-d0316fa262a7",
+              "attrs": {
+                "effects": "trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Don't let others' words shake you."
+                }
+              }
+            }
+          ]
+        },
+        "14e364b4-3424-5e4e-bee8-845c267ed25f": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "역시 감독님이에요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "That's why you're the coach!"
+                }
+              ]
+            }
+          },
+          "next": "3c1965b9-7ac3-5072-9979-8d20af2025f9"
+        },
+        "3c1965b9-7ac3-5072-9979-8d20af2025f9": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…생각보다 안 맞네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…It doesn't fit as well as I thought."
+                }
+              ]
+            }
+          },
+          "next": "bdf4a303-9192-5233-9c42-ae605b08fe0d"
+        },
+        "e8d66c25-661c-5638-a1e7-d0316fa262a7": {
+          "localId": 9,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네… 그럴게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay… I will."
+                }
+              ]
+            }
+          },
+          "next": "bdf4a303-9192-5233-9c42-ae605b08fe0d"
+        }
+      }
+    }
+  }
+}

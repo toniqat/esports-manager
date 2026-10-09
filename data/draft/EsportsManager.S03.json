@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "14403685-867e-5205-9bec-8a6cf3abbdfc": {
+      "id": "14403685-867e-5205-9bec-8a6cf3abbdfc",
+      "name": "S03",
+      "start": "459d54c1-d65f-5b67-9184-a71005125d2c",
+      "end": "967fdf23-9a74-5a79-8d34-74b9a1ab5e6b",
+      "nodes": {
+        "459d54c1-d65f-5b67-9184-a71005125d2c": {
+          "localId": 1,
+          "type": "Start",
+          "next": "e3c53a1b-35cf-53ff-9c1c-2e6f5d1f44a8"
+        },
+        "967fdf23-9a74-5a79-8d34-74b9a1ab5e6b": {
+          "localId": 2,
+          "type": "End"
+        },
+        "e3c53a1b-35cf-53ff-9c1c-2e6f5d1f44a8": {
+          "localId": 3,
+          "memoIds": [
+            "a91a204f-fb34-5df6-976d-164fc3bc116f"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘은 아무것도 안 는 것 같아요…"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Feels like nothing improved today…"
+                }
+              ]
+            }
+          },
+          "next": "e1b7e157-ada0-5da9-8390-0254207613de"
+        },
+        "a91a204f-fb34-5df6-976d-164fc3bc116f": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "ups<1",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "e3c53a1b-35cf-53ff-9c1c-2e6f5d1f44a8"
+        },
+        "e1b7e157-ada0-5da9-8390-0254207613de": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "7881a8fd-6151-560f-b95b-5fb8a365eec9",
+              "text": "그럴 때일수록 한 번 더. 같이 하자.",
+              "next": "b813ea20-6d05-5d9e-9837-acca58477610",
+              "attrs": {
+                "effects": "train_bonus:std;stress:+8;trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That's exactly when we do one more. Together."
+                }
+              }
+            },
+            {
+              "id": "490e7dab-e15f-500a-8501-89dd0af03294",
+              "text": "정체기는 누구나 와. 오늘은 쉬자.",
+              "next": "8598517b-7c90-53d6-b271-48c2522feae3",
+              "attrs": {
+                "effects": "stress_train:-2;awaken:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Everyone hits a plateau. Let's rest today."
+                }
+              }
+            }
+          ]
+        },
+        "b813ea20-6d05-5d9e-9837-acca58477610": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…감독님이 같이 해 주시면요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…If you're with me, Coach."
+                }
+              ]
+            }
+          },
+          "next": "967fdf23-9a74-5a79-8d34-74b9a1ab5e6b"
+        },
+        "8598517b-7c90-53d6-b271-48c2522feae3": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "그렇게 말해 주시니 좀 편하네요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Hearing that makes me feel better."
+                }
+              ]
+            }
+          },
+          "next": "967fdf23-9a74-5a79-8d34-74b9a1ab5e6b"
+        }
+      }
+    }
+  }
+}

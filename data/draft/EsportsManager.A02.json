@@ -1,0 +1,141 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "ec54463e-0fdc-5d63-a9c7-8090444c10c7": {
+      "id": "ec54463e-0fdc-5d63-a9c7-8090444c10c7",
+      "name": "A02",
+      "start": "0a470974-34b6-5a05-9e8d-6832acb3a1b7",
+      "end": "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd",
+      "nodes": {
+        "0a470974-34b6-5a05-9e8d-6832acb3a1b7": {
+          "localId": 1,
+          "type": "Start",
+          "next": "5a6f168f-001f-5ca2-bd4d-1f9429547b55"
+        },
+        "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd": {
+          "localId": 2,
+          "type": "End"
+        },
+        "5a6f168f-001f-5ca2-bd4d-1f9429547b55": {
+          "localId": 3,
+          "memoIds": [
+            "e62e6b35-03f8-5c66-8cf6-d6bd0570641d"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "상대 밴픽 보셨어요? 우리 조합, 잘 맞을까요?"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Did you see their ban/pick? Will our comp hold up?"
+                }
+              ]
+            }
+          },
+          "next": "0a6bac1f-6487-5d11-a894-5919af620390"
+        },
+        "e62e6b35-03f8-5c66-8cf6-d6bd0570641d": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sat",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "5a6f168f-001f-5ca2-bd4d-1f9429547b55"
+        },
+        "0a6bac1f-6487-5d11-a894-5919af620390": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "47bb9ba2-905a-574e-8953-b1c93c357f22",
+              "text": "조합 연습 한 판 더 하고 들어가자.",
+              "next": "f7154d0e-c9fc-54ce-b719-476984e583ea",
+              "attrs": {
+                "effects": "mastery:+6;tlexp:+15;stress:+4"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's run one more comp practice before we call it."
+                }
+              }
+            },
+            {
+              "id": "c32a7b57-79c3-5994-adb1-e95dc0ff6fd9",
+              "text": "준비는 끝났어. 자신감만 챙겨.",
+              "next": "bef55089-fefd-50e1-8c51-78439692f75d",
+              "attrs": {
+                "effects": "trust:+2;awaken:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "We're ready. Just bring your confidence."
+                }
+              }
+            }
+          ]
+        },
+        "f7154d0e-c9fc-54ce-b719-476984e583ea": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "좋아요, 호흡 맞춰 봐요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Sure, let's sync up."
+                }
+              ]
+            }
+          },
+          "next": "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd"
+        },
+        "bef55089-fefd-50e1-8c51-78439692f75d": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네! 내일 보여 드릴게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes! I'll show you tomorrow."
+                }
+              ]
+            }
+          },
+          "next": "11f44ee4-ab60-5641-ae60-fbe0ca28d5fd"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "fcf72706-7e9b-51c5-a395-be45b9a3eca7": {
+      "id": "fcf72706-7e9b-51c5-a395-be45b9a3eca7",
+      "name": "U03",
+      "start": "ff07f636-54ee-5433-a6e7-281e96f14759",
+      "end": "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc",
+      "nodes": {
+        "ff07f636-54ee-5433-a6e7-281e96f14759": {
+          "localId": 1,
+          "type": "Start",
+          "next": "37e4ee74-05d8-5aa7-9b01-8473e1e5c550"
+        },
+        "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc": {
+          "localId": 2,
+          "type": "End"
+        },
+        "37e4ee74-05d8-5aa7-9b01-8473e1e5c550": {
+          "localId": 3,
+          "memoIds": [
+            "79253f18-d1f3-5426-b7ec-8941738d3192"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 너무 많이 잡혔어요… 다 제 탓 같아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "I got caught way too often today… It feels like my fault."
+                }
+              ]
+            }
+          },
+          "next": "66f880d2-f3a4-5732-9991-4525ae68fa54"
+        },
+        "79253f18-d1f3-5426-b7ec-8941738d3192": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story_sun",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "last=loss;deaths>=4",
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "37e4ee74-05d8-5aa7-9b01-8473e1e5c550"
+        },
+        "66f880d2-f3a4-5732-9991-4525ae68fa54": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "e748999e-2cb8-51ba-8578-174b7fe5fc1e",
+              "text": "네 탓 아니야. 팀 경기였어.",
+              "next": "6b80a5f1-8aac-55d8-9978-10208227416b",
+              "attrs": {
+                "effects": "trust:+3;stress:-8"
+              },
+              "i18n": {
+                "En": {
+                  "text": "It's not your fault. It was a team game."
+                }
+              }
+            },
+            {
+              "id": "890173e8-8f0e-5059-928d-22344dd5d2c2",
+              "text": "왜 잡혔는지 같이 보자. 다음엔 안 그래.",
+              "next": "5733e3af-c066-5fa2-b40e-5eb1eb5fa920",
+              "attrs": {
+                "effects": "awaken:+10;stress:+5;ok>trust:+2;ng>trust:-2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's see why you got caught. Next time you won't."
+                }
+              }
+            }
+          ]
+        },
+        "6b80a5f1-8aac-55d8-9978-10208227416b": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…감사해요, 감독님."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Thank you, Coach."
+                }
+              ]
+            }
+          },
+          "next": "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc"
+        },
+        "5733e3af-c066-5fa2-b40e-5eb1eb5fa920": {
+          "localId": 7,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 똑같이 당하진 않을 거예요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay. It won't happen the same way twice."
+                }
+              ]
+            }
+          },
+          "next": "1fc7be8d-3fd7-55db-9f9c-4f51120c4293"
+        },
+        "1fc7be8d-3fd7-55db-9f9c-4f51120c4293": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "지금은 좀… 보고 싶지 않아요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Right now I… don't want to watch it."
+                }
+              ]
+            }
+          },
+          "next": "bef2bbdd-9207-5d41-8ac9-fb6f99e96ebc"
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,34 @@
 keys,en
+tx_P2MTN9VDF2,Awakening
+tx_RM8HQHF7RZ,{name} has had a realization
+tx_YACHZAA3G1,{name} · awakening #{n}
+tx_SNYGR0A6D8,What will this awakening bring?
+tx_3D94XEY8BS,Nothing can be gained right now. This awakening passes.
+tx_VF3M8S8SGS,Upgrade a card
+tx_SPHKS5F297,Turn one card of a preset into its upgraded + version
+tx_XVEKB2ARPN,Swap a card
+tx_MKQQ6S25FH,Trade one card of a preset for one of the new candidates
+tx_XRXCJDX7T9,Add a preset
+tx_K03F5VX51P,"Gain a new preset of three cards, chosen before each match"
+tx_VX5DQ2VWFY,Needs training level {n}
+tx_C04CSM6AH9,Extra presets are full (max {n})
+tx_BBTC2K3EDB,No card left to upgrade
+tx_M26N55RWGQ,No candidate to swap in
+tx_WVN114Z3KD,Pick a card to upgrade
+tx_5Z059Q72G0,Upgraded
+tx_FJV4RH5RB5,New candidates
+tx_NM2N0G1CX7,Card to replace
+tx_CPB8AVTK0N,Pick one card to bring in and one to replace
+tx_Y7542JPYWV,Option {n}
+tx_9BJC6ABYHM,Pick one new preset
+tx_6KTJD01A88,Base
+tx_4Z7Q89GAKB,Preset {n}
+tx_K1RJF50930,{n} / {max}
+tx_T07VH8HG79,Awakening pending
+tx_WDK4ZJ8X7X,Card presets
+tx_2FVH8MVSD4,Active
+tx_GWM9Y2YTZE,Match presets
+tx_D4QK1WR6H2,Choose the card preset each pilot brings to this match
 tx_ZXYEA8CBCF,Enemy
 tx_EB4H7Z27VT,Ally
 tx_17QG177S23,Ally or enemy
@@ -318,6 +348,190 @@ tx_EPJQNJA7F7,Spend {score_cost} of the caster's growth points; the target's ATK
 tx_RHE0637Z32,"Until it leaves the battlefield, the target takes +{dmg_taken}% damage and gets a [Bounty] worth {bounty}% of its growth points\nDoes not stack"
 tx_70N6FJ3FJ0,Attack\nDeals damage equal to {attack_bounty}% of the target's [Bounty]
 tx_1MFHFCFRJE,Pull the target to the caster's tile\nEngage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_JZ97VD5T45,Bulk Up+
+tx_XE9DHPQEJM,Max HP +{max_hp}
+tx_A2Q3FWXP5M,Assault+
+tx_K586DBV6FN,Move to the target's tile\nEngage for {engage} {plural:engage|turn|turns}
+tx_CC597DP56V,Cutting-edge Guard+
+tx_PD7VM5AXHE,Heal the target {heal_pct}% of max HP and grant [Reactive Armor] {reactive_armor}
+tx_NFPGHN7ZHR,Initiate+
+tx_GZG45CRAM0,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_3K0P7GYTGB,Brawl+
+tx_J5RMJQF0N6,You and the target attack each other {mutual_attack} {plural:mutual_attack|time|times}\nThe target's attacks are sure-hit
+tx_DV1RXS0X1N,Suppression Fight+
+tx_KPN26AFNV8,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_RCWR35FG9P,Victory Report+
+tx_CH3CJG3PWK,"Draw {draw} {plural:draw|card|cards}, strategy points +{strategy}"
+tx_05ECQCD8KZ,Rush+
+tx_Y9YJNBZHYG,Move to the target's tile\nEngage for {engage} {plural:engage|turn|turns}
+tx_DPK4BZFG0S,Sprint+
+tx_HZG461P7Q4,Move\nDraw {draw} {plural:draw|card|cards}
+tx_TGJWVJR5JR,Fierce Dash+
+tx_9WPCZ238JZ,"Push {push}\nIf no enemy is in the way, push {push_bonus_clear} more"
+tx_FHE4ABGWPK,Dominant Battlefield+
+tx_6Q8X10GJV0,"Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins\nIf you survive the engage, create {gen_hand_count} [Demolish] in hand per enemy killed"
+tx_Z37JECA1CJ,Demolish+
+tx_X609XB66A3,Attack
+tx_S39W0QN8YC,Single Strike+
+tx_QPAFVRFYD1,"Attack\nOn hit, draw {draw} {plural:draw|card|cards}, +{charge} {plural:charge|token|tokens}"
+tx_31QTHCDFZF,Sweep+
+tx_07Y2E1MTXX,Move\nThen attack all enemies or turrets in range\n+{charge} {plural:charge|token|tokens} per hit
+tx_1V35335T2V,Execute+
+tx_DH2AXN8DPE,Remove this card if under {execute_charge} {plural:execute_charge|token|tokens}\nSpend all tokens: kill a target at or below {execute}% max HP
+tx_GKZ1ZFJQHA,Phantom Snare+
+tx_3W0F1RSFTB,Attack {attack} {plural:attack|time|times}
+tx_0RSSRHRR36,Reboot+
+tx_5Q8F5Q3MCP,+{charge} {plural:charge|token|tokens}\nSearch {search_card_count} [Stage A]
+tx_N73HX9PZ6G,Stage B+
+tx_A0V88EV4AA,"Engage for {engage} {plural:engage|turn|turns} within {engage_self_range} {plural:engage_self_range|tile|tiles} of the enemy with [Mark]\nIf an enemy is killed in the engage, create {phase_b_count} [Stage C] in the deck, otherwise create {phase_b_count} [Stage A]"
+tx_1DJBMWER36,Quick Slash+
+tx_4WPBRP047M,Move\nThen attack all enemies in range
+tx_SCGQR9B6A6,Prey on the Weak+
+tx_Z9JK8GAEQ0,"While held: when an engage starts, spend all tokens to attack the lowest-HP enemy at {engage_contempt_dmg_mult_pct}% ATK {charge|charges} {plural:charge|time|times}\nDiscarded after that engage ends"
+tx_9EAJBFQJVF,Blitz+
+tx_D9T28SG01T,Search {search_card_count} [Prey on the Weak]\nMove\nThen engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_ECZZ9WZF5M,Gale+
+tx_C3RPF8TPJG,"Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand, draw {draw} {plural:draw|card|cards}\nMove to the target's position and attack it\nReturn to the previous position when this operation phase ends"
+tx_TRG79GWGB9,Swiftness+
+tx_SFP4J90R9Y,Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand\nAttack again every enemy damaged this operation phase
+tx_4XE6F2HTQ8,Hypnosis+
+tx_FYV7TG9CND,Move the target {move_target} {plural:move_target|tile|tiles}
+tx_H3BJ4XHWE5,Charm+
+tx_512ED91TF9,"For {growth_link} {plural:growth_link|turn|turns}, gain the same growth points the target gains"
+tx_WEBXM7XCK1,Alluring Invasion+
+tx_Q0AKY96208,Pull all enemies in range to the caster's tile\nEngage for {engage} {plural:engage|turn|turns}\nEveryone within {engage_self_range} {plural:engage_self_range|tile|tiles} of the caster joins
+tx_W7JVVC8XY1,Investment+
+tx_7KXMX850TW,Discard {discard} {plural:discard|card|cards}\nCreate {gen_deck_count} [Attack Order] in the deck
+tx_7R5G80RC19,Attack Order+
+tx_65SA98SJ4Q,"Each time an ally or enemy is killed, create {mech_death_hand_cards} {plural:mech_death_hand_cards|copy|copies} of this card in hand\nHeal the target {heal_pct}% HP and attack all enemies in range of the target"
+tx_3R4H4NYZ7T,Probe+
+tx_SJRS57V5FN,"Attack\nOn hit, engage for {engage} {plural:engage|turn|turns} in range of the target; on miss, strategy points +{strategy}"
+tx_R7575C94N8,Support Guard+
+tx_TVG5VVAQ4M,Grant the target a shield equal to {shield_atk}% of the caster's ATK
+tx_D036GRATGM,Guardian+
+tx_4NP86Z0FQ9,Grant all allies on the battlefield a shield equal to {shield_atk}% of the caster's ATK
+tx_TK2KR0BWZJ,Support Guard++
+tx_QZNQTB471B,Grant the target a shield equal to {shield_atk}% of the caster's ATK
+tx_WE7DZKZ2W9,Fatigue+
+tx_3VBN9596WB,"Attack\nOn hit, the target cannot join engages this operation phase"
+tx_8AE47DKG31,Whim+
+tx_P03D3JNDC6,Draw {draw_discard} {plural:draw_discard|card|cards} from the discard pile\nThose cards cost -{draw_discard_cost_reduce} this operation phase
+tx_2XMZQG39HH,Smash+
+tx_G2N67CE92B,"If the target damages an enemy in the next engage, [Stun] that enemy\nApplies to the same enemy at most once per engage"
+tx_4F07P68HR7,Red Powder+
+tx_4M9BGB3BSR,Spend {score_cost} of the caster's growth points; the target's max HP +{max_hp}
+tx_WAXV6SG774,Green Vial+
+tx_D3JHAMXCWF,Spend {score_cost} of the caster's growth points; the target's ATK +{atk_add}
+tx_VEG14GRCC8,Blue Pill+
+tx_7MFR4HDM31,Spend {score_cost} of the caster's growth points; the target's growth efficiency +{growth_eff}% until it leaves the battlefield
+tx_8A0501SEQF,Conviction+
+tx_S0566TVC3N,Attack\nDeals damage equal to {attack_bounty}% of the target's [Bounty]
+tx_E99ZBQY56X,Finger of Death+
+tx_VTYG95KB5T,"Until it leaves the battlefield, the target takes +{dmg_taken}% damage and gets a [Bounty] worth {bounty}% of its growth points\nDoes not stack"
+tx_HBEA3PM245,Death Sentence+
+tx_D0J57B8671,Pull the target to the caster's tile\nEngage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_YTB6MM3BN5,Skyfall Strike+
+tx_CFV87QA430,Attack
+tx_G59QCK78QE,Thunderstorm+
+tx_M955S9RJHM,Attack all enemies on the battlefield
+tx_6T82HVJRHH,Scavenger+
+tx_ZAT1BDHSWG,Search {search_discard} {plural:search_discard|card|cards} from the discard pile
+tx_PC7S51RE6M,Rocket Punch+
+tx_ZW9G1CSZYT,"Attack\nOn hit, strategy points +{strategy}, search {search_card_count} [Cache]"
+tx_SA8BGV2NGQ,Scavenger++
+tx_V6MAF90SXW,Search {search_discard} {plural:search_discard|card|cards} from the discard pile
+tx_PND91G8FKJ,Missile+
+tx_NHNA66P70E,Spend all tokens: attack all enemies on the target tile {charge|charges} {plural:charge|time|times}
+tx_4PSR1KAX72,Missile Prep+
+tx_G8AMQQDD59,Search {search_card_count} [Missile]
+tx_T14KPE6RBJ,Precision Bombing+
+tx_MM017581DJ,"Attack all enemies and turrets in range of the target\nPer hit, create {gen_hand_count} Exhaust · Volatile [Missile] in hand"
+tx_5F1G3CZBWA,Bond+
+tx_P5XP2VGCRN,The caster and the target [Track] each other until either leaves combat\nChanging the target removes the previous effect
+tx_764XKZ5X1R,Battlefield Smash+
+tx_W5P4RWANWC,Spend all tokens: attack random enemies on the battlefield {charge+{attack_base}|charges+{attack_base}} {plural:charge+{attack_base}|time|times}
+tx_0M9XTVT6FW,Battlefield Smash++
+tx_FXBB8GSVMW,Spend all tokens: attack random enemies on the battlefield {charge+{attack_base}|charges+{attack_base}} {plural:charge+{attack_base}|time|times}
+tx_43GRHHZPYE,Terror+
+tx_X0X56P8Q0C,"Attack all enemies in range\nIf at least 1 hits, create {gen_hand_count} [Lock-on] in hand"
+tx_VRR6FN92HF,Destruction+
+tx_NAQ0QTZAZ3,"Attack all enemies in range of the target\nIf at least 1 hits, create {gen_hand_count} [Lock-on] in hand"
+tx_QB61SM28PZ,Open Engage+
+tx_3FSESX21J9,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_JZ50SJ63T3,Perfect Opportunity+
+tx_CBQ63MM7YW,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range joins
+tx_NYB7ZYHPPS,Battle Prep+
+tx_36WW7XPFF9,Move\nNext engage card cost -{cost_reduce_engage}
+tx_798W2QJ3P5,Precise Move+
+tx_CEW1SV939X,Move\nCost +{self_cost} for the rest of this game
+tx_8E1DY3VZA8,Jab+
+tx_HP8XQ8VYQJ,Attack
+tx_217H7VTNPE,Precise Strike+
+tx_9TRK49GFR3,Sure-hit attack
+tx_N6S9M4NWGG,Combo Attack+
+tx_94BH6AYHEN,"Attack\nOn hit, repeat this card's effect"
+tx_2GHFSBC8HJ,Advance+
+tx_EWN25NPTKH,Advance {advance}
+tx_31PY5QXR4R,Exchange+
+tx_M8TADDM7JJ,"Draw {draw} {plural:draw|card|cards}, discard {discard} {plural:discard|card|cards}"
+tx_9M0FC6C3AN,Adjust+
+tx_QJMKVSTBRS,"Draw {draw} {plural:draw|card|cards}, strategy points +{strategy}"
+tx_M82HXCWGBM,Improvise+
+tx_EF0GCJR3ZE,Search {search} {plural:search|card|cards}
+tx_Y34VZKW71R,Quick Thinking+
+tx_YNHNJ0HHG1,Draw {draw} {plural:draw|card|cards}
+tx_EZPP3JHRDX,Focus+
+tx_EMQCJ5V6F4,Cards drawn this operation phase cost -{cost_reduce_draw_phase}
+tx_PT8C05X6KK,Preparation+
+tx_VC7VADCPBV,All cards in hand cost -{cost_reduce_hand}
+tx_2C8ADSMGZH,Adrenaline+
+tx_SMMBZEJNJ6,"Strategy points +{strategy}\nAt the start of the next operation phase, strategy points -{strategy_next_phase_abs}"
+tx_XAH4EA2AVK,Planned Hit+
+tx_DJN6JA6NT0,"After use, if you killed an enemy this operation phase, strategy points +{strategy_on_kill}"
+tx_RJ7WEJKPQC,Recall+
+tx_W57S84RKSK,Return the target to base\nDraw {draw} {plural:draw|card|cards}
+tx_1MKBA7WF7W,Protect+
+tx_4JJKAPPA2X,Grant the target a shield equal to {shield_pct}% of its HP
+tx_6MJHTTD6N2,Plunder+
+tx_0ZH46SV52Z,Steal the growth points left on the target tile
+tx_FPENX7791T,Passive Stance+
+tx_BGCTK1AXP8,"Move to the nearest allied turret\nFor {eva_buff_turns} {plural:eva_buff_turns|turn|turns}, battlefield evasion +{eva_buff}%, growth +{growth}%"
+tx_DHE2W5VNM6,Aggressive Laning+
+tx_73T0VKM8AG,Laning stats +{lane_stat}% for {lane_stat_turns} {plural:lane_stat_turns|turn|turns}
+tx_5BPD3FHMDZ,Reconsider+
+tx_MCD0SBQJ7J,Discard your whole hand\nDraw as many as discarded\nDraw {draw} {plural:draw|card|cards}
+tx_B1VC0MJ1ZG,Perfect Finish+
+tx_3C7GWQ3T74,Discard your whole hand\nAll allies growth +{growth_until_phase}% until the next operation phase\nEnd the operation phase
+tx_S8TFH85S6D,Plan Ahead+
+tx_QVDR9QKNRT,Preserve {preserve} {plural:preserve|card|cards} in hand until the next operation phase
+tx_QGWWT8N2SW,Bold Cleanup+
+tx_W703C4A8C2,"Discard the {discard_right} rightmost {plural:discard_right|card|cards} in hand, draw {draw} {plural:draw|card|cards}"
+tx_DXY930098C,Solo Performance+
+tx_VPTN20ZRMR,"Discard all other pilot cards, then draw {draw} more {plural:draw|card|cards}\nStrategy points +{strategy_each} per card discarded"
+tx_603C4R80RM,Jungle Farming+
+tx_YMMKCCYAWN,Move
+tx_FXPMEZR6GH,Gold Rush+
+tx_MSD1AMRQCA,"While held: growth +{charge*{card_gold_rush_growth_per_token_pct}|tokens×{card_gold_rush_growth_per_token_pct}}%\nUse: cost +{self_cost} for the rest of this game, +{token} {plural:token|token|tokens}"
+tx_7BE22AMK9H,Immersion+
+tx_P1H18DCN6N,"ATK +{atk_pct}%, growth +{growth_perm}%"
+tx_XTHZ7PCG9K,Warm-up+
+tx_76BX2KVFZ4,"ATK +{atk_pct}%, HP +{hp_pct}%\nDraw {draw} {plural:draw|card|cards}"
+tx_33N11SFKBM,Careful Budget+
+tx_XN88VGF8SC,"Growth +{growth}% for {growth_turns} {plural:growth_turns|turn|turns}\nIf it enters your hand during an operation phase, it costs 0 for that operation phase"
+tx_0TMYJMSM8J,Growth Acceleration+
+tx_9RXJFTHQ2H,Spend all tokens: growth +{charge*{growth}|charges×{growth}}% for {growth_turns} {plural:growth_turns|turn|turns}
+tx_81N809KRQ3,Showdown+
+tx_73WPSRR4S3,Engage for {engage} {plural:engage|turn|turns}\nEveryone in range of the target joins
+tx_QP6H2735DK,Ambush+
+tx_MJMMW621WF,"Move and stay there until the next operation phase\nNext operation phase, search {ambush_search} of the caster's engage {plural:ambush_search|card|cards}"
+tx_2CMZSSAX00,Reckless Dive+
+tx_EYXSRPZG6F,Attack {attack} {plural:attack|time|times}\nThe target attacks the caster {retaliate} {plural:retaliate|time|times}
+tx_3G580J7DAT,Confidence+
+tx_V8TR0BZ2R9,While held: battlefield hit +{hit_pct}%
+tx_AWY5AA18MG,Clear Mind+
+tx_8BVTS2D6RG,While held: adjacent cards cost -{cut}
+tx_ATJZTWXTHK,Ready Stance+
+tx_4PKW6JDBGT,"At the start of the next operation phase, strategy points +{strategy_next_phase}, draw {draw_next_phase} {plural:draw_next_phase|card|cards}"
 tx_XJ3733JBC4,Stats
 tx_YD2EQQHJ2J,Salary
 tx_DWRZXTZQ0S,Growth
@@ -789,8 +1003,8 @@ tx_H26DNEN9EX,{n} {plural:n|player|players} without a research mech
 tx_AYCQXCCH15,{n} / {total} assigned
 tx_5XP7EXN0MZ,In charge: {name}   ·   Knowledge {value}
 tx_NPNPJYNJ78,Gain multiplier ×{mult}
-tx_AVASF1MNRA,Tier bonus (all pilot stats)   {tiers}
-tx_9C36WN5CN9,Research mech +{research} each week end  ·  mech played in a match +{match}  (before multiplier)
+tx_AVASF1MNRA,"Mastery level bonus (hit · evasion, 4 stats)   {tiers}"
+tx_9C36WN5CN9,Research mech +{research} each week end (before multiplier)  ·  mech upgrades unlock at Lv3 · Lv4 · Lv5
 tx_0R1EGAX9DP,Quirks: {pct}% chance at week end with a research mech  ·  {odds}
 tx_9YHCDH1Y7N,Research: {mech}
 tx_KVG9N478Y5,Coach assigns at week end
@@ -798,6 +1012,72 @@ tx_1AFM6E35JF,No research mech
 tx_PW12RBBJ9E,Top mastery  {list}
 tx_1D7T0ZQE77,Quirks  {n} / {slots}
 tx_D1SA7C6KSP,Max {n} {plural:n|slot|slots}
+tx_A91DQR5EYH,Overload: Max HP per +1 ATK {from} → {to}
+tx_0VZTRKKM1T,[Bulk Up] more Max HP
+tx_CECSHTRHDG,[Assault] cost {from} → {to}
+tx_328S8KKGN4,[Cutting-edge Guard] grants more [Reactive Armor]
+tx_6M87RVZT2D,Deploy Reactive Armor: [Reactive Armor] {from} → {to}
+tx_FG3ZVVET6B,[Initiate] cost {from} → {to}
+tx_NZS28E1GKD,Pain and Pleasure: Max HP conversion {from}% → {to}%
+tx_FFFTHZKAK1,[Brawl] cost {from} → {to}
+tx_J0T8P7H58F,[Suppression Fight] cost {from} → {to}
+tx_QH1GNFF2MM,[Victory Report] more strategy
+tx_SBHCNS7K9N,[Rush] cost {from} → {to}
+tx_QTRMPCC4SB,[Sprint] also draws 1 after moving
+tx_EGKG3JJ9SE,[Fierce Dash] pushes farther
+tx_SWBDM0T8D7,[Dominant Battlefield] cost {from} → {to}
+tx_2PSN6X1VRJ,[Demolish] loses [Volatile]
+tx_6W4MM80MXJ,[Single Strike] cost {from} → {to}
+tx_W0PWZST0Q2,[Sweep] cost {from} → {to}
+tx_FXE2HDHMWH,[Execute] higher Max HP threshold
+tx_G9DS4C9C47,Soul Harvest: Max HP per hit +{from} → +{to}
+tx_3SKY26YB5B,[Phantom Snare] cost {from} → {to}
+tx_7ME1P4A18W,Soul Harvest: ATK per hit +{from}% → +{to}%
+tx_B3CJM381VE,Overclock: starting tokens {from} → {to}
+tx_P4CQ08BM5X,[Reboot] grants more tokens
+tx_G2KTCFPKVJ,[Stage B] cost {from} → {to}
+tx_EFJ7BQ4J0N,[Quick Slash] cost {from} → {to}
+tx_FNMB3W7P31,[Prey on the Weak] higher token cap
+tx_PNDT9NM8SV,[Blitz] cost {from} → {to}
+tx_CFB9HRWCCR,No Mind: tokens to trigger {from} → {to}
+tx_G2YHSKQHH4,[Gale] cost {from} → {to}
+tx_GH8XBN12YF,[Swiftness] cost {from} → {to}
+tx_FBDR27NRJT,[Hypnosis] moves the target farther
+tx_4R7YVAHY1R,[Charm] lasts more turns
+tx_1Y4GQW54HV,[Alluring Invasion] cost {from} → {to}
+tx_5NCH55X9MV,[Investment] cost {from} → {to}
+tx_JEXZATQ284,[Attack Order] heals more
+tx_6M9QB8SER9,[Probe] cost {from} → {to}
+tx_P6NFN40F99,[Support Guard] bigger Shield
+tx_VP05EWZ56R,[Guardian] bigger Shield
+tx_XVQS59TH2N,[Support Guard] cost {from} → {to}
+tx_TZYYS9ERHF,[Fatigue] cost {from} → {to}
+tx_FYY48D8123,[Whim] bigger cost cut
+tx_GE9HFV4Z0Y,[Smash] cost {from} → {to}
+tx_FFM4WFQSCN,[Red Powder] more Max HP
+tx_XHZ0BYXBW7,[Green Vial] more ATK
+tx_E8P091AQP0,[Blue Pill] more growth efficiency
+tx_JWGQ0QQNER,[Conviction] cost {from} → {to}
+tx_AD4256R4W5,[Finger of Death] more damage taken and [Bounty]
+tx_1NXM43KXVJ,[Death Sentence] cost {from} → {to}
+tx_2TF6YWR0M5,Vulnerable Brand: [Vulnerable] {from} → {to}
+tx_M6PZ23YC9J,[Skyfall Strike] cost {from} → {to}
+tx_XSGEQVRV9G,[Thunderstorm] cost {from} → {to}
+tx_F1FCA1PFVX,[Scavenger] cost {from} → {to}
+tx_DMVNB14BNK,[Rocket Punch] cost {from} → {to}
+tx_4YJ1SVHVZS,[Scavenger] finds more cards
+tx_WMFRSAF3YM,[Missile] higher token cap
+tx_TPWWDZTVMF,[Missile Prep] cost {from} → {to}
+tx_1469HV9AHA,[Precision Bombing] cost {from} → {to}
+tx_17FVFFR8CY,[Bond] cost {from} → {to}
+tx_VEMW7S91CA,[Battlefield Smash] more base attacks
+tx_282RP86MJR,[Battlefield Smash] cost {from} → {to}
+tx_NDKXMX6EB0,Aim Assist: ATK per hit +{from} → +{to}
+tx_XWA7EKFJNA,[Terror] cost {from} → {to}
+tx_PBWDAW1MZ6,[Destruction] cost {from} → {to}
+tx_MG2RP2KA00,Lv{n}
+tx_G5CGK84PBE,Next upgrade {level} · {mech}: {text}
+tx_YQBQKH8GAN,{mech}: all mech upgrades unlocked
 tx_VDJKS7MNHE,BAN
 tx_VX9Q85PM8S,Drag and drop to reassign mechs to pilots
 tx_6Z915A6SVE,BAN
@@ -805,7 +1085,7 @@ tx_M08KQVQN65,No passive
 tx_MJJHA43Q8J,This mech has no unique cards
 tx_XVKPY5NPC4,Start Game
 tx_B3TD0XDDBT,Mech Stats
-tx_3R8J1QNVYD,Mastery (tier bonus = all pilot stats)
+tx_3R8J1QNVYD,"Mastery (level bonus = hit · evasion, 4 stats)"
 tx_1R98FHMXSQ,No quirks equipped
 tx_PY288FR27W,Mech Passive
 tx_DKVRHA76D6,This mech has no passive
@@ -819,8 +1099,8 @@ tx_5AJE6SAZ26,Opponent
 tx_GPNME2ADWA,Quirks {n}
 tx_2C7Y2JDD7V,{role}   ·   HP {hp}   ·   ATK {atk}   ·   Presence {presence}
 tx_S32JTGTHEG,Mech Cards  {n} {plural:n|type|types}   ·   Tap a card for details
-tx_J3FQW65YX4,{name}  {tier} {value}  (pilot stats {bonus})
-tx_GKJ2J8BS4G,{name}  {tier} {value}  (pilot stats {bonus} · quirks +{quirk})
+tx_J3FQW65YX4,{name}  {tier} {value}  (hit · evasion {bonus})
+tx_GKJ2J8BS4G,{name}  {tier} {value}  (hit · evasion {bonus} · quirks +{quirk})
 tx_ZFKRFPCAS2,Analyst's ban pick: {pilot}'s main
 tx_ZKEE3G9T6P,Expected opponent pick: {pilot}
 tx_15SXME7CFS,Generated only
@@ -864,6 +1144,10 @@ tx_FVQ03DD4B3,Overall
 tx_EE9ZYA8C66,No main mech
 tx_P5GRXR0NQ6,Start Ban/Pick
 tx_E2AWTQEV33,Ready
+tx_KG4ED588AK,Mech upgrades (mastery Lv3 · 4 · 5)
+tx_P850G2PZ26,"{pilot} — mastery {level}, {n} / {total} unlocked"
+tx_PK6V12WXVN,Unlocked
+tx_B042CJCX8V,Locked
 tx_MR5VKS3AHG,Overload
 tx_C214C4GTV6,Deploy Reactive Armor
 tx_4AGJGY73MM,Pain and Pleasure
@@ -1259,6 +1543,140 @@ tx_98RHXX4CMN,Are you considering changes?
 tx_H15XZER9KR,{name} is the core of our team. I trust them.
 tx_FZWDZJM4MJ,They know it better than anyone.
 tx_DGCV1JP42M,"I'll take a cold, hard look at it."
+tx_HK016C7BN6,Talk
+tx_218TQZXFD8,Focus training
+tx_0R7491YTAP,Aggression
+tx_B0QVPMTQPG,Caution
+tx_FEBE3HG3TK,Operations
+tx_415VNRQCEY,Combat
+tx_X4Z6RJMZGH,Growth
+tx_BZPQRAK2FA,Limit break
+tx_7QBNF0Q0DW,No limit break in progress
+tx_3NCH9K5W6B,Needs {n} coach points
+tx_TN0T71EKCT,Coach points {n}
+tx_T4J6SR6Z2H,{n}P
+tx_3FGGE155P3,Who will you visit?
+tx_SBR87FT4VQ,What will you do together?
+tx_KW9B22X657,Pick a focus training course
+tx_KD8HT00MQD,Focus training result
+tx_2XVVB7WQTS,Spend coach points to drill two stats
+tx_R7T4K0Y2S7,Talk about this morning's training
+tx_WNWP86AD7S,Talk about the ban/pick and tomorrow's mech
+tx_HVC3644V2Q,Talk about today's match
+tx_8ZK21GFG9A,Have a casual chat
+tx_XMFHMDB1VX,"Big stress relief, builds trust · less EXP on the next training day"
+tx_0SD9XPG1BX,Outings unlock at trust Lv.{n}
+tx_5F27TFDDBC,Trust Lv.{trust} · Stress {stress}
+tx_1KK4JVKGME,{name} {stat} {delta}
+tx_T3ENXMYQ3T,{name} stat EXP {delta}
+tx_BA4R5F2VGH,{name} training EXP {delta}
+tx_KKBC17X819,{name} training EXP full
+tx_WTKYZDZ89S,{name} insight {delta}%
+tx_066H6FVY7G,{name} {mech} mastery {delta}
+tx_0M7GASA49J,{name} limit break · training Lv.{n}
+tx_394H0Z9JXP,Coach points {delta}
+tx_TZ7X70TQNY,Insight
+tx_1CE62HA1KP,Training EXP
+tx_CGDMGJFED0,Mastery
+tx_VE4Y341QPD,Stat EXP
+tx_7F4B0GFZD2,@The late-night practice room
+tx_GV27K1VPDW,*The practice room light is still on late at night.
+tx_BJMAQY0286,"Oh, Coach… I couldn't sleep. I feel like something's about to click."
+tx_Q9M7R0E478,"Go a little longer, then sleep."
+tx_ZCS35Z46BT,Okay! I'll wrap up soon.
+tx_7NMY2SE273,Tomorrow. You need sleep now.
+tx_GWQWZ15NDP,"…Okay, got it."
+tx_AQW6WTGRAR,@Unexpected advice
+tx_EWV0XQT66Q,I heard something from a player on another team…
+tx_T7BNJS7HRZ,I think it fits my play perfectly.
+tx_TET0WE2T76,Interesting. Let's study it together.
+tx_V3T30EPGSK,That's why you're the coach!
+tx_DBW2BGB0GK,…It doesn't fit as well as I thought.
+tx_M1VXEGS7B4,Don't let others' words shake you.
+tx_TTC5NNHPV5,Okay… I will.
+tx_6VFK3CV72J,"Today's training was rough, honestly."
+tx_Q98BRPJSVN,But I think I'm starting to get a feel for it.
+tx_W0Z14DRGRK,Let's push once more while it clicks. I'll watch.
+tx_JZ5EFEQZXX,"…Okay, one more go!"
+tx_W2FRM8R0BT,That's enough for today. Rest and let it settle.
+tx_H6CKVTXX8X,"Really? Thank you, Coach."
+tx_5W46C53H2W,Good work. Don't lose that feeling.
+tx_DRGWMWTTE1,Yes! I'll remember it.
+tx_PHP66PDG2M,"…Okay, I'll try."
+tx_VX509357K0,I definitely improved today! I feel light.
+tx_TC0DHVZRV7,Ride the momentum. One more set tonight.
+tx_2A6T933CQM,"Great, let's go all the way!"
+tx_WY97KPWG0R,Don't overdo it. Rest today.
+tx_MARQQ3RTBF,"Okay, I'll do even better tomorrow."
+tx_SJE17RVD97,Feels like nothing improved today…
+tx_4YAB4P1BF5,That's exactly when we do one more. Together.
+tx_KX2KSP6GRC,"…If you're with me, Coach."
+tx_TCYBPNF1T2,Everyone hits a plateau. Let's rest today.
+tx_F54NJ9ZP20,Hearing that makes me feel better.
+tx_34QRZWK36Z,Honestly… I'm a bit worn out.
+tx_3VT59RKFMG,Hang in a little longer. Let's lock in today's lesson.
+tx_7H4K5DTPM5,…Got it. I'll try.
+tx_GW2JEQZHQ2,I really can't right now.
+tx_0TVKNYP75N,Let it all go and rest today.
+tx_4GXA8BME14,Thanks. I'll catch my breath.
+tx_HNX6ND2X0T,The new moves still don't feel natural.
+tx_WQSKM4ZE39,Repeat until it sticks. One more set tonight.
+tx_5EQ4E4SS9W,"Yes, until it sticks!"
+tx_SWAJWYDKF0,No rush. We'll look at it tomorrow.
+tx_7K7VHDN95S,"Okay, I'll try again tomorrow."
+tx_DWVTVF5K3Z,The mech I'm piloting tomorrow still feels a bit awkward.
+tx_ABG041CJ2S,Let's run one more simulation with it today.
+tx_CZY2AXN1EZ,"Okay, I'll get the hang of it."
+tx_MCDQ5CHV4Z,You'll do fine. I'm trusting you with it.
+tx_G88SJPBZCQ,I'll live up to that trust.
+tx_823WJR70DB,…That's a lot of pressure.
+tx_F4ZZMBTDD1,Sleep well tonight. Tomorrow is what counts.
+tx_40HGH4ZS9Y,"Okay, I'll turn in early."
+tx_ABZP4CX6PR,Did you see their ban/pick? Will our comp hold up?
+tx_EA4DT4VFEN,Let's run one more comp practice before we call it.
+tx_F23QYSNPYF,"Sure, let's sync up."
+tx_FHPEQJP0DY,We're ready. Just bring your confidence.
+tx_27ZWX69DNV,Yes! I'll show you tomorrow.
+tx_GR4XB73CWD,MVP… it still hasn't sunk in!
+tx_HK3CRWJETS,Today was your day. Enjoy it.
+tx_2F8XPQ8NS6,"Hehe, I'll enjoy it just for today!"
+tx_TGRHJWDW3K,Keep a cool head. Let's review today's match.
+tx_0A5ZEFAMHZ,"Okay, I'll study the good plays too."
+tx_TX2P5VDXN6,We won! But my own play was a bit disappointing.
+tx_7VMY0DVVMG,The team won. That's what matters.
+tx_PJXC55G216,Right! I'll do better next time too.
+tx_23APC47XR3,Let's go over the rough moments together.
+tx_WS9B2VRYYE,"Sure, let me show you right away."
+tx_MCGHZHC008,…But we won today.
+tx_W2RXVAV0F8,I got caught way too often today… It feels like my fault.
+tx_52HBQZZ518,It's not your fault. It was a team game.
+tx_VPB1H9B879,"…Thank you, Coach."
+tx_HMGK8XYRB3,Let's see why you got caught. Next time you won't.
+tx_G465G1NMYJ,Okay. It won't happen the same way twice.
+tx_J1QVCXZS73,Right now I… don't want to watch it.
+tx_0WHT1QBBMX,We lost. The mood's pretty low.
+tx_V1X72H23BA,Shake it off. There's next week.
+tx_9TNC1NTS61,"Yeah, let's go again."
+tx_YZ0W5CEQ62,A loss teaches more. Let's review.
+tx_FTH0EB8PPJ,…You're right. I won't miss a thing.
+tx_V594GHX4FA,"My K/D/A was great today, right? My hands were on fire."
+tx_VCXMXMSK8Z,Hold on to that feeling. Let's rewatch the recording.
+tx_FXCFD2TVCE,Yes! I want to know what clicked.
+tx_EKR5AC80YA,Well done. Rest today.
+tx_4DZ12PB99P,"Hehe, thank you!"
+tx_PGX42AZC1K,*Training results have been stuck for days.
+tx_ZJH0CA0S40,"Coach... no matter how much I train, I'm not getting better."
+tx_YHPXHB3HWK,"It feels like I hit a wall. I don't know what to hold on to, to get past it."
+tx_9V9JPV5RBD,>Practice alone won't do it now. Let's break through in real matches. Pick a goal.
+tx_5D5M3E8X7K,(Goal pick — the game replaces it with three goals)
+tx_1E67JN0S47,Got it. I'll make it happen!
+tx_CZ4S2C1JXA,*{name}'s practice screen is still on at dawn.
+tx_91W2DEJYKM,"I'm stuck again. I got past it last time, but this wall feels higher."
+tx_JNDEZ4Y7C5,"I practice as much as ever, but my hands won't follow."
+tx_KAZNBCDWDE,>A higher wall means you've climbed that far. Let's break it in real matches again.
+tx_DBYRHDAACS,(Goal pick — the game replaces it with three goals)
+tx_F2XVSXXX9X,"Okay. With a goal, I think I can see the way."
+tx_GDSE4N85DZ,I'll get past this one too.
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1507,7 +1925,7 @@ tx_5234BFCRX4,Shows full skill in a mech of their own role
 tx_BJP0GG5N68,Never crumbles when riding a tank mech
 tx_423T378EFS,Goes for the weak spot when riding an assassin mech
 tx_HCTF0FH7HK,Never wastes a shot when riding a marksman mech
-tx_X44QXQ1EJK,Grows sharper in mechs handled at Skilled or above
+tx_X44QXQ1EJK,Grows sharper in mechs at mastery Lv3 or higher
 tx_PT2W70YDR1,riding a main mech
 tx_N5C2E6FQ2F,riding an own-role mech
 tx_VXEP932PHS,riding a {role} mech
@@ -1710,21 +2128,21 @@ tx_CPW05B0HB9,Morning
 tx_XXVBB9VYQX,Afternoon
 tx_7YZ50G3EBF,Morning training · Press Next to settle today's training
 tx_AWKX6T199K,Morning training results · The morning talk starts shortly (Next = skip)
-tx_CXNA4K157Z,Afternoon · Tap a player to ask for a meeting or an outing
+tx_CXNA4K157Z,Afternoon · Tap a player to visit (once per day)
 tx_7KR285R4ES,This afternoon is done
 tx_5W9RGVB4BS,EXP +{n}
 tx_TCFF8QQBA3,Stress {delta}
 tx_B7175RYNW5,Out alone
 tx_0WX5FQG1PV,Resting in dorm
-tx_MAPMDX9DJ0,Tap a player on the map for a meeting or an outing (once per day)
-tx_ME49NDMB1F,No meeting or outing is possible this afternoon
+tx_MAPMDX9DJ0,"Tap a player on the map to visit · focus training, a talk or an outing (once per day)"
+tx_ME49NDMB1F,Nobody can be visited this afternoon
 tx_NRH0Z789MC,Afternoon: Rested
-tx_JT4H7JX5BF,Afternoon: Meeting with {name}
+tx_JT4H7JX5BF,Afternoon: Visit with {name}
 tx_F8B4DZ53XB,Afternoon: Outing with {name}
-tx_TB0M24CVNM,{day} afternoon · Meeting
+tx_TB0M24CVNM,{day} afternoon · Visit
 tx_7PKEPM8SGK,{day} afternoon · Outing #{n}
 tx_G3FNS00AWW,Skip this afternoon?
-tx_BVDJ9Q0CSD,"A meeting or an outing is still possible. If you move on now, this afternoon counts as rest."
+tx_BVDJ9Q0CSD,"You can still visit a player. If you move on now, this afternoon counts as rest."
 tx_CGHZDAMEAR,Skip
 tx_C3T5QMKS85,Stats
 tx_1EN72EY6WJ,Total {n}
@@ -1757,6 +2175,11 @@ tx_D4H4CEEAQX,Evening · A quiet end to the week
 tx_34NK587JXR,Match Prep
 tx_2PHY0EQHSZ,Scout the opponent and finish ban/pick today · the match is tomorrow
 tx_3MV5ZYWADH,Ban/pick done · Start Match goes straight into the match
+tx_W7VJT121B2,Afternoon: Focus training with {name} · {course}
+tx_64BZGJ4BTM,Afternoon: Talk with {name}
+tx_VTXA6YGJ8E,Coach points {n} / {max} this week
+tx_HSPG16C381,{day} afternoon · Talk
+tx_5CGB20BWXX,{day} evening · Limit break
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language
@@ -2137,6 +2560,26 @@ tx_67HRWPCEBE,Firepower Boost II
 tx_J7C56J00N6,Firepower Boost III
 tx_BFBZYQPMDG,Endurance Training II
 tx_E7XM9N13SW,Endurance Training III
+tx_HBKHP46T46,Lv{n}
+tx_HWDK2ZGNYZ,Lv {n} / {max}
+tx_MQTEGWC568,Training EXP {exp} / {need}
+tx_5FXPMDAP4K,Plateau reached — needs a limit break
+tx_800W06DJMX,Max level
+tx_17R6TM4FN4,Training Level
+tx_KGSV1ERB23,Limit Break
+tx_P90CMSBJP0,KDA {kda}+ over the next {n} matches
+tx_6GXZRX4SPP,"Most kills in the game, {n} matches in a row"
+tx_1BSCN8N7FE,Take {need} objectives by turn {turn} over {n} matches
+tx_6DMM2FHRF3,MVP of the next match
+tx_4C8T8AQG75,"Most growth earned in the game, {n} matches in a row"
+tx_Q8Z751P204,"Most turret damage in the game, {n} matches in a row"
+tx_YZN4NN2KCC,"Most shielding and healing in the game, {n} matches in a row"
+tx_T8XRTXGC5D,On success: Training Lv{n} · all stats +{gain}
+tx_N55ME7YEYY,New goal: {goal}
+tx_JZQ1JZRHPM,Goal — {goal} ({progress})
+tx_0BVZ0NR212,{have}/{need}
+tx_1ZM6HE38ZP,KDA {v} / {need}
+tx_WDHZDJF3V7,{name}: limit break! Training Lv{n} · all stats +{gain}
 tx_QQVPQ29K6X,Training Fanatic
 tx_6HSK5W6C20,Mech Researcher
 tx_SJVSQJ1HZ2,Sponsor-Friendly

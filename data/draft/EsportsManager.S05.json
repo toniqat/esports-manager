@@ -1,0 +1,142 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "742164a5-27bd-5d3f-bee5-75430a253538": {
+      "id": "742164a5-27bd-5d3f-bee5-75430a253538",
+      "name": "S05",
+      "start": "9bc24bff-4f58-5b25-8e3b-248480f0bdbf",
+      "end": "3e9f3529-296e-5a56-b71a-93a4c985cc21",
+      "nodes": {
+        "9bc24bff-4f58-5b25-8e3b-248480f0bdbf": {
+          "localId": 1,
+          "type": "Start",
+          "next": "590d5e75-e03b-582d-9321-cfee0d0d4818"
+        },
+        "3e9f3529-296e-5a56-b71a-93a4c985cc21": {
+          "localId": 2,
+          "type": "End"
+        },
+        "590d5e75-e03b-582d-9321-cfee0d0d4818": {
+          "localId": 3,
+          "memoIds": [
+            "a6715200-07ae-5793-bdc9-f32964f4a09d"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "새로 배운 움직임, 아직 몸에 안 익어요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "The new moves still don't feel natural."
+                }
+              ]
+            }
+          },
+          "next": "d65b58de-de40-57b2-be8a-080ccf5ff8d8"
+        },
+        "a6715200-07ae-5793-bdc9-f32964f4a09d": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story",
+            "manager_type": -1,
+            "stage": 0,
+            "cond": "train=H,E,C,D",
+            "weight": 1
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "590d5e75-e03b-582d-9321-cfee0d0d4818"
+        },
+        "d65b58de-de40-57b2-be8a-080ccf5ff8d8": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "7d2afc64-7130-51de-bad7-de2f882f6e40",
+              "text": "익을 때까지 반복이지. 저녁에 한 세트 더.",
+              "next": "39da990e-c59a-5560-8814-56bc8cf4f219",
+              "attrs": {
+                "effects": "train_bonus:std;stress:+8;awaken:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Repeat until it sticks. One more set tonight."
+                }
+              }
+            },
+            {
+              "id": "728b4d66-b493-5de8-a19d-b0618e3793f0",
+              "text": "급할 것 없어. 내일 다시 보자.",
+              "next": "761ab0d9-9553-5dd7-8323-16d12673de07",
+              "attrs": {
+                "effects": "stress_train:-2;trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "No rush. We'll look at it tomorrow."
+                }
+              }
+            }
+          ]
+        },
+        "39da990e-c59a-5560-8814-56bc8cf4f219": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 몸에 붙을 때까지요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes, until it sticks!"
+                }
+              ]
+            }
+          },
+          "next": "3e9f3529-296e-5a56-b71a-93a4c985cc21"
+        },
+        "761ab0d9-9553-5dd7-8323-16d12673de07": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네, 내일 다시 해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Okay, I'll try again tomorrow."
+                }
+              ]
+            }
+          },
+          "next": "3e9f3529-296e-5a56-b71a-93a4c985cc21"
+        }
+      }
+    }
+  }
+}

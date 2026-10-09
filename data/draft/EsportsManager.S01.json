@@ -1,0 +1,212 @@
+{
+  "format": "draft-runtime",
+  "version": 1,
+  "project": {
+    "name": "EsportsManager",
+    "sourceLang": "Ko"
+  },
+  "entry": null,
+  "flows": {
+    "e39fd043-1acf-5549-b752-1247b59252fc": {
+      "id": "e39fd043-1acf-5549-b752-1247b59252fc",
+      "name": "S01",
+      "start": "5f6f4627-7d80-5c97-8a05-6226635d281a",
+      "end": "9a557273-8706-5fc6-bf60-20acb9edd7e3",
+      "nodes": {
+        "5f6f4627-7d80-5c97-8a05-6226635d281a": {
+          "localId": 1,
+          "type": "Start",
+          "next": "1e374373-4ffb-5a02-a483-1736235d623c"
+        },
+        "9a557273-8706-5fc6-bf60-20acb9edd7e3": {
+          "localId": 2,
+          "type": "End"
+        },
+        "1e374373-4ffb-5a02-a483-1736235d623c": {
+          "localId": 3,
+          "memoIds": [
+            "210d98fd-3f1e-5621-84cd-fd2080753a8a"
+          ],
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "오늘 훈련, 솔직히 좀 빡셌어요."
+            },
+            {
+              "kind": "text",
+              "text": "그래도 뭔가 감이 오는 것 같기도 하고요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Today's training was rough, honestly."
+                },
+                {
+                  "kind": "text",
+                  "text": "But I think I'm starting to get a feel for it."
+                }
+              ]
+            }
+          },
+          "next": "48b8f2d2-1ce4-525f-9ff4-2c705ea91347"
+        },
+        "210d98fd-3f1e-5621-84cd-fd2080753a8a": {
+          "localId": 4,
+          "attrs": {
+            "kind": "story",
+            "manager_type": -1,
+            "stage": 0,
+            "weight": 2
+          },
+          "type": "Comment",
+          "text": "이야기 이벤트 설정",
+          "attachedTo": "1e374373-4ffb-5a02-a483-1736235d623c"
+        },
+        "48b8f2d2-1ce4-525f-9ff4-2c705ea91347": {
+          "localId": 5,
+          "type": "Select",
+          "options": [
+            {
+              "id": "b3ee9fac-9948-58f1-8117-8413c3b795a6",
+              "text": "감이 올 때 한 번 더 밀어붙이자. 내가 봐 줄게.",
+              "next": "4c9f27a6-a4b2-5a14-9c85-690ab2175cd8",
+              "attrs": {
+                "effects": "train_bonus:std;stress:+8;awaken:+5"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Let's push once more while it clicks. I'll watch."
+                }
+              }
+            },
+            {
+              "id": "1307f70a-6f1e-5527-872f-66c3fc28f8b3",
+              "text": "오늘은 여기까지. 푹 쉬면서 정리하자.",
+              "next": "9a25359b-6883-5d9c-b6b1-37c72c93d338",
+              "attrs": {
+                "effects": "stress_train:-2;trust:+2"
+              },
+              "i18n": {
+                "En": {
+                  "text": "That's enough for today. Rest and let it settle."
+                }
+              }
+            },
+            {
+              "id": "0676d8cc-f1b5-5133-8879-06cc481b7107",
+              "text": "잘했어. 그 감각 잊지 마.",
+              "next": "51a492a3-ab4e-582a-9a62-c99c442554a4",
+              "attrs": {
+                "effects": "ok>trust:+3;ok>awaken:+8;ng>trust:+1"
+              },
+              "i18n": {
+                "En": {
+                  "text": "Good work. Don't lose that feeling."
+                }
+              }
+            }
+          ]
+        },
+        "4c9f27a6-a4b2-5a14-9c85-690ab2175cd8": {
+          "localId": 6,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…좋아요, 한 번 더 해 볼게요!"
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Okay, one more go!"
+                }
+              ]
+            }
+          },
+          "next": "9a557273-8706-5fc6-bf60-20acb9edd7e3"
+        },
+        "9a25359b-6883-5d9c-b6b1-37c72c93d338": {
+          "localId": 7,
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "정말요? 감사합니다, 감독님."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Really? Thank you, Coach."
+                }
+              ]
+            }
+          },
+          "next": "9a557273-8706-5fc6-bf60-20acb9edd7e3"
+        },
+        "51a492a3-ab4e-582a-9a62-c99c442554a4": {
+          "localId": 8,
+          "attrs": {
+            "branch": "ok"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "네! 꼭 기억할게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "Yes! I'll remember it."
+                }
+              ]
+            }
+          },
+          "next": "28c6a125-57a9-52a9-8210-894e7e0896e2"
+        },
+        "28c6a125-57a9-52a9-8210-894e7e0896e2": {
+          "localId": 9,
+          "attrs": {
+            "branch": "ng"
+          },
+          "type": "Dialog",
+          "speaker": "0a3f02b0-80bb-5e10-8f8d-897f9e479f2a",
+          "lines": [
+            {
+              "kind": "text",
+              "text": "…네, 노력해 볼게요."
+            }
+          ],
+          "i18n": {
+            "En": {
+              "lines": [
+                {
+                  "kind": "text",
+                  "text": "…Okay, I'll try."
+                }
+              ]
+            }
+          },
+          "next": "9a557273-8706-5fc6-bf60-20acb9edd7e3"
+        }
+      }
+    }
+  }
+}

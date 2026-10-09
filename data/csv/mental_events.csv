@@ -21,6 +21,8 @@ X04,incident,-1,0,,trust:+6;pmod:all:-1:1|ok>trust:+2;ng>trust:-3,1
 X05,incident,-1,0,,ok>trust:+4;ng>trust:-1;ng>pmod:all:-1:1|trust:+3;trust_all:+1;smod:mental:-1:1|ok>pmod:all:+1:-1;ng>pmod:all:-2:1,1
 X06,incident,-1,0,,trust_all:+1;trust:-2|trust:+2;trust_all:-1|ok>trust:+4;ng>trust:+1,1
 X07,incident,-1,0,,ok>pmod:engage_hit:+1:1;ng>pmod:engage_hit:-3:1|trust:+3;smod:finance:-1:1,1
+X08,incident,-1,0,,awaken:+15;stress:+6|stress:-5;trust:+2,1
+X09,incident,-1,0,,ok>awaken:+12;ok>trust:+2;ng>pmod:all:-1:1|trust:+1,1
 P01,press,-1,0,,trust_all:+1|smod:tactics:+1:1|ok>smod:mental:+1:1;ng>trust_all:-1,1
 P02,press,-1,0,,trust_all:+2|smod:tactics:+1:1|trust_all:+1;smod:mental:-1:1,1
 P03,press,-1,0,,ok>trust_all:+2;ng>trust_all:-1|trust_all:+1|smod:mental:+1:1,1
@@ -46,3 +48,17 @@ T07,talk,-1,0,train=M,trust:+3|stress:-2,2
 J01,talk_pair,-1,0,,trust:+2;stress:-3|ok>pmod:all:+1:-1;ng>stress:+3,1
 J02,talk_pair,-1,0,ups>=1,trust:+3|ok>pmod:all:+1:-1;ng>stress:+3,2
 J03,talk_pair,-1,0,stress>=60,stress:-6;trust:+1|ok>stress:-4;ok>trust:+2;ng>stress:+3,3
+S01,story,-1,0,,train_bonus:std;stress:+8;awaken:+5|stress_train:-2;trust:+2|ok>trust:+3;ok>awaken:+8;ng>trust:+1,2
+S02,story,-1,0,ups>=1,train_bonus:std;stress:+10;tlexp:+20|stress_train:-2;trust:+1,1
+S03,story,-1,0,ups<1,train_bonus:std;stress:+8;trust:+2|stress_train:-2;awaken:+5,1
+S04,story,-1,0,stress>=60,train_bonus:std;stress:+12;ok>trust:+2;ng>trust:-3|stress_train:-2;trust:+3,1
+S05,story,-1,0,"train=H,E,C,D",train_bonus:std;stress:+8;awaken:+5|stress_train:-2;trust:+2,1
+A01,story_sat,-1,0,,mastery:+8;stress:+5|ok>trust:+3;ok>mastery:+4;ng>trust:+1|stress:-8;trust:+1,2
+A02,story_sat,-1,0,,mastery:+6;tlexp:+15;stress:+4|trust:+2;awaken:+5,1
+U01,story_sun,-1,0,last=win;mvp=yes,trust:+3;stress:-6|awaken:+12;tlexp:+20;stress:+4,2
+U02,story_sun,-1,0,last=win,trust:+2;stress:-5|ok>awaken:+10;ok>trust:+2;ng>stress:+4,1
+U03,story_sun,-1,0,last=loss;deaths>=4,trust:+3;stress:-8|awaken:+10;stress:+5;ok>trust:+2;ng>trust:-2,2
+U04,story_sun,-1,0,last=loss,trust:+2;stress:-6|awaken:+8;tlexp:+15;stress:+4,1
+U05,story_sun,-1,0,kda>=3,awaken:+10;stress:+3|trust:+2;stress:-6,1
+LB01,limit_break,-1,0,tlevel=1,,1
+LB02,limit_break,-1,0,tlevel>=2,,1

@@ -2,16 +2,18 @@ class_name VisitMenu
 extends CanvasLayer
 
 # ── Afternoon visit menu (방문, §15 D) ────────────────────────────────────────
-# A speech bubble over the visited pilot's map token (`point_at`: the tail points at the
-# portrait's top; when the bubble does not fit above it, it flips under the token), kept
-# inside the safe area. While it is open the full-screen `Root` swallows every other tap.
-# Three pages in one bubble (`UI_View_VisitMenu.tscn` owns the layout):
-#   menu     집중 훈련 / 이야기 / 외출 → `option_picked("focus" | "story" | "outing")`.
-#            The visit is already recorded (`MentalSystem.begin_visit`), so this page has
-#            no way out but an option.
-#   courses  the focus training courses (`FocusTraining.courses_view`): tap one, then
-#            Confirm → `course_picked(id)`; Back → menu
-#   result   the focus training notes; Confirm → `closed`
+# Two surfaces in one scene (`UI_View_VisitMenu.tscn` owns the layout). While either is open
+# the full-screen `Root` swallows every other tap.
+#   menu     a speech bubble over the visited pilot's map token (`point_at`: the tail points
+#            at the portrait's top; when the bubble does not fit above it, it flips under the
+#            token), kept inside the safe area — only the three options 집중 훈련 / 이야기 /
+#            외출 → `option_picked("focus" | "story" | "outing")`. The visit is already
+#            recorded (`MentalSystem.begin_visit`), so it has no way out but an option.
+#   courses  `%Modal`, centred in the safe area over a dim (the bubble hides): the focus
+#            training courses (`FocusTraining.courses_view`): tap one, then Confirm →
+#            `course_picked(id)`; Back → the bubble menu
+#   result   the same modal: the focus training notes in an `EventResultPanel` (bars + chips);
+#            Confirm → `closed`
 # The owner (`WeekProgressView`) applies everything — this popup only draws and emits.
 # Create with `create()`, add it, `point_at` the token, then `open_menu`.
 
@@ -72,7 +74,7 @@ func point_at(head: Control, foot: Control) -> void:
 
 
 func _process(_delta: float) -> void:
-	if visible:
+	if visible and _page == Page.MENU:
 		_place_bubble()
 
 
@@ -96,22 +98,13 @@ func show_courses(state: Dictionary) -> void:
 	_show_page(Page.COURSES)
 
 
-## Result page: the outcome's note texts (`MentalEvents.note_texts`).
-func show_result(state: Dictionary, lines: Array) -> void:
+## Result page: the outcome's note dicts (`outcome.notes`), **right after** they were applied —
+## `EventResultPanel` draws the visited pilot's bars (before → after) and stat chips.
+func show_result(state: Dictionary, notes: Array) -> void:
 	_fill_header(state)
-	var holder: Control = %Result
-	var template: Label = %ResultLine
-	for c in holder.get_children():
-		if c != template:
-			c.queue_free()
-	for t in lines:
-		if String(t) == "":
-			continue
-		var lbl: Label = template.duplicate() as Label
-		lbl.text = String(t)
-		lbl.visible = true
-		holder.add_child(lbl)
 	_show_page(Page.RESULT)
+	# Filled once the page is shown, so the bars start in the laid-out tree.
+	(%EventResultPanel_Result as EventResultPanel).show_result(state, _pid, notes)
 
 
 func is_open() -> bool:
@@ -119,41 +112,57 @@ func is_open() -> bool:
 
 
 # ── Pages ────────────────────────────────────────────────────────────────────
+## MENU = the bubble over the token; COURSES / RESULT = the centred modal (bubble hidden).
 func _show_page(page: int) -> void:
 	_page = page
-	(%Options as Control).visible = page == Page.MENU
+	var in_modal: bool = page != Page.MENU
+	(%Bubble as Control).visible = not in_modal
+	(%Tail as Node2D).visible = not in_modal
+	(%Modal as Control).visible = in_modal
+	(%ModalHeader as Control).visible = page == Page.COURSES
 	(%Courses as Control).visible = page == Page.COURSES
-	(%Result as Control).visible = page == Page.RESULT
-	var caption: String = Loc.t(L.MENTAL_UI_VISIT_TITLE_MENU)
-	match page:
-		Page.COURSES:
-			caption = Loc.t(L.MENTAL_UI_VISIT_TITLE_COURSES)
-		Page.RESULT:
-			caption = Loc.t(L.MENTAL_UI_VISIT_TITLE_RESULT)
-	(%Caption as Label).text = caption
+	(%EventResultPanel_Result as Control).visible = page == Page.RESULT
+	(%Caption as Label).text = Loc.t(L.MENTAL_UI_VISIT_TITLE_MENU)
+	(%ModalCaption as Label).text = Loc.t(L.MENTAL_UI_VISIT_TITLE_COURSES if page == Page.COURSES
+			else L.MENTAL_UI_VISIT_TITLE_RESULT)
 	var back: Button = %Back
 	var confirm: Button = %Confirm
 	back.visible = page == Page.COURSES
 	back.text = Loc.t(L.UI_BUTTON_BACK)
-	confirm.visible = page == Page.COURSES or page == Page.RESULT
 	confirm.text = Loc.t(L.MENTAL_UI_VISIT_FOCUS if page == Page.COURSES else L.UI_BUTTON_CONFIRM)
 	confirm.disabled = page == Page.COURSES and _course == ""
-	(%Buttons as Control).visible = back.visible or confirm.visible
 	visible = true
-	_placed_key = []
-	_place_bubble()
+	if in_modal:
+		_fit_modal()
+	else:
+		_placed_key = []
+		_place_bubble()
 
 
-## Header: the visited pilot (portrait · name · trust / stress) and the week's coach points.
+## The modal's centring box = the safe area's height (the card centres inside it).
+func _fit_modal() -> void:
+	var safe: Control = %Safe
+	safe.offset_top = ScreenMetrics.top_y()
+	safe.offset_bottom = ScreenMetrics.bottom_y() - ScreenMetrics.viewport_size().y
+
+
+## Header (bubble and modal): the visited pilot (portrait · name · trust / stress) and the
+## week's coach points.
 func _fill_header(state: Dictionary) -> void:
-	var portrait: Control = %Portrait
-	for c in portrait.get_children():
-		c.queue_free()
-	OutgameTheme.add_round_portrait(portrait, PilotImages.circle_for(_pid), Vector2.ZERO,
-			HEADER_PORTRAIT_D, OutgameTheme.ACCENT)
-	(%Name as Label).text = MentalEvents.pilot_name(state, _pid)
-	(%PilotLine as Label).text = _pilot_line(state, _pid)
-	(%Coach as Label).text = Loc.t(L.MENTAL_UI_VISIT_COACH_POINTS, {"n": StaffSystem.coach_points(state)})
+	var line: String = _pilot_line(state, _pid)
+	var coach: String = Loc.t(L.MENTAL_UI_VISIT_COACH_POINTS, {"n": StaffSystem.coach_points(state)})
+	var nm: String = MentalEvents.pilot_name(state, _pid)
+	for portrait in [%Portrait, %ModalPortrait]:
+		for c in (portrait as Control).get_children():
+			c.queue_free()
+		OutgameTheme.add_round_portrait(portrait, PilotImages.circle_for(_pid), Vector2.ZERO,
+				HEADER_PORTRAIT_D, OutgameTheme.ACCENT)
+	(%Name as Label).text = nm
+	(%ModalName as Label).text = nm
+	(%PilotLine as Label).text = line
+	(%ModalPilotLine as Label).text = line
+	(%Coach as Label).text = coach
+	(%ModalCoach as Label).text = coach
 
 
 static func _pilot_line(state: Dictionary, pid: int) -> String:
@@ -282,7 +291,8 @@ func _place_bubble() -> void:
 
 
 ## F6 preview — an in-memory run (`resources/UiPreview.gd`), the menu page for my first
-## pilot on Wednesday; the options and the courses page are live (nothing is applied).
+## pilot on Wednesday (visit recorded in memory); the options, the courses modal and the
+## result (a real `MentalSystem.finish_focus` on the in-memory run) are live.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var gm: Node = UiPreview.ensure_run()
@@ -292,9 +302,18 @@ func _fill_preview() -> void:
 	var ids: Array = MentalSystem.my_pilot_ids(s)
 	if ids.is_empty():
 		return
-	UiPreview.trace(course_picked)
+	var day: int = 2
+	AfternoonAway.begin(s, day)
+	var pid: int = int(ids[0])
+	for i in ids:
+		if AfternoonAway.can_request(s, day, int(i)):
+			pid = int(i)
+			break
+	MentalSystem.begin_visit(s, day, pid)
 	UiPreview.trace(closed)
 	option_picked.connect(func(opt: String):
 		if opt == OPTION_FOCUS:
 			show_courses(s))
-	open_menu(s, int(ids[0]), 2)
+	course_picked.connect(func(id: String):
+		show_result(s, MentalSystem.finish_focus(s, day, id).get("notes", [])))
+	open_menu(s, pid, day)

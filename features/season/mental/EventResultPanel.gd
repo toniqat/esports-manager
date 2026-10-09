@@ -118,7 +118,11 @@ func _row(r: Dictionary, animate: bool) -> Control:
 	var delta: Label = row.get_node("Head/Delta")
 	delta.text = String(r.get("delta", ""))
 	delta.visible = not delta.text.is_empty()
-	delta.theme_type_variation = &"PositiveLabel" if bool(r.get("good", true)) else &"NegativeLabel"
+	# 0 (sources that cancelled out, `±0`) reads grey — neither welcome nor not.
+	if bool(r.get("neutral", false)):
+		delta.theme_type_variation = &"CaptionLabel"
+	else:
+		delta.theme_type_variation = &"PositiveLabel" if bool(r.get("good", true)) else &"NegativeLabel"
 	var bar: EventResultBar = row.get_node("Bar")
 	# The bar needs its size: start it once the row is laid out.
 	bar.play.call_deferred(r, animate)

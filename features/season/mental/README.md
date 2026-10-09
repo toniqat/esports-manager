@@ -182,7 +182,8 @@ after that note (trust points · stress · gauge · EXP in the level; built by `
 `FocusTraining.add_training_exp`) — old saved notes without it fall back to the current value.
 **Merge** (`MentalEvents.merge_notes(notes)`, display only, stored notes untouched): summed by type + pid (+ stat / mech /
 weeks): `trust` `stress` `awaken` `tlexp` `stat_exp` `stat_up` `mastery` `coach` `trust_all` `stress_all` `pmod*` `smod`
-(later `after` wins, sums of 0 dropped except `tlexp`); last one wins: `trust_level` `limit_break` `outing`.
+(later `after` wins; a 0 is dropped only when **every** source note was 0 — sources that cancel out, e.g. stress
++5 and −5, stay as one `±0` line / row; `tlexp` 0 always stays); last one wins: `trust_level` `limit_break` `outing`.
 A focus training outcome has the same shape (`checked: false`) plus `course`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String], pilot_id, partner_id,
 result_blocks}` for `MessengerView.show_result` / `VnDialogueView.show_result` (`result_blocks` =
@@ -362,7 +363,8 @@ name (sub `season.week.sub_incident`). `_on_overlay_choice` resolves by `_overla
 ## Event result panel (EventResultPanel)
 
 What an answer / visit did, drawn after the effects are applied. Self-contained: the VN result panel hosts it
-(`UI_View_VnDialogue` `%EventResultPanel_Result`); the focus-training result (`week/VisitMenu`) can host it the same way.
+(`UI_View_VnDialogue` `%EventResultPanel_Result`) and the focus-training result modal (`week/UI_View_VisitMenu`
+`%EventResultPanel_Result`, `VisitMenu.show_result(state, notes)`).
 
 ```
 (portrait)  Evelyn
@@ -392,6 +394,8 @@ Rows (`MentalEvents.result_blocks`, data only — the panel only draws):
 - **training EXP** — `mental.ui.result.tlexp` (training level): EXP in the level / `TrainingLevel.exp_need` (the limit
   break); `tlexp` 0 with a full bar → `mental.ui.result.tlexp_full`; top level → `ui.word.max_level`.
 - `stat_up` → chip `<stat> +N`, `stat_exp` → chip `mental.ui.result.stat_exp`; every other note → `note_text` line.
+- A delta of 0 (merged sources that cancelled out) reads `±0` / `±0%` (`MentalEvents._signed`, `trust_delta_text`) and
+  the row carries `neutral: true` → the delta label is grey (`CaptionLabel`), the bar does not move.
 
 Layout: `%Blocks` + hidden templates `%BlockTemplate` (Portrait · Body/Name · Body/Rows · Body/Chips · Body/Lines),
 `%RowTemplate` (Head/Label · Head/Value · Head/Delta · Bar), `%ChipTemplate` (`EventResultChip`). Bars start

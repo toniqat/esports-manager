@@ -103,7 +103,7 @@ vertical_alignment = 1
 
 [node name="Delta" type="Label" parent="RowTemplate/Head"]
 auto_translate_mode = 2
-editor_description = "Change (PositiveLabel = welcome, NegativeLabel = not)."
+editor_description = "Change (PositiveLabel = welcome, NegativeLabel = not, CaptionLabel = ±0 when sources cancelled out)."
 custom_minimum_size = Vector2(84, 0)
 layout_mode = 2
 theme_type_variation = &"PositiveLabel"

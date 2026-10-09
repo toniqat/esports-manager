@@ -702,6 +702,8 @@ static func outcome_view(state: Dictionary, outcome: Dictionary) -> Dictionary:
 ## Trust points shown as level progress: `+4` points → `+16%` of one level (`TRUST_PER_LEVEL`).
 static func trust_delta_text(points: int) -> String:
 	var pct: int = roundi(float(points) * 100.0 / float(maxi(1, ConstTable.int_of("TRUST_PER_LEVEL"))))
+	if pct == 0:
+		return "±0%"
 	return "%+d%%" % pct
 
 
@@ -780,7 +782,8 @@ const MERGE_SUM_KEYS: Dictionary = {
 }
 ## Note types where only the last one counts (a state, not an amount).
 const MERGE_LAST_KEYS: Dictionary = {"trust_level": ["pid"], "limit_break": ["pid"], "outing": []}
-## Summed types that say nothing once the sum is 0 (`tlexp` 0 = "bar full" stays).
+## Summed types whose notes of 0 say nothing (`tlexp` 0 = "bar full" stays). Only dropped when
+## **every** source note was 0 — sources that cancel out (stress +5 and -5) stay as one `±0` line.
 const MERGE_DROP_ZERO: Array = ["trust", "stress", "awaken", "stat_exp", "stat_up", "mastery", "coach",
 		"trust_all", "stress_all", "pmod", "pmod_all", "smod"]
 
@@ -803,6 +806,7 @@ static func awaken_note(state: Dictionary, pid: int, delta: int) -> Dictionary:
 static func merge_notes(notes: Array) -> Array:
 	var out: Array = []
 	var at: Dictionary = {}           # merge key → index in out
+	var moved: Dictionary = {}        # index in out → some source note had a non-zero delta
 	for raw in notes:
 		if not (raw is Dictionary):
 			continue
@@ -817,9 +821,12 @@ static func merge_notes(notes: Array) -> Array:
 			key += "|" + str(n.get(String(f), ""))
 		if not at.has(key):
 			at[key] = out.size()
+			moved[out.size()] = int(n.get("delta", 0)) != 0
 			out.append(n.duplicate())
 			continue
 		var cur: Dictionary = out[int(at[key])]
+		if int(n.get("delta", 0)) != 0:
+			moved[int(at[key])] = true
 		if MERGE_SUM_KEYS.has(t):
 			cur["delta"] = int(cur.get("delta", 0)) + int(n.get("delta", 0))
 			if n.has("after"):
@@ -827,9 +834,10 @@ static func merge_notes(notes: Array) -> Array:
 		else:
 			out[int(at[key])] = n.duplicate()
 	var kept: Array = []
-	for n in out:
-		if MERGE_DROP_ZERO.has(String((n as Dictionary).get("type", ""))) \
-				and int((n as Dictionary).get("delta", 0)) == 0:
+	for i in out.size():
+		var n: Dictionary = out[i]
+		if MERGE_DROP_ZERO.has(String(n.get("type", ""))) and int(n.get("delta", 0)) == 0 \
+				and not bool(moved.get(i, false)):
 			continue
 		kept.append(n)
 	return kept
@@ -841,7 +849,8 @@ static func merge_notes(notes: Array) -> Array:
 ## - row `{kind: stress|trust|awaken|tlexp, label, value, delta, good, mode: "stack"|"wrap",
 ##   from, to, end_full}` — a progress bar. `from` / `to` in bars (stack: 0..2, the part over 1
 ##   is stress over the threshold; wrap: whole part = levels / gauges filled, the bar restarts);
-##   `good` = the change is welcome (green), else red.
+##   `good` = the change is welcome (green), else red; `neutral` = delta 0 (sources that cancelled
+##   out: grey `±0`).
 ## - chips = compact stat gains (`stat_up` "Name +1", `stat_exp`); lines = other notes
 ##   (`note_text`, shown as `MessengerNoteChip`).
 ## Previous value = `after` (or the current value) − delta.
@@ -931,9 +940,9 @@ static func _stress_row(state: Dictionary, n: Dictionary) -> Dictionary:
 	var after: int = _after_of(n, StressSystem.value(state, pid))
 	var before: int = clampi(after - d, 0, ConstTable.int_of("STRESS_MAX"))
 	return {"kind": "stress", "label": Loc.t(L.MENTAL_UI_PREVIEW_STRESS),
-			"value": "%d / %d" % [after, base], "delta": _signed(d), "good": d < 0, "mode": "stack",
-			"from": float(before) / float(base), "to": float(after) / float(base), "end_full": false,
-			"over": after >= base}
+			"value": "%d / %d" % [after, base], "delta": _signed(d), "good": d < 0, "neutral": d == 0,
+			"mode": "stack", "from": float(before) / float(base), "to": float(after) / float(base),
+			"end_full": false, "over": after >= base}
 
 
 ## Trust bar: one bar per level (`TRUST_PER_LEVEL` points), label = the level after.
@@ -947,7 +956,7 @@ static func _trust_row(state: Dictionary, n: Dictionary) -> Dictionary:
 	var top: bool = lv >= ConstTable.int_of("TRUST_LEVEL_MAX") and prog >= 1.0
 	var value: String = Loc.t(L.UI_WORD_MAX_LEVEL) if top else "%d%%" % roundi(prog * 100.0)
 	return {"kind": "trust", "label": Loc.t(L.MENTAL_UI_RESULT_TRUST, {"n": lv}), "value": value,
-			"delta": trust_delta_text(d), "good": d >= 0, "mode": "wrap",
+			"delta": trust_delta_text(d), "good": d >= 0, "neutral": d == 0, "mode": "wrap",
 			"from": float(MentalSystem.level_of_trust(before) - 1) + MentalSystem.progress_of_trust(before),
 			"to": float(lv - 1) + prog, "end_full": top}
 
@@ -965,7 +974,8 @@ static func _awaken_row(state: Dictionary, n: Dictionary) -> Dictionary:
 		laps += 1
 	before = maxi(0, before)
 	return {"kind": "awaken", "label": Loc.t(L.MENTAL_UI_PREVIEW_AWAKEN),
-			"value": "%d / %d" % [after, thr], "delta": _signed(d), "good": d >= 0, "mode": "wrap",
+			"value": "%d / %d" % [after, thr], "delta": _signed(d), "good": d >= 0, "neutral": d == 0,
+			"mode": "wrap",
 			"from": float(before) / float(thr), "to": float(laps) + float(after) / float(thr),
 			"end_full": false, "crossed": laps > 0}
 
@@ -1034,8 +1044,11 @@ static func duration(weeks: int) -> String:
 	return Loc.t(L.MENTAL_UI_NOTE_UNTIL_MATCH) if weeks < 0 else Loc.t(L.TERM_WEEK_COUNT, {"n": weeks})
 
 
+## Signed delta text; 0 (sources that cancelled out) reads `±0`.
 static func _signed(v: int) -> String:
-	return "+%d" % v if v >= 0 else "%d" % v
+	if v == 0:
+		return "±0"
+	return "+%d" % v if v > 0 else "%d" % v
 
 
 static func _cmp(a: int, op: String, b: int) -> bool:

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://d32tknc3xad7l"]
+[gd_scene load_steps=4 format=3 uid="uid://d32tknc3xad7l"]
 
 [ext_resource type="Script" uid="uid://b7dx2bia1hweu" path="res://features/season/week/VisitMenu.gd" id="1_visit"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://k88064pugcqm" path="res://features/season/mental/UI_Comp_EventResultPanel.tscn" id="3_result"]
 
 [node name="VisitMenu" type="CanvasLayer"]
 layer = 20
@@ -9,7 +10,7 @@ script = ExtResource("1_visit")
 
 [node name="Root" type="Control" parent="."]
 auto_translate_mode = 2
-editor_description = "Afternoon visit (방문) menu of the week screen, a speech bubble over the visited pilot's map token: menu page (집중 훈련 / 이야기 / 외출) → courses page → result page. Full rect STOP: swallows every other tap while open (no dim — the map stays visible). Every text is code-filled (auto_translate_mode = 2)."
+editor_description = "Afternoon visit (방문) menu of the week screen: a speech bubble over the visited pilot's map token (집중 훈련 / 이야기 / 외출), then the focus training modal centred on screen (courses → result). Full rect STOP: swallows every other tap while open (no dim — the map stays visible). Every text is code-filled (auto_translate_mode = 2)."
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +22,7 @@ theme = ExtResource("2_theme")
 [node name="Bubble" type="PanelContainer" parent="Root"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page() · _place_bubble()
-The speech bubble (VisitMenuBubble). Code places it above the token's portrait (or under the token when it does not fit), clamped inside the safe area; its height follows the page."
+The speech bubble (VisitMenuBubble), menu page only (the three options). Code places it above the token's portrait (or under the token when it does not fit), clamped inside the safe area; hidden while %Modal is open."
 custom_minimum_size = Vector2(840, 0)
 layout_mode = 0
 offset_left = 120.0
@@ -216,62 +217,6 @@ theme_override_font_sizes/font_size = 22
 text = "스트레스를 크게 풀고 신뢰를 쌓습니다"
 autowrap_mode = 3
 
-[node name="Courses" type="VBoxContainer" parent="Root/Bubble/VBox"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VisitMenu.gd show_courses()
-Courses page: one UI_Comp_VisitCourseRow per course (code adds them)."
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 12
-
-[node name="Result" type="VBoxContainer" parent="Root/Bubble/VBox"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result()
-Result page: one line per note (duplicates of %ResultLine)."
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 10
-
-[node name="ResultLine" type="Label" parent="Root/Bubble/VBox/Result"]
-unique_name_in_owner = true
-visible = false
-editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result()
-Template line (hidden), duplicated per result note."
-layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 28
-text = "Evelyn 전장 명중 +1"
-autowrap_mode = 3
-
-[node name="Buttons" type="HBoxContainer" parent="Root/Bubble/VBox"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()"
-custom_minimum_size = Vector2(0, 104)
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="Back" type="Button" parent="Root/Bubble/VBox/Buttons"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
-Courses page: back to the menu."
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-theme_type_variation = &"GhostButton"
-text = "뒤로"
-
-[node name="Confirm" type="Button" parent="Root/Bubble/VBox/Buttons"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
-Courses page: start the picked course · result page: close."
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 2.0
-focus_mode = 0
-theme_type_variation = &"PrimaryButton"
-theme_override_font_sizes/font_size = 30
-text = "확인"
-
 [node name="Tail" type="Node2D" parent="Root"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: VisitMenu.gd _place_bubble()
@@ -285,3 +230,148 @@ polygon = PackedVector2Array(-22, -2, 22, -2, 0, 22)
 [node name="Fill" type="Polygon2D" parent="Root/Tail"]
 color = Color(1, 1, 1, 1)
 polygon = PackedVector2Array(-19, -5, 19, -5, 0, 18)
+
+[node name="Modal" type="Control" parent="Root"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page() · _fit_modal()
+Focus training (집중 훈련) modal, centred over a dim: courses page → result page. The bubble hides while it is open; Back on the courses page returns to the bubble."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="Panel" parent="Root/Modal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="Safe" type="CenterContainer" parent="Root/Modal"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fit_modal()
+Full rect; code insets its top / bottom to the safe area so the card centres inside it."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/Modal/Safe"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCard"
+
+[node name="VBox" type="VBoxContainer" parent="Root/Modal/Safe/Card"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ModalHeader" type="HBoxContainer" parent="Root/Modal/Safe/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()
+Courses page only: the visited pilot + the coach points left (the result page's EventResultPanel has its own pilot block)."
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="ModalPortrait" type="Control" parent="Root/Modal/Safe/Card/VBox/ModalHeader"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()
+Slot for the round portrait (OutgameTheme.add_round_portrait)."
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="Names" type="VBoxContainer" parent="Root/Modal/Safe/Card/VBox/ModalHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="ModalName" type="Label" parent="Root/Modal/Safe/Card/VBox/ModalHeader/Names"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()"
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Evelyn"
+
+[node name="ModalPilotLine" type="Label" parent="Root/Modal/Safe/Card/VBox/ModalHeader/Names"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "신뢰 Lv.2 · 스트레스 34"
+
+[node name="ModalCoach" type="Label" parent="Root/Modal/Safe/Card/VBox/ModalHeader"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()
+Coach points left this week (StaffSystem.coach_points)."
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 26
+text = "코치 포인트 5"
+horizontal_alignment = 2
+
+[node name="ModalCaption" type="Label" parent="Root/Modal/Safe/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()"
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "집중 훈련 코스를 고르세요"
+
+[node name="Courses" type="VBoxContainer" parent="Root/Modal/Safe/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd show_courses()
+Modal courses page: one UI_Comp_VisitCourseRow per course (code adds them)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="EventResultPanel_Result" parent="Root/Modal/Safe/Card/VBox" instance=ExtResource("3_result")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result() · _show_page()
+Result page: what the focus training did (EventResultPanel.show_result — the pilot's stress / awakening / training EXP bars + stat chips). Its height follows the content; the bubble re-fits (reset_size) and re-places."
+layout_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Root/Modal/Safe/Card/VBox"]
+editor_description = "Courses page: Back + Confirm · result page: Confirm only."
+custom_minimum_size = Vector2(0, 104)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Back" type="Button" parent="Root/Modal/Safe/Card/VBox/Buttons"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
+Courses page: back to the menu."
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "뒤로"
+
+[node name="Confirm" type="Button" parent="Root/Modal/Safe/Card/VBox/Buttons"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
+Courses page: start the picked course · result page: close."
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 30
+text = "확인"

@@ -616,6 +616,43 @@ tx_3YBGXY1Z32,Already researched
 tx_DKSM7YDJDC,Choose a research target
 tx_YQ3ES89ZDM,This target cannot be chosen
 tx_S4FXFA48S2,{facility}: {research} research complete
+tx_2DVG79QR47,Vacant
+tx_7QVM7MN5FJ,Idle
+tx_4EHMAGDXET,Paused
+tx_MG4PJRBEHT,{stat} {value}
+tx_SCR26J543Y,Research per week: {points}
+tx_XWWWJ0X5XB,Research per week: {points} (boost +{pct}%)
+tx_ZZJ4JEHR6S,"Nobody is assigned, so research is on hold"
+tx_YT2BFHQ575,Facility level  Lv {level} / {max}
+tx_Y0T8P41MJC,Can be raised up to the front office level (Lv {level})
+tx_TSJ90DZGZC,Finish the expansion research to unlock the next level. No other facility may exceed the front office level
+tx_T1FB2QSPV3,"Cost {cost} · facility fund first, then balance (available {available})"
+tx_R5BCZ03CXS,Upgrade → Lv {level}
+tx_SSWDV60G95,Tap again to confirm (−{cost})
+tx_V62WWZ2WYP,In charge: {name} · manager slots {used}/{max}
+tx_FCQB0FXWBH,Running {used}/{max} facilities
+tx_4KWT3Y97ST,{job} · unassigned
+tx_EWYEJXNDAF,{job} · at {facility}
+tx_QCKTF34XFA,{stat} {value}
+tx_PHJQGAV021,Research and assignments cannot change once the week has started
+tx_MCBMW0QAHG,No research running. Pick one below
+tx_XZCHMTZXXT,In progress: {research} ({pct})
+tx_SMZ5HP2BNQ,Research does not progress without someone assigned
+tx_DQJD7J14W6,{research}: pick a target
+tx_ZWZPJWG0QR,{label} {pct}
+tx_8R6M39S8BD,{weeks} weeks of work
+tx_FS0DH25RXJ,{weeks} weeks left
+tx_0JERQ2SFZS,Nobody assigned
+tx_NN26NEVRFH,Done {n}x
+tx_SBN1CESNR1,In progress
+tx_B60H1YTW25,Pick target
+tx_70JYF47F2A,Club facilities · tap a facility to set its research and staff
+tx_KGEH08E67V,Assign
+tx_XRTZSNXKK3,Release
+tx_CRM67JX767,In charge
+tx_GTETHKQT5R,Research
+tx_8P6KV6MVBF,Stop research
+tx_94GX7N1P3J,This facility has nothing to research
 tx_H1V09QCXSD,Short-Term Training Coach
 tx_E731FZHB4R,Tactics Consultant
 tx_8SZM4HBC56,Guest Mech Researcher
@@ -686,7 +723,7 @@ tx_YC0EYSGFNS,Facility upkeep {pct}%
 tx_BT8KJSTKS7,Incident chance {pct}%
 tx_2TSKW275F0,Staff salaries {pct}%
 tx_T1M9PEN089,Finance
-tx_EK67F07FWA,Finance · Facility Lv{level}
+tx_EK67F07FWA,Finance · Front office Lv{level}
 tx_MPW438S5J7,Before first settlement
 tx_Q52XWB8S4X,Last week {net}
 tx_MKKQ4Z5M2Y,Last week {net} · cuts
@@ -709,12 +746,12 @@ tx_J9HW9G18D4,Saved toward upgrades · emergency fund in a deficit
 tx_4DNE40K656,Max Level. Used only as an emergency fund in a deficit
 tx_2Y4X334GGR,Next week incident chance up to −{pct}% (maxed at {amount} spent per week)
 tx_5CEBKKHSAS,Active this week: training EXP +{training}% · incident chance −{welfare}%
-tx_2HH94J6ARY,Facility  Lv {level} / {max}
+tx_2HH94J6ARY,Front office  Lv {level} / {max}
 tx_CPW59P2CKT,Now  {effects}
 tx_KWW448S0GH,Next  {effects}
-tx_SAXP078SDD,Training ×{train} · Mastery ×{mastery} · Incidents ×{incident} · Income ×{income} · Upkeep {upkeep}
+tx_SAXP078SDD,Training ×{train} · Mastery ×{mastery} · Incidents ×{incident} · Income ×{income}
 tx_YN9S7WB6S4,"Cost {cost}: facility fund first, then balance (available {available})"
-tx_JTTYE38FPY,Upgrade facility → Lv {level}
+tx_JTTYE38FPY,Upgrade front office → Lv {level}
 tx_63XDT8NVFN,Tap again to confirm (−{cost})
 tx_XHH41J8S28,Not enough funds ({amount} needed)
 tx_SBD8ZAF5DC,Paid from the balance at once · lasts a set number of weeks (up to {n} at once)
@@ -727,6 +764,12 @@ tx_6DZQQSQ3VE,Sponsor income (facility ×{facility})
 tx_1ZGSEKD4JD,Sponsor income (facility ×{facility} · modifier ×{mult})
 tx_VGMAD0GE7N,Facility upkeep
 tx_5ATMNYAZ8A,Facility upkeep (modifier ×{mult})
+tx_A68YMV80H1,{name} Lv{from} → Lv{to} downgrade (unpaid {amount})
+tx_9996TAPSGF,Upkeep per facility (weekly)
+tx_S6RZ7XDZCZ,{name}  Lv{level} · {amount}
+tx_F54VFZ1WNC,Cost cutting −{pct}% applied (front research)
+tx_K6HVE7B1CA,Front office research Expansion must finish before Lv{level} · {pct}% done
+tx_MGJS84V3XM,No facility may exceed the front office level — upgrade others from their facility sheet
 tx_S8GB2PQJET,"End
 Turn"
 tx_5R34V4TK24,Your Turn
@@ -1146,7 +1189,7 @@ tx_HJGDFGJ4TM,{effect}  (condition not met)
 tx_5YCR7YFGNT,Total {total}
 tx_7A1FMDGC3E,No info
 tx_4Y7CG5R478,Analysis Tier {tier} · {label}
-tx_4P15WEPRM6,My Analysis {have} · {need} needed for next tier
+tx_4P15WEPRM6,Research in the Analysis Room to raise it
 tx_CHAJA53SVW,Analysis · {who}
 tx_4GMKW7SCDD,Name · Role
 tx_Q605SZ346S,Approx. Pilot Stats
@@ -1833,6 +1876,24 @@ tx_1B1ZHR2JX6,Ha Ye-rin
 tx_J8VCATJ5GB,Esports Daily
 tx_576HKVWRTP,League Weekly
 tx_MH87R5EDPY,Game Today
+tx_4TZJ9Q0G4G,Lee Su-min
+tx_THE6R4CQ6E,Jung Da-som
+tx_BC21PAPGSB,Oh Jun-hyuk
+tx_B51JC1CE6P,Yoon Chae-won
+tx_39P1DAPENB,Jang Tae-yang
+tx_MM1KDPB7HD,Seo Ji-won
+tx_31Y6PBHHBN,Eom Da-on
+tx_MZ9AT1W8VN,Lim Geon-ho
+tx_13Z86ZG39Q,Han Byul
+tx_GJ2STBMZ72,Bae Jun-seo
+tx_5N22GECH68,Song Min-jae
+tx_D6P585S32D,Kwon So-yul
+tx_VNM0MTM188,Hwang In-sung
+tx_TV2BGMCWJH,Noh Yu-jin
+tx_SD9YWPYDJP,Shin Dong-wook
+tx_BF8HV59Q7R,Jo A-ra
+tx_M4JWE3CTDD,Kim Ba-da
+tx_77DSWSBQCW,Ryu Si-on
 tx_9ZFPBR8QPR,Roam
 tx_C4W31AM5G6,Hold Position
 tx_KDQGE48ZGV,Performance
@@ -1957,7 +2018,7 @@ tx_N5C2E6FQ2F,riding an own-role mech
 tx_VXEP932PHS,riding a {role} mech
 tx_9PKMC5PHJG,mastery {tier} or higher
 tx_63B5AMR6Y6,{stats} while {cond}
-tx_M9XAM000XY,Cost Cutting
+tx_M9XAM000XY,Cost Cutting I
 tx_E124ZY8HS9,Permanently lowers facility upkeep.
 tx_GCWN9S4V5Q,Research Push
 tx_Z1QWCYFAHY,Speeds up every research for a while.
@@ -1969,36 +2030,155 @@ tx_953AFG1NSB,Expansion IV
 tx_JJ4Q8NRN3P,Allows the front office to be upgraded to the next level.
 tx_7PGDSPA8CZ,Expansion V
 tx_48F9CPJCFJ,Allows the front office to be upgraded to the next level.
+tx_TX2N0WEN4E,Cost Cutting II
+tx_X3GKW3KM1Q,Permanently lowers facility upkeep one step further.
+tx_GZXEFF1FK6,Cost Cutting III
+tx_B8T5W1458B,Permanently lowers facility upkeep one step further.
+tx_BWB63G4T2C,Cost Cutting IV
+tx_YA3R62NTRR,Permanently lowers facility upkeep one step further.
+tx_4JCEGR487T,Cost Cutting V
+tx_AMS10YM05F,Permanently lowers facility upkeep one step further.
+tx_MJPJGNCDYE,All-Out Research Push
+tx_M9EFHXW6RE,Greatly speeds up every research for a while.
+tx_1Z9PPD5T0M,Upkeep −{pct}% · total −{total}%
+tx_B6R895WBMH,All research +{pct}% · {weeks} wk
+tx_JEWHRQNNWX,Front office Lv{level} unlocked
+tx_2E2XRWQGSZ,Front office already Lv{level}
+tx_WNHWTGEMV5,Cut limit −{pct}% reached
+tx_1RFMKB7D8P,Cost cutting
+tx_49N2N409R3,Facility upkeep −{pct}% in effect (limit −{max}%)
+tx_GWEDPGNQ0G,Research push
+tx_AKSGK1BT6D,All research +{pct}% · {weeks} wk left
+tx_VSAJWEY8VQ,No push running
+tx_79WNYPQ90D,Expansion
+tx_RRQQ6R709K,Lv{level} · reached
+tx_0AD8W1TCCP,Lv{level} · research done — upgrade in Finance
+tx_1W3ET87VSE,Lv{level} · research {pct}%
+tx_JHCCW9GAXN,Lv{level} · needs front office Lv{need}
+tx_K86Q94WNWC,Facility level cap
+tx_QJMER0J3EN,No other facility may exceed the front office level (Lv{level}).
+tx_79P3NR0FYB,{name}  Lv{level}
+tx_MZQH8HS2CC,{name}  Lv{level} · capped
 tx_J3Y69RGNTH,Opponent Analysis
 tx_F4XDP3C9Q9,Raises the analysis rank of the chosen team by one.
+tx_CX9KQC20YH,Deep Analysis
+tx_HF10DRTSC6,"Raises the analysis rank of the chosen team by one. Needs a higher facility level, but finishes sooner."
+tx_4YKPQENSGB,{team} · Analysis {rank}/{max}
+tx_T7D9CGRHZ8,{team} · Analysis {rank}/{max} · Next opponent
+tx_J4KMC49ABA,{team} analysis tier {rank}
+tx_W59SNZ97CJ,No team left to analyse
+tx_NNENFKVN7T,Analysis tier per team: each finished research raises it by one.
+tx_JFWCEN193R,Next opponent
+tx_S4MP0P7FCH,Analysis {rank}/{max}
 tx_1B74EM9AMW,Mech Study
 tx_KHARDPAGQ1,All your pilots gain mastery on the chosen mech.
+tx_NA4RC13ZTZ,Advanced Mech Study
+tx_ZKVJJPQ8GS,All your pilots gain a lot of mastery on the chosen mech.
+tx_M4GWN5P6GJ,No run in progress
+tx_BKPE192XXS,{mech} mastery +{n}{extra}
+tx_Q9N1WHEQBZ,Level up {list}
+tx_BVA23HC92H,Quirks found {list}
+tx_FP5BCNEGHG,Researching: {mech}  ·  all pilots +{n} on completion
+tx_1KSSXG0HPY,No mech under research. Pick one from the research list
+tx_Q56Z57M5X6,A finished mech study gives every pilot mastery on that mech  ·  mech upgrades unlock at Lv3 · Lv4 · Lv5
+tx_MFTFCFHE5J,Quirks: each pilot has a {pct}% chance when a mech study finishes  ·  {odds}
+tx_HTGJKVQAVJ,{mech} {level}  ·  +{n}
+tx_KFCBS2C101,{mech} {level}  ·  max
+tx_57BFE3HFY3,No research target
 tx_40KE8V9E9S,Staff Scouting
 tx_SKS0NQX6X5,Finds staff candidates you can hire.
+tx_Q81FF70898,{n} staff candidates
+tx_S481RSG7HB,No candidates found
+tx_VRDNVZ10PA,No more staff to scout
+tx_W0X6SW7323,Staff
+tx_D6VFEA8FS2,{n} staff · weekly salary {amount}
+tx_CZ4VNDDER3,No staff hired
+tx_XVA01HKA07,Candidates
+tx_A8KAFWVEB1,{n} — hire one or pass on all
+tx_FG29WZFWYV,Candidates appear here after Staff Scouting
+tx_ZER9Z0CY1W,Seat · {facility}
+tx_DWJ2YS43HN,Unseated
+tx_BNEQQWKNPV,Dismiss
+tx_T5J3D3WBYB,Confirm
+tx_PAZY3K1HKC,Unseat & dismiss
+tx_1ZDA977HGZ,Hire
+tx_FQ2QYR4GMT,Confirm
+tx_FJHYNYQ0XK,Pass on all
+tx_M6054BQ9PK,Confirm pass
+tx_QHRV737GJ3,Wide Scouting
+tx_ETVM4T4SYH,Searches wider and finds more candidates than Staff Scouting.
 tx_C3D9TTX7RM,Shooting Drill I
 tx_288T6NSM51,"On completion, adds one copy of this training course."
 tx_CRDZVM594S,Shooting Drill II
-tx_5H1AF87EJ5,"On completion, adds one copy of this training course."
-tx_Y0VAD18VWY,Evasive Manoeuvres I
+tx_5H1AF87EJ5,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_Y0VAD18VWY,Evasive Maneuvers I
 tx_AQV0FTJB5W,"On completion, adds one copy of this training course."
-tx_S5BDGF3H6V,Evasive Manoeuvres II
-tx_NSEM58XZBZ,"On completion, adds one copy of this training course."
+tx_S5BDGF3H6V,Evasive Maneuvers II
+tx_NSEM58XZBZ,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
 tx_0GVRJWFGHF,Close Engagement I
 tx_Q60T3VWG6B,"On completion, adds one copy of this training course."
 tx_37MDDPRG9Z,Close Engagement II
-tx_Y1MJ5HPDYA,"On completion, adds one copy of this training course."
+tx_Y1MJ5HPDYA,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
 tx_H4PZBD0H2F,Reaction Drill I
 tx_VF9GDD44PJ,"On completion, adds one copy of this training course."
 tx_8PWMARC1YD,Reaction Drill II
-tx_EQKVF3XHRB,"On completion, adds one copy of this training course."
+tx_EQKVF3XHRB,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
 tx_DES565NJBB,Firepower Boost I
 tx_7BWPQE649G,"On completion, adds one copy of this training course."
-tx_C8K89H4B51,Endurance Drill I
+tx_C8K89H4B51,Endurance Training I
 tx_F85JHZN635,"On completion, adds one copy of this training course."
 tx_W35EV2FTR7,Basic Training II
-tx_QDYMDSS6VG,"On completion, adds one copy of this training course."
+tx_QDYMDSS6VG,Basic Training rises to this level — every empty board cell trains it.
 tx_2BQGFBTYKJ,Quirk Discovery
 tx_W546ZD811X,"On completion, adds one copy of this training course."
+tx_XSTBV57D0E,Shooting Drill III
+tx_5E3CWKKQFB,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_SDPXNP0NQD,Evasive Maneuvers III
+tx_R5Z59C8P2S,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_BJ4QZRBHG0,Close Engagement III
+tx_ATFEZQQVK4,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_K7WGTVEFYH,Reaction Drill III
+tx_X27TBKZCCA,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_GAMEE4PGAP,Firepower Boost II
+tx_F0NXFBTCD6,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_5M7A2T32PC,Firepower Boost III
+tx_7GSA0GTTEN,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_ACNVBDVZ3F,Endurance Training II
+tx_XJV44357RD,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_WR670VYFHD,Endurance Training III
+tx_S099ZS5DSK,Adds one copy; every owned course of the same line (also those on the board) rises to this level.
+tx_PJT2KQZGZ5,Basic Training III
+tx_ECEXAYK1PE,Basic Training rises to this level — every empty board cell trains it.
+tx_2X1PHJ4NWP,Basic Training IV
+tx_XA7HGYCKK8,Basic Training rises to this level — every empty board cell trains it.
+tx_G05GT07WXV,Quirk Rework
+tx_383E3GST4M,"On completion, adds one copy of this training course."
+tx_6AS2K331A0,Paired Discovery
+tx_JV8PB8S2J5,"On completion, adds one copy of this training course."
+tx_N8HTB1FG38,Unlock Potential
+tx_X92ANSG0J1,"On completion, adds one copy of this training course."
+tx_W2MN9NQEXX,Joint Training
+tx_HA3VMQNNJ9,"On completion, adds one copy of this training course."
+tx_CDQX93JGKY,Focused Lecture
+tx_GCNV581S7C,"On completion, adds one copy of this training course."
+tx_B6EPHBJW8X,Tactics Meeting
+tx_1Q4R17PNKT,"On completion, adds one copy of this training course."
+tx_4QAJJH1MQ7,Bootcamp Scrims
+tx_Y8ZTXRQFFT,"On completion, adds one copy of this training course."
+tx_7NCVP355BG,Mentoring
+tx_963K9HZFF6,"On completion, adds one copy of this training course."
+tx_16WJXM7YEQ,Field Training Camp
+tx_0VWHVEM9F5,"On completion, adds one copy of this training course."
+tx_EBFDNYKE96,Already own {tile} — nothing to gain
+tx_6WVG8N4C08,{tile} +1 (owned {count})
+tx_V9NPEPYYS2,{from} → {tile} (owned {count})
+tx_5QB65MDX49,Empty cells now train {tile}
+tx_AC1WCSB0X8,Course Research
+tx_V93GKWZPM0,{name} · training {value} → this facility's courses EXP ×{mult}
+tx_88S9T5ZDNW,Own {tile} ×{count}
+tx_3TCS926866,Own {tile} · every empty cell
+tx_EWD5MBCCEY,Not owned
+tx_PN5J2CCXY4,{grade} Lv{level}
 tx_ET86TTP31D,Run Cleared
 tx_02GQ3R71G2,Run Failed
 tx_ZPVTEEG9GC,Run Abandoned
@@ -2220,7 +2400,7 @@ tx_BW7K6B2QKP,Quirks
 tx_K1AJHH3AP3,No quirks equipped
 tx_PJXWJ5R6J6,Mech research
 tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
-tx_H106HT101H,No research mech this week
+tx_H106HT101H,No mech lab research
 tx_DY69B79HB4,Evening
 tx_FM9P3DRASG,Morning · Tap a player to hear how training went
 tx_N36SF54RT7,Morning talk done · Next moves on to the afternoon
@@ -2343,13 +2523,13 @@ tx_CTQ9Z79KG5,{cost} Coins → {gain} Rank Stone
 tx_AGWHRMH9AR,Owned: Coins {coins} · Rank Stone {stones}
 tx_74MNNANQ3P,Rank Stone +{n}
 tx_6C29X8HMEF,Stats
-tx_E7KJ6CX53P,Effective = highest of manager (incl. modifiers) · assistant · dedicated staff
+tx_E7KJ6CX53P,Effective = the value of whoever sits in the stat's facility (highest if several)
 tx_JZ767X3S8Y,Temporary Modifiers
 tx_7JFZR0GGGZ,No active modifiers
 tx_ZZYKV0Z49P,Equipped Traits
 tx_74QWFN3PWB,No traits equipped
 tx_ZZ96FNYRG1,Staff
-tx_CD2TKKXHA1,No staff hired. The manager handles every area
+tx_CD2TKKXHA1,No staff hired
 tx_98DBCCX28N,Your Own Tasks
 tx_NAVZGR46XF,Assistant Manager
 tx_MTHR7V5Z65,Training Coach
@@ -2376,6 +2556,14 @@ tx_XS9W0R9CKV,Total weekly pay {amount}
 tx_SXR6V4JTZA,Weekly pay {amount}
 tx_ZVYS7H40JE,· {stat}: {task} (Manager {value})
 tx_A4NC7JYWQD,· Meetings · outings: always the manager personally (Mental {value})
+tx_97DETEXCE3,{facility} {name} {value}
+tx_9B0ETTHSKC,{facility} empty
+tx_AZCFT9CABX,Nobody seated — base {value}
+tx_N89Y3TAZD7,No facility — the manager's value
+tx_ZCMEEQYRW3,Manager {n}/{max}
+tx_NQEYKJVS9T,Unknown staff
+tx_QBWAB99S47,Already on the team
+tx_EXARC6PA1N,Not on the team
 tx_7NY5TT0SJT,Top budget: you only run strategy cards and player talks yourself
 tx_0G5Q0GF81D,High budget
 tx_B761YRXYA9,Upper-mid budget: you set the training schedule yourself
@@ -2573,8 +2761,6 @@ tx_X4QVQX3E4B,Tactics Meeting
 tx_Z7JQDJ9DV2,Bootcamp Scrims
 tx_CHY4PWBWTD,Mentoring
 tx_D40J2EG75V,Field Training Camp
-tx_PAVG1B8HGJ,Mech Research
-tx_BFGHJCY1F1,Intensive Mech Research
 tx_XXMTB9J4JQ,Quirk Discovery
 tx_JWT9F5YXD6,Quirk Rework
 tx_6ZSE84YQEQ,Paired Discovery
@@ -2648,6 +2834,14 @@ tx_JZQ1JZRHPM,Goal — {goal} ({progress})
 tx_0BVZ0NR212,{have}/{need}
 tx_1ZM6HE38ZP,KDA {v} / {need}
 tx_WDHZDJF3V7,{name}: limit break! Training Lv{n} · all stats +{gain}
+tx_0P8318871G,Training — {parts}
+tx_41TFBZ6P0C,{fac} {name} {value}
+tx_TTT7SGWMV6,Field
+tx_ZAGAHJXF2V,Engage
+tx_12SWRVVP9V,Growth
+tx_AJKVZQH4TF,{fac} ×{mult}
+tx_EJXYR1ZTRE,Training effect {parts}
+tx_BXBGNK9B53,Training effect {parts} ({extra})
 tx_QQVPQ29K6X,Training Fanatic
 tx_6HSK5W6C20,Mech Researcher
 tx_SJVSQJ1HZ2,Sponsor-Friendly

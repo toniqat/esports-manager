@@ -35,6 +35,9 @@ const JOB_FACILITY: Dictionary = {
 	"finance": "front",
 	"assistant": "personnel",
 }
+## Run-start: the manager's slots go to facilities still empty after the staff, in this
+## order — growth first (it owns the basic course every empty training cell uses), then the front.
+const MANAGER_AUTO_ORDER: Array = ["train_growth", "front", "train_field", "train_engage", "mech_lab", "intel", "personnel"]
 const ICON_DIR: String = "res://resources/images/quirks/"
 
 static var _defs: Dictionary = {}   # fid → {id, kind, name_key, desc_key, stat, spot, icon, cost_pct}
@@ -350,6 +353,15 @@ static func _build(state: Dictionary, lvl: int) -> void:
 					break
 		if fid != "":
 			(facs[fid] as Dictionary)["occupant"] = str(int(e.get("id", -1)))
+	# The manager's slots fill what the staff left empty, in `MANAGER_AUTO_ORDER`
+	# (user decision 2026-10-09: a facility nobody sits in reads its stat as 1).
+	var left: int = manager_slots()
+	for f in MANAGER_AUTO_ORDER:
+		if left <= 0:
+			break
+		if String((facs[f] as Dictionary)["occupant"]) == OCC_NONE:
+			(facs[f] as Dictionary)["occupant"] = OCC_MANAGER
+			left -= 1
 
 
 static func _fill_missing_keys(state: Dictionary) -> void:

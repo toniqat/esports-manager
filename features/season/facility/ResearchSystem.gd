@@ -306,11 +306,13 @@ static func tick_week(state: Dictionary) -> Array:
 			continue
 		pts.erase(key)
 		done[key] = int(done.get(key, 0)) + 1
-		var note: Dictionary = _handler_on_complete(state, r, target)
+		# Label before the handler runs: completion may change the target's own label or drop it
+		# from `targets` (an intel team reaching rank 3 would then show as its bare id).
 		var label: String = row_name(rid)
 		var tl: String = target_label(state, r, target)
 		if tl != "":
 			label += " (%s)" % tl
+		var note: Dictionary = _handler_on_complete(state, r, target)
 		var line: String = Loc.t(L.FACILITY_TOAST_RESEARCH_DONE,
 				{"facility": FacilitySystem.facility_name(fid), "research": label})
 		var note_key: String = String(note.get("text_key", ""))

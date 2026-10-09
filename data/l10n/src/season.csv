@@ -79,8 +79,8 @@ tx_34Y51VRWE3,season.week.team_win,active,Match card status — other teams' mat
 tx_5MEB8RS07D,season.week.tag_league,active,Match card tag,,,리그,League,draft,6d7fd269
 tx_1C5DFDPJPM,season.week.hint_start,active,Match card hint,,,경기를 시작하면 밴픽 화면으로 넘어갑니다,Starting the match takes you to ban/pick,draft,54fa5547
 tx_28YWCR88Y0,season.week.hint_done,active,Match card hint,,,이 경기는 끝났습니다,This match is over,draft,52b70519
-tx_PEFCADMPP3,season.week.mastery,active,Pilot card mastery line,,,숙련 +{n},Mastery +{n},draft,ddca75a1
-tx_29AYJHE9CP,season.week.mastery_mech,active,Pilot card mastery line with mech name,,,숙련 +{n} · {mech},Mastery +{n} · {mech},draft,76c73a7f
+tx_PEFCADMPP3,season.week.mastery,deprecated,Pilot card mastery line,,,숙련 +{n},Mastery +{n},draft,ddca75a1
+tx_29AYJHE9CP,season.week.mastery_mech,deprecated,Pilot card mastery line with mech name,,,숙련 +{n} · {mech},Mastery +{n} · {mech},draft,76c73a7f
 tx_GJ061P5G7K,season.week.quirk_gain,active,Pilot card quirk line,,,기벽 획득 · {name},Quirk gained · {name},draft,ec640ff5
 tx_BKSSGAQEKK,season.week.quirk_full,active,Pilot card quirk line,,,기벽 칸이 가득 차 획득하지 못했습니다,Quirk slots full. Nothing gained,draft,60b01dc8
 tx_0HWTY9MN62,season.week.quirk_reroll,active,Pilot card quirk line,,,기벽 재굴림 · {from} → {to},Quirks rerolled · {from} → {to},draft,0c29e6ca
@@ -136,7 +136,7 @@ tx_BW7K6B2QKP,season.pilot_detail.quirks,active,SeasonPilotDetail sheet section 
 tx_K1AJHH3AP3,season.pilot_detail.quirks_none,active,SeasonPilotDetail: quirk section when the pilot has none,,,장착한 기벽 없음,No quirks equipped,draft,47075c35
 tx_PJXWJ5R6J6,season.pilot_detail.research_title,active,SeasonPilotDetail sheet section title: this week's research mech,,,메크 연구,Mech research,draft,a27ab83a
 tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research mech, its mastery tier and value",,,{mech} · {tier} ({value} / {max}),{mech} · {tier} ({value} / {max}),draft,979471d5
-tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,이번 주 연구 메크 미지정,No research mech this week,draft,25e8911b
+tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,연구소 연구 메크 없음,No mech lab research,draft,25e8911b
 tx_DY69B79HB4,season.week.stage.evening,active,"WeekProgressView bottom bar stage slot (training day, evening incident)",,,저녁,Evening,draft,05a95a7c
 tx_FM9P3DRASG,season.week.map_hint.talk,active,"WeekProgressView caption above the base map, morning talk before the meeting",,,오전 · 선수를 눌러 훈련 소감을 들어 보세요,Morning · Tap a player to hear how training went,draft,f41ce24c
 tx_N36SF54RT7,season.week.map_hint.talk_done,active,"WeekProgressView caption above the base map, morning after the talk",,,오전 만남을 마쳤습니다 · 다음을 누르면 오후로 넘어갑니다,Morning talk done · Next moves on to the afternoon,draft,93949b8b

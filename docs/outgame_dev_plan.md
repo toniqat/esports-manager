@@ -518,7 +518,7 @@ CSV · `const.csv` · `game.db` 는 기반 커밋 소유 — 작업 중 값 조�
 | 숙련도 초기값 | `players.main_mechs`(네임드 2 · 모브 1, `intl_players` 도) — 주력은 높게, 나머지 낮게 |
 | 숙련도 획득 | 그 메크로 경기 출전 · 주간 연구 메크(허브 「메크 연구」 카드) · 훈련판 숙련도 타일(색 `M`). 지식 스탯 · 시설이 배율 |
 | AI 숙련도 | 주력 메크 기반 초기값 + **내 경기에 출전한 상대 선수만** 경기 반영. AI 밴픽은 숙련도 높은 메크를 선호 |
-| 분석 | **단계적 공개**(`StaffSystem.analysis_tier` 0..3): 이름·역할 → 스탯(대략) → 숙련도 상위 메크 → 파일럿 카드 3장. MatchFlow PREP + **리그 팀 상세**. 밴픽에 상대 예상 픽 표시, 상대 주력 메크 밴 = 숙련도가 만드는 자연 패널티 |
+| 분석 | **단계적 공개**(0..3 — §16 이후 팀별 `IntelResearch.rank`, 전력 분석실 연구로 상승): 이름·역할 → 스탯(대략) → 숙련도 상위 메크 → 파일럿 카드 3장. MatchFlow PREP + **리그 팀 상세**. 밴픽에 상대 예상 픽 표시, 상대 주력 메크 밴 = 숙련도가 만드는 자연 패널티 |
 | 예산 | `teams.budget` = **주간 스폰서 수입**. 주 마감 정산 = 수입(× 시설) + 성적 보너스 − 스태프 연봉 − 시설 유지비 |
 | 배분 | 남는 예산을 **훈련 · 시설 · 복지** 3축으로. 관리 위임 = 균등 자동, 감독 직접 = 슬라이더 |
 | 파산 | **잔고 음수 불가 — 지출 강제 삭감**(배분 → 시설 등급 순, 규칙은 finance README) |
@@ -642,7 +642,7 @@ API(기반 완성): `grant_pilot(pid)` → `{result: new|breakthrough|shard, sta
 | `upkeep_pct` | out | `FinanceSystem` 유지비 (A) | 시설 유지비 % |
 | `trust_gain` | out | `MentalSystem.add_trust` (A) | 신뢰도가 **오를 때** ±Σ(오름이 0 아래로 가지 않게) |
 | `incident_pct` | out | `MentalSystem` 사건 확률 (A) | 사건 확률 % |
-| `analysis_tier` | out | `StaffSystem.analysis_tier` (기반 ✅) | 공개 단계 ±, 0..3 |
+| `analysis_tier` | out | `OpponentIntel.tier_for` (§16: 팀별 랭크 + 이 보정) | 공개 단계 ±, 0..3 |
 | `salary_cap` | out | `RunRules.salary_cap_with` (기반 ✅) | 캡 ± |
 | `manager_all` | out | `GameManager._manager_setup_for_run` (기반 ✅) | 감독 스탯 여섯 + |
 | `open_cost` | in | `BattleSim.seed_side_costs` (B) | 개시 내 전략 포인트 + |
@@ -925,7 +925,7 @@ commit). Decisions confirmed with the owner — do not re-litigate:
    kind `on_complete`, HUB toast, idle (or repeat for repeatable rows). Facilities progress in parallel.
 5. **Levels** 1..`FACILITY_LEVEL_MAX`, bought with money (fund, then balance). No facility above the front's level;
    the front levels up only after its `경영 확장` (`expand_<n>`) research for that level. Run start: every facility =
-   team `facility_level`, staff seated by job, manager seats empty.
+   team `facility_level`, staff seated by job, then the manager fills empty seats (`MANAGER_AUTO_ORDER`, growth first).
 6. **Training research**: completion = `TrainingCourses.grant(state, tile, 1)`; `min_level` unlocks higher grades.
 7. **Opponent research**: per-team rank 0..3 (all start 0, own team 3), +1 per completion, replaces
    `StaffSystem.analysis_tier`; the analyst note shows when the intel occupant is staff.

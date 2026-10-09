@@ -616,6 +616,43 @@ tx_3YBGXY1Z32,이미 마친 연구입니다
 tx_DKSM7YDJDC,연구 대상을 고르세요
 tx_YQ3ES89ZDM,고를 수 없는 대상입니다
 tx_S4FXFA48S2,{facility}: {research} 연구 완료
+tx_2DVG79QR47,공석
+tx_7QVM7MN5FJ,대기
+tx_4EHMAGDXET,정지
+tx_MG4PJRBEHT,{stat} 스탯 {value}
+tx_SCR26J543Y,주간 연구량 {points}
+tx_XWWWJ0X5XB,주간 연구량 {points} (연구 가속 +{pct}%)
+tx_ZZJ4JEHR6S,담당자가 없어 연구가 멈춰 있습니다
+tx_YT2BFHQ575,시설 레벨  Lv {level} / {max}
+tx_Y0T8P41MJC,프론트 레벨(Lv {level})까지 올릴 수 있습니다
+tx_TSJ90DZGZC,경영 확장 연구를 마치면 다음 레벨로 올릴 수 있습니다. 다른 시설은 프론트 레벨을 넘을 수 없습니다
+tx_T1FB2QSPV3,"비용 {cost} · 시설 적립금 먼저, 모자라면 잔고 (가용 {available})"
+tx_R5BCZ03CXS,업그레이드 → Lv {level}
+tx_SSWDV60G95,한 번 더 눌러 확정 (−{cost})
+tx_V62WWZ2WYP,담당 {name} · 감독 자리 {used}/{max}
+tx_FCQB0FXWBH,시설 {used}/{max}곳 담당
+tx_4KWT3Y97ST,{job} · 배치 대기
+tx_EWYEJXNDAF,{job} · {facility} 담당
+tx_QCKTF34XFA,{stat} {value}
+tx_PHJQGAV021,주가 시작된 뒤에는 연구와 담당자를 바꿀 수 없습니다
+tx_MCBMW0QAHG,진행 중인 연구가 없습니다. 아래에서 고르세요
+tx_XZCHMTZXXT,진행 중: {research} ({pct})
+tx_SMZ5HP2BNQ,담당자가 없어 연구가 진행되지 않습니다
+tx_DQJD7J14W6,{research}: 대상을 고르세요
+tx_ZWZPJWG0QR,{label} {pct}
+tx_8R6M39S8BD,{weeks}주 분량
+tx_FS0DH25RXJ,남은 {weeks}주
+tx_0JERQ2SFZS,담당자 없음
+tx_NN26NEVRFH,완료 {n}회
+tx_SBN1CESNR1,진행 중
+tx_B60H1YTW25,대상 선택
+tx_70JYF47F2A,구단 시설 · 시설을 눌러 연구와 담당자를 정합니다
+tx_KGEH08E67V,배치
+tx_XRTZSNXKK3,해제
+tx_CRM67JX767,담당자
+tx_GTETHKQT5R,연구
+tx_8P6KV6MVBF,연구 중지
+tx_94GX7N1P3J,이 시설에서 할 수 있는 연구가 없습니다
 tx_H1V09QCXSD,단기 훈련 코치
 tx_E731FZHB4R,전술 컨설턴트
 tx_8SZM4HBC56,메크 연구원 초빙
@@ -686,7 +723,7 @@ tx_YC0EYSGFNS,시설 유지비 {pct}%
 tx_BT8KJSTKS7,사건 확률 {pct}%
 tx_2TSKW275F0,스태프 연봉 {pct}%
 tx_T1M9PEN089,재무
-tx_EK67F07FWA,재무 · 시설 Lv{level}
+tx_EK67F07FWA,재무 · 프론트 Lv{level}
 tx_MPW438S5J7,첫 정산 전
 tx_Q52XWB8S4X,지난 주 {net}
 tx_MKKQ4Z5M2Y,지난 주 {net} · 삭감
@@ -709,12 +746,12 @@ tx_J9HW9G18D4,업그레이드 자금으로 모읍니다 · 적자 때 비상금
 tx_4DNE40K656,최고 레벨. 적자 때 비상금으로만 쓰입니다
 tx_2Y4X334GGR,다음 주 사건 확률 최대 −{pct}% (주 {amount} 지출에서 최대)
 tx_5CEBKKHSAS,이번 주 적용 중: 훈련 EXP +{training}% · 사건 확률 −{welfare}%
-tx_2HH94J6ARY,시설  Lv {level} / {max}
+tx_2HH94J6ARY,프론트  Lv {level} / {max}
 tx_CPW59P2CKT,지금  {effects}
 tx_KWW448S0GH,다음  {effects}
-tx_SAXP078SDD,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income} · 유지비 {upkeep}
+tx_SAXP078SDD,훈련 ×{train} · 숙련도 ×{mastery} · 사건 ×{incident} · 수입 ×{income}
 tx_YN9S7WB6S4,"비용 {cost}: 시설 적립금 먼저, 모자라면 잔고 (가용 {available})"
-tx_JTTYE38FPY,시설 업그레이드 → Lv {level}
+tx_JTTYE38FPY,프론트 업그레이드 → Lv {level}
 tx_63XDT8NVFN,한 번 더 눌러 확정 (−{cost})
 tx_XHH41J8S28,자금 부족 ({amount} 필요)
 tx_SBD8ZAF5DC,잔고에서 바로 냅니다 · 효과는 정해진 주 수 동안 (동시 {n}건까지)
@@ -727,6 +764,12 @@ tx_6DZQQSQ3VE,스폰서 수입 (시설 ×{facility})
 tx_1ZGSEKD4JD,스폰서 수입 (시설 ×{facility} · 보정 ×{mult})
 tx_VGMAD0GE7N,시설 유지비
 tx_5ATMNYAZ8A,시설 유지비 (보정 ×{mult})
+tx_A68YMV80H1,{name} Lv{from} → Lv{to} 강등 (미납 {amount})
+tx_9996TAPSGF,시설별 유지비 (주)
+tx_S6RZ7XDZCZ,{name}  Lv{level} · {amount}
+tx_F54VFZ1WNC,운영비 절감 −{pct}% 반영 (프론트 연구)
+tx_K6HVE7B1CA,Lv{level} 로 올리려면 프론트의 경영 확장 연구가 먼저 끝나야 합니다 · 진행 {pct}%
+tx_MGJS84V3XM,다른 시설은 프론트 레벨을 넘을 수 없습니다 — 각 시설 시트에서 업그레이드
 tx_S8GB2PQJET,"턴
 넘기기"
 tx_5R34V4TK24,당신의 차례
@@ -1145,8 +1188,8 @@ tx_JFNQCJHJWF,기벽 · {pilot}  {count} / {slots}  (파일럿 능력치 +{total
 tx_HJGDFGJ4TM,{effect}  (조건 미충족)
 tx_5YCR7YFGNT,합계 {total}
 tx_7A1FMDGC3E,정보 없음
-tx_4Y7CG5R478,분석 {tier}단계 · {label}
-tx_4P15WEPRM6,내 분석 {have} · 다음 단계 {need} 필요
+tx_4Y7CG5R478,분석 단계 {tier} · {label}
+tx_4P15WEPRM6,전력 분석실에서 연구하면 단계가 오릅니다
 tx_CHAJA53SVW,분석 · {who}
 tx_4GMKW7SCDD,이름 · 역할
 tx_Q605SZ346S,대략적인 파일럿 능력치
@@ -1833,6 +1876,24 @@ tx_1B1ZHR2JX6,하예린
 tx_J8VCATJ5GB,e스포츠 데일리
 tx_576HKVWRTP,리그 위클리
 tx_MH87R5EDPY,게임 투데이
+tx_4TZJ9Q0G4G,이수민
+tx_THE6R4CQ6E,정다솜
+tx_BC21PAPGSB,오준혁
+tx_B51JC1CE6P,윤채원
+tx_39P1DAPENB,장태양
+tx_MM1KDPB7HD,서지원
+tx_31Y6PBHHBN,엄다온
+tx_MZ9AT1W8VN,임건호
+tx_13Z86ZG39Q,한별
+tx_GJ2STBMZ72,배준서
+tx_5N22GECH68,송민재
+tx_D6P585S32D,권소율
+tx_VNM0MTM188,황인성
+tx_TV2BGMCWJH,노유진
+tx_SD9YWPYDJP,신동욱
+tx_BF8HV59Q7R,조아라
+tx_M4JWE3CTDD,김바다
+tx_77DSWSBQCW,류시온
 tx_9ZFPBR8QPR,배회
 tx_C4W31AM5G6,위치 고정
 tx_KDQGE48ZGV,퍼포먼스
@@ -1957,7 +2018,7 @@ tx_N5C2E6FQ2F,자기 역할군 메크 탑승
 tx_VXEP932PHS,{role} 메크 탑승
 tx_9PKMC5PHJG,숙련도 {tier} 이상
 tx_63B5AMR6Y6,{cond} 시 {stats}
-tx_M9XAM000XY,운영비 절감
+tx_M9XAM000XY,운영비 절감 I
 tx_E124ZY8HS9,시설 유지비를 영구히 줄입니다.
 tx_GCWN9S4V5Q,연구 집중 지원
 tx_Z1QWCYFAHY,한동안 모든 연구 속도를 높입니다.
@@ -1969,36 +2030,155 @@ tx_953AFG1NSB,경영 확장 IV
 tx_JJ4Q8NRN3P,프론트를 다음 레벨로 올릴 수 있게 됩니다.
 tx_7PGDSPA8CZ,경영 확장 V
 tx_48F9CPJCFJ,프론트를 다음 레벨로 올릴 수 있게 됩니다.
+tx_TX2N0WEN4E,운영비 절감 II
+tx_X3GKW3KM1Q,시설 유지비를 한 단계 더 영구히 줄입니다.
+tx_GZXEFF1FK6,운영비 절감 III
+tx_B8T5W1458B,시설 유지비를 한 단계 더 영구히 줄입니다.
+tx_BWB63G4T2C,운영비 절감 IV
+tx_YA3R62NTRR,시설 유지비를 한 단계 더 영구히 줄입니다.
+tx_4JCEGR487T,운영비 절감 V
+tx_AMS10YM05F,시설 유지비를 한 단계 더 영구히 줄입니다.
+tx_MJPJGNCDYE,전사적 연구 지원
+tx_M9EFHXW6RE,한동안 모든 연구 속도를 크게 높입니다.
+tx_1Z9PPD5T0M,유지비 −{pct}% · 누적 −{total}%
+tx_B6R895WBMH,모든 연구 +{pct}% · {weeks}주
+tx_JEWHRQNNWX,프론트 Lv{level} 확장 가능
+tx_2E2XRWQGSZ,이미 프론트 Lv{level}
+tx_WNHWTGEMV5,절감 한도 −{pct}% 도달
+tx_1RFMKB7D8P,운영비 절감
+tx_49N2N409R3,시설 유지비 −{pct}% 적용 중 (한도 −{max}%)
+tx_GWEDPGNQ0G,연구 집중 지원
+tx_AKSGK1BT6D,모든 연구 +{pct}% · {weeks}주 남음
+tx_VSAJWEY8VQ,진행 중인 지원 없음
+tx_79WNYPQ90D,경영 확장
+tx_RRQQ6R709K,Lv{level} · 달성
+tx_0AD8W1TCCP,Lv{level} · 연구 완료 — 재무에서 업그레이드
+tx_1W3ET87VSE,Lv{level} · 연구 {pct}%
+tx_JHCCW9GAXN,Lv{level} · 프론트 Lv{need} 필요
+tx_K86Q94WNWC,시설 레벨 상한
+tx_QJMER0J3EN,다른 시설은 프론트 레벨(Lv{level})을 넘을 수 없습니다.
+tx_79P3NR0FYB,{name}  Lv{level}
+tx_MZQH8HS2CC,{name}  Lv{level} · 상한
 tx_J3Y69RGNTH,상대 분석
 tx_F4XDP3C9Q9,고른 팀의 분석 단계를 한 단계 올립니다.
+tx_CX9KQC20YH,정밀 분석
+tx_HF10DRTSC6,고른 팀의 분석 단계를 한 단계 올립니다. 시설 레벨이 높아야 하지만 더 빨리 끝납니다.
+tx_4YKPQENSGB,{team} · 분석 {rank}/{max}
+tx_T7D9CGRHZ8,{team} · 분석 {rank}/{max} · 다음 상대
+tx_J4KMC49ABA,{team} 분석 {rank}단계
+tx_W59SNZ97CJ,더 분석할 팀이 없습니다
+tx_NNENFKVN7T,팀별 분석 단계: 연구가 끝날 때마다 한 단계씩 오릅니다.
+tx_JFWCEN193R,다음 상대
+tx_S4MP0P7FCH,분석 {rank}/{max}
 tx_1B74EM9AMW,메크 연구
 tx_KHARDPAGQ1,고른 메크의 숙련도를 내 선수 모두가 얻습니다.
+tx_NA4RC13ZTZ,메크 심화 연구
+tx_ZKVJJPQ8GS,고른 메크의 숙련도를 내 선수 모두가 크게 얻습니다.
+tx_M4GWN5P6GJ,진행 중인 런이 없다
+tx_BKPE192XXS,{mech} 숙련도 +{n}{extra}
+tx_Q9N1WHEQBZ,레벨 업 {list}
+tx_BVA23HC92H,기벽 획득 {list}
+tx_FP5BCNEGHG,연구 대상: {mech}  ·  완료 시 선수 전원 +{n}
+tx_1KSSXG0HPY,연구 중인 메크가 없다. 연구 목록에서 메크를 고른다
+tx_Q56Z57M5X6,메크 연구가 끝나면 선수 전원이 그 메크 숙련도를 얻는다  ·  Lv3 · Lv4 · Lv5 에서 메크 강화 해금
+tx_MFTFCFHE5J,기벽: 메크 연구가 끝날 때 선수마다 {pct}% 확률로 획득  ·  {odds}
+tx_HTGJKVQAVJ,{mech} {level}  ·  +{n}
+tx_KFCBS2C101,{mech} {level}  ·  최대
+tx_57BFE3HFY3,연구 대상 없음
 tx_40KE8V9E9S,스태프 스카우트
 tx_SKS0NQX6X5,영입할 수 있는 스태프 후보를 찾습니다.
+tx_Q81FF70898,영입 후보 {n}명
+tx_S481RSG7HB,찾은 후보 없음
+tx_VRDNVZ10PA,더 찾을 수 있는 스태프가 없습니다
+tx_W0X6SW7323,스태프 목록
+tx_D6VFEA8FS2,{n}명 · 주급 합계 {amount}
+tx_CZ4VNDDER3,고용된 스태프가 없습니다
+tx_XVA01HKA07,영입 후보
+tx_A8KAFWVEB1,{n}명 — 한 명을 영입하거나 모두 보냅니다
+tx_FG29WZFWYV,스태프 스카우트를 마치면 후보가 여기에 나옵니다
+tx_ZER9Z0CY1W,배치 · {facility}
+tx_DWJ2YS43HN,배치 없음
+tx_BNEQQWKNPV,해고
+tx_T5J3D3WBYB,해고 확정
+tx_PAZY3K1HKC,자리 비우고 해고
+tx_1ZDA977HGZ,영입
+tx_FQ2QYR4GMT,영입 확정
+tx_FJHYNYQ0XK,모두 보내기
+tx_M6054BQ9PK,정말 보내기
+tx_QHRV737GJ3,광역 스카우트
+tx_ETVM4T4SYH,더 넓게 수소문해 스태프 스카우트보다 많은 후보를 찾습니다.
 tx_C3D9TTX7RM,사격 훈련 I
 tx_288T6NSM51,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_CRDZVM594S,사격 훈련 II
-tx_5H1AF87EJ5,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_5H1AF87EJ5,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
 tx_Y0VAD18VWY,회피 기동 I
 tx_AQV0FTJB5W,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_S5BDGF3H6V,회피 기동 II
-tx_NSEM58XZBZ,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_NSEM58XZBZ,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
 tx_0GVRJWFGHF,근접 교전 I
 tx_Q60T3VWG6B,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_37MDDPRG9Z,근접 교전 II
-tx_Y1MJ5HPDYA,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_Y1MJ5HPDYA,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
 tx_H4PZBD0H2F,반응 훈련 I
 tx_VF9GDD44PJ,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_8PWMARC1YD,반응 훈련 II
-tx_EQKVF3XHRB,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_EQKVF3XHRB,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
 tx_DES565NJBB,화력 증강 I
 tx_7BWPQE649G,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_C8K89H4B51,내구 단련 I
 tx_F85JHZN635,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
 tx_W35EV2FTR7,기초 훈련 II
-tx_QDYMDSS6VG,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_QDYMDSS6VG,기초 훈련이 이 단계로 오릅니다 — 판의 빈 칸이 모두 이 코스로 훈련합니다.
 tx_2BQGFBTYKJ,기벽 발굴
 tx_W546ZD811X,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_XSTBV57D0E,사격 훈련 III
+tx_5E3CWKKQFB,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_SDPXNP0NQD,회피 기동 III
+tx_R5Z59C8P2S,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_BJ4QZRBHG0,근접 교전 III
+tx_ATFEZQQVK4,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_K7WGTVEFYH,반응 훈련 III
+tx_X27TBKZCCA,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_GAMEE4PGAP,화력 증강 II
+tx_F0NXFBTCD6,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_5M7A2T32PC,화력 증강 III
+tx_7GSA0GTTEN,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_ACNVBDVZ3F,내구 단련 II
+tx_XJV44357RD,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_WR670VYFHD,내구 단련 III
+tx_S099ZS5DSK,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함)."
+tx_PJT2KQZGZ5,기초 훈련 III
+tx_ECEXAYK1PE,기초 훈련이 이 단계로 오릅니다 — 판의 빈 칸이 모두 이 코스로 훈련합니다.
+tx_2X1PHJ4NWP,기초 훈련 IV
+tx_XA7HGYCKK8,기초 훈련이 이 단계로 오릅니다 — 판의 빈 칸이 모두 이 코스로 훈련합니다.
+tx_G05GT07WXV,기벽 재조정
+tx_383E3GST4M,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_6AS2K331A0,동반 발굴
+tx_JV8PB8S2J5,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_N8HTB1FG38,잠재력 개방
+tx_X92ANSG0J1,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_W2MN9NQEXX,합동 훈련
+tx_HA3VMQNNJ9,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_CDQX93JGKY,집중 특강
+tx_GCNV581S7C,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_B6EPHBJW8X,전술 회의
+tx_1Q4R17PNKT,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_4QAJJH1MQ7,합숙 스크림
+tx_Y8ZTXRQFFT,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_7NCVP355BG,멘토링
+tx_963K9HZFF6,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_16WJXM7YEQ,전지 훈련
+tx_0VWHVEM9F5,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.
+tx_EBFDNYKE96,이미 {tile} 보유 중 — 이 연구로 얻을 것이 없습니다
+tx_6WVG8N4C08,{tile} +1 (보유 {count})
+tx_V9NPEPYYS2,{from} → {tile} (보유 {count})
+tx_5QB65MDX49,빈 칸 훈련 → {tile}
+tx_AC1WCSB0X8,훈련 코스 연구
+tx_V93GKWZPM0,{name} 담당 · 훈련 {value} → 이 훈련장 코스 EXP ×{mult}
+tx_88S9T5ZDNW,보유 {tile} ×{count}
+tx_3TCS926866,보유 {tile} · 빈 칸 전부
+tx_EWD5MBCCEY,미보유
+tx_PN5J2CCXY4,{grade} Lv{level}
 tx_ET86TTP31D,런 클리어
 tx_02GQ3R71G2,런 실패
 tx_ZPVTEEG9GC,런 포기
@@ -2220,7 +2400,7 @@ tx_BW7K6B2QKP,기벽
 tx_K1AJHH3AP3,장착한 기벽 없음
 tx_PJXWJ5R6J6,메크 연구
 tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
-tx_H106HT101H,이번 주 연구 메크 미지정
+tx_H106HT101H,연구소 연구 메크 없음
 tx_DY69B79HB4,저녁
 tx_FM9P3DRASG,오전 · 선수를 눌러 훈련 소감을 들어 보세요
 tx_N36SF54RT7,오전 만남을 마쳤습니다 · 다음을 누르면 오후로 넘어갑니다
@@ -2343,13 +2523,13 @@ tx_CTQ9Z79KG5,재화 {cost} → 승급석 {gain}
 tx_AGWHRMH9AR,보유 재화 {coins} · 승급석 {stones}
 tx_74MNNANQ3P,승급석 +{n}
 tx_6C29X8HMEF,능력치
-tx_E7KJ6CX53P,유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값
+tx_E7KJ6CX53P,유효값 = 그 능력치를 쓰는 시설에 앉은 사람의 값 (시설이 여럿이면 최댓값)
 tx_JZ767X3S8Y,일시 보정
 tx_7JFZR0GGGZ,걸린 보정 없음
 tx_ZZYKV0Z49P,장착 특성
 tx_74QWFN3PWB,장착한 특성 없음
 tx_ZZ96FNYRG1,스태프
-tx_CD2TKKXHA1,고용된 스태프 없음. 모든 영역을 감독이 맡습니다
+tx_CD2TKKXHA1,고용된 스태프 없음
 tx_98DBCCX28N,직접 해야 하는 일
 tx_NAVZGR46XF,어시스턴트 매니저
 tx_MTHR7V5Z65,훈련 코치
@@ -2376,6 +2556,14 @@ tx_XS9W0R9CKV,주급 합계 {amount}
 tx_SXR6V4JTZA,주급 {amount}
 tx_ZVYS7H40JE,· {stat}: {task} (감독 {value})
 tx_A4NC7JYWQD,· 면담 · 외출: 언제나 감독이 직접 (멘탈 {value})
+tx_97DETEXCE3,{facility} {name} {value}
+tx_9B0ETTHSKC,{facility} 비어 있음
+tx_AZCFT9CABX,배치된 사람 없음 — 기본값 {value}
+tx_N89Y3TAZD7,담당 시설 없음 — 감독 값
+tx_ZCMEEQYRW3,감독 {n}/{max}
+tx_NQEYKJVS9T,알 수 없는 스태프
+tx_QBWAB99S47,이미 팀에 있는 스태프
+tx_EXARC6PA1N,팀에 없는 스태프
 tx_7NY5TT0SJT,최상위 예산: 전략 카드 운영과 선수 면담만 직접
 tx_0G5Q0GF81D,상위 예산
 tx_B761YRXYA9,중상위: 훈련 일정 편성 직접
@@ -2573,8 +2761,6 @@ tx_X4QVQX3E4B,전술 회의
 tx_Z7JQDJ9DV2,합숙 스크림
 tx_CHY4PWBWTD,멘토링
 tx_D40J2EG75V,전지 훈련
-tx_PAVG1B8HGJ,메크 연구
-tx_BFGHJCY1F1,메크 집중 연구
 tx_XXMTB9J4JQ,기벽 발굴
 tx_JWT9F5YXD6,기벽 재조정
 tx_6ZSE84YQEQ,동반 발굴
@@ -2648,6 +2834,14 @@ tx_JZQ1JZRHPM,목표 — {goal} ({progress})
 tx_0BVZ0NR212,{have}/{need}
 tx_1ZM6HE38ZP,KDA {v} / {need}
 tx_WDHZDJF3V7,{name} 한계돌파 성공 — 훈련 Lv{n} · 모든 스탯 +{gain}
+tx_0P8318871G,훈련장 — {parts}
+tx_41TFBZ6P0C,{fac} {name} {value}
+tx_TTT7SGWMV6,전장
+tx_ZAGAHJXF2V,교전
+tx_12SWRVVP9V,성장
+tx_AJKVZQH4TF,{fac} ×{mult}
+tx_EJXYR1ZTRE,훈련 효과 {parts}
+tx_BXBGNK9B53,훈련 효과 {parts} ({extra})
 tx_QQVPQ29K6X,훈련광
 tx_6HSK5W6C20,메크 연구가
 tx_SJVSQJ1HZ2,스폰서 친화

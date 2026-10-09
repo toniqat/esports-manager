@@ -50,7 +50,7 @@ scout      = {"candidates": [staff id], "week": String}   # filled by PersonnelR
 Target "" = a row without a target, so the key of an untargeted row is `"<rid>|"`.
 Run start (`GameManager.start_run`, after the staff snapshot and `FinanceSystem.init_run`): `FacilitySystem.init_run`
 — every facility at the team package `facility_level`, team staff seated by `JOB_FACILITY` (a second of the same
-job → next free facility in `FACILITIES` order), manager slots empty, research / intel_rank / scout reset.
+job → next free facility in `FACILITIES` order), manager slots fill the seats still empty, in `MANAGER_AUTO_ORDER` (growth → front → …; user decision 2026-10-09), research / intel_rank / scout reset.
 Save: `features/save_load/` round-trips the four keys; `load_run` → `FacilitySystem.migrate` (old run:
 `finance.facility_level` → every facility, key dropped, staff seated; new run: missing keys filled, floats → ints).
 

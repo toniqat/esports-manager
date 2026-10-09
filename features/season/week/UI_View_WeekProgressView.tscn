@@ -70,7 +70,7 @@ mouse_filter = 2
 [node name="Days" type="HBoxContainer" parent="SafeArea/Rail/Row"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _ready()
-Seven weekday slots (Mon → Sun), each an equal share of the rail. Code reads Day*/Chip/Letter in child order; the current day's chip is filled amber by code."
+Seven weekday slots (Mon → Sun), each an equal share of the rail. Code reads Day*/Chip/Box/NumRow/{DayTag,Num} + Day*/Chip/Box/Abbr in child order: Num = day inside the phase (CalendarSystem.day_in_phase of that weekday), Abbr = MON … SUN, DayTag (\"DAY\") only on today; the current day's chip is filled amber by code."
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -82,24 +82,52 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day0"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day0/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day0/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip/Box/NumRow"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 30
-text = "월"
+text = "10"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "MON"
+horizontal_alignment = 1
 
 [node name="Day1" type="CenterContainer" parent="SafeArea/Rail/Row/Days"]
 layout_mode = 2
@@ -107,24 +135,52 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day1"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day1/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day1/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip/Box/NumRow"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 30
-text = "화"
+text = "11"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "TUE"
+horizontal_alignment = 1
 
 [node name="Day2" type="CenterContainer" parent="SafeArea/Rail/Row/Days"]
 layout_mode = 2
@@ -132,24 +188,51 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day2"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChipToday"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day2/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day2/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip/Box/NumRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 30
-text = "수"
+text = "12"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 14
+text = "WED"
+horizontal_alignment = 1
 
 [node name="Day3" type="CenterContainer" parent="SafeArea/Rail/Row/Days"]
 layout_mode = 2
@@ -157,24 +240,52 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day3"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day3/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day3/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip/Box/NumRow"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
 theme_override_font_sizes/font_size = 30
-text = "목"
+text = "13"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
+theme_override_font_sizes/font_size = 14
+text = "THU"
+horizontal_alignment = 1
 
 [node name="Day4" type="CenterContainer" parent="SafeArea/Rail/Row/Days"]
 layout_mode = 2
@@ -182,24 +293,52 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day4"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day4/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day4/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip/Box/NumRow"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
 theme_override_font_sizes/font_size = 30
-text = "금"
+text = "14"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
+theme_override_font_sizes/font_size = 14
+text = "FRI"
+horizontal_alignment = 1
 
 [node name="Day5" type="CenterContainer" parent="SafeArea/Rail/Row/Days"]
 layout_mode = 2
@@ -207,24 +346,52 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day5"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day5/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day5/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip/Box/NumRow"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
 theme_override_font_sizes/font_size = 30
-text = "토"
+text = "15"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
+theme_override_font_sizes/font_size = 14
+text = "SAT"
+horizontal_alignment = 1
 
 [node name="Day6" type="CenterContainer" parent="SafeArea/Rail/Row/Days"]
 layout_mode = 2
@@ -232,24 +399,52 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Chip" type="Panel" parent="SafeArea/Rail/Row/Days/Day6"]
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
 theme_type_variation = &"WeekDayChip"
 
-[node name="Letter" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip"]
-auto_translate_mode = 2
+[node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day6/Chip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = -6
+alignment = 1
+
+[node name="NumRow" type="HBoxContainer" parent="SafeArea/Rail/Row/Days/Day6/Chip/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip/Box/NumRow"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
+theme_override_font_sizes/font_size = 16
+text = "tx_5BX30JQVX7"
+vertical_alignment = 1
+
+[node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip/Box/NumRow"]
+auto_translate_mode = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
 theme_override_font_sizes/font_size = 30
-text = "일"
+text = "16"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Abbr" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip/Box"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.62, 0.65, 1)
+theme_override_font_sizes/font_size = 14
+text = "SUN"
+horizontal_alignment = 1
 
 [node name="RightPad" type="Control" parent="SafeArea/Rail/Row"]
 custom_minimum_size = Vector2(14, 0)
@@ -259,60 +454,31 @@ mouse_filter = 2
 [node name="Phase" type="Label" parent="SafeArea"]
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _phase_lbl
-Phase name only (GameEnums.phase_label: 프리시즌 / 미드시즌 / …), left of the day block."
+Phase name only (GameEnums.phase_label: 프리시즌 / 미드시즌 / …), centred under the rail."
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 40.0
-offset_top = 168.0
-offset_right = 340.0
-offset_bottom = 198.0
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "프리시즌"
-clip_text = true
-
-[node name="DayBlock" type="VBoxContainer" parent="SafeArea"]
-editor_description = "Centred header block: DAY N (day inside the phase, CalendarSystem.day_in_phase) over the weekday abbreviation (MON … SUN)."
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -200.0
-offset_top = 132.0
-offset_right = 200.0
-offset_bottom = 226.0
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 134.0
+offset_right = -40.0
+offset_bottom = 170.0
 grow_horizontal = 2
-mouse_filter = 2
-theme_override_constants/separation = -4
-
-[node name="DayCount" type="Label" parent="SafeArea/DayBlock"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _day_count_lbl"
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"HeadingLabel"
-theme_override_font_sizes/font_size = 54
-text = "DAY 12"
-horizontal_alignment = 1
-
-[node name="DayAbbr" type="Label" parent="SafeArea/DayBlock"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _day_abbr_lbl"
-unique_name_in_owner = true
-layout_mode = 2
 theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "WED"
+theme_override_font_sizes/font_size = 26
+text = "프리시즌"
 horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
 
 [node name="Divider" type="HSeparator" parent="SafeArea"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
-offset_top = 238.0
+offset_top = 182.0
 offset_right = -40.0
-offset_bottom = 239.0
+offset_bottom = 183.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"Divider"
@@ -325,8 +491,8 @@ visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 250.0
-offset_bottom = 1011.0
+offset_top = 194.0
+offset_bottom = 955.0
 grow_horizontal = 2
 mouse_filter = 2
 
@@ -339,7 +505,7 @@ anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = 1295.0
+offset_top = 1239.0
 offset_right = -40.0
 offset_bottom = -142.0
 grow_vertical = 2
@@ -369,9 +535,9 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
-offset_top = 1025.0
+offset_top = 969.0
 offset_right = -40.0
-offset_bottom = 1281.0
+offset_bottom = 1225.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 12

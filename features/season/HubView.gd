@@ -316,10 +316,10 @@ func _refresh_roster() -> void:
 		var r: int = int(GameEnums.ROLE_DISPLAY_ORDER[seat])
 		var card: SeasonPilotCard = _roster_cards[seat]
 		if not by_role.has(r):
-			card.show_empty(r)
+			card.show_empty()
 			continue
 		var p: PlayerData = by_role[r]
-		card.show_pilot(p.id, r, MentalSystem.trust(_gm.season_state, p.id),
+		card.show_pilot(p.id, MentalSystem.trust(_gm.season_state, p.id),
 				StressSystem.value(_gm.season_state, p.id))
 
 

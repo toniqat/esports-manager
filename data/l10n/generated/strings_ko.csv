@@ -2306,7 +2306,6 @@ tx_5W9RGVB4BS,EXP +{n}
 tx_TCFF8QQBA3,스트레스 {delta}
 tx_B7175RYNW5,혼자 외출
 tx_0WX5FQG1PV,숙소 휴식
-tx_MAPMDX9DJ0,지도에서 방문할 선수를 누르세요 · 집중 훈련 · 이야기 · 외출 중 하나 (하루 한 번)
 tx_ME49NDMB1F,오늘 오후에는 방문할 수 있는 선수가 없습니다
 tx_NRH0Z789MC,오후: 쉬었습니다
 tx_JT4H7JX5BF,오후: {name} 방문
@@ -2327,7 +2326,6 @@ tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
 tx_H106HT101H,연구소 연구 메크 없음
 tx_DY69B79HB4,저녁
 tx_114TEDYXKT,오전 만남
-tx_SJMNVE78AH,지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번)
 tx_1SN8VDP0S4,오늘 오전에는 만날 수 있는 선수가 없습니다
 tx_G18Q9X83C8,만남
 tx_7FRMF2A3ZK,합동 훈련 · {name}{wa} 함께
@@ -2348,7 +2346,7 @@ tx_5CGB20BWXX,{day} 저녁 · 한계돌파
 tx_5N8MET0QZT,캠페인 {n} / {total}
 tx_09VTB4JWBH,리그 {league}주 · 플레이오프 {playoff}주
 tx_TQT1N3PWTS,국제대회 토너먼트 {weeks}주
-tx_Y6H2E9GP0C,DAY {n}
+tx_5BX30JQVX7,DAY
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어

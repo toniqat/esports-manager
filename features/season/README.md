@@ -139,8 +139,8 @@ and exposes intent methods on the hub. Pattern mirrors `BattleSim`:
 |---|---|---|
 | CalendarSystem           | `calendar/CalendarSystem.gd`                 | `advance_week()` — rolls 7 days, bumps `phase_week`, transitions phase. Emits `week_advanced`, `phase_changed`. |
 | HubView                  | `HubView.gd` + `.tscn`                       | Simplified hub — phase/week counter + roster + manage cards (staff · finance) + the **team base map with the facility research bubbles** (§16, tap → `SeasonHub.open_facility` → the facility screen `facility/FacilityView`) + "이번 주 시작" (Start this week; warns first with `ConfirmPopup` when `ResearchSystem.unset_facilities` is not empty) + 순위 (standings) buttons. The roster is **five small vertical `SeasonPilotCard`s side by side** (seat order): badge, portrait in a **trust ring** (progress toward the next trust level, band colour `HubView.trust_color(level)`: grey < `TRUST_OUTING_LEVEL`, green from there, amber past halfway to `TRUST_LEVEL_MAX`) with the trust **level** at its bottom-right, stress line + mood. Tap = `SeasonPilotDetail` sheet. Stats live in that sheet, not on the card. Scene-built — see "HubView · EndingView · GameOverView" below. |
-| *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row): see "Pilot card · detail sheet" below. |
-| *(item)* PilotGauge | `PilotGauge.gd` + `UI_Comp_PilotGauge.tscn` · `GaugeRing.gd` | **Pilot gauge** — one 48 × 64 stat panel (`PilotGaugePanel`) under a week-map token (`week/UI_Comp_WeekMapPilot.tscn`, three side by side): flat icon (`resources/images/ui/gauge/*.svg`, white, tinted by code) in a `GaugeRing` (`_draw`: track, first lap, overflow lap on top). `show_stress(v)`: band colour ≤30 green · ≤60 yellow · ≤100 orange · >100 red, ring full at 100, second lap (dark red) up to `STRESS_MAX`, value under the ring · `show_trust(points)`: pink heart, level inside, ring = progress inside the level · `show_awakening(gauge, threshold)`: orange bulb. `set_dimmed(on)` = `%Mask` (`PilotGaugeMask`). F6: stress 140 |
+| *(item)* SeasonPilotCard | `SeasonPilotCard.gd` + `UI_Comp_SeasonPilotCard.tscn` · `TrustRing.gd` | Shared small pilot card (hub roster, week screen bottom row, detail sheet head, own-team PREP card): see "Pilot card · detail sheet" below. |
+| *(item)* PilotGauge | `PilotGauge.gd` + `UI_Comp_PilotGauge.tscn` · `GaugeRing.gd` | **Pilot gauge** — one 48 × 64 stat panel (`PilotGaugePanel`), three side by side on every `SeasonPilotCard` (`%Gauges`, under the portrait; moved off the week-map tokens 2026-10): flat icon (`resources/images/ui/gauge/*.svg`, white, tinted by code) in a `GaugeRing` (`_draw`: track, first lap, overflow lap on top). `show_stress(v)`: band colour ≤30 green · ≤60 yellow · ≤100 orange · >100 red, ring full at 100, second lap (dark red) up to `STRESS_MAX`, value under the ring · `show_trust(points)`: pink heart, level inside, ring = progress inside the level · `show_awakening(gauge, threshold)`: orange bulb. `set_dimmed(on)` = `%Mask` (`PilotGaugeMask`). F6: stress 140 |
 | *(overlay)* SeasonPilotDetail | `SeasonPilotDetail.gd` + `UI_View_SeasonPilotDetail.tscn` | Pilot detail `HubSheet` body, opened by tapping a pilot portrait / card anywhere in a run (hub, week screen, training board headers). See below. |
 | PressConferenceView      | `press/PressConferenceView.gd` + `.tscn`     | **Press conference** — the messenger screen of the Sunday afternoon, after the match (`.tscn` = one `MessengerView` instance; `create()`). `press/README.md` |
 | TrainingBoard            | `training/TrainingBoard.gd`                  | **Daily training (일상 훈련) tile board (타일판)** — 5 columns (players) × 5 rows (one per day; weekdays are not written on screen). Placement checks + settlement (`cell_exp` / `compute_day_gains`) + **weekday application** (`apply_day_training(day)`) + leftover-EXP bank. `training/README.md` |
@@ -247,12 +247,13 @@ Stat names are always written in full (`PlayerData.stat_label`: "전장 명중",
 
 ```
 SeasonPilotCard (Panel · Card, min h 256, width from the row · SeasonPilotCard.gd)
-├ BadgeSlot CenterContainer (y 12..42) ─ %PositionBadge_Role (PositionBadge)
-├ %Ring (TrustRing, 140², centred, y 50) ─ %Portrait slot 116² inside (code: add_round_portrait)
-├ %TrustPill (ProgressFill 56×34, portrait bottom-right) ─ %TrustText (OnFill 22)
-├ %LevelChip (ProgressFill 60×34, portrait bottom-left) ─ %LevelText (OnFill 20)   §15 training level "LvN"
-├ %Stress (Caption 20, y 196)        "스트레스 N", NegativeLabel when shaken
-├ %StressNote (28, y 220)            emphasised line: hub = mood when shaken; week = the day's stress change
+├ %Ring (TrustRing, 140², centred, y 12) ─ %Portrait slot 116² inside (code: add_round_portrait)
+├ %TrustPill (ProgressFill 56×34, portrait bottom-right, y 120) ─ %TrustText (OnFill 22)
+├ %LevelChip (ProgressFill 60×34, portrait bottom-left, y 120) ─ %LevelText (OnFill 20)   §15 training level "LvN"
+├ Gauges HBox (sep 6, centred, y 160..224) ─ %PilotGauge_Stress · %PilotGauge_Trust · %PilotGauge_Awaken
+│                                    (PilotGauge 48×64: stress value under the ring, trust level in the heart,
+│                                    awakening = `Awakening.gauge` / `threshold`); hidden on an empty seat
+├ %StressNote (26, y 224..254)       emphasised line: hub = mood when shaken; week = the day's stress change
 └ %Hit flat Button over the card → pressed(pilot_id)
 
 SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.gd)
@@ -265,7 +266,9 @@ SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.
 └ %AwakeningSlot (§15 C: `AwakeningPilotBlock` — awakening gauge + card presets, `awakening/README.md`) · Tail
 ```
 
-- API: `SeasonPilotCard.show_pilot(pid, role, trust, stress)` (`trust` = points; the card shows the level on the pill and the progress on the ring) / `show_empty(role)` / `set_note(text, variation)` /
+- No position badge (removed 2026-10 — the seat order `ROLE_DISPLAY_ORDER` says the role) and no "스트레스 N" text line
+  (the stress gauge shows the value). Other screens keep their `PositionBadge`.
+- API: `SeasonPilotCard.show_pilot(pid, trust, stress)` (`trust` = points; the card shows the level on the pill and the progress on the ring; the awakening gauge is read from the run) / `show_empty()` / `set_note(text, variation)` /
   `pulse_note()` / `set_tappable(on)` / `set_training_level(level, alert)`; `SeasonPilotDetail.open(host, pilot_id) -> HubSheet` (null for an unknown id).
 - **Training level (§15 B)**: `show_pilot` reads the run itself (`TrainingLevel`, via `/root/GameManager`) — the
   chip shows `LvN` on the dark rail, **accent** while the bar is full (limit break due or its goal open), and is

@@ -2306,7 +2306,6 @@ tx_5W9RGVB4BS,EXP +{n}
 tx_TCFF8QQBA3,Stress {delta}
 tx_B7175RYNW5,Out alone
 tx_0WX5FQG1PV,Resting in dorm
-tx_MAPMDX9DJ0,"Tap a player on the map to visit · focus training, a talk or an outing (once per day)"
 tx_ME49NDMB1F,Nobody can be visited this afternoon
 tx_NRH0Z789MC,Afternoon: Rested
 tx_JT4H7JX5BF,Afternoon: Visit with {name}
@@ -2327,7 +2326,6 @@ tx_X988TMMPYD,{mech} · {tier} ({value} / {max})
 tx_H106HT101H,No mech lab research
 tx_DY69B79HB4,Evening
 tx_114TEDYXKT,Morning talk
-tx_SJMNVE78AH,Tap a player on the map to hear how training went (once a morning)
 tx_1SN8VDP0S4,No one to talk to this morning
 tx_G18Q9X83C8,Talk
 tx_7FRMF2A3ZK,Joint training · with {name}
@@ -2348,7 +2346,7 @@ tx_5CGB20BWXX,{day} evening · Limit break
 tx_5N8MET0QZT,Campaign {n} / {total}
 tx_09VTB4JWBH,League {league} weeks · Playoffs {playoff} weeks
 tx_TQT1N3PWTS,International tournament · {weeks} weeks
-tx_Y6H2E9GP0C,DAY {n}
+tx_5BX30JQVX7,DAY
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language

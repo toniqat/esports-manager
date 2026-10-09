@@ -47,7 +47,7 @@ func fill(row: Dictionary, own: bool, trust: int, stress: int, warn: bool) -> vo
 	inner.visible = own
 	(%EnemyTop as Control).visible = not own
 	if own:
-		inner.show_pilot(pilot_id, role, trust, stress)
+		inner.show_pilot(pilot_id, trust, stress)
 	else:
 		(%PositionBadge_Role as PositionBadge).set_role(role)
 		_draw_portrait(PilotImages.circle_for(pilot_id),

@@ -3,7 +3,7 @@
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
 
 [node name="WeekTalkCard" type="Panel"]
-editor_description = "오전 만남 (Mon–Fri, after the training result, before the talk): the pilot picked on the base map, then 만남. Without a pick %Pilot is hidden and %Hint says what to do. A pilot who trained in the same tile with others brings one along (%With). Next in the bottom bar moves on to the afternoon (with a warning while a talk is still possible)."
+editor_description = "오전 만남 (Mon–Fri, after the training result, before the talk): the pilot picked on the base map, then 만남. Without a pick %Pilot is hidden (%Hint only says when nobody can be met). A pilot who trained in the same tile with others brings one along (%With). Next in the bottom bar moves on to the afternoon (with a warning while a talk is still possible)."
 custom_minimum_size = Vector2(1000, 318)
 offset_right = 1000.0
 offset_bottom = 318.0
@@ -25,7 +25,7 @@ text = "tx_114TEDYXKT"
 unique_name_in_owner = true
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_talk_card()
-Shown while no pilot is picked: how to pick, or that nobody can be met."
+Only when nobody can be met this morning (season.week.talk_none); the old \"tap a pilot on the map\" instruction was removed 2026-10."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -36,7 +36,7 @@ offset_bottom = 196.0
 grow_horizontal = 2
 theme_type_variation = &"FaintLabel"
 theme_override_font_sizes/font_size = 22
-text = "지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번)"
+text = "오늘 오전에는 만날 수 있는 선수가 없습니다"
 vertical_alignment = 1
 autowrap_mode = 3
 

@@ -113,7 +113,6 @@ tx_5W9RGVB4BS,season.week.map.exp,active,Base map pilot chip after training: EXP
 tx_TCFF8QQBA3,season.week.map.stress,active,Base map pilot chip after training: stress change of the day (delta has a sign),,,스트레스 {delta},Stress {delta},draft,a4efbaa0
 tx_B7175RYNW5,season.week.map.self_outing,active,"Base map pilot chip, afternoon: the pilot went out on their own (stress)",,,혼자 외출,Out alone,draft,4bcaf159
 tx_0WX5FQG1PV,season.week.map.dorm,active,"Base map pilot chip, afternoon: the pilot had no training tile and rests in the dorm",,,숙소 휴식,Resting in dorm,draft,48a098a7
-tx_MAPMDX9DJ0,season.week.afternoon_pick,active,"Afternoon card hint, no pilot selected",,,지도에서 방문할 선수를 누르세요 · 집중 훈련 · 이야기 · 외출 중 하나 (하루 한 번),"Tap a player on the map to visit · focus training, a talk or an outing (once per day)",draft,638732cf
 tx_ME49NDMB1F,season.week.afternoon_none,active,"Afternoon card hint, nothing possible (limits used or every pilot away)",,,오늘 오후에는 방문할 수 있는 선수가 없습니다,Nobody can be visited this afternoon,draft,73fbeead
 tx_NRH0Z789MC,season.week.afternoon_rested,active,Afternoon done card head,,,오후: 쉬었습니다,Afternoon: Rested,draft,09f4db5a
 tx_JT4H7JX5BF,season.week.afternoon_interview,active,Afternoon done card head,,,오후: {name} 방문,Afternoon: Visit with {name},draft,12c1a27c
@@ -134,7 +133,6 @@ tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research m
 tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,연구소 연구 메크 없음,No mech lab research,draft,25e8911b
 tx_DY69B79HB4,season.week.stage.evening,active,"WeekProgressView bottom bar stage slot (training day, evening incident)",,,저녁,Evening,draft,05a95a7c
 tx_114TEDYXKT,season.week.talk_card.head,active,"Morning talk card head (scene text, UI_Comp_WeekTalkCard)",,,오전 만남,Morning talk,draft,73b4f33e
-tx_SJMNVE78AH,season.week.talk_pick,active,"Morning talk card hint, no pilot selected",,,지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번),Tap a player on the map to hear how training went (once a morning),draft,391d8d77
 tx_1SN8VDP0S4,season.week.talk_none,active,"Morning talk card hint, nobody can be met",,,오늘 오전에는 만날 수 있는 선수가 없습니다,No one to talk to this morning,draft,2e6f3cac
 tx_G18Q9X83C8,season.week.talk_button,active,Morning talk card button,,,만남,Talk,draft,2036fe09
 tx_7FRMF2A3ZK,season.week.talk_with,active,Morning talk card line under the picked pilot: who trained with them (both come to the talk),,,합동 훈련 · {name}{wa} 함께,Joint training · with {name},draft,edd6560f
@@ -155,4 +153,4 @@ tx_5CGB20BWXX,season.week.sub_limit_break,active,"Dialogue overlay subtitle (lim
 tx_5N8MET0QZT,season.phase_intro.step,active,"PhaseIntro title card, stage counter above the phase name",,,캠페인 {n} / {total},Campaign {n} / {total},draft,ba0c94a2
 tx_09VTB4JWBH,season.phase_intro.league,active,PhaseIntro subtitle for a league phase,,,리그 {league}주 · 플레이오프 {playoff}주,League {league} weeks · Playoffs {playoff} weeks,draft,2a969df6
 tx_TQT1N3PWTS,season.phase_intro.intl,active,PhaseIntro subtitle for an international phase,,,국제대회 토너먼트 {weeks}주,International tournament · {weeks} weeks,draft,86a0c739
-tx_Y6H2E9GP0C,season.week.day_count,active,"WeekProgressView header centre, big: day number inside the current phase ({n} = CalendarSystem.day_in_phase)",,,DAY {n},DAY {n},draft,b9226bc0
+tx_5BX30JQVX7,season.week.rail_day,active,"WeekProgressView rail, today's chip: small tag left of the day number (day inside the phase)",,,DAY,DAY,draft,9d1fece7

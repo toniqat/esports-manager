@@ -2,10 +2,12 @@ class_name SeasonPilotCard
 extends Panel
 
 # Small vertical pilot card shown five in a row (seat order) on the season hub and at the
-# bottom of the week screen: position badge on top, round portrait inside a **trust ring**
+# bottom of the week screen: round portrait inside a **trust ring** on top
 # (`TrustRing`, progress toward the next trust level in the trust band colour) with the trust
-# **level** on a pill at its bottom-right (`MentalSystem.level_of_trust` / `progress_of_trust`), then the stress line and one emphasised note line (hub: the mood when
-# shaken; week: that day's stress change). Tapping the card emits `pressed(pilot_id)`; the
+# **level** on a pill at its bottom-right (`MentalSystem.level_of_trust` / `progress_of_trust`),
+# then three gauge panels (`PilotGauge`: stress · trust · awakening) and one emphasised note
+# line (hub: the mood when shaken; week: that day's stress change). No position badge — the
+# seat order (`GameEnums.ROLE_DISPLAY_ORDER`) says the role. Tapping the card emits `pressed(pilot_id)`; the
 # screens open `SeasonPilotDetail` with it.
 #
 # **Layout lives in `UI_Comp_SeasonPilotCard.tscn`.** This script fills `%` nodes and paints
@@ -35,11 +37,11 @@ func set_tappable(on: bool) -> void:
 
 
 ## Fills the card. `trust` / `stress` are the run values (`MentalSystem.trust` points — shown
-## as level + progress here, `StressSystem.value`). The note line shows the mood when shaken, else stays empty —
+## as level + progress here, `StressSystem.value`); the awakening gauge is read from the run
+## (`Awakening.gauge`). The note line shows the mood when shaken, else stays empty —
 ## callers that have something to say there (the week's stress change) call `set_note` after.
-func show_pilot(pid: int, role: int, trust: int, stress: int) -> void:
+func show_pilot(pid: int, trust: int, stress: int) -> void:
 	pilot_id = pid
-	(%PositionBadge_Role as PositionBadge).set_role(role)
 	_draw_portrait(PilotImages.circle_for(pid))
 	var level: int = MentalSystem.level_of_trust(trust)
 	var col: Color = HubView.trust_color(level)
@@ -52,23 +54,24 @@ func show_pilot(pid: int, role: int, trust: int, stress: int) -> void:
 			OutgameTheme.flat_style(col, int(pill.custom_minimum_size.y * 0.5)))
 	(%TrustText as Label).text = "%d" % level
 	var shaken: bool = StressSystem.is_over(stress)
-	var sl: Label = %Stress
-	sl.text = Loc.t(L.MENTAL_UI_STRESS_VALUE, {"n": stress})
-	sl.theme_type_variation = &"NegativeLabel" if shaken else &"CaptionLabel"
+	_show_gauges(true)
+	(%PilotGauge_Stress as PilotGauge).show_stress(stress)
+	(%PilotGauge_Trust as PilotGauge).show_trust(trust)
+	(%PilotGauge_Awaken as PilotGauge).show_awakening(
+			Awakening.gauge(_run_state(), pid), Awakening.threshold())
 	set_note(StressSystem.mood_label(StressSystem.Mood.SHAKEN) if shaken else "", &"NegativeLabel")
 	_show_run_level(pid)
 	(%Hit as Button).disabled = false
 
 
-## Empty seat: badge of the seat's role, blank portrait, no numbers.
-func show_empty(role: int) -> void:
+## Empty seat: blank portrait, no gauges, no numbers.
+func show_empty() -> void:
 	pilot_id = -1
-	(%PositionBadge_Role as PositionBadge).set_role(role)
 	_draw_portrait(null)
 	(%Ring as TrustRing).ratio = 0.0
 	(%TrustPill as Control).visible = false
 	(%LevelChip as Control).visible = false
-	(%Stress as Label).text = "—"
+	_show_gauges(false)
 	set_note("", &"CaptionLabel")
 	(%Hit as Button).disabled = true
 
@@ -85,10 +88,20 @@ func set_training_level(level: int, alert: bool) -> void:
 			OutgameTheme.ACCENT if alert else OutgameTheme.RAIL, int(chip.custom_minimum_size.y * 0.5)))
 
 
+func _show_gauges(on: bool) -> void:
+	for g in [%PilotGauge_Stress, %PilotGauge_Trust, %PilotGauge_Awaken]:
+		(g as Control).visible = on
+
+
+## The run's `season_state` ({} outside a run).
+func _run_state() -> Dictionary:
+	var gm: Node = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("GameManager")
+	return gm.season_state if gm != null else {}
+
+
 ## Reads the run's training level for `pid` (`TrainingLevel`; my run pilots only).
 func _show_run_level(pid: int) -> void:
-	var gm: Node = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("GameManager")
-	var state: Dictionary = gm.season_state if gm != null else {}
+	var state: Dictionary = _run_state()
 	if not TrainingLevel.has_level(state, pid):
 		set_training_level(0, false)
 		return
@@ -134,7 +147,7 @@ func _on_hit() -> void:
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var t_max: int = ConstTable.int_of("TRUST_MAX")
-	show_pilot(2, GameEnums.Role.ASSASSIN, int(float(t_max) * 0.6),
+	show_pilot(2, int(float(t_max) * 0.6),
 			ConstTable.int_of("STRESS_THRESHOLD") + 20)
 	set_training_level(2, true)
 	UiPreview.trace(pressed, "pressed")

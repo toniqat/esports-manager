@@ -73,9 +73,10 @@ const COLOR_SPOTS: Dictionary = {
 ## Fan-out of tokens sharing a spot: column / row step and tokens per row. The step is
 ## also a token's footprint: tokens on nearby spots are pushed apart until their
 ## footprints no longer overlap (`_separate`, at most `SEPARATE_PASSES` passes).
-## The token (`UI_Comp_WeekMapPilot`) is 152 × 152: portrait 84 + the three gauge panels
-## under it; the step leaves an 8 px gap. Tokens keep this pixel size whatever the map's scale.
-const TOKEN_STEP: Vector2 = Vector2(160, 160)
+## The token (`UI_Comp_WeekMapPilot`) is 92 × 92, portrait only (84; the gauges moved to the
+## pilot cards under the map); the step is wider than tall so the away chip / morning bubble
+## over each portrait has room. Tokens keep this pixel size whatever the map's scale.
+const TOKEN_STEP: Vector2 = Vector2(120, 104)
 const TOKENS_PER_ROW: int = 3
 const SEPARATE_PASSES: int = 32
 

@@ -51,8 +51,9 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
 MatchPrepPilotCard (PanelContainer `MatchPrepPilotCard` = Card look, no padding; width from the row)
 ├ Box (VBox)
 │ ├ %SeasonPilotCard_Own   own team: `UI_Comp_SeasonPilotCard.tscn` instance drawn without its card
-│ │                        (`MatchPrepCardInner` = empty box): badge, portrait in the trust ring, level
-│ │                        pill, stress, note — filled with `show_pilot(pid, role, trust_points, stress)`,
+│ │                        (`MatchPrepCardInner` = empty box): portrait in the trust ring, level
+│ │                        pill, three gauges (stress · trust · awakening), note — no position badge since
+│ │                        2026-10 (the opponent row keeps its badges) — filled with `show_pilot(pid, trust_points, stress)`,
 │ │                        its own tap off (`set_tappable(false)`)
 │ ├ %EnemyTop (196)        opponent: BadgeSlot/%PositionBadge_Role (12..42) · %Portrait 116 @62
 │ │                        (role-coloured rim, `OutgameTheme.add_round_portrait`) — the season card's spots

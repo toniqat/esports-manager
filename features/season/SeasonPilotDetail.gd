@@ -47,7 +47,7 @@ func _bind(sheet: HubSheet, state: Dictionary, pd: PlayerData) -> void:
 	card.set_tappable(false)
 	var trust: int = MentalSystem.trust(state, pid)
 	var stress: int = StressSystem.value(state, pid)
-	card.show_pilot(pid, pd.role, trust, stress)
+	card.show_pilot(pid, trust, stress)
 
 	(%Total as Label).text = Loc.t(L.SEASON_PILOT_DETAIL_TOTAL, {"n": pd.stat_total()})
 	var tl: Label = %Trust

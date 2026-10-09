@@ -6517,6 +6517,15 @@ func _is_hand_passive(cd: CardData, key: String) -> bool:
 	return cd != null and cd.effect.begins_with("hand_passive:" + key)
 
 
+## Per-card amount of a hand passive: an upgraded "+" row writes it on the clause
+## (`hand_passive:confidence|hit_pct:25`, `hand_passive:clear_mind|cut:2` — §15 C); a base
+## row has none and uses `fallback` (the const.csv value).
+func _hand_passive_mod(cd: CardData, mod: String, fallback: float) -> float:
+	var params: Dictionary = cd.effect_params()
+	var key: String = "hand_passive_" + mod
+	return float(params[key]) if params.has(key) else fallback
+
+
 func _team_hand(team: int) -> Array:
 	return _bs.player_hand if team == 0 else _bs.ai_hand
 
@@ -6537,7 +6546,11 @@ func hand_growth_add(p: PilotData) -> float:
 ## [자신감] — 이 파일럿이 손에 든 자신감 장수 × `CARD_CONFIDENCE_HIT_BONUS` (전장 명중 배율 가산분).
 ## `SimulationCore.roll_hit` 이 공격자 쪽으로 묻는다.
 func hand_hit_add(p: PilotData) -> float:
-	return CONFIDENCE_HIT_BONUS * float(hand_confidence_cards(p).size())
+	var total: float = 0.0
+	for raw in hand_confidence_cards(p):
+		# An upgraded "+" row carries its own amount (`|hit_pct:N`, §15 C).
+		total += _hand_passive_mod(raw as CardData, "hit_pct", CONFIDENCE_HIT_BONUS * 100.0) / 100.0
+	return total
 
 
 ## The [자신감] cards `p` holds in hand — `hand_hit_add` counts them, the pilot detail
@@ -6563,6 +6576,6 @@ func hand_neighbor_discount(cd: CardData, is_player: bool) -> int:
 	var cut: int = 0
 	for j in [i - 1, i + 1]:
 		if j >= 0 and j < hand.size() and _is_hand_passive(hand[j] as CardData, HAND_CLEAR_MIND):
-			cut += CLEAR_MIND_COST_CUT
+			cut += int(_hand_passive_mod(hand[j] as CardData, "cut", float(CLEAR_MIND_COST_CUT)))
 	return cut
 

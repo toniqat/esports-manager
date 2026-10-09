@@ -1,0 +1,592 @@
+[gd_scene load_steps=4 format=3 uid="uid://cbmu5fy5b7p02"]
+
+[ext_resource type="Script" path="res://features/season/awakening/AwakeningView.gd" id="1_view"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://features/season/awakening/AwakeningBurst.gd" id="3_burst"]
+
+[node name="AwakeningView" type="CanvasLayer"]
+layer = 25
+script = ExtResource("1_view")
+
+[node name="Root" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · open() · _on_confirm()
+Full screen, STOP: blocks the week screen underneath; intro taps are read on release from its gui_input."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="DimDeep" type="Panel" parent="Root"]
+editor_description = "Second dim layer — the awakening darkens the screen more than a popup does."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="Burst" type="Control" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _play_intro()
+AwakeningBurst (_draw): amber rays + glow + expanding ring around center_ratio (the intro portrait centre)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_burst")
+
+[node name="Intro" type="Control" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _play_intro() · _leave_intro()
+Intro: portrait, title, line, tap hint (faded in, then out on tap)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="IntroPortrait" type="Control" parent="Root/Intro"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd open() · _play_intro()
+Round portrait slot (code: OutgameTheme.add_round_portrait, diameter = width). Centre = AwakeningBurst center_ratio (y 640 of 1920)."
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -170.0
+offset_top = 470.0
+offset_right = 170.0
+offset_bottom = 810.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="IntroTitle" type="Label" parent="Root/Intro"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 850.0
+offset_bottom = 960.0
+grow_horizontal = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 84
+text = "tx_P2MTN9VDF2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IntroLine" type="Label" parent="Root/Intro"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd open()"
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 60.0
+offset_top = 970.0
+offset_right = -60.0
+offset_bottom = 1040.0
+grow_horizontal = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 36
+text = "Corin has had a realization"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="IntroHint" type="Label" parent="Root/Intro"]
+modulate = Color(1, 1, 1, 0.7)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 1480.0
+offset_bottom = 1530.0
+grow_horizontal = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_1CXXKQSFYQ"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SafeArea" type="Control" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready()
+Full rect shrunk to the device safe area (offset_top = top inset, offset_bottom = -bottom inset, code)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="Root/SafeArea"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd open() · _leave_intro()
+White panel of the choice / sub-pages, shown after the intro. Full width (28 side margins), height = its content, centred vertically in the safe area."
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 28.0
+offset_right = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"PopupCard"
+
+[node name="Body" type="VBoxContainer" parent="Root/SafeArea/Panel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Head" type="VBoxContainer" parent="Root/SafeArea/Panel/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="Root/SafeArea/Panel/Body/Head"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _go()
+Page title (awakening / option name)."
+layout_mode = 2
+theme_type_variation = &"HeadingLabel"
+theme_override_font_sizes/font_size = 44
+text = "Awakening"
+
+[node name="Sub" type="Label" parent="Root/SafeArea/Panel/Body/Head"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd open()"
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "Corin · awakening #2"
+
+[node name="Tabs" type="HBoxContainer" parent="Root/SafeArea/Panel/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _build_tabs()
+Preset tabs (upgrade / swap): one duplicate of %TabTemplate per preset."
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="TabTemplate" type="Button" parent="Root/SafeArea/Panel/Body/Tabs"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _build_tabs()
+Hidden template; code duplicates it per preset (SelectableTile / SelectableTileOn)."
+custom_minimum_size = Vector2(190, 64)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableTile"
+theme_override_font_sizes/font_size = 26
+text = "Base"
+
+[node name="PageChoose" type="VBoxContainer" parent="Root/SafeArea/Panel/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _go()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="ChooseHead" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose"]
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "tx_SNYGR0A6D8"
+autowrap_mode = 3
+
+[node name="OptUpgrade" type="Button" parent="Root/SafeArea/Panel/Body/PageChoose"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _fill_choose()
+Option button; child Lock line = why it is locked (code)."
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Pad" type="MarginContainer" parent="Root/SafeArea/Panel/Body/PageChoose/OptUpgrade"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 22
+
+[node name="Lines" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PageChoose/OptUpgrade/Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Name" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptUpgrade/Pad/Lines"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 36
+text = "tx_VF3M8S8SGS"
+
+[node name="Desc" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptUpgrade/Pad/Lines"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_SPHKS5F297"
+autowrap_mode = 3
+
+[node name="Lock" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptUpgrade/Pad/Lines"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 24
+text = "No card left to upgrade"
+
+[node name="OptSwap" type="Button" parent="Root/SafeArea/Panel/Body/PageChoose"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _fill_choose()"
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Pad" type="MarginContainer" parent="Root/SafeArea/Panel/Body/PageChoose/OptSwap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 22
+
+[node name="Lines" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PageChoose/OptSwap/Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Name" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptSwap/Pad/Lines"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 36
+text = "tx_XVEKB2ARPN"
+
+[node name="Desc" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptSwap/Pad/Lines"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_MKQQ6S25FH"
+autowrap_mode = 3
+
+[node name="Lock" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptSwap/Pad/Lines"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 24
+text = "No candidate to swap in"
+
+[node name="OptPreset" type="Button" parent="Root/SafeArea/Panel/Body/PageChoose"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _fill_choose()"
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Pad" type="MarginContainer" parent="Root/SafeArea/Panel/Body/PageChoose/OptPreset"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 22
+
+[node name="Lines" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PageChoose/OptPreset/Pad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Name" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptPreset/Pad/Lines"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 36
+text = "tx_XRXCJDX7T9"
+
+[node name="Desc" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptPreset/Pad/Lines"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_K03F5VX51P"
+autowrap_mode = 3
+
+[node name="Lock" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose/OptPreset/Pad/Lines"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 24
+text = "Needs training level 2"
+
+[node name="SkipNote" type="Label" parent="Root/SafeArea/Panel/Body/PageChoose"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_choose()
+Shown only when no option is available; 확인 then spends the awakening."
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_3D94XEY8BS"
+autowrap_mode = 3
+
+[node name="PageUpgrade" type="VBoxContainer" parent="Root/SafeArea/Panel/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _go()
+Upgrade: preview of the picked card's + version (card + description) above, the preset's cards below."
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="UpPreview" type="HBoxContainer" parent="Root/SafeArea/Panel/Body/PageUpgrade"]
+custom_minimum_size = Vector2(0, 420)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="UpBig" type="CenterContainer" parent="Root/SafeArea/Panel/Body/PageUpgrade/UpPreview"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_upgrade()
+The + card (AwakeningCardCell, scale 1.3)."
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="UpDesc" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PageUpgrade/UpPreview"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_upgrade()
+CardDescBox of the card now (faded) above the one of its + version (code)."
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+alignment = 1
+
+[node name="UpHint" type="Label" parent="Root/SafeArea/Panel/Body/PageUpgrade/UpPreview"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_upgrade()"
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_WVN114Z3KD"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="UpGap" type="Control" parent="Root/SafeArea/Panel/Body/PageUpgrade"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="UpCards" type="HBoxContainer" parent="Root/SafeArea/Panel/Body/PageUpgrade"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_upgrade()
+The preset's 3 cards (AwakeningCardCell); already upgraded ones are locked."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="PageSwap" type="VBoxContainer" parent="Root/SafeArea/Panel/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _go()
+Swap: 3 candidates on top, the preset's 3 cards below, description of the last tapped card between."
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="SwapHint" type="Label" parent="Root/SafeArea/Panel/Body/PageSwap"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_CPB8AVTK0N"
+autowrap_mode = 3
+
+[node name="SwapCandsTitle" type="Label" parent="Root/SafeArea/Panel/Body/PageSwap"]
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "tx_FJV4RH5RB5"
+
+[node name="SwapCands" type="HBoxContainer" parent="Root/SafeArea/Panel/Body/PageSwap"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_swap()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="SwapDesc" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PageSwap"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _on_swap_cand() · _on_swap_held()
+CardDescBox of the last tapped card (code)."
+custom_minimum_size = Vector2(0, 210)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+alignment = 1
+
+[node name="SwapHeldTitle" type="Label" parent="Root/SafeArea/Panel/Body/PageSwap"]
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "tx_NM2N0G1CX7"
+
+[node name="SwapHeld" type="HBoxContainer" parent="Root/SafeArea/Panel/Body/PageSwap"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_swap()"
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="PagePreset" type="VBoxContainer" parent="Root/SafeArea/Panel/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _go()
+Add preset: candidate presets (rows of 3 cards), description of the last tapped card below."
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="PresetHint" type="Label" parent="Root/SafeArea/Panel/Body/PagePreset"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_preset()"
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "tx_9BJC6ABYHM"
+
+[node name="PresetRows" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PagePreset"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _fill_preset()
+One duplicate of %PresetRowTemplate per candidate."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="PresetRowTemplate" type="PanelContainer" parent="Root/SafeArea/Panel/Body/PagePreset/PresetRows"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _fill_preset()
+Hidden template of a candidate row (SelectableCard / SelectableCardOn): RowHit (whole row) · Label · Cards."
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SelectableCard"
+
+[node name="RowHit" type="Button" parent="Root/SafeArea/Panel/Body/PagePreset/PresetRows/PresetRowTemplate"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+focus_mode = 0
+flat = true
+
+[node name="RowPad" type="MarginContainer" parent="Root/SafeArea/Panel/Body/PagePreset/PresetRows/PresetRowTemplate"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 4
+
+[node name="Line" type="HBoxContainer" parent="Root/SafeArea/Panel/Body/PagePreset/PresetRows/PresetRowTemplate/RowPad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="Root/SafeArea/Panel/Body/PagePreset/PresetRows/PresetRowTemplate/RowPad/Line"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "Option 1"
+vertical_alignment = 1
+
+[node name="Cards" type="HBoxContainer" parent="Root/SafeArea/Panel/Body/PagePreset/PresetRows/PresetRowTemplate/RowPad/Line"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="PresetDesc" type="VBoxContainer" parent="Root/SafeArea/Panel/Body/PagePreset"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _on_preset_pick()
+CardDescBox of the last tapped candidate card (code)."
+custom_minimum_size = Vector2(0, 210)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Footer" type="HBoxContainer" parent="Root/SafeArea/Panel/Body"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Back" type="Button" parent="Root/SafeArea/Panel/Body/Footer"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _go()
+Back to the 1-of-3 choice (hidden on the choice page)."
+custom_minimum_size = Vector2(240, 100)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "tx_AT96DE2X15"
+
+[node name="FooterGap" type="Control" parent="Root/SafeArea/Panel/Body/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Confirm" type="Button" parent="Root/SafeArea/Panel/Body/Footer"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AwakeningView.gd _ready() · _refresh_confirm()
+Bottom-right confirm: resolves the awakening (state written), then the view fades out and emits closed."
+custom_minimum_size = Vector2(300, 100)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+text = "tx_YE7AM14AWS"

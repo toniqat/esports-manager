@@ -704,7 +704,7 @@ var use_test_run: bool = true
 # Each entry mirrors a row from the cards table. CardPhaseManager pulls 6 random
 # entries per pilot at match start, wraps each in a CardData instance, and tags
 # it with the owning PilotData (시전자 rule).
-var card_pool_bs: Array = []  # Array of {id,name_key,cost,uses,cast_method,target,cast_range,area,keyword,effect,description_key,scope,pool,card_type,card_cat,excl_group,charge_max} — *_key = l10n key
+var card_pool_bs: Array = []  # Array of {id,name_key,cost,uses,cast_method,target,cast_range,area,keyword,effect,description_key,scope,pool,card_type,card_cat,excl_group,charge_max,upgrade_id} — *_key = l10n key
 
 
 func _ready() -> void:
@@ -747,6 +747,8 @@ func _load_card_pool_bs() -> void:
 			"excl_group":  String(row.get("excl_group", "")),
 			# 충전 상한 — `charge` 키워드를 단 카드만 읽는다.
 			"charge_max":  int(row.get("charge_max", 0)),
+			# §15 C — id of this card's upgraded ("+") row, -1 = none (`PilotLoadout`).
+			"upgrade_id":  int(row.get("upgrade_id", -1)),
 		})
 	db.close_db()
 	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())
@@ -759,6 +761,17 @@ func card_def(card_id: int) -> Dictionary:
 		if int(def.get("id", -1)) == card_id:
 			return def
 	return {}
+
+
+## §15 C — the base card of an upgraded ("+") card id (`cards.upgrade_id` points at it);
+## the id itself for a base card, -1 for an unknown id. `CardImages` uses it so a "+"
+## card wears its base card's art.
+func card_upgrade_base(card_id: int) -> int:
+	for raw in card_pool_bs:
+		var def: Dictionary = raw as Dictionary
+		if int(def.get("upgrade_id", -1)) == card_id:
+			return int(def.get("id", -1))
+	return card_id if not card_def(card_id).is_empty() else -1
 
 
 # ── 고정 파일럿 카드 (pilot_card_slots + players.pilot_cards) ─────────────────

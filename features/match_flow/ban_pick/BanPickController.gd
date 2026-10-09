@@ -457,7 +457,7 @@ func _build_ui() -> void:
 	_view.sheet_dim.gui_input.connect(_on_dim_input)
 	_view.sheet_close.pressed.connect(_close_sheet)
 	_view.sheet_confirm.pressed.connect(_on_confirm_pressed)
-	_view.start_button.pressed.connect(_finish)
+	_view.start_button.pressed.connect(_on_start_pressed)
 
 
 ## 메크 정사각 초상화. `MechImages.portrait_for` 가 이미 256² 로 구워진 파일을
@@ -1606,6 +1606,13 @@ func _first_empty_seat(side: int) -> int:
 
 
 # ── 종료 ─────────────────────────────────────────────────────────────────────
+## §15 C — pilots with 2+ card presets pick the active one first
+## (`BanPickLoadoutPicker`, cancel = back to the assignment); otherwise straight on.
+func _on_start_pressed() -> void:
+	if not BanPickLoadoutPicker.open_if_needed(self, _rosters.get(_player_side, []), _finish):
+		_finish()
+
+
 ## 배정을 로스터에 새기고 화면을 걷는다. `PlayerData.assigned_mech` 를 직접
 ## 채우는 것은 예전 `AssignController` 가 하던 일이고, 그 파일이 사라진 지금
 ## 그 책임이 여기로 왔다. 자리(seat) → 역할 변환은 `ROLE_DISPLAY_ORDER` 한 겹

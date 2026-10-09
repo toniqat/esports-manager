@@ -163,6 +163,9 @@ Resource-typed entries:
   (`features/season/staff/README.md`). Missing (old saves) → 0 / "" and `StaffSystem.coach_points` grants the
   week's points on the first read. The visit records (`visit` / `focus` / `story`) and `mental.last_match` live
   inside `mental` and round-trip with it.
+- `awakening` · `awakening_pending` · `awakening_count` · `loadouts` (§15 C, `features/season/awakening/README.md`)
+  round-trip as-is (string keys; numbers read back with `int()`). A run saved before them gets them lazily
+  (base preset / empty queue) on first read.
 - `pending_match` round-trips as-is. Non-null from the Saturday "경기 준비" (`split: true`) through
   `_consume_pending_match_result` on Sunday. After the Saturday ban/pick it carries **`picks`** — the
   LAUNCH snapshot (shape of `match_resume` below) — with `match_resume` null; Sunday copies `picks`

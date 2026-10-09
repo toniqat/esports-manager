@@ -195,6 +195,11 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		# §15 D — coach points of the running week (missing = granted on the first read).
 		"coach_points":      int(s.get("coach_points", 0)),
 		"coach_week":        String(s.get("coach_week", "")),
+		# §15 C — awakening gauge / queue / count + card loadouts (string keys, `int()` reads).
+		"awakening":         (s.get("awakening", {}) as Dictionary).duplicate(true),
+		"awakening_pending": (s.get("awakening_pending", []) as Array).duplicate(true),
+		"awakening_count":   (s.get("awakening_count", {}) as Dictionary).duplicate(true),
+		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -251,6 +256,11 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"mental":            (s.get("mental", {}) as Dictionary).duplicate(true),
 		"coach_points":      int(s.get("coach_points", 0)),
 		"coach_week":        String(s.get("coach_week", "")),
+		# §15 C — awakening gauge / queue / count + card loadouts (string keys, `int()` reads).
+		"awakening":         (s.get("awakening", {}) as Dictionary).duplicate(true),
+		"awakening_pending": (s.get("awakening_pending", []) as Array).duplicate(true),
+		"awakening_count":   (s.get("awakening_count", {}) as Dictionary).duplicate(true),
+		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
 	}
 
 

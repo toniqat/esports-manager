@@ -555,6 +555,9 @@ Add the prefix when adding new icons too — `type_for` reads only that.
 Icons are 200×200 squares (opaque beige background), so in the 160×184 art slot
 `STRETCH_KEEP_ASPECT_COVERED` trims the left/right a little — the emblem is centred, so it is unharmed.
 When adding or renaming a card, add it to the table too; if missing, it falls back without error to the 5 backgrounds below.
+**Upgraded "+" pilot cards (§15 C) are not in the table** — `art_for` / `type_for` first map the uid through
+`base_uid(uid)` (`GameManager.card_upgrade_base`: `pilot:101` → `pilot:1`), so a "+" card wears its base card's
+art and nameplate type.
 
 **The background is picked by card uid** (`uid.hash() % GROUND_COUNT`). Picking at random
 would give the same card a different picture each draw so no "this picture = this card" link

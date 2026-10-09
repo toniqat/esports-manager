@@ -152,6 +152,7 @@ const GROUND_COUNT: int = 5
 static func art_for(uid: String) -> Texture2D:
 	if uid.is_empty():
 		return null
+	uid = base_uid(uid)
 	var own: String = CARD_DIR + uid.replace(":", "_") + ".png"
 	if ResourceLoader.exists(own):
 		return load(own) as Texture2D
@@ -175,11 +176,24 @@ static func item_for(uid: String) -> Texture2D:
 ## 이 카드의 타입(`TYPE_*`). `ITEM_ART` 에 없는 카드는 빈 문자열 — 호출자가 중립색을 쓴다.
 ## 전용 아트(`images/card/`)가 생겨도 타입은 짝지은 아이템을 따른다.
 static func type_for(uid: String) -> String:
-	var item_name: String = ITEM_ART.get(uid, "")
+	var item_name: String = ITEM_ART.get(base_uid(uid), "")
 	var prefix: String = item_name.get_slice("_", 0)
 	if prefix in [TYPE_WEAPON, TYPE_SPIRIT, TYPE_VITALITY]:
 		return prefix
 	return ""
+
+
+## An upgraded ("+") pilot card (§15 C, `cards.upgrade_id`) wears its base card's art and
+## type: `pilot:101` → `pilot:1`. Any other uid comes back unchanged.
+static func base_uid(uid: String) -> String:
+	if not uid.begins_with("pilot:"):
+		return uid
+	var tree := Engine.get_main_loop() as SceneTree
+	var gm: Node = tree.root.get_node_or_null("GameManager") if tree != null else null
+	if gm == null or not gm.has_method("card_upgrade_base"):
+		return uid
+	var base: int = int(gm.card_upgrade_base(int(uid.get_slice(":", 1))))
+	return "pilot:%d" % base if base >= 0 else uid
 
 
 ## 식별자 해시로 고른 배경 한 장. 전용 아트를 건너뛰고 배경만 필요할 때 쓴다.

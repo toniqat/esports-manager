@@ -250,7 +250,8 @@ SeasonPilotDetail (VBox, HubSheet body, title = pilot name · SeasonPilotDetail.
 ├ Head HBox ─ %SeasonPilotCard_Head (same card, not tappable) · Info VBox: %Total · %Trust (`신뢰도 Lv.N (P%)`) · %Outings · %Mood
 ├ StatsTitle · %Stats ─ Stat0..5 (Line: Name (Body 26) · Value (Title 30)) + Note (Caption 18, stat_note)
 ├ QuirksTitle · %QuirksEmpty · %Quirks ─ %QuirkLine template ("name · effect", grade colour)
-└ ResearchTitle · %Research (research mech · tier (value / max), tier colour) · Tail
+├ ResearchTitle · %Research (research mech · tier (value / max), tier colour)
+└ %AwakeningSlot (§15 C: `AwakeningPilotBlock` — awakening gauge + card presets, `awakening/README.md`) · Tail
 ```
 
 - API: `SeasonPilotCard.show_pilot(pid, role, trust, stress)` (`trust` = points; the card shows the level on the pill and the progress on the ring) / `show_empty(role)` / `set_note(text, variation)` /

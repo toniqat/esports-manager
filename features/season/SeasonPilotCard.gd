@@ -56,6 +56,7 @@ func show_pilot(pid: int, role: int, trust: int, stress: int) -> void:
 	sl.text = Loc.t(L.MENTAL_UI_STRESS_VALUE, {"n": stress})
 	sl.theme_type_variation = &"NegativeLabel" if shaken else &"CaptionLabel"
 	set_note(StressSystem.mood_label(StressSystem.Mood.SHAKEN) if shaken else "", &"NegativeLabel")
+	_show_run_level(pid)
 	(%Hit as Button).disabled = false
 
 
@@ -66,9 +67,33 @@ func show_empty(role: int) -> void:
 	_draw_portrait(null)
 	(%Ring as TrustRing).ratio = 0.0
 	(%TrustPill as Control).visible = false
+	(%LevelChip as Control).visible = false
 	(%Stress as Label).text = "—"
 	set_note("", &"CaptionLabel")
 	(%Hit as Button).disabled = true
+
+
+## §15 B training level chip: `level` < 1 hides it; `alert` (bar full / limit-break goal open)
+## paints it in the accent colour instead of the dark rail.
+func set_training_level(level: int, alert: bool) -> void:
+	var chip: Panel = %LevelChip
+	chip.visible = level >= 1
+	if not chip.visible:
+		return
+	(%LevelText as Label).text = Loc.t(L.TRAINING_LEVEL_CHIP, {"n": level})
+	chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
+			OutgameTheme.ACCENT if alert else OutgameTheme.RAIL, int(chip.custom_minimum_size.y * 0.5)))
+
+
+## Reads the run's training level for `pid` (`TrainingLevel`; my run pilots only).
+func _show_run_level(pid: int) -> void:
+	var gm: Node = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("GameManager")
+	var state: Dictionary = gm.season_state if gm != null else {}
+	if not TrainingLevel.has_level(state, pid):
+		set_training_level(0, false)
+		return
+	set_training_level(TrainingLevel.level(state, pid),
+			TrainingLevel.awaiting_break(state, pid))
 
 
 ## The emphasised line under the stress (`variation` = a label variation such as
@@ -111,4 +136,5 @@ func _fill_preview() -> void:
 	var t_max: int = ConstTable.int_of("TRUST_MAX")
 	show_pilot(2, GameEnums.Role.ASSASSIN, int(float(t_max) * 0.6),
 			ConstTable.int_of("STRESS_THRESHOLD") + 20)
+	set_training_level(2, true)
 	UiPreview.trace(pressed, "pressed")

@@ -31,6 +31,8 @@ const KIND_PRESS: String = "press"
 ## every single-pilot clause (`trust` · `stress` · `pmod`) applies to **both**.
 const KIND_TALK: String = "talk"
 const KIND_TALK_PAIR: String = "talk_pair"
+## Limit-break dialogue lines (§15 B) — drawn and played by `LimitBreak`, never by `MentalSystem`.
+const KIND_LIMIT_BREAK: String = "limit_break"
 ## Afternoon visit story (§15 D, 이야기) — the interview's successor. `story` = Mon–Fri, about
 ## that morning's training; `story_sat` = Saturday, about the ban/pick (its mech); `story_sun` =
 ## Sunday after my match, about that match. Old `interview` rows are the fallback pool
@@ -39,7 +41,7 @@ const KIND_STORY: String = "story"
 const KIND_STORY_SAT: String = "story_sat"
 const KIND_STORY_SUN: String = "story_sun"
 const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR,
-		KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN]
+		KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN, KIND_LIMIT_BREAK]
 const STORY_KINDS: Array = [KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN]
 
 ## `staff_mods` / `pilot_mods` `source` written by an event clause: `mental:<event id>` —
@@ -59,7 +61,7 @@ const KIND_LABELS: Dictionary = {
 
 ## Cond keys (clause types are listed in `parse_clause` and the README).
 const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week", "train", "ups", "stress",
-		"mvp", "kda", "kills", "deaths"]
+		"mvp", "kda", "kills", "deaths", "tlevel"]
 
 static var _rows: Array = []            # parsed rows, CSV order
 static var _by_id: Dictionary = {}      # id → parsed row
@@ -303,6 +305,10 @@ static func cond_ok(state: Dictionary, r: Dictionary, pilot_id: int) -> bool:
 				# `(k + a) / max(d, 1)` (floored), kills or deaths.
 				var line: Dictionary = MentalSystem.match_line(state, pilot_id)
 				if line.is_empty() or not _cmp(_line_value(line, key), String(c["op"]), int(value)):
+					return false
+			"tlevel":
+				# §15 B run training level of the pilot (`TrainingLevel.level`, 1 outside a run).
+				if pilot_id < 0 or not _cmp(TrainingLevel.level(state, pilot_id), String(c["op"]), int(value)):
 					return false
 			_:
 				return false

@@ -69,6 +69,83 @@ layout_mode = 2
 theme_type_variation = &"CaptionLabel"
 text = "Stress 42"
 
+[node name="GapTraining" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TrainingTitle" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_17R6TM4FN4"
+vertical_alignment = 1
+
+[node name="TrainingLine" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TrainLevel" type="Label" parent="TrainingLine"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
+Training level (TrainingLevel.level / TLEVEL_MAX)."
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "Lv 2 / 5"
+vertical_alignment = 1
+
+[node name="TrainExp" type="Label" parent="TrainingLine"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
+Training EXP inside the level (hidden at the cap)."
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "Training EXP 320 / 900"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="TrainTrack" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
+Training EXP bar track."
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressTrack"
+
+[node name="TrainFill" type="Panel" parent="TrainTrack"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
+anchor_right = bar fill (set by code); the minimum width keeps a sliver visible."
+custom_minimum_size = Vector2(14, 0)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.35
+anchor_bottom = 1.0
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ProgressFill"
+
+[node name="TrainState" type="Label" parent="."]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotDetail.gd _fill_training()
+Limit-break line: active goal with progress (AccentLabel), bar full without a goal, or the cap (CaptionLabel); hidden otherwise."
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 22
+text = "Goal — Most kills in the game, 2 matches in a row (1/2)"
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="GapStats" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2

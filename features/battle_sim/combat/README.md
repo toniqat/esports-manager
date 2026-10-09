@@ -669,7 +669,7 @@ immediately.
 
 ### Match stats (MVP metric) — damage / shield / heal hook points
 Per-pilot match counters live on `PilotData` (`kills` · `deaths` · `assists` · `dmg_dealt` ·
-`dmg_taken` · `care`) and are only ever moved by **a handful of `BattleSim` hooks**, so no damage
+`dmg_taken` · `care`, and for the §15 limit-break goals `turret_dmg` · `score_earned` · `obj_turns`) and are only ever moved by **a handful of `BattleSim` hooks**, so no damage
 path can forget one:
 
 | Counter | Hook | Paths that reach it |
@@ -677,6 +677,9 @@ path can forget one:
 | `kills` / `deaths` / `assists` | `BattleSim.mark_pilot_dead` via `kill_roster(victim, killer)` — the **same roster the kill feed shows** (last hit = `killer`, or the top damage contributor when unknown; assists = everyone else in `live_damage_credit`) | every death (battlefield, advance card, attack cards, [확신], execute, engage stage) |
 | `dmg_dealt` | `BattleSim.record_pilot_damage` (the bounty ledger — same value, shield-absorbed share included) + the remaining HP of an instant kill in `mark_pilot_dead` (execute) | battlefield `_credit_pilot_damage`, attack cards, [확신], engage strikes |
 | `dmg_taken` | `BattleSim.apply_pilot_damage(victim, amount)` — shield first, then HP (floored at 0); counts **HP actually lost** (no overkill) | `simulate_turn` step 4, `_apply_card_damage` (advance card), `CardPhaseManager._apply_attack_damage`, `_effect_attack_bounty`, `TurnEngageSim._apply_damage` (pilot strikes **and** turret shots; 불굴 (Last Stand) gives the 1 HP back to the counter too). Execute: remaining HP in `mark_pilot_dead` |
+| `turret_dmg` (row `turret`) | `BattleSim.score_turret_damage(attacker, hp_removed)` — the HP removed from turrets, overkill cut, the same amount growth score is paid for | sim combat `SimulationCore._credit_turret_damage`, cards `apply_card_turret_damage` (advance / turret-damage / execute-turret effects). Objective rewards with no caster (empowered Herald) credit nobody |
+| `score_earned` (row `score`) | `BattleSim.add_score(p, delta)` — score **actually added** (after the accrual multiplier and the `SCORE_MIN` floor), gains only; the [매혹] copy counts for the linked pilot | every growth source (front line, camps, kills / assists, turrets, cards, skills) |
+| `obj_turns` (rows `obj` = count, `obj_turns`) | `BattleSim.credit_objective(group)` — appends `turn_count` for every pilot of the **winning team's objective group** (`ObjectiveSystem.participants_for` of the winner = the pilots that joined, alive or dead after the fight) | `ObjectiveSystem._run_objective_engage` (fight won) and `_award_uncontested` (only one team joined). A draw / fizzle credits nobody |
 | `care` | shield absorption inside `apply_pilot_damage` (credited to the **grantor** of the absorbed shield) + `BattleSim.apply_heal(target, amount, healer)` (overheal dropped) | shields: `grant_shield` from `shield_pct` / `shield_atk` cards; heals: `heal_pct` |
 
 - **Shield attribution**: `BattleSim.grant_shield(target, amount, source)` appends

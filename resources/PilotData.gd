@@ -39,6 +39,15 @@ var dmg_taken: int        = 0
 ## 준 회복(오버힐 제외). 자기 자신에게 건 보호막 · 회복은 세지 않는다 — 자기 몸을
 ## 지킨 몫은 이미 "받은 피해"가 덜 오르는 것으로 드러나고, 돌봄은 남을 지킨 값이다.
 var care: int             = 0
+## Turret damage (§15 B) — structure HP this pilot removed from turrets (overkill cut), the
+## same amount growth is paid for: `BattleSim.score_turret_damage` (sim combat + card paths).
+var turret_dmg: int       = 0
+## Score earned (§15 B) — growth score actually added by `BattleSim.add_score` (positive
+## deltas after the accrual multiplier, the charm copy included; losses are not subtracted).
+var score_earned: float   = 0.0
+## Objectives taken (§15 B) — the battle turn of each Herald / Dragon this pilot's team took
+## while this pilot was in the team's objective group (`BattleSim.credit_objective`).
+var obj_turns: Array      = []
 # 본진 복귀한 그 턴에는 HQ 에 서 있기만 하고 움직이지 않는다는 표시.
 # RecallSystem.return_to_hq 가 켜고, 다음 이동 패스(SimulationCore.resolve_movement)
 # 가 한 턴을 걸러 내면서 스스로 끈다 — 그래서 "복귀 → 다음 턴부터 레인으로".

@@ -64,6 +64,33 @@ text = "EXP ×1.10"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="LevelChip" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind_thumbs() · _refresh_thumbs()
+§15 B run training level (Lv1..5) at the top-left. Fill is data: code paints RAIL, ACCENT while the bar is full (limit break due / goal open)."
+layout_mode = 1
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 62.0
+offset_bottom = 30.0
+mouse_filter = 2
+theme_type_variation = &"PilotThumbTag"
+
+[node name="LevelText" type="Label" parent="LevelChip"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind_thumbs()"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 17
+text = "Lv2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind_thumbs()

@@ -1184,6 +1184,9 @@ func add_score(p: PilotData, delta: float) -> float:
 	var before: float = p.score
 	p.score = maxf(SCORE_MIN, p.score + delta)
 	refresh_growth_stats(p)
+	# §15 B match stat — score earned counts gains only (a loss is not "earning" back).
+	if p.score > before:
+		p.score_earned += p.score - before
 	return p.score - before
 
 
@@ -1400,8 +1403,21 @@ func build_pilot_stats() -> Array:
 			"side": p.team, "role": p.role,
 			"k": p.kills, "d": p.deaths, "a": p.assists,
 			"dmg": p.dmg_dealt, "taken": p.dmg_taken, "care": p.care,
+			# §15 B (limit-break goals): turret damage, score earned, objectives taken.
+			"turret": p.turret_dmg, "score": snappedf(p.score_earned, 0.001),
+			"obj": p.obj_turns.size(), "obj_turns": p.obj_turns.duplicate(),
 		})
 	return rows
+
+
+## §15 B — an objective (Herald / Dragon) was taken by `group`'s team: every pilot of the
+## team's objective group (the pilots that joined it — `ObjectiveSystem.participants_for` of
+## the winner, dead or alive after the fight) gets this turn in `obj_turns`.
+func credit_objective(group: Array) -> void:
+	for raw in group:
+		var p := raw as PilotData
+		if p != null:
+			p.obj_turns.append(turn_count)
 
 
 ## 지금 이 순간 유효한 기여만 남긴 `공격자 → 누적 피해` 표. 현상금 배분 ·
@@ -1466,6 +1482,8 @@ func _payout_kill_bounty(victim: PilotData, killer: PilotData) -> void:
 func score_turret_damage(attacker: PilotData, hp_removed: int) -> void:
 	if attacker == null or hp_removed <= 0:
 		return
+	# §15 B match stat — every turret-damage path (sim combat, cards) funnels through here.
+	attacker.turret_dmg += hp_removed
 	award_score(attacker, SCORE_TURRET_FULL * float(hp_removed)
 			/ float(maxi(1, TURRET_HP)))
 

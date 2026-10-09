@@ -200,6 +200,8 @@ static func _serialize_season_state(s: Dictionary) -> Dictionary:
 		"awakening_pending": (s.get("awakening_pending", []) as Array).duplicate(true),
 		"awakening_count":   (s.get("awakening_count", {}) as Dictionary).duplicate(true),
 		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
+		# §15 B — run-only training level / limit break (string keys only).
+		"training_level":    (s.get("training_level", {}) as Dictionary).duplicate(true),
 	}
 
 
@@ -261,6 +263,8 @@ static func _deserialize_season_state(s: Dictionary) -> Dictionary:
 		"awakening_pending": (s.get("awakening_pending", []) as Array).duplicate(true),
 		"awakening_count":   (s.get("awakening_count", {}) as Dictionary).duplicate(true),
 		"loadouts":          (s.get("loadouts", {}) as Dictionary).duplicate(true),
+		# §15 B — run-only training level / limit break (string keys only).
+		"training_level":    (s.get("training_level", {}) as Dictionary).duplicate(true),
 	}
 
 

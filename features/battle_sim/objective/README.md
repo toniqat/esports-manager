@@ -15,6 +15,10 @@ an event where **both teams choose, at the same moment, whether to fight over th
 > **It can be avoided.** Two options: join / don't join. If only one side joins, that side
 > takes it without a fight.
 
+> **Who "took" it (match stat, §15 B).** When a team takes an objective (fight won or unopposed), every
+> pilot of that team's group (`participants_for` of the winner, alive or dead after the fight) is credited
+> via `_bs.credit_objective(group)` → `PilotData.obj_turns` (the turn) → `pilot_stats.obj` / `obj_turns`.
+
 ## Files
 | File | Purpose |
 |---|---|

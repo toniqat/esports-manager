@@ -464,8 +464,14 @@ result = {
 BattleSim 이 경기 끝에 `pending_match["pilot_stats"]` 를 채운다(단독 실행 = pending_match 없음 → 아무 일 없음):
 ```
 pilot_stats = [ {"pilot_id": int, "side": 0|1 (0 = 내 팀), "role": int,
-                 "k": int, "d": int, "a": int, "dmg": int, "taken": int, "care": int}, ... ]   # 10명
+                 "k": int, "d": int, "a": int, "dmg": int, "taken": int, "care": int,
+                 "turret": int, "score": float, "obj": int, "obj_turns": [int]}, ... ]   # 10명
 ```
+§15 B adds `turret` (HP removed from turrets, overkill cut — `BattleSim.score_turret_damage`), `score`
+(growth score actually earned, gains only — `BattleSim.add_score`) and `obj` / `obj_turns` (objectives the
+pilot's team took while the pilot was in the team's objective group, and the battle turn of each —
+`BattleSim.credit_objective`). Synthesized rows (`MatchFlow._cheat_finish`, `RunSim`) carry them as 0 / `[]`.
+Counting rules: `features/battle_sim/combat/README.md` "Match stats".
 `care` = 그 선수가 아군에게 준 보호막이 실제로 흡수한 피해 + 아군 회복량(오버힐 제외). 경기 MVP 는
 BattleSim 이 같은 지표(`RunStats.mvp_score(row)`, static)로 뽑아 `pending_match["mvp_pilot_id"]` 에 적고 MVP 뷰를 띄운다.
 
@@ -846,7 +852,7 @@ with the user (Q&A 2026-10-09); a body detail that disagrees with §15.0 loses.
 | Key | Owner | Shape |
 |---|---|---|
 | `mech_mastery` | A | unchanged shape `{"<pid>": {"<mech_id>": int 0..100}}` |
-| `training_level` | B | `{"<pid>": {"level": int 1..5, "exp": int, "goal": {} \| {id, since_match: int, progress…}, "offer": [goal ids], "event_day": int}}` |
+| `training_level` | B | `{"<pid>": {"level": int 1..5, "exp": int, "goal": {} \| {id, since_match: int, set_week, set_day, recs: [match record]}, "offer": [goal ids], "event_week": week key, "event_day": int, "note": {} \| result note}}` — full shape: `features/season/training/README.md` "Training level · limit break" |
 | `awakening` | C | `{"<pid>": int gauge}` + `awakening_pending: [pid…]` |
 | `loadouts` | C | `{"<pid>": {"presets": [[int ×3], …], "active": int}}` |
 | `coach_points` | D | `int` (this week) |

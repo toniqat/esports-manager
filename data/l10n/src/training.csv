@@ -68,3 +68,23 @@ tx_67HRWPCEBE,training.tile.t28.name,active,training_tiles.csv name (id=T28),,,�
 tx_J7C56J00N6,training.tile.t34.name,active,training_tiles.csv name (id=T34),,,화력 증강 III,Firepower Boost III,draft,688d458e
 tx_BFBZYQPMDG,training.tile.t29.name,active,training_tiles.csv name (id=T29),,,내구 단련 II,Endurance Training II,draft,f2101dfd
 tx_E7XM9N13SW,training.tile.t35.name,active,training_tiles.csv name (id=T35),,,내구 단련 III,Endurance Training III,draft,80f31ae7
+tx_HBKHP46T46,training.level.chip,active,"Compact training level chip (hub pilot card, training portraits). {n}=level",,,Lv{n},Lv{n},draft,30cc65ee
+tx_HWDK2ZGNYZ,training.level.detail_level,active,"Pilot detail sheet — training level. {n}=level, {max}=cap",,,Lv {n} / {max},Lv {n} / {max},draft,b0765fc5
+tx_MQTEGWC568,training.level.exp,active,Pilot detail sheet — EXP inside the level,,,훈련 EXP {exp} / {need},Training EXP {exp} / {need},draft,6b7ef71e
+tx_5FXPMDAP4K,training.level.full,active,"Pilot detail sheet — bar full, no goal yet",,,한계 도달 — 한계돌파가 필요하다,Plateau reached — needs a limit break,draft,dbf3428e
+tx_800W06DJMX,training.level.max,active,Pilot detail sheet — level cap reached,,,최고 레벨,Max level,draft,d037e2a6
+tx_17R6TM4FN4,training.pilot_detail.title,active,UI_View_SeasonPilotDetail.tscn TrainingTitle text,,,훈련 레벨,Training Level,draft,17051154
+tx_KGSV1ERB23,training.limit_break.title,active,Limit-break dialogue header (VnDialogueView sub),,,한계돌파,Limit Break,draft,1715ca89
+tx_P90CMSBJP0,training.limit_break.goal.kda,active,"Limit-break goal (choice text and goal line). {n}=matches, {kda}=need",,,다음 {n}경기 합산 KDA {kda} 이상,KDA {kda}+ over the next {n} matches,draft,8940d676
+tx_6GXZRX4SPP,training.limit_break.goal.kills,active,Limit-break goal. {n}=matches,,,{n}경기 연속 경기 내 처치 1위,"Most kills in the game, {n} matches in a row",draft,e62c0453
+tx_1BSCN8N7FE,training.limit_break.goal.obj,active,"Limit-break goal. {n}=matches, {turn}=turn limit, {need}=count",,,{n}경기 동안 {turn}턴 안에 오브젝트 {need}회 획득,Take {need} objectives by turn {turn} over {n} matches,draft,b02263c0
+tx_6DMM2FHRF3,training.limit_break.goal.mvp,active,Limit-break goal. {n} unused,,,다음 경기 MVP,MVP of the next match,draft,89836620
+tx_4C8T8AQG75,training.limit_break.goal.score,active,Limit-break goal. {n}=matches,,,{n}경기 연속 경기 내 성장치 획득 1위,"Most growth earned in the game, {n} matches in a row",draft,c64c58dd
+tx_Q8Z751P204,training.limit_break.goal.turret,active,Limit-break goal. {n}=matches,,,{n}경기 연속 경기 내 포탑 피해 1위,"Most turret damage in the game, {n} matches in a row",draft,c388fa8e
+tx_YZN4NN2KCC,training.limit_break.goal.care,active,Limit-break goal. {n}=matches,,,{n}경기 연속 경기 내 보호막·회복량 1위,"Most shielding and healing in the game, {n} matches in a row",draft,6d4720bd
+tx_T8XRTXGC5D,training.limit_break.preview,active,"Limit-break choice preview line. {n}=next level, {gain}=stat gain",,,달성 시 훈련 Lv{n} · 모든 스탯 +{gain},On success: Training Lv{n} · all stats +{gain},draft,9b164e32
+tx_N55ME7YEYY,training.limit_break.note_goal,active,Limit-break dialogue result chip. {goal}=goal text,,,새 목표: {goal},New goal: {goal},draft,11783bfd
+tx_JZQ1JZRHPM,training.limit_break.goal_line,active,"Active limit-break goal with progress (pilot detail). {goal}=goal text, {progress}=progress",,,목표 — {goal} ({progress}),Goal — {goal} ({progress}),draft,35e6821e
+tx_0BVZ0NR212,training.limit_break.progress_count,active,Limit-break goal progress — count toward need,,,{have}/{need},{have}/{need},draft,d7278344
+tx_1ZM6HE38ZP,training.limit_break.progress_kda,active,Limit-break KDA goal progress — current window KDA vs need,,,KDA {v} / {need},KDA {v} / {need},draft,3301d509
+tx_WDHZDJF3V7,training.limit_break.note_done,active,"Limit-break result note (week screen / hub). {name}=pilot, {n}=new level, {gain}=stat gain",,,{name} 한계돌파 성공 — 훈련 Lv{n} · 모든 스탯 +{gain},{name}: limit break! Training Lv{n} · all stats +{gain},draft,03ba85c7

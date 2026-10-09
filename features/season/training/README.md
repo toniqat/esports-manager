@@ -21,14 +21,106 @@ too** — the only place that needs weekday names is the **week-progress screen 
 | `TrainingCourses.gd` | `class_name TrainingCourses` — static, **the run's owned courses** (`season_state["training_courses"]`): `new_inventory` · `inventory` · `owned_count` · `owned_tile_ids` · `filler_tile_id` · `grant` (upgrade rule) · `grant_all` (previews). See "Owned courses" below. |
 | `TrainingBoard.gd` | `class_name TrainingBoard` — headless board. Staff stat (`training_stat`), ownership (`owned_tiles` / `owned_count` / `placed_count` / `can_take_more` / `filler_tile_id`), placement checks (`can_place` / `place` / `remove_at`), settlement (`cell_exp` / `exp_mult_table` / `compute_gains` / `compute_day_gains`), mastery (`cell_mastery` / `compute_mastery`), quirk ops (`day_quirk_ops`), per-day cell colours (`day_colors`, read by the week screen's base map) and training names (`day_tile_names`, empty cell = basic course; the week screen's morning speech bubbles), **weekday application** (`apply_day_training`), preview (`projected_stats`), auto-arrange (`auto_arrange`), week-progress reset (`reset_week_progress`). The `TrainingBoard` node in Season.tscn. |
 | `TrainingView.gd` · `UI_View_TrainingView.tscn` | Planning screen — staff line + 5 portraits + 5×5 board + horizontally scrolling course cards + bottom bar ("판 비우기" · "코치 추천" · "훈련 확정"). Drag & drop. **The frame is the scene** (see "Scene tree" below); the script binds `%` nodes, fills data, applies the safe-area insets, and owns the drawn board + drag & drop. Created with `TrainingView.create()` (`SeasonHub._ensure_training_view`). Layout · reading conventions are in "Screen layout" below. |
-| `UI_Comp_TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip · `%Hit` tap target). No script — `TrainingView._bind_thumbs` sets the role border colour and wires `%Hit` → `SeasonPilotDetail.open` (pilot detail sheet, `features/season/README.md`); five instances sit in `UI_View_TrainingView.tscn`. |
+| `TrainingLevel.gd` | `class_name TrainingLevel` — static, **run-only training level** 1..`TLEVEL_MAX` + training EXP (`season_state.training_level`). See "Training level · limit break" below. |
+| `LimitBreak.gd` | `class_name LimitBreak` — static, **limit break (한계돌파)**: due-event check, VN session dict, goal pool / offer / pick, goal judging on my matches, `complete` (level +1, stats up), result notes. See below. |
+| `LimitBreakDemo.gd` · `UI_View_LimitBreakDemo.tscn` | `class_name LimitBreakDemo` — **dev harness, F6 only** (never instanced by the game): plays the limit-break dialogue in a `VnDialogueView` on an in-memory run with exactly the calls the week screen uses (`play(state, day)`). |
+| `UI_Comp_TrainingThumb.tscn` | One portrait column header (frame · face · per-pilot `EXP ×r` chip · §15 `LvN` training-level chip (`%LevelChip`, top-left) · `%Hit` tap target). No script — `TrainingView._bind_thumbs` sets the role border colour and wires `%Hit` → `SeasonPilotDetail.open` (pilot detail sheet, `features/season/README.md`); five instances sit in `UI_View_TrainingView.tscn`. |
 | `TrainingCourseCard.gd` · `.tscn` | `class_name TrainingCourseCard` — one course card of the inventory row (grade band · placed/owned · shape well · name). `fill(tile, cap, locked)`, `set_selected(selected, locked)`; the shape miniature is drawn into `%Mini` (`_draw_mini`). |
 | `TrainingCoursePopover.gd` · `.tscn` | `class_name TrainingCoursePopover` — the info popover over a selected card. `fill(tile, cap)` sets the text and **derives the height from the text** (`_text_height`); `TrainingView._place_popover` positions it. |
 
-**F6 preview** — each scene with a script fills dummy data when run alone (`resources/UiPreview.gd`):
+**F6 preview** — each scene with a script fills dummy data when run alone (`resources/UiPreview.gd`);
+`UI_View_LimitBreakDemo` = the first pilot's bar filled on Monday, then the limit-break dialogue (pick a goal → reply → result chip):
 `TrainingView` = in-memory run + preview-only `TrainingBoard` child, two copies of every course (`TrainingCourses.grant_all`), coach auto-arrange, third course card
 selected with its popover; `TrainingCourseCard` / `TrainingCoursePopover` = hand-written grade-3 tiles
 (card selected; popover).
+
+## Training level · limit break (§15 B — `TrainingLevel` · `LimitBreak`)
+Contract: `docs/outgame_dev_plan.md` §15.0 B / §15.1. Numbers are the `TLEVEL_*` / `LIMIT_BREAK_*` keys of
+`data/csv/const.csv` — this README names keys only. Run-only: nothing reaches the profile.
+
+**State** — `season_state.training_level = {"<pid>": entry}` for my five pilots (string keys, JSON round trip via
+`SaveSystem`; a run saved before §15 gets Lv1 entries on first read, `TrainingLevel.ensure`):
+```
+entry = {"level": 1..TLEVEL_MAX, "exp": int (inside the level),
+         "offer": [goal id ×LIMIT_BREAK_OFFER],          # drawn once per limit break, kept until a pick
+         "goal":  {} | {"id", "since_match", "set_week", "set_day", "recs": [match record…]},
+         "event_week": MentalSystem.week_key, "event_day": 0..6 (-1 = none),   # when the bar filled
+         "event": "" | Draft dialogue row id (mental_events, kind limit_break),
+         "note":  {} | {"pilot_id", "level", "goal", "source": "goal"|"focus", "gain", "week", "day", "seen"}}
+match record = {"k", "d", "a", "obj" (objectives within LIMIT_BREAK_OBJ_TURN), "mvp",
+                "top_kills", "top_score", "top_turret", "top_care"}   # last LIMIT_BREAK_WINDOW kept
+```
+
+**Training EXP** — `apply_day_training` calls `TrainingLevel.on_training_day(state, rows)`: a pilot's EXP for the
+day = the sum of its row's `exp` (stat EXP earned that day; stat growth itself is unchanged). `add_exp` is
+also the entry point for other sources (visit focus training / stories, agent D). The bar of level `n` is
+`TLEVEL_EXP_n`; EXP never overflows — the amount is clamped to the bar and **stops when the bar is full**
+(`is_capped`). Filling it stamps `event_week` / `event_day` = this week, `season_state.week_day`.
+
+**Limit-break event** — `LimitBreak.pending_event(state, day)` returns the first pilot (seat order) whose bar is
+full below the cap, who has no goal yet, and whose bar filled on `day` or earlier (an earlier week counts:
+"the next evening the week screen reaches"); -1 = none. It keeps returning that pilot until the dialogue is
+answered (`choose_goal`), then the next due pilot. Lv `TLEVEL_MAX` = no EXP, no event.
+
+**Dialogue** — `session(state, pid)` → `{kind: "limit_break", event, pilot_id, partner_id: -1, tag, sub, title,
+lines, choices, previews}` (the `MentalSystem.session_view` shape + `sub` / `title` for `VnDialogueView.open`).
+- **Lines** are authored in **Draft** (`narrative/`, kind `limit_break`, flows `LB01` (cond `tlevel=1`) and
+  `LB02` (`tlevel>=2`); convention in `narrative/README.md`) and imported like every mental event.
+  `event_row(state, pid)` draws one row among those whose cond holds (`MentalEvents.cond_ok`, new cond token
+  `tlevel`), weighted and seeded, and keeps its id in `entry.event` until the limit break completes. Lines =
+  that row's `line` texts (`MentalEvents.text`, markers `*` / `>` kept). The flow's Select has **one
+  placeholder option** (never shown); its replies are the pilot's **closing reply** after the pick.
+- **Choices** are UI text, not Draft: the 3 offered goal names with live numbers (`training.limit_break.goal.*`,
+  placeholders `{n}` window · `{kda}` `LIMIT_BREAK_KDA` · `{turn}` `LIMIT_BREAK_OBJ_TURN` · `{need}`
+  `LIMIT_BREAK_OBJ_NEED`); previews = "달성 시 훈련 Lv{n+1} · 모든 스탯 +gain".
+- `choose_goal(state, pid, idx)` stores the goal and returns the `show_result` view (`{checked: false, ok: true,
+  say: [closing reply lines], notes: ["새 목표: …"]}`); idempotent. No Draft row imported → no lines / reply,
+  the choices still work.
+- Draws (offer, dialogue row) are seeded by `run_seed` · pilot · level · purpose, like `MentalSystem._seed`.
+
+Week-screen call sequence (agent D, `WeekProgressView` evening, before the incident; `LimitBreakDemo.play`
+is the reference):
+```
+var pid := LimitBreak.pending_event(state, day)     # -1 → go on to the incident
+var v := LimitBreak.session(state, pid)
+vn.open(v.sub, v.title, pid, v.lines, v.choices, "", v.previews)
+vn.choice_picked → vn.show_result(LimitBreak.choose_goal(state, pid, idx))
+vn.closed → pending_event again (next due pilot), then the incident
+```
+
+**Goal pool** (`LimitBreak.GOALS`, position filter by `GameEnums.Role`; window = `LIMIT_BREAK_WINDOW`, MVP
+`LIMIT_BREAK_WINDOW_MVP`):
+
+| id | Goal | Who |
+|---|---|---|
+| `kda` | window sum `(k + a) / max(d, 1)` ≥ `LIMIT_BREAK_KDA` | all |
+| `kills` | kills rank 1 in the game, each match | not support |
+| `obj` | objectives taken by turn `LIMIT_BREAK_OBJ_TURN`, window sum ≥ `LIMIT_BREAK_OBJ_NEED` | jungle, mid |
+| `mvp` | match MVP (`pending_match.mvp_pilot_id`) | all |
+| `score` | score earned rank 1, each match | not support |
+| `turret` | turret damage rank 1, each match | not support, not jungle |
+| `care` | `care` (shield absorbed + healing) rank 1, each match | support |
+
+"Rank 1 in the game" = the highest value among all ten `pilot_stats` rows (both teams); **ties count as rank 1**,
+but a value of 0 is never rank 1 (a game where nobody scored does not hand out the goal). Counters:
+`features/battle_sim/combat/README.md` "Match stats".
+
+**Judging** — `LimitBreak.record_match(state, pending_match)` (SeasonHub, after `RunStats.record_match`;
+idempotent via `pending_match.limit_break_recorded`): for every pilot with a goal who played (a `side == 0` row),
+append that match's record, keep the last `LIMIT_BREAK_WINDOW`, and when the window is full and meets the goal
+(**sliding window** — an early bad match drops out) call `complete(state, pid, "goal")`. A match the pilot did
+not play is skipped (no reset). Progress text: `goal_text` = "목표 — {goal} ({progress})", progress = trailing
+rank-1 streak `n/2`, objective sum `n/3`, MVP `0/1`, or the window KDA `KDA 2.5 / 4`.
+
+**Completion** — `complete(state, pid, source := "focus")` (goal met, or the visit's 한계돌파 focus training, D):
+level +1, EXP 0, goal / offer cleared, every one of the six stats of the run pilot (`season_state.all_pilots`)
+`+ LIMIT_BREAK_STAT_GAIN`. Returns the **result note** and keeps it in `entry.note` (`seen: false`);
+`unseen_notes(state)` / `mark_note_seen(state, pid)` / `note_text(state, note)` ("{name} 한계돌파 성공 — 훈련 Lv3 ·
+모든 스탯 +3") let the week screen / hub announce it once. No-op ({}) at the cap.
+
+**Display** — training-board portraits: `LvN` chip (dark rail, **accent** while a limit break is due / its goal
+open, `TrainingView._refresh_level_chips`); hub / week card: the same chip on `SeasonPilotCard`; detail sheet:
+level, EXP bar, goal line (`features/season/README.md` "Pilot card · detail sheet").
 
 ## Board axes
 ```
@@ -573,5 +665,8 @@ that doc when adding these.
 
 ## Localization
 Screen text is l10n keys (`training` domain: `training.view.*` code templates, `training.training_view.*` scene
-captions). The effect-line part labels in `TrainingView._shared_parts` are keys translated in `_effect_text`;
+captions, `training.level.*` training-level chip / detail rows, `training.pilot_detail.title` (the detail sheet's
+section title, a scene literal in `features/season/UI_View_SeasonPilotDetail.tscn`), `training.limit_break.*` the
+limit-break header · goal choices · previews · progress · notes). The limit-break **dialogue lines** are Draft
+events (kind `limit_break`, domain `mental`, see "Training level · limit break"). The effect-line part labels in `TrainingView._shared_parts` are keys translated in `_effect_text`;
 the staff line translates `StaffSystem.STAT_LABELS` through `Loc.t` (staff module's table).

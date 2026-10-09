@@ -239,6 +239,10 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `stress>=N` / `stress<N` | the target's current stress |
 | `mvp=yes` / `mvp=no` | the target was / was not the MVP of my last match (`mental.last_match`) |
 | `kda>=N` · `kills>=N` · `deaths>=N` (and `<`, `=`) | the target's line in my last match: `(k + a) / max(d, 1)` floored · kills · deaths; no line = false |
+| `tlevel=N` / `tlevel>=N` / `tlevel<N` | the target's run training level (`TrainingLevel.level`, §15 B) |
+
+Kind `limit_break` (§15 B) rows hold only the limit-break **dialogue lines**; `LimitBreak` draws and plays them
+(never `MentalSystem`) — `features/season/training/README.md` "Training level · limit break".
 
 - **Trait `trust_gain`** (M8): `add_trust` adjusts only a rise — `max(0, delta + Σp1)` — so a
   rise never becomes a loss; drops pass through untouched.

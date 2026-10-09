@@ -1,7 +1,7 @@
-# mental/ — trust · stress · interviews · outings · incidents · press · true ending (M7)
+# mental/ — trust · stress · afternoon visit (focus training · story · outing) · incidents · press · true ending (M7, §15 D)
 
 Contract: `docs/outgame_dev_plan.md` §11. State `season_state.trust` / `stress` / `outings` / `mental` / `pilot_mods`.
-Tuning lives in `data/csv/const.csv` (`TRUST_*`, `STRESS_*`, `MENTAL_*`, `TRUE_ENDING_*`) — no values here.
+Tuning lives in `data/csv/const.csv` (`TRUST_*`, `STRESS_*`, `MENTAL_*`, `TRUE_ENDING_*`, §15 D `FOCUS_*` · `STORY_*` · `VISIT_*`) — no values here.
 **Event data is authored in Draft** (`narrative/`, convention in `narrative/README.md`) and imported by
 `addons/draft_import/` into `mental_events.csv` / `mental_texts.csv` / `data/l10n/src/mental.csv` (`mental.<event>.<id>`
 rows) — do not hand-edit those any more, the next import overwrites them.
@@ -18,6 +18,7 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews, outings and incidents (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
 | `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
 | `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer — `%Button` (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap) + `%Preview` line under it (check chance + effect directions). Code sets both texts + `pressed`. |
+| `FocusTraining.gd` | `class_name FocusTraining` (static, §15 D). The visit option **집중 훈련**: course table (`COURSES`), `courses_view` / `refusal` / `cost_of`, `apply` (coach points → stat EXP through the training EXP bank, training EXP, awakening gauge, stress; 한계돌파 → `LimitBreak.complete`). Shared helpers the story clauses use: `add_stat_exp`, `add_training_exp`, `add_story_mastery`, `story_mech`. See "Afternoon visit (방문)". |
 | `AfternoonAway.gd` | `class_name AfternoonAway` (static). Afternoon away states of a training day: stress self outing, else a chance of dorm rest, rolled once and recorded in `mental.days["<day>"].afternoon`; `started` · `begin` · `away_of` · `relief_of` · `can_request` · `any_request`. See "Afternoon away states". |
 | `PilotMods.gd` | `class_name PilotMods` (static, base). Temporary per-pilot stat mods `[{pilot_id, stat, delta, weeks_left, source}]`; `weeks_left = -1` lasts until the next own match. `apply_to` is only ever called on a **roster copy** (MatchFlow). |
 
@@ -34,8 +35,8 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
 - **A training day** (Mon–Fri) has three halves after the morning training (`features/season/week/README.md`):
   **morning talk** (one pilot, no outing) → **afternoon** (interview / outing) → **evening** (forced incident).
   **Saturday** (after the stadium prep) and a plain weekend day have the **afternoon + evening** only (no
-  training, so no morning talk); the **Sunday of a match** has only the evening (its afternoon is the press
-  conference). The afternoon / evening / incident entry points accept any weekday 0..6
+  training, so no morning talk); the **Sunday of a match** has the press conference, then the afternoon
+  (visit) and the evening (§15 D). The afternoon / evening / incident entry points accept any weekday 0..6
   (`CalendarSystem.is_week_day`); the morning talk stays Mon–Fri.
 - **Morning talk** (훈련 소감, one per morning, record `days["<day>"].talk`): opened by `begin_morning` when the
   training result FX ends; `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` (Next
@@ -44,16 +45,19 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   pilot), else a `talk` row. In a pair talk every single-pilot clause (`trust` · `stress` · `pmod`,
   `MentalEvents.SINGLE_CLAUSES`) hits **both** pilots, and both get `STRESS_TALK_RELIEF`. Checks use the manager's
   own mental. `can_talk`: the morning is open, the afternoon has not started, no talk yet.
-- **Afternoon** (Mon–Fri, one action per day; the record keeps its old name `evening`): interview / outing / pass.
-  Leaving the afternoon without choosing records a pass. Manager-only — staff never interview or go out.
-  - **No weekly count limits** (removed 2026-10): an interview is always possible; the only cap is
-    one action per afternoon.
+- **Afternoon = visit (방문, §15 D)** (every day that has an afternoon, one action per day; the record keeps
+  its old name `evening`): see "Afternoon visit (방문)" below — visit one pilot, then 집중 훈련 / 이야기 / 외출.
+  Leaving the afternoon without a visit records a pass. Manager-only — staff never visit.
+  - **No weekly count limits** (removed 2026-10): a visit is always possible; the only cap is
+    one action per afternoon (`AfternoonAway.can_request`: the day's record is still empty).
   - Outing: only with a pilot at trust level ≥ `TRUST_OUTING_LEVEL`.
     Effects: the row's clauses (trust +, `pmod:all:+N:-1` until next match) + `outings[pid] += 1` +
+    stress relief `STRESS_OUTING_RELIEF + VISIT_OUTING_RELIEF_BONUS` +
     **next training day** EXP × `MENTAL_OUTING_EXP_MULT` for that pilot
     (`training_exp_mult(state, pid, day)`; `TrainingBoard` (M3) multiplies it; a Friday / Saturday /
     Sunday outing hits next Monday — stored as day `TRAINING_DAYS`, `end_week` carries it over).
-  - Interview / outing checks are judged with the manager's own mental.
+    The true-ending count is unchanged.
+  - Story / outing checks are judged with the manager's own mental.
 - **Incidents** roll once per day when that day's **evening** starts (`begin_dusk`, marker
   `days["<day>"].dusk = true`; the week screen calls it on the afternoon's Next and skips the evening when nothing
   happens):
@@ -96,6 +100,33 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   battle strip / detail panel (`stress/README.md`). Keys `mental.ui.stress.*` (value, mood names; `day` deprecated).
   Shared words for stress / moods are not in `term.*` yet (only the base owner adds there).
 
+## Afternoon visit (방문, §15 D)
+The old afternoon "면담" is the **visit**. The week screen (`features/season/week/` — `VisitMenu`) asks; this
+folder records and applies.
+1. **Visit** — tap a pilot on the base map (several pilots who can be visited on one spot → a small picker).
+   `MentalSystem.begin_visit(state, day, pid)` records `{action: "visit", pilot_id, choice: -1}` **before the
+   menu opens** (the afternoon's one action is spent; reload reopens the menu, `visit_open(state, day)`).
+2. **Menu** — three options:
+   - **집중 훈련** → a course → `finish_focus(state, day, course)` (`FocusTraining.apply`) → record
+     `{action: "focus", course, choice: 0, outcome}`. Costs coach points (`StaffSystem.coach_points`,
+     `FOCUS_COST`, 한계돌파 `FOCUS_COST_LIMIT_BREAK`).
+   - **이야기** → `begin_evening(state, day, "story", pid)` draws a story row → the VN dialogue →
+     `finish_evening` (relief `STRESS_INTERVIEW_RELIEF`). Record `action: "story"`.
+   - **외출** → `begin_evening(state, day, "outing", pid)` (trust gate as before).
+- **Courses** (`FocusTraining.COURSES`): 공격성 `field_hit + engage_hit` · 신중함 `field_eva + engage_eva` ·
+  운영력 `field_hit + field_eva` · 전투력 `engage_hit + engage_eva` · 성장력 `atk_growth + hp_growth` — each stat
+  gets `FOCUS_STAT_EXP` stat EXP through the training board's rule (the week's leftover bank
+  `training_exp_carry[seat]`, `TRAINING_EXP_PER_POINT` EXP = 1 point), the sum counts as training EXP
+  (`TrainingLevel.add_exp`); plus `FOCUS_AWAKEN` awakening gauge (`Awakening.add_gauge`) and `FOCUS_STRESS` stress.
+  **한계돌파** (listed only while `LimitBreak.goal_active`) calls `LimitBreak.complete` instead of the stat EXP.
+- **Story pools** (`story_kinds_for(state, day)`, the first pool with a row for the pilot wins):
+  Mon–Fri `story` (about that morning's training: the answer pair `train_bonus:std` + stress vs `stress_train:-2`);
+  Saturday with the ban/pick stored (`pending_match.picks`) `story_sat` (`mastery:+N` on that pilot's ban/pick mech);
+  Sunday after my match (`mental.last_match` of this week) `story_sun` (conds `last` · `mvp` · `kda` · `kills` ·
+  `deaths`); the old `interview` rows are always the fallback (a plain weekend day uses only them).
+- **Last match** (`record_match`, `SeasonHub._consume_pending_match_result`): `mental.last_match =
+  {week, won, mvp, lines: {"<pid>": {k, d, a}}}` (my pilots), read by `last_match_of` / `match_line`.
+
 ## Afternoon away states
 The week screen splits each Mon–Fri into morning (training) and afternoon (the evening action, now shown as
 오후). When the afternoon starts (`AfternoonAway.begin(state, day)`, called by the week screen's Next
@@ -125,7 +156,8 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
   "week": "<phase>-<phase_week>",   # week the fields below belong to ("" after end_week)
   # (old saves may still carry "interviews_used" / "outings_used": ignored, no longer written)
   "days": {"<day 0..6>": {
-      "evening":  {action: "interview"|"outing"|"pass", pilot_id, event, choice (-1 = open), outcome{}},
+      "evening":  {action: "visit"|"focus"|"story"|"outing"|"pass" ("interview" = old saves), pilot_id, event,
+                  course (focus only), choice (-1 = open), outcome{}},
       "incident": {} (rolled, none) | {event, pilot_id, choice (-1 = pending), outcome{}},
       "talk":     {} (morning open, nothing chosen) | {action: "talk"|"pass", pilot_id, partner_id (-1 = alone),
                   event, choice (-1 = open), outcome{}},
@@ -134,10 +166,14 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
   }},
   "fatigue": {"<pid>": day},        # training day whose EXP is cut (≥5 = next week, shifted by end_week)
   "press": {week, event, pilot_id, choice, outcome{}},
+  "last_match": {week, won, mvp, lines: {"<pid>": {k, d, a}}},   # §15 D Sunday story (kept over week ends)
 }
 ```
 `outcome` = `{checked, ok, chance, pilot_id, partner_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
-(D7): note dicts are `{type: trust|trust_all|trust_level|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`.
+(D7): note dicts are `{type: trust|trust_all|trust_level|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`;
+§15 D adds `stat_up {pid, stat, delta}` · `stat_exp {pid, delta}` · `tlexp {pid, delta}` (0 = bar full) ·
+`awaken {pid, delta}` · `mastery {pid, mech, delta}` · `limit_break {pid, level}` · `coach {delta}` (keys `mental.ui.note.*`).
+A focus training outcome has the same shape (`checked: false`) plus `course`.
 `MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
 `MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
 A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력치", shared with the training tiles).
@@ -150,7 +186,7 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 `data/l10n/src/mental.csv`, not here). Ids: `<event>_L<seq>` · `<event>_C<choice>` · `<event>_C<choice>_S<seq>`.
 
 - `kind` — `interview` / `outing` / `incident` / `press` / `talk` (morning talk) / `talk_pair` (morning talk with
-  the joint-training partner).
+  the joint-training partner) / `story` · `story_sat` · `story_sun` (afternoon visit 이야기, §15 D; `interview` = their fallback).
 - `manager_type` — -1 any, 0 운영형 (m), 1 실전형 (f). Rows for the other type never appear;
   rows for the run's type weigh × `MENTAL_TYPE_WEIGHT_MULT`. Outings pick **strictly** by stage:
   a typed row for the stage beats the generic one.
@@ -178,6 +214,11 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `pmod:<stat\|all>:<delta>:<weeks>` | target pilot temporary stat mod (`PilotMods.add`); `weeks = -1` = until next own match |
 | `pmod_all:<stat\|all>:<delta>:<weeks>` | same for all my pilots |
 | `smod:<stat>:<delta>:<weeks>` | temporary manager-stat mod (`StaffSystem.add_mod`, `stat` ∈ `StaffSystem.STATS`, weeks > 0) |
+| `awaken:+N` | target pilot awakening gauge + N (`Awakening.add_gauge`, §15 C) — stories, incidents |
+| `tlexp:+N` | target pilot training EXP + N (`TrainingLevel.add_exp`; a full bar adds nothing, note says so) |
+| `mastery:+N` | mastery + N on the target's story mech (`FocusTraining.story_mech`: Saturday ban/pick mech, else research mech, else the coach's pick; `MechMastery.gain`) |
+| `train_bonus:std` / `train_bonus:N` | today's stat EXP of the target again × `STORY_TRAIN_BONUS_PCT` % (`std`) or N %, through the leftover bank (`FocusTraining.add_stat_exp`, also training EXP). No training row today = nothing |
+| `stress_train:<±N>` | target stress + N × the stress today's training gave it (`-2` = relieve it twice over). No training row = nothing |
 | `chk:<±N>` | adjusts this entry's check chance by N percentage points |
 | `ok>…` / `ng>…` | prefix: clause applies only on a passed / failed mental check. An entry with any gated clause rolls one check: chance = `MENTAL_CHECK_BASE + (judge − MENTAL_CHECK_PIVOT) × MENTAL_CHECK_PER_POINT + chk`, clamped `[MENTAL_CHECK_MIN, MENTAL_CHECK_MAX]`. |
 
@@ -196,6 +237,8 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `train=X` / `train=X,Y` | the target's training cell colour today (week log row `color`; basic course = `W`) is one of them (`MentalEvents.today_row`, day = `season_state.week_day`) |
 | `ups>=N` / `ups<N` | stat points the target gained in today's training |
 | `stress>=N` / `stress<N` | the target's current stress |
+| `mvp=yes` / `mvp=no` | the target was / was not the MVP of my last match (`mental.last_match`) |
+| `kda>=N` · `kills>=N` · `deaths>=N` (and `<`, `=`) | the target's line in my last match: `(k + a) / max(d, 1)` floored · kills · deaths; no line = false |
 
 - **Trait `trust_gain`** (M8): `add_trust` adjusts only a rise — `max(0, delta + Σp1)` — so a
   rise never becomes a loss; drops pass through untouched.
@@ -206,7 +249,9 @@ Every answer of an interview / outing / incident / morning talk / press question
 staff cover for incidents, else the manager's mental) and the **direction** of each effect, never the number:
 `성공 58% · 신뢰↑` or, when pass and fail differ, `성공 58% · 성공: 신뢰↑ / 실패: 신뢰↓`.
 `MentalEvents.choice_preview(state, row, idx, judge)` sums the clause deltas per label for the passed and the failed
-world (`preview_label`: 신뢰 · 팀 신뢰 · 스트레스 · 팀 스트레스 · stat name · 팀 <stat> · 감독 <stat>), `preview_text`
+world (`preview_label`: 신뢰 · 팀 신뢰 · 스트레스 · 팀 스트레스 · stat name · 팀 <stat> · 감독 <stat>; §15 D: 깨달음 ·
+훈련 EXP · 숙련 · 능력치 EXP (`train_bonus`), and `stress_train` adds to 스트레스 as N × today's training stress of the
+target — `choice_preview(…, pilot_id)`), `preview_text`
 formats them (keys `mental.ui.preview.*`). The activity's own stress relief is the same for every answer and is left
 out. The press conference shows the same line under its answers (`MessengerView.open(..., previews)`, judge = manager).
 
@@ -214,7 +259,9 @@ out. The press conference shows the same line under its answers (`MessengerView.
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `trust_level` · `trust_progress` · `outings` · `add_trust` ·
 `true_ending_pilots` · `my_pilot_ids` · `outing_unlocked` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
 `finish_evening(state, day, choice)` · `begin_morning` / `morning_started` / `talk` / `talk_done` / `can_talk` /
-`talk_partner` / `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` · `begin_dusk` /
+`talk_partner` / `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` ·
+`begin_visit(state, day, pid)` / `visit_open` / `finish_focus(state, day, course)` / `story_kinds_for(state, day)` ·
+`record_match(state, pending_match)` / `last_match_of` / `match_line(state, pid)` · `begin_dusk` /
 `dusk_started` · `ensure_incident` / `incident_pending` / `incident_session` /
 `resolve_incident` · `press_session` / `resolve_press` · `judge_for(state, kind)` ·
 `session_view(state, session)` → `{kind, event, pilot_id, partner_id, tag, lines, choices, previews}` (translated text).
@@ -289,8 +336,9 @@ the safe top). Code extends `%Background` and `%Dim` into the notch band and lif
 
 ### Wiring (coordinator: `features/season/week/WeekProgressView.gd`)
 
-`_overlay: VnDialogueView` serves the morning talk, the afternoon dialog and the incident (`_overlay_kind`
-`talk` / `evening` / `incident`). `_open_overlay(kind, sub, title,
+`_overlay: VnDialogueView` serves the morning talk, the afternoon dialog (story / outing), the limit-break event
+(§15 B) and the incident (`_overlay_kind` `talk` / `evening` / `limit_break` / `incident`; a limit-break answer goes
+to `LimitBreak.choose_goal`, which returns the outcome view itself). `_open_overlay(kind, sub, title,
 pid, view, speaker = "")`: evening → title = pilot name; incident → title = the event's `@tag`, `speaker` = pilot
 name (sub `season.week.sub_incident`). `_on_overlay_choice` resolves by `_overlay_kind`
 (`resolve_incident` / `finish_evening`) and calls `show_result(MentalEvents.outcome_view(state, out))`.

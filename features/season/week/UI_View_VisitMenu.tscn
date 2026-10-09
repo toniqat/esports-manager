@@ -1,0 +1,324 @@
+[gd_scene load_steps=3 format=3 uid="uid://d32tknc3xad7l"]
+
+[ext_resource type="Script" uid="uid://b7dx2bia1hweu" path="res://features/season/week/VisitMenu.gd" id="1_visit"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="VisitMenu" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_visit")
+
+[node name="Root" type="Control" parent="."]
+auto_translate_mode = 2
+editor_description = "Afternoon visit (방문) popup of the week screen: pick page (2+ pilots on one spot) → menu page (집중 훈련 / 이야기 / 외출) → courses page → result page. Every text is code-filled (auto_translate_mode = 2)."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready()
+Tap outside the card: cancels the pick page only (the visit is recorded once a pilot is chosen)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="SafeArea" type="CenterContainer" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fit_safe_area()"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/SafeArea"]
+custom_minimum_size = Vector2(960, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCard"
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="HBoxContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()
+The visited pilot (hidden pilot part on the pick page) + the coach points left this week."
+custom_minimum_size = Vector2(0, 104)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Portrait" type="Control" parent="Root/SafeArea/Card/VBox/Header"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()
+Slot for the round portrait (OutgameTheme.add_round_portrait)."
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="Names" type="VBoxContainer" parent="Root/SafeArea/Card/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Name" type="Label" parent="Root/SafeArea/Card/VBox/Header/Names"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()"
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Evelyn"
+
+[node name="PilotLine" type="Label" parent="Root/SafeArea/Card/VBox/Header/Names"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "신뢰 Lv.2 · 스트레스 34"
+
+[node name="Coach" type="Label" parent="Root/SafeArea/Card/VBox/Header"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_header()
+Coach points left this week (StaffSystem.coach_points)."
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 26
+text = "코치 포인트 5"
+horizontal_alignment = 2
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Caption" type="Label" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()"
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 26
+text = "무엇을 함께할까요?"
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PickList" type="VBoxContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd open_picker()
+Pick page: one UI_Comp_VisitPilotRow per pilot on the tapped spot (code adds them)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Options" type="VBoxContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()
+Menu page: the three visit options."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Focus" type="Button" parent="Root/SafeArea/Card/VBox/Options"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _fill_options()"
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Text" type="VBoxContainer" parent="Root/SafeArea/Card/VBox/Options/Focus"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_right = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="FocusTitle" type="Label" parent="Root/SafeArea/Card/VBox/Options/Focus/Text"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 32
+text = "집중 훈련"
+
+[node name="FocusNote" type="Label" parent="Root/SafeArea/Card/VBox/Options/Focus/Text"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "코치 포인트를 써서 두 능력치를 집중 단련합니다"
+autowrap_mode = 3
+
+[node name="Story" type="Button" parent="Root/SafeArea/Card/VBox/Options"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _fill_options()"
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Text" type="VBoxContainer" parent="Root/SafeArea/Card/VBox/Options/Story"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_right = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="StoryTitle" type="Label" parent="Root/SafeArea/Card/VBox/Options/Story/Text"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 32
+text = "이야기"
+
+[node name="StoryNote" type="Label" parent="Root/SafeArea/Card/VBox/Options/Story/Text"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()"
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "오늘 아침 훈련 이야기를 나눕니다"
+autowrap_mode = 3
+
+[node name="Outing" type="Button" parent="Root/SafeArea/Card/VBox/Options"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _fill_options()"
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Text" type="VBoxContainer" parent="Root/SafeArea/Card/VBox/Options/Outing"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_right = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="OutingTitle" type="Label" parent="Root/SafeArea/Card/VBox/Options/Outing/Text"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 32
+text = "외출"
+
+[node name="OutingNote" type="Label" parent="Root/SafeArea/Card/VBox/Options/Outing/Text"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()
+Effect line, or why the outing is locked (NegativeLabel)."
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "스트레스를 크게 풀고 신뢰를 쌓습니다"
+autowrap_mode = 3
+
+[node name="Courses" type="VBoxContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd show_courses()
+Courses page: one UI_Comp_VisitCourseRow per course (code adds them)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Result" type="VBoxContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result()
+Result page: one line per note (duplicates of %ResultLine)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="ResultLine" type="Label" parent="Root/SafeArea/Card/VBox/Result"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result()
+Template line (hidden), duplicated per result note."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "Evelyn 전장 명중 +1"
+autowrap_mode = 3
+
+[node name="Gap3" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Root/SafeArea/Card/VBox"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()"
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Back" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
+Pick page: cancel · courses page: back to the menu."
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "뒤로"
+
+[node name="Confirm" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
+Courses page: start the picked course · result page: close."
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 30
+text = "확인"

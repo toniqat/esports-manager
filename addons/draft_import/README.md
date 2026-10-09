@@ -14,7 +14,7 @@ The game never reads the JSON. Authoring convention: `narrative/README.md`.
 ## Rules
 - **Ids are stable**: text ids are `<event>_L<seq>` · `<event>_C<n>` · `<event>_C<n>_S<seq>` (as before Draft) and the
   alias is `mental.<event lower>.<id lower>`, so an unchanged event re-imports with 0 edits and keeps its `tx_` keys.
-- A Flow is an event only when it has a memo (Comment) with a `kind` attr; other flows are skipped with a warning.
+- A Flow is an event only when it has a memo (Comment) with a `kind` attr (`KINDS`: interview · outing · incident · press · talk · talk_pair · story · story_sat · story_sun); other flows are skipped with a warning.
   Rows are sorted by kind (`KINDS` order), then id. Duplicate event ids: the later flow is dropped (warning).
 - Line markers come from the speaker's wiki name (`SPEAKER_MARKERS`: 감독 `>`, 파트너 `&`, 태그 `@`; no speaker /
   stage line `*`; anyone else plain). Translations whose line count differs from the source leave `en` empty (warning).

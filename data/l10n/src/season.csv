@@ -93,9 +93,9 @@ tx_55ZT5D24ZK,season.week.quirk_unknown,active,Quirk name fallback (no table row
 tx_0H7MR6XZ5Q,season.week.btn_start_match,active,WeekProgressView bottom button,,,경기 시작,Start Match,draft,dfb0f596
 tx_QBJC7HSWEH,season.week.btn_end_week,active,WeekProgressView bottom button,,,주 마감 →,End Week →,draft,db903e37
 tx_BG13VH48VC,season.week.evening_limits,deprecated,Evening card weekly limits,,,면담 {iv}/{iv_max} · 외출 {out}/{out_max},Meetings {iv}/{iv_max} · Outings {out}/{out_max},draft,118364ac
-tx_R4XWZFXHFD,season.week.slot_trust,active,Evening card pilot slot,,,신뢰 Lv.{trust} · 외출 {outings},Trust Lv.{trust} · Outings {outings},draft,25252129
+tx_R4XWZFXHFD,season.week.slot_trust,deprecated,Evening card pilot slot,,,신뢰 Lv.{trust} · 외출 {outings},Trust Lv.{trust} · Outings {outings},draft,25252129
 tx_G9WWN59WGH,season.week.outing_week_done,deprecated,"Evening card button, disabled",,,외출 (이번 주 끝),Outing (used up),draft,34877dad
-tx_QYSSXAFB3S,season.week.outing_need_trust,active,"Evening card button, disabled",,,외출 (신뢰 Lv.{n}↑),Outing (Trust Lv.{n}+),draft,ed5169b2
+tx_QYSSXAFB3S,season.week.outing_need_trust,deprecated,"Evening card button, disabled",,,외출 (신뢰 Lv.{n}↑),Outing (Trust Lv.{n}+),draft,ed5169b2
 tx_0TJBQGEP0N,season.week.interview_week_done,deprecated,"Evening card button, disabled",,,면담 (이번 주 끝),Meeting (used up),draft,c8709aca
 tx_M4WBEB9G7X,season.week.evening_rested,deprecated,Evening done card head,,,{tx_191AFE0BN2}: 쉬었습니다,This evening: Rested,draft,a35579f8
 tx_H8MV6KQN83,season.week.evening_interview,deprecated,Evening done card head,,,{tx_191AFE0BN2}: {name} 면담,This evening: Meeting with {name},draft,b7a72631
@@ -112,21 +112,21 @@ tx_CPW05B0HB9,season.week.stage.morning,active,"WeekProgressView bottom bar stag
 tx_XXVBB9VYQX,season.week.stage.afternoon,active,WeekProgressView bottom bar stage slot · afternoon card head,,,오후,Afternoon,draft,d2cf9622
 tx_7YZ50G3EBF,season.week.map_hint.morning,active,"WeekProgressView caption above the base map, morning before settlement",,,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다,Morning training · Press Next to settle today's training,draft,df4d0750
 tx_AWKX6T199K,season.week.map_hint.result,active,"WeekProgressView caption above the base map, morning after settlement",,,오전 훈련 결과 · 잠시 후 오전 만남으로 넘어갑니다 (다음 = 건너뛰기),Morning training results · The morning talk starts shortly (Next = skip),draft,8c9ae9ad
-tx_CXNA4K157Z,season.week.map_hint.afternoon,active,"WeekProgressView caption above the base map, afternoon before the action",,,오후 · 선수를 눌러 면담이나 외출을 요청하세요,Afternoon · Tap a player to ask for a meeting or an outing,draft,c15f313e
+tx_CXNA4K157Z,season.week.map_hint.afternoon,active,"WeekProgressView caption above the base map, afternoon before the action",,,오후 · 선수를 눌러 방문하세요 (하루 한 번),Afternoon · Tap a player to visit (once per day),draft,075748a8
 tx_7KR285R4ES,season.week.map_hint.afternoon_done,active,"WeekProgressView caption above the base map, afternoon after the action",,,오늘 오후 일정을 마쳤습니다,This afternoon is done,draft,393639c4
 tx_5W9RGVB4BS,season.week.map.exp,active,Base map pilot chip after training: EXP earned when no stat point rose,,,EXP +{n},EXP +{n},draft,51d97854
 tx_TCFF8QQBA3,season.week.map.stress,active,Base map pilot chip after training: stress change of the day (delta has a sign),,,스트레스 {delta},Stress {delta},draft,a4efbaa0
 tx_B7175RYNW5,season.week.map.self_outing,active,"Base map pilot chip, afternoon: the pilot went out on their own (stress)",,,혼자 외출,Out alone,draft,4bcaf159
 tx_0WX5FQG1PV,season.week.map.dorm,active,"Base map pilot chip, afternoon: the pilot had no training tile and rests in the dorm",,,숙소 휴식,Resting in dorm,draft,48a098a7
-tx_MAPMDX9DJ0,season.week.afternoon_pick,active,"Afternoon card hint, no pilot selected",,,지도에서 면담 · 외출할 선수를 누르세요 (하루 한 번),Tap a player on the map for a meeting or an outing (once per day),draft,af7f5286
-tx_ME49NDMB1F,season.week.afternoon_none,active,"Afternoon card hint, nothing possible (limits used or every pilot away)",,,오늘 오후에는 할 수 있는 면담 · 외출이 없습니다,No meeting or outing is possible this afternoon,draft,8ad735f4
+tx_MAPMDX9DJ0,season.week.afternoon_pick,active,"Afternoon card hint, no pilot selected",,,지도에서 방문할 선수를 누르세요 · 집중 훈련 · 이야기 · 외출 중 하나 (하루 한 번),"Tap a player on the map to visit · focus training, a talk or an outing (once per day)",draft,638732cf
+tx_ME49NDMB1F,season.week.afternoon_none,active,"Afternoon card hint, nothing possible (limits used or every pilot away)",,,오늘 오후에는 방문할 수 있는 선수가 없습니다,Nobody can be visited this afternoon,draft,73fbeead
 tx_NRH0Z789MC,season.week.afternoon_rested,active,Afternoon done card head,,,오후: 쉬었습니다,Afternoon: Rested,draft,09f4db5a
-tx_JT4H7JX5BF,season.week.afternoon_interview,active,Afternoon done card head,,,오후: {name} 면담,Afternoon: Meeting with {name},draft,87f10817
+tx_JT4H7JX5BF,season.week.afternoon_interview,active,Afternoon done card head,,,오후: {name} 방문,Afternoon: Visit with {name},draft,12c1a27c
 tx_F8B4DZ53XB,season.week.afternoon_outing,active,Afternoon done card head,,,오후: {name} 외출,Afternoon: Outing with {name},draft,d9442bd0
-tx_TB0M24CVNM,season.week.sub_interview_pm,active,Dialogue overlay subtitle,,,{day} 오후 · 면담,{day} afternoon · Meeting,draft,5489dbb4
+tx_TB0M24CVNM,season.week.sub_interview_pm,active,Dialogue overlay subtitle,,,{day} 오후 · 방문,{day} afternoon · Visit,draft,2c002c62
 tx_7PKEPM8SGK,season.week.sub_outing_pm,active,Dialogue overlay subtitle,,,{day} 오후 · 외출 {n}회째,{day} afternoon · Outing #{n},draft,48998edb
 tx_G3FNS00AWW,season.week.skip.title,active,Confirm popup title: Next pressed while a meeting or outing is still possible,,,오후 일정을 건너뛸까요?,Skip this afternoon?,draft,df78343a
-tx_BVDJ9Q0CSD,season.week.skip.body,active,Confirm popup body: Next pressed while a meeting or outing is still possible,,,아직 면담이나 외출을 할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.,"A meeting or an outing is still possible. If you move on now, this afternoon counts as rest.",draft,a2d4a76e
+tx_BVDJ9Q0CSD,season.week.skip.body,active,Confirm popup body: Next pressed while a meeting or outing is still possible,,,아직 선수를 방문할 수 있습니다. 이대로 넘어가면 오늘 오후는 쉰 것으로 처리됩니다.,"You can still visit a player. If you move on now, this afternoon counts as rest.",draft,f0add8a8
 tx_CGHZDAMEAR,season.week.skip.confirm,active,Confirm popup confirm button: skip the afternoon,,,건너뛰기,Skip,draft,88130ab9
 tx_C3T5QMKS85,season.pilot_detail.stats,active,SeasonPilotDetail sheet section title: the pilot's six stats,,,능력치,Stats,draft,9e9117d0
 tx_1EN72EY6WJ,season.pilot_detail.total,active,SeasonPilotDetail head: sum of the six stats,,,종합 {n},Total {n},draft,7cf12880
@@ -159,3 +159,8 @@ tx_D4H4CEEAQX,season.week.map_hint.evening_quiet,active,"WeekProgressView captio
 tx_34NK587JXR,season.week.btn_match_prep,active,"WeekProgressView bottom button, Saturday morning: opens scouting + ban/pick for Sunday's match",,,경기 준비,Match Prep,draft,7f43f241
 tx_2PHY0EQHSZ,season.week.hint_prep,active,"Match card hint (my match), Saturday",,,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일,Scout the opponent and finish ban/pick today · the match is tomorrow,draft,c0d437a9
 tx_3MV5ZYWADH,season.week.hint_match_ready,active,"Match card hint (my match), Sunday with the Saturday picks stored",,,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다,Ban/pick done · Start Match goes straight into the match,draft,11939e9e
+tx_W7VJT121B2,season.week.afternoon_focus,active,Afternoon done card head (visit: focus training),,,오후: {name} 집중 훈련 · {course},Afternoon: Focus training with {name} · {course},draft,6ac7d0f7
+tx_64BZGJ4BTM,season.week.afternoon_story,active,Afternoon done card head (visit: story),,,오후: {name}{wa} 이야기,Afternoon: Talk with {name},draft,8a34f947
+tx_VTXA6YGJ8E,season.week.afternoon_coach,active,Afternoon card line: coach points left this week / the weekly grant,,,코치 포인트 {n} / 주간 {max},Coach points {n} / {max} this week,draft,d6eee030
+tx_HSPG16C381,season.week.sub_story_pm,active,Dialogue overlay subtitle (visit: story),,,{day} 오후 · 이야기,{day} afternoon · Talk,draft,3a12059a
+tx_5CGB20BWXX,season.week.sub_limit_break,active,"Dialogue overlay subtitle (limit-break event, before the incident)",,,{day} 저녁 · 한계돌파,{day} evening · Limit break,draft,20cd613f

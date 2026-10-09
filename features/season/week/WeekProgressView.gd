@@ -31,7 +31,7 @@ extends Control
 #   TALK      오전 만남(훈련 소감): 선수 하나를 눌러 만난다 (외출 없음). 합동 훈련(같은 타일)이면
 #             함께 훈련한 선수도 같이 온다. "다음" = 오후 (`AfternoonAway.begin`; 아직 만날 수
 #             있으면 경고 팝업).
-#   AFTERNOON 오후 기록이 있다. 면담 · 외출할 수 있는 선수만 밝고, 누르면 오후 카드에서 고른다.
+#   AFTERNOON the afternoon record exists. Pilots who can be visited are lit; a tap = visit (`VisitMenu`, §15 D).
 #             "다음" = 저녁 (아직 할 수 있으면 경고 → 패스로 기록) — `MentalSystem.begin_dusk` 가
 #             사건을 굴리고, 사건이 없으면 바로 다음 날.
 #   EVENING   저녁 사건(선수가 아니라 팀에 일어나는 일, 저절로 열린다). "다음" = 다음 날.
@@ -44,8 +44,8 @@ extends Control
 #                 team map (no training, no morning talk).
 #   Sun STADIUM   stadium map; "경기 시작" → BattleSim with the Saturday picks
 #                 (`SeasonHub.on_week_day_match_start`) → standings → PRESS
-#                 (stadium map, "기자회견" → `SeasonHub.open_press`) → EVENING (team
-#                 map, the evening incident rolls by itself) → "주 마감 →".
+#                 (stadium map, "기자회견" → `SeasonHub.open_press`) → AFTERNOON (team
+#                 map, visit, §15 D) → EVENING (the incident rolls) → "주 마감 →".
 # A weekend day without a player match runs AFTERNOON → EVENING only. The weekend
 # stages are read from the records too (picks in `pending_match`, the week's result,
 # `MentalSystem.press_answered`, the afternoon / dusk records).
@@ -118,8 +118,12 @@ var _chip_labels: Array = []       # 7 Label (… /Chip/Letter)
 var _sel_pid: int = -1                # pilot picked on the map this morning / afternoon (-1 = none)
 var _sel_day: int = -1                # weekday `_sel_pid` belongs to
 var _sel_stage: int = Stage.OFF       # stage `_sel_pid` was picked in (a new half drops it)
-var _overlay: VnDialogueView = null   # talk / afternoon / incident dialogue, null when closed
-var _overlay_kind: String = ""        # "talk" / "evening" / "incident"
+var _overlay: VnDialogueView = null   # talk / afternoon / limit-break / incident dialogue, null when closed
+var _overlay_kind: String = ""        # "talk" / "evening" / "limit_break" / "incident"
+var _overlay_pid: int = -1            # the dialogue's pilot (limit break answers by pilot)
+var _visit_menu: VisitMenu = null     # afternoon visit popup (pick / menu / courses / result)
+var _awaken_view: Node = null         # §15 C AwakeningView while it is open
+var _token_spots: Dictionary = {}     # pilot id -> base-map spot of the current build
 var _skip_popup: ConfirmPopup = null  # "skip the morning talk / afternoon?" warning, made on first use
 
 var _pilot_cards: Array = []          # SeasonPilotCard x5 (scene %PilotRow, seat order)
@@ -181,16 +185,35 @@ func refresh() -> void:
 	_refresh_action_button()
 	if _stage() == Stage.RESULT and _fx_day != _day:
 		_play_result_fx()
-	# An unresolved incident (or a talk / afternoon dialog left open by a reload) opens
-	# by itself — the day cannot be confirmed past it.
-	if _overlay == null:
-		if MentalSystem.incident_pending(_gm.season_state, _day):
-			_open_incident.call_deferred()
-		elif _talk_open():
-			_open_talk_session.call_deferred(MentalSystem.begin_talk(_gm.season_state, _day, -1))
-		elif _evening_open():
-			_open_evening_session.call_deferred(MentalSystem.begin_evening(
-					_gm.season_state, _day, "", -1))
+	_open_pending.call_deferred()
+
+
+## What opens by itself after a redraw, one at a time (each one's close redraws again):
+## a talk / visit / afternoon dialog left open by a reload, a queued awakening
+## (`Awakening.next_pending`, §15 C — after every state change that can raise the gauge),
+## then at the evening the limit-break event (`LimitBreak.pending_event`, §15 B) before the
+## incident. The day cannot be confirmed past any of them.
+func _open_pending() -> void:
+	if _busy() or not is_inside_tree():
+		return
+	var s: Dictionary = _gm.season_state
+	if _talk_open():
+		_open_talk_session(MentalSystem.begin_talk(s, _day, -1))
+	elif MentalSystem.visit_open(s, _day) >= 0 and _stage() == Stage.AFTERNOON:
+		_open_visit_menu(MentalSystem.visit_open(s, _day))
+	elif _evening_open():
+		_open_evening_session(MentalSystem.begin_evening(s, _day, "", -1))
+	elif _open_awakening():
+		pass
+	elif MentalSystem.dusk_started(s, _day) and LimitBreak.pending_event(s, _day) >= 0:
+		_open_limit_break(LimitBreak.pending_event(s, _day))
+	elif MentalSystem.incident_pending(s, _day):
+		_open_incident()
+
+
+## A dialog, the visit popup or an awakening is on screen (taps on the screen wait).
+func _busy() -> bool:
+	return _overlay != null or _visit_menu != null or _awaken_view != null
 
 
 ## Where the day stands — read from the records, never stored on its own.
@@ -231,24 +254,15 @@ func _weekend_stage() -> int:
 	return Stage.OFF
 
 
-## Sunday after the match and the press: this week's match was played on Sunday.
-func _is_match_sunday() -> bool:
-	return _hub != null and _day == CalendarSystem.MATCH_DAY and _hub.player_result_this_week() != ""
-
-
 ## Weekend days move on by themselves once nothing is left to decide: a weekend day
-## without stadium / press opens its afternoon (`AfternoonAway.begin`), and the Sunday
-## of a match, after the press, opens its evening (`MentalSystem.begin_dusk` rolls the
-## incident). Both are recorded and saved, so a reload lands on the same stage.
+## without stadium / press opens its afternoon (`AfternoonAway.begin`) — the Sunday of a
+## match too, after the press (§15 D: STADIUM → PRESS → AFTERNOON (visit) → EVENING).
+## Recorded and saved, so a reload lands on the same stage. (Old saves whose match
+## Sunday already rolled its evening stay in the evening.)
 func _advance_weekend() -> void:
 	if _hub == null or CalendarSystem.is_training_day(_day) or _weekend_stage() != Stage.OFF:
 		return
 	var s: Dictionary = _gm.season_state
-	if _is_match_sunday():
-		if not MentalSystem.dusk_started(s, _day):
-			MentalSystem.begin_dusk(s, _day)
-			_save("incident")
-		return
 	if not AfternoonAway.started(s, _day) and not MentalSystem.dusk_started(s, _day):
 		AfternoonAway.begin(s, _day)
 		_save("afternoon")
@@ -296,7 +310,10 @@ func _begin_evening() -> void:
 	var s: Dictionary = _gm.season_state
 	if not MentalSystem.evening_done(s, _day):
 		MentalSystem.begin_evening(s, _day, MentalSystem.ACTION_PASS, -1)
-	if MentalSystem.begin_dusk(s, _day).is_empty():
+	# A quiet evening (no incident, no limit-break event) goes straight on — except the
+	# Sunday, which stops on its evening for "주 마감 →".
+	if MentalSystem.begin_dusk(s, _day).is_empty() and LimitBreak.pending_event(s, _day) < 0 \
+			and _day < CalendarSystem.DAYS_PER_WEEK - 1:
 		_leave_day()
 		return
 	_save("incident")
@@ -473,6 +490,7 @@ func _add_map_section(stage: int) -> void:
 		_sel_pid = -1
 
 	_tokens.clear()
+	_token_spots.clear()
 	var entries: Array = []
 	for raw_pid in _my_pilots_in_seat_order():
 		var pid: int = int(raw_pid)
@@ -496,6 +514,7 @@ func _add_map_section(stage: int) -> void:
 			spot = BaseMap.SPOT_ENTRANCE
 		var token: Control = _add_map_token(map, stage, pid, String(names.get(seat, "")), away)
 		_tokens[pid] = token
+		_token_spots[pid] = spot
 		var hold: Control = token.get_node("%Portrait")
 		entries.append({"node": token, "spot": spot, "anchor": hold.position + hold.size * 0.5})
 	map.place_tokens(entries)
@@ -701,13 +720,28 @@ func _day_stress_delta(pid: int) -> int:
 
 
 func _on_pilot_card_pressed(pid: int) -> void:
-	if _overlay != null:
+	if _busy():
 		return
 	SeasonPilotDetail.open(self, pid)
 
 
+## Map tap. Morning talk: pick the pilot (the talk card asks). Afternoon: visit — when
+## other pilots who can be visited stand on the same spot, the popup asks who first.
 func _on_map_pilot_picked(pid: int) -> void:
-	if _overlay != null:
+	if _busy():
+		return
+	if _stage() == Stage.AFTERNOON:
+		var same: Array = []
+		for raw in _my_pilots_in_seat_order():
+			var other: int = int(raw)
+			if String(_token_spots.get(other, "")) == String(_token_spots.get(pid, "")) \
+					and AfternoonAway.can_request(_gm.season_state, _day, other):
+				same.append(other)
+		if same.size() >= 2:
+			_visit_menu = _make_visit_menu()
+			_visit_menu.open_picker(_gm.season_state, same)
+			return
+		_start_visit(pid)
 		return
 	_sel_pid = pid
 	_sel_day = _day
@@ -838,7 +872,7 @@ func _match_row(m: Dictionary, pid: int, tag: String, namer: Node) -> Dictionary
 			hint_key = L.SEASON_WEEK_HINT_MATCH_READY
 	return {
 		"player": is_player, "tag": tag, "title": title, "status": status, "result": result,
-		"hint": Loc.t(hint_key),
+		"hint": Loc.t(hint_key),  # l10n-dynamic: season.week.hint_*
 	}
 
 
@@ -967,7 +1001,7 @@ func _set_action_kind(variation: StringName) -> void:
 
 
 func _on_action_pressed() -> void:
-	if _overlay != null or (_skip_popup != null and _skip_popup.is_open()):
+	if _busy() or (_skip_popup != null and _skip_popup.is_open()):
 		return
 	match _stage():
 		Stage.STADIUM:
@@ -1074,39 +1108,13 @@ func _add_afternoon_card() -> void:
 		_add_afternoon_done_card(MentalSystem.evening(s, _day))
 		return
 
+	# Before the visit: how to visit (tap a pilot on the map → `VisitMenu`) and the week's
+	# coach points (focus training spends them).
 	var card: Control = _add_item(AFTERNOON_CARD_SCENE)
-
-	var picked: bool = _sel_day == _day and _sel_pid >= 0
-	var pilot: Control = card.get_node("%Pilot")
-	var hint: Label = card.get_node("%Hint")
-	pilot.visible = picked
-	hint.visible = not picked
-	hint.text = Loc.t(L.SEASON_WEEK_AFTERNOON_PICK if AfternoonAway.any_request(s, _day)
-			else L.SEASON_WEEK_AFTERNOON_NONE)
-	if picked:
-		OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(_sel_pid),
-				Vector2.ZERO, EVE_PORTRAIT_D, OutgameTheme.ACCENT)
-		(card.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, _sel_pid)
-		var trust: Label = card.get_node("%Trust")
-		trust.text = Loc.t(L.SEASON_WEEK_SLOT_TRUST,
-				{"trust": MentalSystem.trust_level(s, _sel_pid), "outings": MentalSystem.outings(s, _sel_pid)})
-		if MentalSystem.outing_unlocked(s, _sel_pid):
-			trust.theme_type_variation = &"AccentLabel"
-
-	# Actions. Disabled buttons say why on their own label.
-	# No weekly count limits: an interview is always possible, an outing needs the trust gate.
-	var can_out: bool = picked and MentalSystem.can_outing(s, _sel_pid)
-	var out_text: String = Loc.t(L.TERM_ACTIVITY_OUTING)
-	if picked and not MentalSystem.outing_unlocked(s, _sel_pid):
-		out_text = Loc.t(L.SEASON_WEEK_OUTING_NEED_TRUST, {"n": ConstTable.int_of("TRUST_OUTING_LEVEL")})
-	var interview: Button = card.get_node("%Interview")
-	interview.text = Loc.t(L.TERM_ACTIVITY_INTERVIEW)
-	interview.disabled = not picked
-	interview.pressed.connect(_on_afternoon_action.bind(MentalSystem.ACTION_INTERVIEW))
-	var outing: Button = card.get_node("%Outing")
-	outing.text = out_text
-	outing.disabled = not can_out
-	outing.pressed.connect(_on_afternoon_action.bind(MentalSystem.ACTION_OUTING))
+	(card.get_node("%Hint") as Label).text = Loc.t(L.SEASON_WEEK_AFTERNOON_PICK
+			if AfternoonAway.any_request(s, _day) else L.SEASON_WEEK_AFTERNOON_NONE)
+	(card.get_node("%Coach") as Label).text = Loc.t(L.SEASON_WEEK_AFTERNOON_COACH,
+			{"n": StaffSystem.coach_points(s), "max": StaffSystem.coach_points_grant(s)})
 
 
 func _add_afternoon_done_card(e: Dictionary) -> void:
@@ -1126,10 +1134,16 @@ func _add_afternoon_done_card(e: Dictionary) -> void:
 		head_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
 		line_lbl.offset_left = DONE_TEXT_X_NO_PORTRAIT
 	var head: String = Loc.t(L.SEASON_WEEK_AFTERNOON_RESTED)
+	var who: String = MentalEvents.pilot_name(s, pid)
 	if action == MentalSystem.ACTION_INTERVIEW:
-		head = Loc.t(L.SEASON_WEEK_AFTERNOON_INTERVIEW, {"name": MentalEvents.pilot_name(s, pid)})
+		head = Loc.t(L.SEASON_WEEK_AFTERNOON_INTERVIEW, {"name": who})
+	elif action == MentalSystem.ACTION_STORY:
+		head = Loc.t(L.SEASON_WEEK_AFTERNOON_STORY, {"name": who})
+	elif action == MentalSystem.ACTION_FOCUS:
+		head = Loc.t(L.SEASON_WEEK_AFTERNOON_FOCUS, {"name": who,
+				"course": FocusTraining.course_name(String(e.get("course", "")))})
 	elif action == MentalSystem.ACTION_OUTING:
-		head = Loc.t(L.SEASON_WEEK_AFTERNOON_OUTING, {"name": MentalEvents.pilot_name(s, pid)})
+		head = Loc.t(L.SEASON_WEEK_AFTERNOON_OUTING, {"name": who})
 	head_lbl.text = head
 	var notes: Array = MentalEvents.note_texts(s, (e.get("outcome", {}) as Dictionary).get("notes", []))
 	line_lbl.text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
@@ -1192,7 +1206,7 @@ func _add_talk_done_card(t: Dictionary) -> void:
 
 
 func _on_talk_pressed() -> void:
-	if _overlay != null or _sel_pid < 0:
+	if _busy() or _sel_pid < 0:
 		return
 	var session: Dictionary = MentalSystem.begin_talk(_gm.season_state, _day, _sel_pid)
 	if session.is_empty():
@@ -1203,7 +1217,7 @@ func _on_talk_pressed() -> void:
 
 
 func _open_talk_session(session: Dictionary) -> void:
-	if _overlay != null or session.is_empty():
+	if _busy() or session.is_empty():
 		return
 	var s: Dictionary = _gm.season_state
 	var view: Dictionary = MentalSystem.session_view(s, session)
@@ -1254,19 +1268,89 @@ func _my_pilots_in_seat_order() -> Array:
 	return ids
 
 
-func _on_afternoon_action(action: String) -> void:
-	if _overlay != null or _sel_pid < 0:
+# ── Afternoon visit (방문, §15 D) ─────────────────────────────────────────────
+# Tap a pilot → (picker when several stand on the spot) → the visit is recorded
+# (`MentalSystem.begin_visit`, saved) → `VisitMenu`: 집중 훈련 (courses → result) /
+# 이야기 (story dialogue) / 외출 (outing dialogue). A reload with the menu open reopens it.
+
+func _make_visit_menu() -> VisitMenu:
+	var menu := VisitMenu.create()
+	add_child(menu)
+	menu.pilot_picked.connect(_on_visit_pilot_picked)
+	menu.option_picked.connect(_on_visit_option)
+	menu.course_picked.connect(_on_visit_course)
+	menu.closed.connect(_on_visit_closed)
+	return menu
+
+
+## Record the visit (the afternoon's one action) and open the menu.
+func _start_visit(pid: int) -> void:
+	if not MentalSystem.begin_visit(_gm.season_state, _day, pid):
+		_close_visit_menu()
+		refresh()
 		return
-	var session: Dictionary = MentalSystem.begin_evening(_gm.season_state, _day, action, _sel_pid)
+	_save("visit")
+	_rebuild_list()
+	_open_visit_menu(pid)
+
+
+func _open_visit_menu(pid: int) -> void:
+	if _visit_menu == null:
+		if _busy():
+			return
+		_visit_menu = _make_visit_menu()
+	_visit_menu.open_menu(_gm.season_state, pid, _day)
+
+
+func _close_visit_menu() -> void:
+	if _visit_menu != null:
+		_visit_menu.queue_free()
+		_visit_menu = null
+
+
+func _on_visit_pilot_picked(pid: int) -> void:
+	_start_visit(pid)
+
+
+func _on_visit_option(option: String) -> void:
+	var s: Dictionary = _gm.season_state
+	var pid: int = MentalSystem.visit_open(s, _day)
+	if pid < 0:
+		return
+	if option == VisitMenu.OPTION_FOCUS:
+		if _visit_menu != null:
+			_visit_menu.show_courses(s)
+		return
+	var action: String = MentalSystem.ACTION_OUTING if option == VisitMenu.OPTION_OUTING \
+			else MentalSystem.ACTION_STORY
+	var session: Dictionary = MentalSystem.begin_evening(s, _day, action, pid)
 	if session.is_empty():
-		_rebuild_list()
 		return
+	_close_visit_menu()
 	_save("afternoon_open")
 	_open_evening_session(session)
 
 
+func _on_visit_course(id: String) -> void:
+	var s: Dictionary = _gm.season_state
+	var out: Dictionary = MentalSystem.finish_focus(s, _day, id)
+	if out.is_empty():
+		if _visit_menu != null:
+			_visit_menu.show_courses(s)
+		return
+	_save("focus")
+	if _visit_menu != null:
+		_visit_menu.show_result(s, MentalEvents.note_texts(s, out.get("notes", [])))
+
+
+## Picker cancelled (nothing recorded) or the focus result confirmed.
+func _on_visit_closed() -> void:
+	_close_visit_menu()
+	refresh()
+
+
 func _open_evening_session(session: Dictionary) -> void:
-	if _overlay != null or session.is_empty():
+	if _busy() or session.is_empty():
 		return
 	var s: Dictionary = _gm.season_state
 	var view: Dictionary = MentalSystem.session_view(s, session)
@@ -1274,6 +1358,8 @@ func _open_evening_session(session: Dictionary) -> void:
 		return
 	var pid: int = int(view["pilot_id"])
 	var sub: String = Loc.t(L.SEASON_WEEK_SUB_INTERVIEW_PM, {"day": OutgameTheme.day_name(_day)})
+	if String(MentalSystem.evening(s, _day).get("action", "")) == MentalSystem.ACTION_STORY:
+		sub = Loc.t(L.SEASON_WEEK_SUB_STORY_PM, {"day": OutgameTheme.day_name(_day)})
 	if String(view["kind"]) == MentalEvents.KIND_OUTING:
 		sub = Loc.t(L.SEASON_WEEK_SUB_OUTING_PM, {"day": OutgameTheme.day_name(_day),
 				"n": MentalSystem.outings(s, pid) + 1})
@@ -1281,7 +1367,7 @@ func _open_evening_session(session: Dictionary) -> void:
 
 
 func _open_incident() -> void:
-	if _overlay != null or not MentalSystem.incident_pending(_gm.season_state, _day):
+	if _busy() or not MentalSystem.incident_pending(_gm.season_state, _day):
 		return
 	var s: Dictionary = _gm.season_state
 	var view: Dictionary = MentalSystem.session_view(s, MentalSystem.incident_session(s, _day))
@@ -1296,6 +1382,7 @@ func _open_incident() -> void:
 func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dictionary,
 		speaker: String = "") -> void:
 	_overlay_kind = kind
+	_overlay_pid = pid
 	# Interviews / outings / incidents = visual-novel dialogue (`mental/VnDialogueView`).
 	var vn := VnDialogueView.create()
 	_overlay = vn
@@ -1309,6 +1396,13 @@ func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dic
 
 func _on_overlay_choice(idx: int) -> void:
 	var s: Dictionary = _gm.season_state
+	if _overlay_kind == "limit_break":
+		# `choose_goal` returns the outcome **view** (display text) itself.
+		var lb_view: Dictionary = LimitBreak.choose_goal(s, _overlay_pid, idx)
+		_save("limit_break")
+		if _overlay != null:
+			_overlay.show_result(lb_view)
+		return
 	var out: Dictionary
 	if _overlay_kind == "incident":
 		out = MentalSystem.resolve_incident(s, _day, idx)
@@ -1326,13 +1420,67 @@ func _on_overlay_closed() -> void:
 		_overlay.queue_free()
 		_overlay = null
 	_overlay_kind = ""
+	_overlay_pid = -1
+	refresh()
+
+
+# ── Limit break (한계돌파, §15 B) — evening, before the incident ──────────────
+## The limit-break dialogue of `pid` in the shared `VnDialogueView` (kind `limit_break`):
+## `LimitBreak.session` is a `session_view`-shaped dict; the answer goes to `choose_goal`.
+func _open_limit_break(pid: int) -> void:
+	if _busy():
+		return
+	var view: Dictionary = LimitBreak.session(_gm.season_state, pid)
+	if view.is_empty() or (view.get("choices", []) as Array).is_empty():
+		return
+	view["lines"] = view.get("lines", [])
+	_open_overlay("limit_break", Loc.t(L.SEASON_WEEK_SUB_LIMIT_BREAK, {"day": OutgameTheme.day_name(_day)}),
+			MentalEvents.pilot_name(_gm.season_state, pid), pid, view)
+
+
+# ── Awakening (깨달음, §15 C) ─────────────────────────────────────────────────
+## A queued awakening opens right here (`Awakening.next_pending`): C's `AwakeningView`
+## (`create()` · `open(pid)` · `closed`), looked up by class name so this screen also runs in
+## a tree without it. Its close redraws, which polls again (several queued pilots in turn).
+## Not while the morning result FX plays (it opens when the FX ends). True when opened.
+func _open_awakening() -> bool:
+	if _busy() or _fx_day == _day:
+		return false
+	var pid: int = Awakening.next_pending(_gm.season_state)
+	if pid < 0:
+		return false
+	var script: Script = _awakening_view_script()
+	if script == null:
+		return false
+	var view: Variant = script.call("create")
+	if not (view is Node):
+		return false
+	_awaken_view = view
+	add_child(_awaken_view)
+	_awaken_view.connect("closed", _on_awakening_closed, CONNECT_ONE_SHOT)
+	_awaken_view.call("open", pid)
+	return true
+
+
+static func _awakening_view_script() -> Script:
+	for c in ProjectSettings.get_global_class_list():
+		if String((c as Dictionary).get("class", "")) == "AwakeningView":
+			return load(String((c as Dictionary)["path"])) as Script
+	return null
+
+
+func _on_awakening_closed() -> void:
+	if _awaken_view != null and is_instance_valid(_awaken_view) and not _awaken_view.is_queued_for_deletion():
+		_awaken_view.queue_free()
+	_awaken_view = null
+	_save("awakening")
 	refresh()
 
 
 ## F6 단독 실행 미리보기 — 메모리 런의 **수요일 오후**(`resources/UiPreview.gd`). 미리보기 전용
 ## `TrainingBoard`(`PreviewBoard`)에 코치 추천 판을 깔고 월~수를 정산한 뒤 수요일 오후를 연다
 ## (호스트가 없으면 `_board()` 가 이 판을 쓴다). 그날 사건이 나면 첫 답으로 풀어 두고,
-## 면담 · 외출할 수 있는 첫 선수를 골라 둔다 — 덮개 없이 맵 · 오후 카드 · 훈련 카드가 보이게.
+## Tapping a pilot opens the visit popup (live, in memory) — no overlay covers the map at start.
 ## "다음"은 호스트(`SeasonHub`)가 없어 날을 넘기지 않는다.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
@@ -1352,8 +1500,3 @@ func _fill_preview() -> void:
 	_day = day
 	MentalSystem.begin_morning(s, day)
 	_begin_afternoon()
-	for pid in _my_pilots_in_seat_order():
-		if AfternoonAway.can_request(s, day, int(pid)):
-			_sel_pid = int(pid)
-			_sel_day = day
-			break

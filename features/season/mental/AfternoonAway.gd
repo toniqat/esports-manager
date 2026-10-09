@@ -76,10 +76,11 @@ static func relief_of(state: Dictionary, day: int, pilot_id: int) -> int:
 	return int(((r as Dictionary).get("relief", {}) as Dictionary).get(str(pilot_id), 0))
 
 
-## The pilot is around this afternoon and the day's action is not used yet (an
-## interview is always possible; there are no weekly count limits).
+## The pilot is around this afternoon and the day's action is not used yet (a visit
+## is always possible; there are no weekly count limits). A visit already started
+## (menu or dialog open) uses the day's action too.
 static func can_request(state: Dictionary, day: int, pilot_id: int) -> bool:
-	if not started(state, day) or MentalSystem.evening_done(state, day) \
+	if not started(state, day) or not MentalSystem.evening(state, day).is_empty() \
 			or MentalSystem.dusk_started(state, day):
 		return false
 	return away_of(state, day, pilot_id) == ""

@@ -57,7 +57,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
 | ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |
 | ↳ `training/` | Daily training tile board, owned courses (`TrainingCourses`: counts, I~IV upgrade lines), coach auto-arrange | `features/season/training/README.md` |
-| ↳ `week/` | 시간 경과 screen (day rail, morning → talk → afternoon → evening, day cards) | `features/season/week/README.md` |
+| ↳ `week/` | 시간 경과 screen (day rail, morning → talk → afternoon visit (`VisitMenu`) → evening, day cards; opens §15 awakening / limit-break events) | `features/season/week/README.md` |
 | ↳ `week/base_map/` | Team base map widget (`BaseMap`) + one scene per map (art, spot markers), `teams.csv` `map_id` | `features/season/week/base_map/README.md` |
 | ↳ `league/` | `LeagueManager`, standings view | `features/season/league/README.md` |
 | ↳ `run_stats/` | Match MVP metric, phase POM | `features/season/run_stats/README.md` |
@@ -65,7 +65,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `mastery/` | Mech mastery, 메크 연구 card | `features/season/mastery/README.md` |
 | ↳ `quirk/` | 기벽 — run-only pilot passives | `features/season/quirk/README.md` |
 | ↳ `finance/` | Weekly budget, facilities, allocation, special spending | `features/season/finance/README.md` |
-| ↳ `mental/` | Trust, stress (`StressSystem`), morning talk (훈련 소감 · 합동 훈련 pair), interviews, outings, evening incidents, choice preview, `PilotMods` — event data authored in `narrative/` (Draft) | `features/season/mental/README.md` |
+| ↳ `mental/` | Trust, stress (`StressSystem`), morning talk (훈련 소감 · 합동 훈련 pair), afternoon visit (방문: `FocusTraining` 집중 훈련 · 이야기 · 외출), evening incidents, choice preview, `PilotMods` — event data authored in `narrative/` (Draft) | `features/season/mental/README.md` |
 | ↳ `awakening/` | 깨달음 (awakening) gauge + 3-way pick, pilot card loadouts (presets, upgraded `+` cards) — §15 C | `features/season/awakening/README.md` |
 | `features/match_flow/` | PREP → BAN_PICK → BattleSim handoff (`match_ctx`), cheat menu | `features/match_flow/README.md` |
 | ↳ `match_prep/` | Opponent intel / analysis tiers | `features/match_flow/match_prep/README.md` |

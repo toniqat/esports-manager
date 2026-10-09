@@ -35,6 +35,21 @@
       "id": "a72769bf-05db-521e-a181-18bf95eaf65f",
       "name": "합동 훈련",
       "parentId": null
+    },
+    "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a1": {
+      "id": "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a1",
+      "name": "이야기",
+      "parentId": null
+    },
+    "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a2": {
+      "id": "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a2",
+      "name": "이야기 (토)",
+      "parentId": null
+    },
+    "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a3": {
+      "id": "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a3",
+      "name": "이야기 (일)",
+      "parentId": null
     }
   },
   "scripts": {},

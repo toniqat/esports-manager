@@ -14,10 +14,15 @@ extends RefCounted
 # load), so `days["<day>"]` keeps the drawn event and the chosen answer.
 # Random draws are seeded from `run_seed` + week + day, so reloading never rerolls.
 
-const ACTION_INTERVIEW: String = "interview"
+const ACTION_INTERVIEW: String = "interview"   # old saves; the afternoon now records `story`
 const ACTION_OUTING: String = "outing"
 const ACTION_PASS: String = "pass"
 const ACTION_TALK: String = "talk"
+## §15 D afternoon visit (방문): `visit` = a pilot was visited and the 3-option menu is open
+## (recorded before it shows); then the record becomes `focus` (집중 훈련) / `story` (이야기) / `outing`.
+const ACTION_VISIT: String = "visit"
+const ACTION_FOCUS: String = "focus"
+const ACTION_STORY: String = "story"
 
 
 ## Once at run start (`GameManager.start_run`) — trust baseline for my 5 pilots.
@@ -155,25 +160,98 @@ static func evening_done(state: Dictionary, day: int) -> bool:
 	return not e.is_empty() and (String(e.get("action", "")) == ACTION_PASS or int(e.get("choice", -1)) >= 0)
 
 
+## Visit `pilot_id` this afternoon (§15 D): the one afternoon action is spent here, **before**
+## the menu opens — `{action: visit, pilot_id, event: "", choice: -1}`. True when recorded (or
+## the same pilot's visit is already open); false when refused (taken, away, not mine).
+static func begin_visit(state: Dictionary, day: int, pilot_id: int) -> bool:
+	var e: Dictionary = evening(state, day)
+	if not e.is_empty():
+		return String(e.get("action", "")) == ACTION_VISIT and int(e.get("pilot_id", -1)) == pilot_id
+	if not my_pilot_ids(state).has(pilot_id) or not AfternoonAway.can_request(state, day, pilot_id):
+		return false
+	_day(state, day)["evening"] = {"action": ACTION_VISIT, "pilot_id": pilot_id, "event": "",
+			"choice": -1, "outcome": {}}
+	return true
+
+
+## The pilot whose visit menu is open (visited, no option chosen yet), -1 = none.
+static func visit_open(state: Dictionary, day: int) -> int:
+	var e: Dictionary = evening(state, day)
+	if String(e.get("action", "")) != ACTION_VISIT:
+		return -1
+	return int(e.get("pilot_id", -1))
+
+
+## Visit option 집중 훈련: run `course` (`FocusTraining.apply`, coach points) on the visited
+## pilot and settle the record (`action: focus`, `course`). Idempotent — a second call returns
+## the stored outcome. {} when refused (no open visit, points short, no limit-break goal).
+static func finish_focus(state: Dictionary, day: int, course: String) -> Dictionary:
+	var e: Dictionary = evening(state, day)
+	if String(e.get("action", "")) == ACTION_FOCUS:
+		return e.get("outcome", {})
+	if String(e.get("action", "")) != ACTION_VISIT:
+		return {}
+	var out: Dictionary = FocusTraining.apply(state, int(e["pilot_id"]), course)
+	if out.is_empty():
+		return {}
+	e["action"] = ACTION_FOCUS
+	e["course"] = course
+	e["choice"] = 0
+	e["outcome"] = out
+	return out
+
+
+## Story pools for `day`, most specific first; the first that has a row for the pilot wins
+## (`begin_evening`). Mon–Fri `story` (that morning's training); Saturday with the ban/pick
+## stored `story_sat`; Sunday after my match `story_sun`; the old `interview` rows always last.
+static func story_kinds_for(state: Dictionary, day: int) -> Array:
+	var out: Array = []
+	if CalendarSystem.is_training_day(day):
+		out.append(MentalEvents.KIND_STORY)
+	elif day == CalendarSystem.PREP_DAY:
+		var pm: Variant = state.get("pending_match", null)
+		if pm is Dictionary and (pm as Dictionary).get("picks", null) is Dictionary:
+			out.append(MentalEvents.KIND_STORY_SAT)
+	elif day == CalendarSystem.MATCH_DAY:
+		if String(last_match_of(state).get("week", "")) == week_key(state):
+			out.append(MentalEvents.KIND_STORY_SUN)
+	out.append(MentalEvents.KIND_INTERVIEW)
+	return out
+
+
 ## Start the evening action. Returns a session (`session_view` draws it) or {}
 ## when refused (trust gate, already used, pass). Re-calling on a day whose dialog
-## is still open returns the same session (same event).
+## is still open returns the same session (same event). After `begin_visit` the open
+## visit of the same pilot turns into the story / outing chosen from its menu.
 static func begin_evening(state: Dictionary, day: int, action: String, pilot_id: int) -> Dictionary:
 	if not CalendarSystem.is_week_day(day):
 		return {}
 	var rec: Dictionary = _day(state, day)
 	var e: Dictionary = rec.get("evening", {})
-	if not e.is_empty():
-		if int(e.get("choice", -1)) < 0 and String(e.get("action", "")) != ACTION_PASS:
+	var visiting: bool = String(e.get("action", "")) == ACTION_VISIT
+	if visiting and action == ACTION_PASS:
+		return {}
+	if not e.is_empty() and not visiting:
+		if int(e.get("choice", -1)) < 0 and String(e.get("action", "")) != ACTION_PASS \
+				and String(e.get("action", "")) != ACTION_FOCUS:
 			return _session_of(e)
 		return {}
+	if visiting:
+		pilot_id = int(e.get("pilot_id", -1))
+		if action == "":
+			return {}
 	if action == ACTION_PASS:
 		rec["evening"] = {"action": ACTION_PASS, "pilot_id": -1, "event": "", "choice": -1, "outcome": {}}
 		return {}
 	if not my_pilot_ids(state).has(pilot_id):
 		return {}
 	var r: Dictionary = {}
-	if action == ACTION_INTERVIEW:
+	if action == ACTION_STORY:
+		for kind in story_kinds_for(state, day):
+			r = _draw(state, String(kind), pilot_id, _seed(state, day, "story_" + String(kind), pilot_id))
+			if not r.is_empty():
+				break
+	elif action == ACTION_INTERVIEW:
 		r = _draw(state, MentalEvents.KIND_INTERVIEW, pilot_id, _seed(state, day, "interview", pilot_id))
 	elif action == ACTION_OUTING:
 		if not can_outing(state, pilot_id):
@@ -190,7 +268,7 @@ static func begin_evening(state: Dictionary, day: int, action: String, pilot_id:
 ## returns the stored outcome without applying anything.
 static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictionary:
 	var e: Dictionary = evening(state, day)
-	if e.is_empty() or String(e.get("action", "")) == ACTION_PASS:
+	if e.is_empty() or String(e.get("action", "")) in [ACTION_PASS, ACTION_VISIT]:
 		return {}
 	if int(e.get("choice", -1)) >= 0:
 		return e.get("outcome", {})
@@ -517,6 +595,44 @@ static func resolve_press(state: Dictionary, choice: int) -> Dictionary:
 	return out
 
 
+# ── Last own match (Sunday story) ────────────────────────────────────────────
+## `SeasonHub._consume_pending_match_result` hook: keep my pilots' lines of the match just
+## played for the Sunday story conds (`mvp` / `kda` / `kills` / `deaths`) and its pool
+## (`story_kinds_for`). `mental.last_match = {week, won, mvp, lines: {"<pid>": {k, d, a}}}`.
+static func record_match(state: Dictionary, pm: Dictionary) -> void:
+	var winner_side: int = int(pm.get("winner_side", -1))
+	if winner_side < 0:
+		return
+	var mine: Array = my_pilot_ids(state)
+	var lines: Dictionary = {}
+	var rows: Variant = pm.get("pilot_stats", [])
+	if rows is Array:
+		for raw in (rows as Array):
+			if not (raw is Dictionary):
+				continue
+			var row: Dictionary = raw
+			var pid: int = int(row.get("pilot_id", -1))
+			if mine.has(pid):
+				lines[str(pid)] = {"k": int(row.get("k", 0)), "d": int(row.get("d", 0)), "a": int(row.get("a", 0))}
+	_mental(state)["last_match"] = {"week": week_key(state), "won": winner_side == 0,
+			"mvp": int(pm.get("mvp_pilot_id", -1)), "lines": lines}
+
+
+## `mental.last_match` (or {} before my first match).
+static func last_match_of(state: Dictionary) -> Dictionary:
+	var lm: Variant = _mental(state).get("last_match", null)
+	return lm if lm is Dictionary else {}
+
+
+## `pid`'s `{k, d, a}` in my last match, {} when the pilot did not play / no match yet.
+static func match_line(state: Dictionary, pid: int) -> Dictionary:
+	var lines: Variant = last_match_of(state).get("lines", {})
+	if not (lines is Dictionary):
+		return {}
+	var line: Variant = (lines as Dictionary).get(str(pid), null)
+	return line if line is Dictionary else {}
+
+
 # ── Sessions → what a messenger screen draws ─────────────────────────────────
 ## `{kind, event, pilot_id, partner_id, tag, lines[], choices[], previews[]}` — translated,
 ## `{name}` / `{name2}` filled; `previews[i]` = answer i's chance + direction line (may be "").
@@ -542,7 +658,7 @@ static func session_view(state: Dictionary, session: Dictionary) -> Dictionary:
 	var judge: int = judge_for(state, String(r["kind"]))
 	for i in (r["choices"] as Array).size():
 		choices.append(MentalEvents.text(state, String((r["choices"] as Array)[i]), pid, partner))
-		previews.append(MentalEvents.preview_text(MentalEvents.choice_preview(state, r, i, judge)))
+		previews.append(MentalEvents.preview_text(MentalEvents.choice_preview(state, r, i, judge, {}, pid)))
 	return {"kind": String(r["kind"]), "event": String(r["id"]), "pilot_id": pid,
 			"partner_id": partner, "tag": tag, "lines": lines, "choices": choices, "previews": previews}
 
@@ -602,8 +718,9 @@ static func _day(state: Dictionary, day: int) -> Dictionary:
 
 
 static func _session_of(e: Dictionary) -> Dictionary:
-	var kind: String = MentalEvents.KIND_INTERVIEW if String(e["action"]) == ACTION_INTERVIEW \
-			else MentalEvents.KIND_OUTING
+	var kind: String = String(MentalEvents.row(String(e.get("event", ""))).get("kind", ""))
+	if kind == "":
+		kind = MentalEvents.KIND_OUTING if String(e["action"]) == ACTION_OUTING else MentalEvents.KIND_INTERVIEW
 	return {"kind": kind, "event": String(e["event"]), "pilot_id": int(e["pilot_id"])}
 
 

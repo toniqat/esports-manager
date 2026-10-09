@@ -259,6 +259,41 @@ static func decay_mods(state: Dictionary) -> void:
 	state["staff_mods"] = kept
 
 
+# ── Coach points (§15 D, afternoon visit focus training) ─────────────────────
+# A weekly budget: `COACH_POINTS_BASE + COACH_POINTS_PER × effective(training)`
+# (floored), granted when a week starts and never carried over. State:
+# `season_state.coach_points` (int, this week) + `coach_week` (the week key it was
+# granted for). A read in a new week grants it lazily, so old saves and a week that
+# started without `grant_coach_points` still get their points exactly once.
+
+## The week's grant for the current training stat (display: "주간 N").
+static func coach_points_grant(state: Dictionary) -> int:
+	return maxi(0, ConstTable.int_of("COACH_POINTS_BASE")
+			+ floori(ConstTable.num("COACH_POINTS_PER") * float(effective(state, "training"))))
+
+
+## Start-of-week grant (`SeasonHub.on_training_confirmed`): resets the balance.
+static func grant_coach_points(state: Dictionary) -> void:
+	state["coach_points"] = coach_points_grant(state)
+	state["coach_week"] = MentalSystem.week_key(state)
+
+
+## Points left this week (granted lazily on the first read of a new week).
+static func coach_points(state: Dictionary) -> int:
+	if String(state.get("coach_week", "")) != MentalSystem.week_key(state):
+		grant_coach_points(state)
+	return int(state.get("coach_points", 0))
+
+
+## Spend `n` points; false (nothing spent) when the balance is short.
+static func spend_coach_points(state: Dictionary, n: int) -> bool:
+	var have: int = coach_points(state)
+	if n > have:
+		return false
+	state["coach_points"] = have - maxi(0, n)
+	return true
+
+
 # ── Internals ────────────────────────────────────────────────────────────────
 static func _run_staff(state: Dictionary) -> Array:
 	return (state.get("run_setup", {}) as Dictionary).get("staff", [])

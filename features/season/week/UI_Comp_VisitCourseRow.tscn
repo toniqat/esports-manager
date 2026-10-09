@@ -1,0 +1,78 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1th7xlaht6qc"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+
+[node name="VisitCourseRow" type="Button"]
+auto_translate_mode = 2
+editor_description = "One focus training course of the visit menu (VisitMenu, courses page). Code fills the texts, disables a course it cannot take (%Reason says why) and switches the variation to SelectableCardButtonOn for the picked one."
+custom_minimum_size = Vector2(0, 112)
+offset_right = 880.0
+offset_bottom = 112.0
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"SelectableCardButton"
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_course_row()"
+layout_mode = 0
+offset_left = 28.0
+offset_top = 14.0
+offset_right = 560.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "공격성"
+
+[node name="Stats" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_course_row()
+The two stats the course feeds (한계돌파: the goal)."
+layout_mode = 0
+offset_left = 28.0
+offset_top = 60.0
+offset_right = 600.0
+offset_bottom = 96.0
+mouse_filter = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "전장 명중 · 교전 명중"
+text_overrun_behavior = 3
+
+[node name="Cost" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_course_row()"
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 14.0
+offset_right = -28.0
+offset_bottom = 56.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 30
+text = "2P"
+horizontal_alignment = 2
+
+[node name="Reason" type="Label" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _add_course_row()
+Why the course is disabled (hidden when it can be taken)."
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 60.0
+offset_right = -28.0
+offset_bottom = 96.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 20
+text = "코치 포인트 2 필요"
+horizontal_alignment = 2

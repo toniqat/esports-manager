@@ -31,22 +31,35 @@ const KIND_PRESS: String = "press"
 ## every single-pilot clause (`trust` · `stress` · `pmod`) applies to **both**.
 const KIND_TALK: String = "talk"
 const KIND_TALK_PAIR: String = "talk_pair"
-const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR]
+## Afternoon visit story (§15 D, 이야기) — the interview's successor. `story` = Mon–Fri, about
+## that morning's training; `story_sat` = Saturday, about the ban/pick (its mech); `story_sun` =
+## Sunday after my match, about that match. Old `interview` rows are the fallback pool
+## (`MentalSystem.story_kinds_for`).
+const KIND_STORY: String = "story"
+const KIND_STORY_SAT: String = "story_sat"
+const KIND_STORY_SUN: String = "story_sun"
+const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR,
+		KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN]
+const STORY_KINDS: Array = [KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN]
 
 ## `staff_mods` / `pilot_mods` `source` written by an event clause: `mental:<event id>` —
 ## an id, not text (D7). `mod_source_text` turns it into the event kind's label.
 const MOD_SOURCE_PREFIX: String = "mental:"
 const KIND_LABELS: Dictionary = {
-	KIND_INTERVIEW: L.TERM_ACTIVITY_INTERVIEW,
+	KIND_INTERVIEW: L.MENTAL_UI_VISIT_STORY,
 	KIND_OUTING: L.TERM_ACTIVITY_OUTING,
 	KIND_INCIDENT: L.MENTAL_UI_MOD_SOURCE_INCIDENT,
 	KIND_PRESS: L.TERM_ACTIVITY_PRESS,
 	KIND_TALK: L.MENTAL_UI_MOD_SOURCE_TALK,
 	KIND_TALK_PAIR: L.MENTAL_UI_MOD_SOURCE_TALK,
+	KIND_STORY: L.MENTAL_UI_VISIT_STORY,
+	KIND_STORY_SAT: L.MENTAL_UI_VISIT_STORY,
+	KIND_STORY_SUN: L.MENTAL_UI_VISIT_STORY,
 }
 
 ## Cond keys (clause types are listed in `parse_clause` and the README).
-const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week", "train", "ups", "stress"]
+const COND_KEYS: Array = ["trust", "outings", "role", "last", "mention", "week", "train", "ups", "stress",
+		"mvp", "kda", "kills", "deaths"]
 
 static var _rows: Array = []            # parsed rows, CSV order
 static var _by_id: Dictionary = {}      # id → parsed row
@@ -170,6 +183,21 @@ static func parse_clause(text: String) -> Dictionary:
 				return bad
 			return {"gate": gate, "type": "smod", "stat": sstat,
 					"delta": _to_int(args[1]), "weeks": _to_int(args[2])}
+		"awaken", "tlexp", "mastery", "stress_train":
+			# §15 D: awakening gauge · training EXP · mastery of the story mech ·
+			# today's training stress × N (all on the target pilot).
+			if args.size() != 1 or not _is_int(args[0]):
+				return bad
+			return {"gate": gate, "type": kind, "delta": _to_int(args[0])}
+		"train_bonus":
+			# `train_bonus:std` = STORY_TRAIN_BONUS_PCT, `train_bonus:N` = N % of today's stat EXP again.
+			if args.size() != 1:
+				return bad
+			if args[0].strip_edges() == "std":
+				return {"gate": gate, "type": kind, "delta": 0, "std": true}
+			if not _is_int(args[0]) or _to_int(args[0]) <= 0:
+				return bad
+			return {"gate": gate, "type": kind, "delta": _to_int(args[0]), "std": false}
 	return bad
 
 
@@ -265,9 +293,33 @@ static func cond_ok(state: Dictionary, r: Dictionary, pilot_id: int) -> bool:
 			"stress":
 				if pilot_id < 0 or not _cmp(StressSystem.value(state, pilot_id), String(c["op"]), int(value)):
 					return false
+			"mvp":
+				# §15 D Sunday story: the target was (`yes`) / was not (`no`) the MVP of my last match.
+				var lm: Dictionary = MentalSystem.last_match_of(state)
+				if lm.is_empty() or (int(lm.get("mvp", -1)) == pilot_id) != (value == "yes"):
+					return false
+			"kda", "kills", "deaths":
+				# The target's line in my last match (`MentalSystem.match_line`): K/D/A ratio
+				# `(k + a) / max(d, 1)` (floored), kills or deaths.
+				var line: Dictionary = MentalSystem.match_line(state, pilot_id)
+				if line.is_empty() or not _cmp(_line_value(line, key), String(c["op"]), int(value)):
+					return false
 			_:
 				return false
 	return true
+
+
+## One number of a match line `{k, d, a}` for the `kda` / `kills` / `deaths` conds.
+static func _line_value(line: Dictionary, key: String) -> int:
+	var k: int = int(line.get("k", 0))
+	var d: int = int(line.get("d", 0))
+	var a: int = int(line.get("a", 0))
+	match key:
+		"kills":
+			return k
+		"deaths":
+			return d
+	return floori(float(k + a) / float(maxi(d, 1)))
 
 
 ## That pilot's training row of the current weekday (`season_state.week_day` →
@@ -428,7 +480,8 @@ static func apply_choice(state: Dictionary, r: Dictionary, idx: int, pilot_id: i
 
 
 ## Clause types that hit one pilot (the target, and the partner of a joint talk).
-const SINGLE_CLAUSES: Array = ["trust", "stress", "pmod"]
+const SINGLE_CLAUSES: Array = ["trust", "stress", "pmod", "awaken", "tlexp", "mastery", "train_bonus",
+		"stress_train"]
 
 
 # ── Choice preview (chance + direction) ──────────────────────────────────────
@@ -437,8 +490,9 @@ const SINGLE_CLAUSES: Array = ["trust", "stress", "pmod"]
 ## the check passes / fails (identical when the entry has no check). `judge` as in
 ## `apply_choice`; `base` = extra always-on deltas `{label: delta}` (the talk / interview /
 ## outing stress relief). Numbers stay hidden: only the direction is shown.
+## `pilot_id` = the target (`stress_train` reads its training stress of today for the sign).
 static func choice_preview(state: Dictionary, r: Dictionary, idx: int, judge: int,
-		base: Dictionary = {}) -> Dictionary:
+		base: Dictionary = {}, pilot_id: int = -1) -> Dictionary:
 	var effects: Array = r.get("effects", [])
 	var clauses: Array = effects[idx] if idx >= 0 and idx < effects.size() else []
 	var all_says: Array = r.get("says", [])
@@ -462,7 +516,7 @@ static func choice_preview(state: Dictionary, r: Dictionary, idx: int, judge: in
 		for world in ["ok", "ng"]:
 			if _gate_passes(String(c["gate"]), world == "ok"):
 				var w: Dictionary = sums[world]
-				w[label] = int(w.get(label, 0)) + int(c["delta"])
+				w[label] = int(w.get(label, 0)) + _preview_delta(state, c, pilot_id)
 	var out: Dictionary = {"checked": checked, "chance": check_chance(judge, adjust) if checked else -1}
 	for world in ["ok", "ng"]:
 		var signs: Dictionary = {}
@@ -491,7 +545,28 @@ static func preview_label(c: Dictionary) -> String:
 			return Loc.t(L.MENTAL_UI_PREVIEW_STAT_ALL, {"stat": stat_label(String(c.get("stat", "")))})
 		"smod":
 			return Loc.t(L.MENTAL_UI_PREVIEW_SMOD, {"stat": StaffSystem.stat_label(String(c.get("stat", "")))})
+		"stress_train":
+			return Loc.t(L.MENTAL_UI_PREVIEW_STRESS)
+		"awaken":
+			return Loc.t(L.MENTAL_UI_PREVIEW_AWAKEN)
+		"tlexp":
+			return Loc.t(L.MENTAL_UI_PREVIEW_TLEXP)
+		"mastery":
+			return Loc.t(L.MENTAL_UI_PREVIEW_MASTERY)
+		"train_bonus":
+			return Loc.t(L.MENTAL_UI_PREVIEW_STAT_EXP)
 	return ""
+
+
+## Signed size a clause adds to its preview label. `stress_train:N` = N × the target's training
+## stress of today (0 without a training row — the label then drops out); `train_bonus` is a gain.
+static func _preview_delta(state: Dictionary, c: Dictionary, pilot_id: int) -> int:
+	match String(c.get("type", "")):
+		"stress_train":
+			return int(c["delta"]) * int(today_row(state, pilot_id).get("stress", 0))
+		"train_bonus":
+			return 0 if today_row(state, pilot_id).is_empty() else 1
+	return int(c.get("delta", 0))
 
 
 ## `choice_preview` → one line: `62% · 신뢰↑ · 스트레스↓`, or, when the check's two
@@ -563,6 +638,34 @@ static func _apply_clause(state: Dictionary, r: Dictionary, c: Dictionary,
 			StaffSystem.add_mod(state, String(c["stat"]), int(c["delta"]), int(c["weeks"]), source)
 			notes.append({"type": "smod", "stat": String(c["stat"]),
 					"delta": int(c["delta"]), "weeks": int(c["weeks"])})
+		"awaken":
+			if pilot_id >= 0 and int(c["delta"]) != 0:
+				Awakening.add_gauge(state, pilot_id, int(c["delta"]), String(r["id"]))
+				notes.append({"type": "awaken", "pid": pilot_id, "delta": int(c["delta"])})
+		"tlexp":
+			if pilot_id >= 0:
+				notes.append(FocusTraining.add_training_exp(state, pilot_id, int(c["delta"])))
+		"mastery":
+			if pilot_id >= 0:
+				var n: Dictionary = FocusTraining.add_story_mastery(state, pilot_id, int(c["delta"]))
+				if not n.is_empty():
+					notes.append(n)
+		"train_bonus":
+			# Today's stat EXP again (× pct), through the training EXP bank → stat points.
+			var row: Dictionary = today_row(state, pilot_id)
+			if pilot_id >= 0 and not row.is_empty():
+				var pct: int = ConstTable.int_of("STORY_TRAIN_BONUS_PCT") if bool(c.get("std", false)) \
+						else int(c["delta"])
+				var add: Dictionary = {}
+				for k in (row.get("exp", {}) as Dictionary).keys():
+					add[String(k)] = roundi(float(int((row["exp"] as Dictionary)[k])) * float(pct) / 100.0)
+				notes.append_array(FocusTraining.add_stat_exp(state, pilot_id, add))
+		"stress_train":
+			# N × the stress today's training gave the target (−2 = relieve it twice over).
+			var row2: Dictionary = today_row(state, pilot_id)
+			if pilot_id >= 0 and not row2.is_empty():
+				var sd2: int = StressSystem.add(state, pilot_id, int(c["delta"]) * int(row2.get("stress", 0)))
+				notes.append({"type": "stress", "pid": pilot_id, "delta": sd2})
 
 
 # ── Display (outcome / notes → text) ─────────────────────────────────────────
@@ -623,6 +726,29 @@ static func note_text(state: Dictionary, n: Dictionary) -> String:
 					{"stat": StaffSystem.stat_label(stat), "delta": _signed(delta), "duration": duration(weeks)})
 		"outing":
 			return Loc.t(L.MENTAL_UI_NOTE_OUTING, {"n": int(n.get("count", 0))})
+		# §15 D — visit / story results (focus training, story clauses).
+		"stat_up":
+			return Loc.t(L.MENTAL_UI_NOTE_STAT_UP, {"name": pilot_name(state, int(n.get("pid", -1))),
+					"stat": stat_label(stat), "delta": _signed(delta)})
+		"stat_exp":
+			return Loc.t(L.MENTAL_UI_NOTE_STAT_EXP,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
+		"tlexp":
+			if delta <= 0:
+				return Loc.t(L.MENTAL_UI_NOTE_TLEXP_CAPPED, {"name": pilot_name(state, int(n.get("pid", -1)))})
+			return Loc.t(L.MENTAL_UI_NOTE_TLEXP,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
+		"awaken":
+			return Loc.t(L.MENTAL_UI_NOTE_AWAKEN,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "delta": _signed(delta)})
+		"mastery":
+			return Loc.t(L.MENTAL_UI_NOTE_MASTERY, {"name": pilot_name(state, int(n.get("pid", -1))),
+					"mech": MechMastery.mech_name(int(n.get("mech", -1))), "delta": _signed(delta)})
+		"limit_break":
+			return Loc.t(L.MENTAL_UI_NOTE_LIMIT_BREAK,
+					{"name": pilot_name(state, int(n.get("pid", -1))), "n": int(n.get("level", 1))})
+		"coach":
+			return Loc.t(L.MENTAL_UI_NOTE_COACH, {"delta": _signed(delta)})
 	return ""
 
 

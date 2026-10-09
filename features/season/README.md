@@ -99,11 +99,12 @@ HUB (just before the week starts — roster · next match · "이번 주 시작 
        월 → 금   training days: morning training (apply_day_training(day)) → talk → afternoon → evening
        토        morning  = stadium map, "경기 준비" → MatchFlow PREP → BAN_PICK (split mode)
                             → picks stored in pending_match.picks → back to Season (autosave)
-                 afternoon / evening = a normal day without training (interview / outing, incident)
+                 afternoon / evening = a normal day without training (visit, incident)
        일        morning  = stadium map, "경기 시작" → MatchFlow resumes at LAUNCH from the picks
                             → BattleSim → re-enter Season → apply result + that day's AI matches
                             → STANDINGS / bracket → "확인"
-                 afternoon = PRESS (press conference, questions react to the result) → WEEK
+                 then PRESS (press conference, questions react to the result) → WEEK
+                 afternoon = visit (§15 D; the story is about the match)
                  evening  = normal evening (incident roll) → "주 마감 →"
   → SeasonHub._end_week → CalendarSystem.advance_week (rolls 7 days, bumps phase_week, possibly
     advances phase / bootstraps tournament for next phase)

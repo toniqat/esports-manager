@@ -136,8 +136,9 @@ static func relieve(state: Dictionary, pilot_id: int, action: String) -> int:
 static func relief_amount(action: String) -> int:
 	match action:
 		MentalSystem.ACTION_OUTING, MentalEvents.KIND_OUTING:
-			return ConstTable.int_of("STRESS_OUTING_RELIEF")
-		MentalSystem.ACTION_INTERVIEW, MentalEvents.KIND_INTERVIEW:
+			# §15 D — the visit's outing relieves more than the old one.
+			return ConstTable.int_of("STRESS_OUTING_RELIEF") + ConstTable.int_of("VISIT_OUTING_RELIEF_BONUS")
+		MentalSystem.ACTION_INTERVIEW, MentalEvents.KIND_INTERVIEW, MentalSystem.ACTION_STORY:
 			return ConstTable.int_of("STRESS_INTERVIEW_RELIEF")
 		MentalSystem.ACTION_TALK, MentalEvents.KIND_TALK_PAIR:
 			return ConstTable.int_of("STRESS_TALK_RELIEF")

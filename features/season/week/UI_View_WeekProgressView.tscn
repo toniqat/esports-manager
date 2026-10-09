@@ -62,23 +62,10 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="WeekSlot" type="MarginContainer" parent="SafeArea/Rail/Row"]
+[node name="LeftPad" type="Control" parent="SafeArea/Rail/Row"]
+custom_minimum_size = Vector2(14, 0)
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 12
-
-[node name="WeekLabel" type="Label" parent="SafeArea/Rail/Row/WeekSlot"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _week_lbl"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(92, 0)
-layout_mode = 2
-size_flags_vertical = 1
-theme_type_variation = &"RailLabel"
-theme_override_font_sizes/font_size = 24
-text = "3주"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="Days" type="HBoxContainer" parent="SafeArea/Rail/Row"]
 unique_name_in_owner = true
@@ -271,106 +258,90 @@ mouse_filter = 2
 
 [node name="Phase" type="Label" parent="SafeArea"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _phase_lbl"
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _phase_lbl
+Phase name only (GameEnums.phase_label: 프리시즌 / 미드시즌 / …), left of the day block."
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 40.0
-offset_top = 152.0
-offset_right = 560.0
-offset_bottom = 182.0
+offset_top = 168.0
+offset_right = 340.0
+offset_bottom = 198.0
 theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
-text = "프리시즌 · 3주차"
-
-[node name="DateSmall" type="Label" parent="SafeArea"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _date_small_lbl"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -360.0
-offset_top = 148.0
-offset_right = -40.0
-offset_bottom = 178.0
-grow_horizontal = 0
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "1년 12월"
-horizontal_alignment = 2
+text = "프리시즌"
 clip_text = true
 
-[node name="DateBig" type="Label" parent="SafeArea"]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _date_big_lbl"
-unique_name_in_owner = true
+[node name="DayBlock" type="VBoxContainer" parent="SafeArea"]
+editor_description = "Centred header block: DAY N (day inside the phase, CalendarSystem.day_in_phase) over the weekday abbreviation (MON … SUN)."
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -360.0
-offset_top = 176.0
-offset_right = -40.0
-offset_bottom = 246.0
-grow_horizontal = 0
-theme_type_variation = &"HeadingLabel"
-theme_override_font_sizes/font_size = 58
-text = "5"
-horizontal_alignment = 2
-clip_text = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 132.0
+offset_right = 200.0
+offset_bottom = 226.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = -4
 
-[node name="Title" type="Label" parent="SafeArea"]
+[node name="DayCount" type="Label" parent="SafeArea/DayBlock"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_match_cards() · WeekProgressView.gd _title_lbl"
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _day_count_lbl"
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 40.0
-offset_top = 240.0
-offset_right = 640.0
-offset_bottom = 306.0
+layout_mode = 2
 theme_type_variation = &"HeadingLabel"
 theme_override_font_sizes/font_size = 54
-text = "수요일"
+text = "DAY 12"
+horizontal_alignment = 1
+
+[node name="DayAbbr" type="Label" parent="SafeArea/DayBlock"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _day_abbr_lbl"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 24
+text = "WED"
+horizontal_alignment = 1
 
 [node name="Divider" type="HSeparator" parent="SafeArea"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
-offset_top = 346.0
+offset_top = 238.0
 offset_right = -40.0
-offset_bottom = 347.0
+offset_bottom = 239.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"Divider"
 
 [node name="MapPin" type="Control" parent="SafeArea"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: WeekProgressView.gd _rebuild_list() · _add_map_section()
-Fixed slot for the team base map (WeekMapSection, 1000 x 680) on training days, so it does not scroll. Code shows it and moves %Scroll's top to this slot's bottom + the list gap; on match days it is hidden and %Scroll keeps its authored top."
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _rebuild_list() · _add_map_section() · _place_under_map()
+Fixed full-width slot for the base map (WeekMapSection, map BaseMap.DESIGN_SIZE 1200 x 761, centred: 60 px cropped each side on a 1080 screen) so it does not scroll. %PilotRow and %Scroll stand under it (_place_under_map); with no map (hidden) they move up to this slot's top."
 visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 40.0
-offset_top = 372.0
-offset_right = -40.0
-offset_bottom = 1052.0
+offset_top = 250.0
+offset_bottom = 1011.0
 grow_horizontal = 2
 mouse_filter = 2
 
 [node name="Scroll" type="ScrollContainer" parent="SafeArea"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _list_scroll
-Day card list. Bottom = %PilotRow top − 14 (offset_bottom = −(128 + 24 + 256 + 14)). Grows to the RIGHT only: when the list overflows, the scroll bar adds its width outside the 1000 card column (as the code-built list did), so the cards stay put."
+Day card list under %PilotRow (top = %PilotRow bottom + 14, set by _place_under_map), bottom = the bar top − 14 (offset_bottom = −(128 + 14)). Grows to the RIGHT only: when the list overflows, the scroll bar adds its width outside the 1000 card column (as the code-built list did), so the cards stay put."
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = 372.0
+offset_top = 1295.0
 offset_right = -40.0
-offset_bottom = -422.0
+offset_bottom = -142.0
 grow_vertical = 2
 horizontal_scroll_mode = 0
 
@@ -392,19 +363,16 @@ mouse_filter = 2
 
 [node name="PilotRow" type="HBoxContainer" parent="SafeArea"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: WeekProgressView.gd _ready() · _refresh_pilot_row()
-Always visible above the bottom bar (every day, morning and afternoon): my five pilots as SeasonPilotCard in seat order (GameEnums.ROLE_DISPLAY_ORDER). Note line = that day's stress change (emphasised). Tap = pilot detail sheet."
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _ready() · _refresh_pilot_row() · _place_under_map()
+Always visible directly under the map (%MapPin bottom + 14; every day, morning and afternoon): my five pilots as SeasonPilotCard in seat order (GameEnums.ROLE_DISPLAY_ORDER). Note line = that day's stress change (emphasised). Tap = pilot detail sheet."
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = -408.0
+offset_top = 1025.0
 offset_right = -40.0
-offset_bottom = -152.0
+offset_bottom = 1281.0
 grow_horizontal = 2
-grow_vertical = 0
 mouse_filter = 2
 theme_override_constants/separation = 12
 

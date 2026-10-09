@@ -68,7 +68,6 @@ tx_DNDDCSPQEE,season.slot.qf_4,active,Bracket slot name,,,8강 4경기,Quarterfi
 tx_QXB3XY4AYX,season.slot.sf_1,active,Bracket slot name,,,4강 1경기,Semifinal 1,draft,4e0bdafa
 tx_XXXNFX172K,season.slot.sf_2,active,Bracket slot name,,,4강 2경기,Semifinal 2,draft,f0c7e58e
 tx_TRMS5ZZQY6,season.slot.final,active,Bracket slot name,,,결승,Final,draft,adf4229b
-tx_NCAC0FXRKV,season.week.date,active,WeekProgressView small date,,,{year}년 {month}월,Year {year} · Month {month},draft,80831819
 tx_1K2R63NYA9,season.week.no_training_log,active,WeekProgressView note card,,,훈련 기록이 없습니다,No training records,draft,ca977c39
 tx_Q5HXG4JY2G,season.week.no_schedule,active,WeekProgressView note card,,,일정 없음,Nothing scheduled,draft,c271bd9c
 tx_77T88FPPVZ,season.week.no_match_day,active,WeekProgressView note card; day = weekday name,,,{day}: 예정된 경기 없음,{day}: No matches scheduled,draft,c89393b6
@@ -110,10 +109,6 @@ tx_8EXSPR79YJ,season.week.sub_outing,deprecated,Messenger overlay subtitle,,,{da
 tx_5GDZXY0QSR,season.week.sub_incident,active,Messenger overlay subtitle,,,{day} · 사건 발생 · {name},{day} · Incident · {name},draft,8a8e3361
 tx_CPW05B0HB9,season.week.stage.morning,active,"WeekProgressView bottom bar stage slot (training day, before the afternoon)",,,오전,Morning,draft,99c4e647
 tx_XXVBB9VYQX,season.week.stage.afternoon,active,WeekProgressView bottom bar stage slot · afternoon card head,,,오후,Afternoon,draft,d2cf9622
-tx_7YZ50G3EBF,season.week.map_hint.morning,active,"WeekProgressView caption above the base map, morning before settlement",,,오전 훈련 · 다음을 누르면 오늘 훈련을 정산합니다,Morning training · Press Next to settle today's training,draft,df4d0750
-tx_AWKX6T199K,season.week.map_hint.result,active,"WeekProgressView caption above the base map, morning after settlement",,,오전 훈련 결과 · 잠시 후 오전 만남으로 넘어갑니다 (다음 = 건너뛰기),Morning training results · The morning talk starts shortly (Next = skip),draft,8c9ae9ad
-tx_CXNA4K157Z,season.week.map_hint.afternoon,active,"WeekProgressView caption above the base map, afternoon before the action",,,오후 · 선수를 눌러 방문하세요 (하루 한 번),Afternoon · Tap a player to visit (once per day),draft,075748a8
-tx_7KR285R4ES,season.week.map_hint.afternoon_done,active,"WeekProgressView caption above the base map, afternoon after the action",,,오늘 오후 일정을 마쳤습니다,This afternoon is done,draft,393639c4
 tx_5W9RGVB4BS,season.week.map.exp,active,Base map pilot chip after training: EXP earned when no stat point rose,,,EXP +{n},EXP +{n},draft,51d97854
 tx_TCFF8QQBA3,season.week.map.stress,active,Base map pilot chip after training: stress change of the day (delta has a sign),,,스트레스 {delta},Stress {delta},draft,a4efbaa0
 tx_B7175RYNW5,season.week.map.self_outing,active,"Base map pilot chip, afternoon: the pilot went out on their own (stress)",,,혼자 외출,Out alone,draft,4bcaf159
@@ -138,9 +133,6 @@ tx_PJXWJ5R6J6,season.pilot_detail.research_title,active,SeasonPilotDetail sheet 
 tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research mech, its mastery tier and value",,,{mech} · {tier} ({value} / {max}),{mech} · {tier} ({value} / {max}),draft,979471d5
 tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,연구소 연구 메크 없음,No mech lab research,draft,25e8911b
 tx_DY69B79HB4,season.week.stage.evening,active,"WeekProgressView bottom bar stage slot (training day, evening incident)",,,저녁,Evening,draft,05a95a7c
-tx_FM9P3DRASG,season.week.map_hint.talk,active,"WeekProgressView caption above the base map, morning talk before the meeting",,,오전 · 선수를 눌러 훈련 소감을 들어 보세요,Morning · Tap a player to hear how training went,draft,f41ce24c
-tx_N36SF54RT7,season.week.map_hint.talk_done,active,"WeekProgressView caption above the base map, morning after the talk",,,오전 만남을 마쳤습니다 · 다음을 누르면 오후로 넘어갑니다,Morning talk done · Next moves on to the afternoon,draft,93949b8b
-tx_CY41J8M14Z,season.week.map_hint.evening,active,"WeekProgressView caption above the base map, evening with an incident",,,저녁 · 사건이 일어났습니다,Evening · Something happened,draft,ff343bbb
 tx_114TEDYXKT,season.week.talk_card.head,active,"Morning talk card head (scene text, UI_Comp_WeekTalkCard)",,,오전 만남,Morning talk,draft,73b4f33e
 tx_SJMNVE78AH,season.week.talk_pick,active,"Morning talk card hint, no pilot selected",,,지도에서 훈련 소감을 들을 선수를 누르세요 (오전 한 번),Tap a player on the map to hear how training went (once a morning),draft,391d8d77
 tx_1SN8VDP0S4,season.week.talk_none,active,"Morning talk card hint, nobody can be met",,,오늘 오전에는 만날 수 있는 선수가 없습니다,No one to talk to this morning,draft,2e6f3cac
@@ -152,10 +144,6 @@ tx_5Y82DHJ5DX,season.week.talk_done_pair,active,"Morning talk done card head, jo
 tx_444WVNHT09,season.week.sub_talk,active,"Dialogue overlay subtitle, morning talk",,,{day} 오전 · 훈련 소감,{day} morning · After training,draft,399ad258
 tx_V0SAHDNET7,season.week.skip_talk.title,active,Confirm popup title: Next pressed while a morning talk is still possible,,,오전 만남을 건너뛸까요?,Skip the morning talk?,draft,a8cb8bb3
 tx_H3RGAX8ZG6,season.week.skip_talk.body,active,Confirm popup body: Next pressed while a morning talk is still possible,,,아직 선수를 만나 훈련 소감을 들을 수 있습니다. 이대로 오후로 넘어갈까요?,You can still meet a player about today's training. Move on to the afternoon anyway?,draft,0aac4ef9
-tx_NJVPQAVA5J,season.week.map_hint.stadium_prep,active,"WeekProgressView caption above the stadium map, Saturday morning before the match prep",,,경기장 · 내일 경기를 준비합니다 (상대 분석 · 밴픽),Stadium · Get ready for tomorrow's match (scouting · ban/pick),draft,de7132ff
-tx_P7Q0RHTR7C,season.week.map_hint.stadium_match,active,"WeekProgressView caption above the stadium map, Sunday morning before the match",,,경기장 · 오늘은 경기 날입니다,Stadium · It's match day,draft,915fbf6e
-tx_9FT8896B37,season.week.map_hint.press,active,"WeekProgressView caption above the stadium map, Sunday afternoon before the press conference",,,경기장 · 경기를 마치고 기자회견이 기다립니다,Stadium · The press conference awaits after the match,draft,28b68e67
-tx_D4H4CEEAQX,season.week.map_hint.evening_quiet,active,"WeekProgressView caption above the base map, Sunday evening without an incident (End week next)",,,저녁 · 조용히 한 주를 마무리합니다,Evening · A quiet end to the week,draft,d6aa3b9c
 tx_34NK587JXR,season.week.btn_match_prep,active,"WeekProgressView bottom button, Saturday morning: opens scouting + ban/pick for Sunday's match",,,경기 준비,Match Prep,draft,7f43f241
 tx_2PHY0EQHSZ,season.week.hint_prep,active,"Match card hint (my match), Saturday",,,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일,Scout the opponent and finish ban/pick today · the match is tomorrow,draft,c0d437a9
 tx_3MV5ZYWADH,season.week.hint_match_ready,active,"Match card hint (my match), Sunday with the Saturday picks stored",,,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다,Ban/pick done · Start Match goes straight into the match,draft,11939e9e
@@ -167,3 +155,4 @@ tx_5CGB20BWXX,season.week.sub_limit_break,active,"Dialogue overlay subtitle (lim
 tx_5N8MET0QZT,season.phase_intro.step,active,"PhaseIntro title card, stage counter above the phase name",,,캠페인 {n} / {total},Campaign {n} / {total},draft,ba0c94a2
 tx_09VTB4JWBH,season.phase_intro.league,active,PhaseIntro subtitle for a league phase,,,리그 {league}주 · 플레이오프 {playoff}주,League {league} weeks · Playoffs {playoff} weeks,draft,2a969df6
 tx_TQT1N3PWTS,season.phase_intro.intl,active,PhaseIntro subtitle for an international phase,,,국제대회 토너먼트 {weeks}주,International tournament · {weeks} weeks,draft,86a0c739
+tx_Y6H2E9GP0C,season.week.day_count,active,"WeekProgressView header centre, big: day number inside the current phase ({n} = CalendarSystem.day_in_phase)",,,DAY {n},DAY {n},draft,b9226bc0

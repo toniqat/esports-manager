@@ -123,6 +123,14 @@ static func is_week_day(day: int) -> bool:
 	return day >= 0 and day < DAYS_PER_WEEK
 
 
+## Day number inside the current phase, from 1: `(phase_week - 1) * 7 + week_day + 1`
+## (the week screen's "DAY N"). A week not opened yet (`week_day` -1) counts as its Monday.
+static func day_in_phase(state: Dictionary) -> int:
+	var pweek: int = maxi(1, int(state.get("phase_week", 1)))
+	var wday: int = clampi(int(state.get("week_day", 0)), 0, DAYS_PER_WEEK - 1)
+	return (pweek - 1) * DAYS_PER_WEEK + wday + 1
+
+
 # True iff the current phase is a league phase AND we're inside its league
 # weeks (i.e., before the trailing playoff weeks). Drives schedule lookups.
 func is_league_match_week() -> bool:

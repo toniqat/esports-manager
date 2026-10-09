@@ -174,3 +174,10 @@ tx_9Z3YXBGMTT,term.game.engage,active,"게임 용어 (용어집 engage). 문장 
 tx_95JG2WTYR0,term.currency.rank_stone,active,재화 이름 — 선수 랭크 승급에 쓰는 재화. 상점 · 로비 재화 줄 · 런 결과 보상 줄 · 컬렉션,,,승급석,Rank Stone,draft,a06d3930
 tx_ZNA4AGXBVT,term.star.n,active,선수 등급(별) 표기 — GameEnums.star_label. n = 1..3,,,★{n},★{n},draft,4cd8a749
 tx_K0DXAWF4R1,term.rank.n,active,선수 랭크 표기 — n = 1..5,,,랭크 {n},Rank {n},draft,c9705a67
+tx_JAA94W3HZE,term.day.abbr.mon,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,MON,MON,draft,f61d4e9c
+tx_6TEJ91QHN4,term.day.abbr.tue,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,TUE,TUE,draft,b206a795
+tx_HJHGWHQ20R,term.day.abbr.wed,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,WED,WED,draft,6c4b8792
+tx_PXK50FC8R6,term.day.abbr.thu,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,THU,THU,draft,2c1631e0
+tx_GJ2EZP9SNV,term.day.abbr.fri,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,FRI,FRI,draft,4a31b54c
+tx_4Q8SQ2B532,term.day.abbr.sat,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,SAT,SAT,draft,d20602f5
+tx_2RS3PT0FNM,term.day.abbr.sun,active,요일 영문 약칭 — 시간 경과 머리글 DAY N 아래 (WeekProgressView.DAY_ABBR),3,,SUN,SUN,draft,392a0d30

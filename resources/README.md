@@ -1043,7 +1043,7 @@ shows only real value changes.
 | `AccentLabel` | Label | Amber text on white (`FONT_CAPTION`, `ACCENT_TEXT`) |
 | `OnFillLabel` | Label | White text on a colour fill (`FONT_CAPTION`, `TEXT_ON_FILL`) — the fill colour itself is data |
 | `NegativeLabel` · `PositiveLabel` · `LinkLabel` | Label | Semantic text colour `NEGATIVE` (loss, error, warning) · `POSITIVE` (gain, qualified) · `LINK` (blue info, e.g. mastery gain), all `FONT_CAPTION` like `AccentLabel`; a body-size use adds `theme_override_font_sizes/font_size` = `FONT_BODY` |
-| `RailLabel` | Label | Grey text on the dark rail (`FONT_CAPTION`, `RAIL_TEXT`) — 주간 화면 `%WeekLabel` |
+| `RailLabel` | Label | Grey text on the dark rail (`FONT_CAPTION`, `RAIL_TEXT`) — `UI_View_PhaseIntro` rail labels (the week screen's `%WeekLabel` was removed 2026-10) |
 | `OnFillTextButton` | Button | `TextButton` with every font colour `TEXT_ON_FILL` — a text button on a colour fill (상점 배너 "확률 보기") |
 | `BarPrimaryButton` · `BarGhostButton` · `BarDarkButton` | Button | One slot of a **bottom action bar** — same colours / fonts as `PrimaryButton` · `GhostButton` · `DarkButton` with **square corners** (`bar_button_styles(kind)`, `BAR_BUTTON_VARIATIONS`). Only inside a bar; the device inset is added by `fit_bottom_bar` |
 | `BarSeparator` | Panel | The vertical line between bar slots (`BOTTOM_BAR_SEP`, no radius) — a `Panel` child of every slot but the last, anchored right-wide, `offset_left = -2`, mouse Ignore. Replaces the `Sep` `ColorRect` and its colour literal |

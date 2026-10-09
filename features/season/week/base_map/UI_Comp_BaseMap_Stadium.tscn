@@ -4,11 +4,11 @@
 
 [node name="BaseMap_Stadium" type="Control"]
 editor_description = "Weekend stadium map (BaseMap.gd, BaseMap.create_stadium). Saturday morning = match prep (team room), Sunday morning = the match (stage booths), Sunday afternoon = press room. Not a team map: no teams.csv map_id points here."
-custom_minimum_size = Vector2(1000, 634)
+custom_minimum_size = Vector2(1200, 761)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 1000.0
-offset_bottom = 634.0
+offset_right = 1200.0
+offset_bottom = 761.0
 mouse_filter = 2
 script = ExtResource("1_map")
 
@@ -26,30 +26,30 @@ color = Color(0.32, 0.36, 0.44, 1)
 [node name="Zone_Stage" type="ColorRect" parent="Art"]
 editor_description = "Placeholder block: the stage with the two teams' booths (Spot_Booth)."
 layout_mode = 0
-offset_left = 260.0
-offset_top = 40.0
-offset_right = 740.0
-offset_bottom = 280.0
+offset_left = 312.0
+offset_top = 48.0
+offset_right = 888.0
+offset_bottom = 336.0
 mouse_filter = 2
 color = Color(0.45, 0.5, 0.6, 1)
 
 [node name="Zone_TeamRoom" type="ColorRect" parent="Art"]
 editor_description = "Placeholder block: our team room backstage (Spot_TeamRoom)."
 layout_mode = 0
-offset_left = 40.0
-offset_top = 360.0
-offset_right = 340.0
-offset_bottom = 600.0
+offset_left = 48.0
+offset_top = 432.0
+offset_right = 408.0
+offset_bottom = 720.0
 mouse_filter = 2
 color = Color(0.4, 0.45, 0.54, 1)
 
 [node name="Zone_Press" type="ColorRect" parent="Art"]
 editor_description = "Placeholder block: the press room (Spot_Press)."
 layout_mode = 0
-offset_left = 660.0
-offset_top = 360.0
-offset_right = 960.0
-offset_bottom = 600.0
+offset_left = 792.0
+offset_top = 432.0
+offset_right = 1152.0
+offset_bottom = 720.0
 mouse_filter = 2
 color = Color(0.4, 0.45, 0.54, 1)
 
@@ -65,27 +65,27 @@ mouse_filter = 2
 
 [node name="Spot_Booth" type="Marker2D" parent="Spots"]
 editor_description = "Stage booths: my five pilots on Sunday morning (match day)"
-position = Vector2(500, 150)
+position = Vector2(600, 180)
 gizmo_extents = 28.0
 
 [node name="Spot_TeamRoom" type="Marker2D" parent="Spots"]
 editor_description = "Team room: Saturday morning (opponent analysis, ban/pick)"
-position = Vector2(190, 470)
+position = Vector2(228, 564)
 gizmo_extents = 28.0
 
 [node name="Spot_Press" type="Marker2D" parent="Spots"]
 editor_description = "Press room: Sunday afternoon (press conference)"
-position = Vector2(810, 470)
+position = Vector2(972, 564)
 gizmo_extents = 28.0
 
 [node name="Spot_W" type="Marker2D" parent="Spots"]
 editor_description = "Neutral fallback (stadium hall centre)"
-position = Vector2(500, 420)
+position = Vector2(600, 504)
 gizmo_extents = 28.0
 
 [node name="Spot_Entrance" type="Marker2D" parent="Spots"]
 editor_description = "Stadium entrance (unused for now)"
-position = Vector2(500, 590)
+position = Vector2(600, 708)
 gizmo_extents = 28.0
 
 [node name="Tokens" type="Control" parent="."]

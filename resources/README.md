@@ -1116,6 +1116,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `MatchPrepPilotCard` · `MatchPrepCardInner` · `MatchPrepWarnChip` · `MatchPrepMechChip` | Card · Card · AccentChip · SunkPanel | `UI_Comp_MatchPrepPilotCard` root (card look, no padding) · its embedded `SeasonPilotCard` (`StyleBoxEmpty` — no second card) · `%Warn` `경계 대상` (`NEGATIVE`, pill, padding 10/2) · `MechChip*` (`SURFACE_SUNK`, r8, padding 4/2) | — |
 | `MessengerBubbleNpc` · `MessengerBubbleMine` · `MessengerAnswerButton` · `MessengerNoteChipMuted` | Card · Card · GhostButton · AccentChip | `MessengerNpcBubble` / `MessengerPlayerBubble` `%Bubble` (r22, padding 0 — the scene's `Pad` pads) · `MessengerAnswerButton` (ghost + padding 22/17) · failed `MessengerNoteChip` | — |
 | `VnDialogueBubble` · `VnDialogueNamePlate` · `VnDialogueNamePlateMine` · `VnDialogueArtSlab` · `VnDialogueChoiceButton` | Card · AccentChip · AccentChip · SunkPanel · GhostButton | `UI_View_VnDialogue` `%Bubble` (r28, padding 0, the scene's `Pad` pads) · `%NamePlate` (pilot `ACCENT` / manager `RAIL`, r14 + padding), switched by `VnDialogueView._show_line` · `%Slab` (no-art placeholder) · `UI_Comp_VnChoiceButton` (ghost + padding) | (none) |
+| `EventResultChip` | SurfaceChip | `UI_Comp_EventResultPanel` `%ChipTemplate` (compact stat gain pill, `SURFACE_SUNK` on the white popup card) | (none) |
 
 Label colour overrides that are data (side / grade / day state colours) stay `theme_override_colors` set by code;
 the scene value is a preview.

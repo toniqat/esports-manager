@@ -1,0 +1,137 @@
+[gd_scene load_steps=4 format=3 uid="uid://k88064pugcqm"]
+
+[ext_resource type="Script" uid="uid://d3q5h3vkcta83" path="res://features/season/mental/EventResultPanel.gd" id="1_panel"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://bg7gc1ku0k17y" path="res://features/season/mental/EventResultBar.gd" id="3_bar"]
+
+[node name="EventResultPanel" type="VBoxContainer"]
+editor_description = "Event result body (EventResultPanel.show_result / show_blocks / show_texts): one block per pilot (portrait + progress-bar rows + chips + note lines), team block last. Top-wide; height = content. Hosts: VnDialogue %ResultPanel, focus-training result."
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+theme_override_constants/separation = 0
+script = ExtResource("1_panel")
+
+[node name="Blocks" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _blocks
+One %BlockTemplate duplicate per pilot (and the team block)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="BlockTemplate" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _block_tpl · _add_block()
+Hidden template of one pilot block. [필수] 경로로 참조: Portrait, Body/Name, Body/Rows, Body/Chips, Body/Lines."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="Portrait" type="Control" parent="BlockTemplate"]
+editor_description = "Round portrait slot (OutgameTheme.add_round_portrait, diameter = min width). Hidden for the team block."
+custom_minimum_size = Vector2(104, 104)
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="Body" type="VBoxContainer" parent="BlockTemplate"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="BlockTemplate/Body"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 28
+text = "Evelyn"
+vertical_alignment = 1
+
+[node name="Rows" type="VBoxContainer" parent="BlockTemplate/Body"]
+editor_description = "One %RowTemplate duplicate per bar (stress, trust, awakening, training EXP)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Chips" type="HFlowContainer" parent="BlockTemplate/Body"]
+editor_description = "Compact stat gains, one %ChipTemplate duplicate each."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="Lines" type="VBoxContainer" parent="BlockTemplate/Body"]
+editor_description = "Other notes (items, flags, mods): one MessengerNoteChip each."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="RowTemplate" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _row_tpl · _row()
+Hidden template of one bar row. [필수] 경로로 참조: Head/Label, Head/Value, Head/Delta, Bar."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Head" type="HBoxContainer" parent="RowTemplate"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Label" type="Label" parent="RowTemplate/Head"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "Stress"
+vertical_alignment = 1
+
+[node name="Value" type="Label" parent="RowTemplate/Head"]
+auto_translate_mode = 2
+editor_description = "Value now (\"72 / 100\", \"64%\"); NegativeLabel while stress is over the threshold."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 24
+text = "72 / 100"
+vertical_alignment = 1
+
+[node name="Delta" type="Label" parent="RowTemplate/Head"]
+auto_translate_mode = 2
+editor_description = "Change (PositiveLabel = welcome, NegativeLabel = not)."
+custom_minimum_size = Vector2(84, 0)
+layout_mode = 2
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 24
+text = "-15"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Bar" type="Control" parent="RowTemplate"]
+editor_description = "EventResultBar (_draw): before → after fill, overflow / wrap."
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("3_bar")
+
+[node name="ChipTemplate" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _chip_tpl
+Hidden template of one compact stat chip. [필수] 경로로 참조: Text."
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"EventResultChip"
+
+[node name="Text" type="Label" parent="ChipTemplate"]
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "Field hit +1"
+horizontal_alignment = 1

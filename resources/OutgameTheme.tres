@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=164 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=165 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -467,6 +467,17 @@ corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="EventResultChip_panel"]
+content_margin_left = 20.0
+content_margin_top = 4.0
+content_margin_right = 20.0
+content_margin_bottom = 4.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="GhostButton_disabled"]
 content_margin_left = 18.0
@@ -2052,6 +2063,8 @@ DraftSlotFrame/styles/hover = SubResource("DraftSlotFrame_disabled")
 DraftSlotFrame/styles/hover_pressed = SubResource("DraftSlotFrame_disabled")
 DraftSlotFrame/styles/normal = SubResource("DraftSlotFrame_disabled")
 DraftSlotFrame/styles/pressed = SubResource("DraftSlotFrame_disabled")
+EventResultChip/base_type = &"SurfaceChip"
+EventResultChip/styles/panel = SubResource("EventResultChip_panel")
 FaintLabel/base_type = &"Label"
 FaintLabel/colors/font_color = Color(0.722, 0.722, 0.749, 1)
 FaintLabel/font_sizes/font_size = 22

@@ -16,7 +16,8 @@ extends Control
 # Flow: `open(...)` → lines one per tap → choices → `choice_picked(idx)` → the owner
 # applies the effects and calls `show_result(MentalEvents.outcome_view(state, outcome))`
 # → the picked answer (manager line) and the reply lines, one per tap → result panel
-# over the dim (verdict + note chips) → tap → `closed`.
+# over the dim (verdict chip + `EventResultPanel`: per-pilot bars from the view's
+# `result_blocks`, or plain note chips) → tap → `closed`.
 #
 # Line grammar (mental_texts.csv line marker, first char after translation): plain = the
 # pilot (name plate = the pilot's name), `>text` = the manager (manager name plate, the
@@ -68,6 +69,7 @@ var _stage: int = Stage.DONE
 var _result_ready: bool = false
 var _verdict: int = 0                # 0 no check / 1 passed / -1 failed
 var _notes: Array = []
+var _blocks: Array = []              # `outcome_view.result_blocks` ([] → `_notes` as text chips)
 var _type_tween: Tween = null
 var _art_tween: Tween = null
 var _picked_frame: int = -1          # process frame of the answer tap (its release is not a tap)
@@ -84,7 +86,7 @@ var _picked_frame: int = -1          # process frame of the answer tap (its rele
 @onready var _choice_list: Control = %ChoiceList
 @onready var _result_panel: Control = %ResultPanel
 @onready var _verdict_box: Control = %Verdict
-@onready var _notes_box: Control = %Notes
+@onready var _result_body: EventResultPanel = %EventResultPanel_Result
 @onready var _hint_lbl: Label = %Hint
 
 
@@ -127,10 +129,11 @@ func open(sub: String, title: String, pilot_id: int, lines: Array, choices: Arra
 	_result_ready = false
 	_verdict = 0
 	_notes = []
+	_blocks = []
 	_picked_frame = -1
 	_clear(_choice_list)
 	_clear(_verdict_box)
-	_clear(_notes_box)
+	_result_body.clear()
 	_dim.visible = false
 	_choice_list.visible = false
 	_result_panel.visible = false
@@ -141,8 +144,10 @@ func open(sub: String, title: String, pilot_id: int, lines: Array, choices: Arra
 
 
 ## After `choice_picked`: `MentalEvents.outcome_view(state, outcome)` →
-## `{checked, ok, say: [String], notes: [String]}` (display text). The reply lines follow
-## the picked answer, then the result panel.
+## `{checked, ok, say: [String], notes: [String], result_blocks?: [block]}` (display text;
+## call it right after the effects so the bars read the right values). The reply lines follow
+## the picked answer, then the result panel: `result_blocks` → `EventResultPanel.show_blocks`
+## (per-pilot bars), else `notes` → plain chips (e.g. `LimitBreak.choose_goal`'s view).
 func show_result(outcome: Dictionary) -> void:
 	for l in outcome.get("say", []):
 		_queue.append(String(l))
@@ -150,6 +155,7 @@ func show_result(outcome: Dictionary) -> void:
 	if bool(outcome.get("checked", false)):
 		_verdict = 1 if bool(outcome.get("ok", false)) else -1
 	_notes = (outcome.get("notes", []) as Array).duplicate()
+	_blocks = (outcome.get("result_blocks", []) as Array).duplicate()
 	_result_ready = true
 	if _stage == Stage.WAIT:
 		_stage = Stage.REPLY
@@ -231,8 +237,8 @@ func _on_choice_pressed(idx: int) -> void:
 	choice_picked.emit(idx)
 
 
-## Result panel over the dim: verdict chip (when the entry rolled a check) + note chips.
-## Nothing to show → the hint asks for the closing tap right away.
+## Result panel over the dim: verdict chip (when the entry rolled a check) + the result body
+## (`EventResultPanel`). Nothing to show → the hint asks for the closing tap right away.
 func _show_outcome() -> void:
 	_stage = Stage.OUTCOME
 	if _verdict != 0:
@@ -240,12 +246,13 @@ func _show_outcome() -> void:
 		v.setup(Loc.t(L.PRESS_MESSENGER_CHECK_PASS if _verdict > 0 else L.PRESS_MESSENGER_CHECK_FAIL),
 				_verdict > 0)
 		_verdict_box.add_child(v)
-	for n in _notes:
-		var c := MessengerNoteChip.create()
-		c.setup(String(n), true)
-		_notes_box.add_child(c)
+	if not _blocks.is_empty():
+		_result_body.show_blocks(_blocks)
+	else:
+		_result_body.show_texts(_notes)
+	_result_body.visible = not _result_body.is_empty()
 	_verdict_box.visible = _verdict != 0
-	if _verdict != 0 or not _notes.is_empty():
+	if _verdict != 0 or not _result_body.is_empty():
 		_fade_in(_dim)
 		_fade_in(_result_panel)
 	_refresh_hint()

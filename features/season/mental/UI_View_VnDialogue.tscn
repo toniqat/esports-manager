@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dcruj0tit75y2"]
+[gd_scene load_steps=4 format=3 uid="uid://dcruj0tit75y2"]
 
 [ext_resource type="Script" path="res://features/season/mental/VnDialogueView.gd" id="1_vn"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://k88064pugcqm" path="res://features/season/mental/UI_Comp_EventResultPanel.tscn" id="3_result"]
 
 [node name="VnDialogue" type="Control"]
 layout_mode = 3
@@ -237,7 +238,7 @@ alignment = 1
 unique_name_in_owner = true
 visible = false
 editor_description = "[필수] 지우면 오류: VnDialogueView.gd _result_panel
-Result over the dim after the replies: mental check verdict + effect chips (MessengerNoteChip). Grows both ways from the centre."
+Result over the dim after the replies: mental check verdict + the EventResultPanel body. Grows both ways from the centre."
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -273,13 +274,11 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Notes" type="VBoxContainer" parent="Overlay/ResultPanel/Column"]
+[node name="EventResultPanel_Result" parent="Overlay/ResultPanel/Column" instance=ExtResource("3_result")]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VnDialogueView.gd _notes_box
-Effect chips (trust, stat mods, outing ...), one MessengerNoteChip per note."
+editor_description = "[필수] 지우면 오류: VnDialogueView.gd _result_body
+What the answer did: one block per pilot (portrait + stress / trust / awakening / training EXP bars + chips), EventResultPanel.show_blocks / show_texts."
 layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
 
 [node name="Hint" type="Label" parent="Overlay"]
 unique_name_in_owner = true

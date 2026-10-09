@@ -280,7 +280,7 @@ static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictiona
 	# Base stress relief of the talk / outing itself, on top of the row's `stress:` clauses.
 	var relief: int = StressSystem.relieve(state, pid, String(e["action"]))
 	if relief != 0:
-		(out["notes"] as Array).append({"type": "stress", "pid": pid, "delta": relief})
+		(out["notes"] as Array).append(MentalEvents.stress_note(state, pid, relief))
 	if String(e["action"]) == ACTION_OUTING:
 		var o: Dictionary = state.get("outings", {})
 		o[str(pid)] = outings(state, pid) + 1
@@ -423,7 +423,7 @@ static func finish_talk(state: Dictionary, day: int, choice: int) -> Dictionary:
 			continue
 		var relief: int = StressSystem.relieve(state, int(who), ACTION_TALK)
 		if relief != 0:
-			(out["notes"] as Array).append({"type": "stress", "pid": int(who), "delta": relief})
+			(out["notes"] as Array).append(MentalEvents.stress_note(state, int(who), relief))
 	t["choice"] = choice
 	t["outcome"] = out
 	return out

@@ -99,10 +99,10 @@ static func apply(state: Dictionary, pid: int, id: String) -> Dictionary:
 	var gauge: int = ConstTable.int_of("FOCUS_AWAKEN")
 	if gauge != 0:
 		Awakening.add_gauge(state, pid, gauge, "focus")
-		notes.append({"type": "awaken", "pid": pid, "delta": gauge})
+		notes.append(MentalEvents.awaken_note(state, pid, gauge))
 	var sd: int = StressSystem.add(state, pid, ConstTable.int_of("FOCUS_STRESS"))
 	if sd != 0:
-		notes.append({"type": "stress", "pid": pid, "delta": sd})
+		notes.append(MentalEvents.stress_note(state, pid, sd))
 	return {"checked": false, "ok": true, "chance": -1, "pilot_id": pid, "partner_id": -1,
 			"say": [], "notes": notes, "course": id}
 
@@ -145,9 +145,10 @@ static func add_stat_exp(state: Dictionary, pid: int, add: Dictionary) -> Array:
 
 
 ## Training EXP (`TrainingLevel.add_exp`) → a `tlexp` note with the amount applied
-## (0 = the bar is full, the note says a limit break is needed).
+## (0 = the bar is full, the note says a limit break is needed) and `after` = EXP in the level.
 static func add_training_exp(state: Dictionary, pid: int, amount: int) -> Dictionary:
-	return {"type": "tlexp", "pid": pid, "delta": TrainingLevel.add_exp(state, pid, maxi(0, amount))}
+	var applied: int = TrainingLevel.add_exp(state, pid, maxi(0, amount))
+	return {"type": "tlexp", "pid": pid, "delta": applied, "after": TrainingLevel.exp_of(state, pid)}
 
 
 ## Mastery gain on the story mech (`story_mech`) → a `mastery` note with the points the bar

@@ -17,6 +17,8 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `StressSystem.gd` | `class_name StressSystem` (static). Stress (Darkest Dungeon style): run init, clamp, shaken (위축) ratio, mood multipliers, roster-copy `apply_to` (MatchFlow), `snapshot` → `match_ctx.stress`, `record_match` ← `pending_match.stress`, training-day roll, interview / outing relief, display helpers (`mood_label`, `line`). The in-match part is `features/battle_sim/stress/`. |
 | `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews, outings and incidents (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
 | `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
+| `EventResultPanel.gd` · `UI_Comp_EventResultPanel.tscn` | `class_name EventResultPanel extends VBoxContainer`: **event result body** — one block per pilot (round portrait top-left, progress-bar rows, compact stat chips, other notes as `MessengerNoteChip`), team block last. Reusable by any result screen. See **Event result panel** below. |
+| `EventResultBar.gd` | `class_name EventResultBar extends Control`: the `_draw` bar of one panel row (before → after fill, stress overflow layer, wrap on level up / gauge crossed), placed as the row template's `Bar` node. |
 | `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer — `%Button` (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap) + `%Preview` line under it (check chance + effect directions). Code sets both texts + `pressed`. |
 | `FocusTraining.gd` | `class_name FocusTraining` (static, §15 D). The visit option **집중 훈련**: course table (`COURSES`), `courses_view` / `refusal` / `cost_of`, `apply` (coach points → stat EXP through the training EXP bank, training EXP, awakening gauge, stress; 한계돌파 → `LimitBreak.complete`). Shared helpers the story clauses use: `add_stat_exp`, `add_training_exp`, `add_story_mastery`, `story_mech`. See "Afternoon visit (방문)". |
 | `AfternoonAway.gd` | `class_name AfternoonAway` (static). Afternoon away states of a training day: stress self outing, else a chance of dorm rest, rolled once and recorded in `mental.days["<day>"].afternoon`; `started` · `begin` · `away_of` · `relief_of` · `can_request` · `any_request`. See "Afternoon away states". |
@@ -88,6 +90,8 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   death in a match, `STRESS_DEATH_MIN..MAX` (BattleSim, written back at match end).
 - **Falls**: a finished interview / outing / morning talk relieves `STRESS_INTERVIEW_RELIEF` / `STRESS_OUTING_RELIEF` / `STRESS_TALK_RELIEF` (pair talk: both pilots; `StressSystem.relief_amount`) (note
   `{type: stress}` in the outcome), plus any `stress:` / `stress_all:` clause of the chosen answer. No natural decay.
+  Each source keeps its own stored note; **display merges them** (`MentalEvents.merge_notes`, used by `note_texts`
+  and `result_blocks`), so one answer shows one stress line per pilot with the summed delta.
 - **Shaken (위축)**: stress ≥ `STRESS_THRESHOLD` outside a match. The 6 pilot stats drop by one
   `STRESS_SHAKEN_STAT_PER_STEP` per full `STRESS_SHAKEN_STEP` over the threshold (the maximum stress is the
   largest drop). Applied **last** in `MatchFlow._finalize_rosters` on the roster copy; persists across matches
@@ -173,9 +177,16 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
 (D7): note dicts are `{type: trust|trust_all|trust_level|stress|stress_all|pmod|pmod_all|smod|outing, pid?, stat?, delta?, weeks?, count?}`;
 §15 D adds `stat_up {pid, stat, delta}` · `stat_exp {pid, delta}` · `tlexp {pid, delta}` (0 = bar full) ·
 `awaken {pid, delta}` · `mastery {pid, mech, delta}` · `limit_break {pid, level}` · `coach {delta}` (keys `mental.ui.note.*`).
+Since the result panel (2026-10) `trust` · `stress` · `awaken` · `tlexp` notes also carry **`after`** = the value right
+after that note (trust points · stress · gauge · EXP in the level; built by `MentalEvents.stress_note` / `awaken_note`,
+`FocusTraining.add_training_exp`) — old saved notes without it fall back to the current value.
+**Merge** (`MentalEvents.merge_notes(notes)`, display only, stored notes untouched): summed by type + pid (+ stat / mech /
+weeks): `trust` `stress` `awaken` `tlexp` `stat_exp` `stat_up` `mastery` `coach` `trust_all` `stress_all` `pmod*` `smod`
+(later `after` wins, sums of 0 dropped except `tlexp`); last one wins: `trust_level` `limit_break` `outing`.
 A focus training outcome has the same shape (`checked: false`) plus `course`.
-`MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String]}` for
-`MessengerView.show_result`; `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
+`MentalEvents.outcome_view(state, outcome)` → `{checked, ok, chance, say: [String], notes: [String], pilot_id, partner_id,
+result_blocks}` for `MessengerView.show_result` / `VnDialogueView.show_result` (`result_blocks` =
+`MentalEvents.result_blocks(state, notes, pilot_id)`, computed at call time — call it right after the effects); `MentalEvents.note_texts(state, notes)` for the week-screen summary chips.
 A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력치", shared with the training tiles).
 `end_week` resets `week` / counters / `days` and shifts `fatigue`; `_week()` also resets when the key changes.
 
@@ -304,9 +315,10 @@ hint "Tap the screen to continue".)
 **Flow**: lines (one per tap) → choices: `%Dim` fades in, `%ChoiceList` lists the answers
 vertically in the screen centre → `choice_picked` → the picked answer plays as a manager line,
 then the `say` replies (one per tap) → `%ResultPanel` over the dim: mental check verdict
-(`press.messenger.check_pass` / `check_fail`, only when `checked`) + one `MessengerNoteChip` per
-note (trust, stat mods, outing …) → tap → `closed`. No notes and no check → no panel, the next
-tap closes. No choices → the tap after the last line closes.
+(`press.messenger.check_pass` / `check_fail`, only when `checked`) + `%EventResultPanel_Result`
+(`EventResultPanel`: the view's `result_blocks` as per-pilot bars, or — a view without blocks, e.g.
+`LimitBreak.choose_goal` — its `notes` texts as chips) → tap → `closed`. No notes and no check → no panel,
+the next tap closes. No choices → the tap after the last line closes.
 
 **Choices**: `UI_Comp_VnChoiceButton.tscn` is a VBox — `%Button` (the answer) and `%Preview` under it
 (`OnFillLabel`, hidden when empty).
@@ -346,3 +358,43 @@ to `LimitBreak.choose_goal`, which returns the outcome view itself). `_open_over
 pid, view, speaker = "")`: evening → title = pilot name; incident → title = the event's `@tag`, `speaker` = pilot
 name (sub `season.week.sub_incident`). `_on_overlay_choice` resolves by `_overlay_kind`
 (`resolve_incident` / `finish_evening`) and calls `show_result(MentalEvents.outcome_view(state, out))`.
+
+## Event result panel (EventResultPanel)
+
+What an answer / visit did, drawn after the effects are applied. Self-contained: the VN result panel hosts it
+(`UI_View_VnDialogue` `%EventResultPanel_Result`); the focus-training result (`week/VisitMenu`) can host it the same way.
+
+```
+(portrait)  Evelyn
+            스트레스             72 / 100   -15     ← label · value now · delta (green = welcome, red = not)
+            [██████████░░░░░░░░░]                 ← EventResultBar: before → after, animated
+            신뢰도 Lv.3              64%   +16%
+            (전장 명중 +1) (능력치 EXP +40)        ← compact stat chips
+            ( 외출 2회째 · … )                     ← other notes (MessengerNoteChip)
+팀 전체                                            ← notes without a pilot (no portrait)
+```
+
+(Mockup text: stress, trust Lv.3, chips "field hit +1" / "stat EXP +40", "outing #2 · …", block "whole team".)
+
+| Member | Meaning |
+|---|---|
+| `static create() -> EventResultPanel` | Instantiates `UI_Comp_EventResultPanel.tscn` (top-wide VBox, height = content) |
+| `show_result(state, pid, notes, animate = true)` | Note dicts of one result, **right after** they were applied (previous = `after` or now − delta). `pid` = the result's pilot (first block; an `outing` note joins it). Pair talks → one block per pilot |
+| `show_blocks(blocks, animate = true)` | Precomputed `MentalEvents.result_blocks(state, notes, pid)` (also `outcome_view.result_blocks`) |
+| `show_texts(texts)` · `clear()` · `is_empty()` | Plain text chips (no blocks) · empty · nothing shown |
+
+Rows (`MentalEvents.result_blocks`, data only — the panel only draws):
+- **stress** — bar = `STRESS_THRESHOLD`, value `n / threshold`; above it the overflow (up to `STRESS_MAX`) is drawn
+  again from the left in dark red and the value turns `NegativeLabel`.
+- **trust** — label `mental.ui.result.trust` (level after), value = progress in the level (`ui.word.max_level` at the
+  top), delta = `trust_delta_text`; a level up wraps the bar (the `trust_level` note is folded into this row).
+- **awakening** — `gauge / Awakening.threshold()`; a crossed threshold wraps and adds `awakening.detail.pending`.
+- **training EXP** — `mental.ui.result.tlexp` (training level): EXP in the level / `TrainingLevel.exp_need` (the limit
+  break); `tlexp` 0 with a full bar → `mental.ui.result.tlexp_full`; top level → `ui.word.max_level`.
+- `stat_up` → chip `<stat> +N`, `stat_exp` → chip `mental.ui.result.stat_exp`; every other note → `note_text` line.
+
+Layout: `%Blocks` + hidden templates `%BlockTemplate` (Portrait · Body/Name · Body/Rows · Body/Chips · Body/Lines),
+`%RowTemplate` (Head/Label · Head/Value · Head/Delta · Bar), `%ChipTemplate` (`EventResultChip`). Bars start
+(`EventResultBar.play`, deferred into the tree) when the panel is filled, so fill it when it is shown.
+F6: an in-memory run, two pilots with real effects (two stress sources, trust, awakening, stat EXP, overflow stress,
+team trust, outing). Keys `mental.ui.result.*`: `trust`, `tlexp`, `tlexp_full`, `stat_exp`, `team`.

@@ -98,6 +98,12 @@ tx_CT7HANNW9F,모든 파일럿 능력치 +{n}
 tx_WWXBFY3CCH,훈련 경험치 +{n}%
 tx_NGS28BKV7X,샐러리 -{n}
 tx_JA0XRDKBW0,{slot}번째 파일럿 카드 교체
+tx_9G6D9XEJGY,보유하지 않은 선수입니다
+tx_3R7MK9D1MX,Lv {level}에 도달해야 승급할 수 있습니다
+tx_PBKVCHGXV5,최대 랭크 {max}입니다 · 돌파하면 더 올릴 수 있습니다
+tx_89EPGD3DM8,최고 랭크입니다
+tx_9FRC0J6AKT,승급석{i} 부족합니다 ({n} 필요)
+tx_F6X41NRVWG,레벨 상한 Lv {level}입니다 · 승급하면 더 올릴 수 있습니다
 tx_5QJ40QYDDV,교전 개시
 tx_PEJVP7QE73,완벽한 기회
 tx_A2X2F9VGZJ,결투
@@ -347,6 +353,29 @@ tx_FN1RTFB39A,초록 숫자 = Lv1 · 돌파 전 대비
 tx_E8MWC8R25R,돌파: 중복 영입마다 한 단계
 tx_MJR84KHMPT,돌파 표 없음
 tx_YEC6P2JRFH,선수 파편
+tx_38WKBM353J,랭크 {n} / {max}
+tx_9CXWBRZENJ,레벨 상한 Lv {cap} 도달
+tx_2QZP5PS95J,샐러리 (랭크 {rank} · Lv {level})
+tx_92NH0ET51W,능력치 · 랭크 {rank} · Lv {level}
+tx_79EBDTRQZ7,돌파 필요
+tx_T9KPAPA7NX,중복 영입마다 돌파 +1 = 최대 랭크 +1 (돌파 상한 {cap})
+tx_SWHWCBEN9S,레벨 상한입니다 (Lv {cap}) · 랭크업으로 상한을 올립니다
+tx_F3GE3GD4Y1,최고 랭크 {rank} · 레벨 상한 Lv {cap} 도달
+tx_0P6XV6T6PS,랭크업
+tx_4KPN3SC2TV,랭크 {rank} 달성 · 레벨 상한 Lv {cap}
+tx_FHD1S4X2ZD,랭크 {rank} · 저장 실패: {error}
+tx_G8YWRW7XY3,Lv {level} 달성
+tx_A773KTFMJ6,파일럿 카드 · 랭크로 교체됨
+tx_2FR7C7SNP7,{name} Lv {level}
+tx_6GJDBMHDQ0,{name} 랭크 {rank} 달성
+tx_S02DYG4RPW,랭크: 도달한 랭크까지 누적 적용
+tx_HJ1DCGDYTB,랭크 표 없음
+tx_BWEJSV365E,초록 숫자 = 랭크 · 레벨 보너스
+tx_W1P4FE4Q31,훈련 EXP 보너스 (랭크)
+tx_BBXCHB19XW,보유한 선수가 없습니다. 상점에서 선수를 영입하세요.
+tx_S7KK5JW0WZ,랭크업  ·  {cost}
+tx_6G7WNMXNPM,레벨업 재화 {have} 보유 · 레벨 상한 Lv {cap}
+tx_DQSPN4WRKQ,승급석 {have} 보유 · 랭크업하면 Lv 0 부터 다시 오릅니다
 tx_H1V09QCXSD,단기 훈련 코치
 tx_E731FZHB4R,전술 컨설턴트
 tx_8SZM4HBC56,메크 연구원 초빙
@@ -833,6 +862,8 @@ tx_WYAR6ATGZK,SNIPER
 tx_51C591RCKG,경계 대상
 tx_FVQ03DD4B3,종합
 tx_EE9ZYA8C66,주력 메크 없음
+tx_P5GRXR0NQ6,밴픽 시작
+tx_E2AWTQEV33,준비 완료
 tx_MR5VKS3AHG,과적재
 tx_C214C4GTV6,반응 장갑 전개
 tx_4AGJGY73MM,고통과 쾌감
@@ -1198,6 +1229,36 @@ tx_T0XXC81CWK,"{name2}, 네가 오늘 좀 챙겨 줘."
 tx_6GSWJZY616,&맡겨 주세요.
 tx_94NECDHB76,&저도 사실 좀 힘든데요.
 tx_2HXM8CJ9R6,{name} 신뢰도 Lv.{n}
+tx_3WDBRBT5GW,@리그 위클리
+tx_39HG016RAC,오늘 승리 축하드립니다. 경기 내내 주도권을 놓치지 않았는데요.
+tx_1T8YSHM654,승리의 가장 큰 원동력은 무엇이었습니까?
+tx_82Z4T8S37D,선수들이 준비한 걸 그대로 보여 줬습니다.
+tx_XRXZW8C39R,밴픽에서 이미 이겼다고 봅니다.
+tx_5GZVMCADA4,아직 보완할 점이 많습니다.
+tx_YAM761NP7H,@게임 투데이
+tx_XXGJ8T8AMF,오늘 {name} 선수의 활약이 눈부셨습니다.
+tx_5WT1HTXEXH,따로 칭찬해 주실 말이 있을까요?
+tx_D6CFVSA5FZ,오늘의 주인공은 {name}입니다.
+tx_9TKKWG51FR,팀 전체가 함께 만든 승리입니다.
+tx_EZF6PG4AWS,이 정도는 당연히 해 줘야죠.
+tx_TGANFVZDW3,@e스포츠 데일리
+tx_BFRD3MFTCJ,기세가 좋습니다. 이 흐름을 다음 주까지 이어 갈 수 있을까요?
+tx_4RB6GM0B12,다음 상대도 만만치 않다는 평입니다.
+tx_HYYM6S1Z2D,흐름이 왔을 때 밀어붙여야죠.
+tx_JMR8KDQH00,들뜨지 않게 훈련부터 다시 하겠습니다.
+tx_9SZN9TA016,다음 상대 생각은 내일 하겠습니다.
+tx_QF8WWDJMVD,@리그 위클리
+tx_5RMFW4Y97D,아쉬운 패배입니다.
+tx_DBJB108KNX,어디서부터 꼬였다고 보십니까?
+tx_HV427WM4QM,밴픽에서 제가 판단을 잘못했습니다.
+tx_HJNV35D4QG,교전 한두 번이 승부를 갈랐을 뿐입니다.
+tx_TKTTCQ6AHV,선수들 집중력이 부족했습니다.
+tx_5VG97NVEV0,@게임 투데이
+tx_11BXCC4A5J,오늘 {name} 선수가 많이 고전했는데요.
+tx_98RHXX4CMN,변화를 고려하고 계십니까?
+tx_H15XZER9KR,{name}{eun} 우리 팀의 핵심입니다. 믿습니다.
+tx_FZWDZJM4MJ,본인이 누구보다 잘 알 겁니다.
+tx_DGCV1JP42M,냉정하게 다시 검토하겠습니다.
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1485,7 +1546,7 @@ tx_4JW54W3MFD,감독 EXP
 tx_ERBNFWJ2H9,새 제거 포인트 (감독 탭)
 tx_36E6M38JM0,선수 성장
 tx_6DXJDQC258,선수 EXP +{n}
-tx_RQ4SQ39BQ7,최대 Lv {from} → {to}
+tx_RQ4SQ39BQ7,Lv {from} → {to}
 tx_RRX6FCNZ2Q,이번 런 업적
 tx_ZA35FTB9TG,기록된 선수가 없습니다
 tx_6DT1P5Z0AS,런 정산
@@ -1526,11 +1587,12 @@ tx_NC5BF9FXM3,역할 {role} 의 남은 선수 {n}명이 AI 팀 {teams}개와 맞
 tx_42EJTTYFX4,{scenario} · 샐러리캡
 tx_8HD5KTG0WT,{scenario} · 샐러리캡 (특성 {adj})
 tx_4HM99WN4PS,시작 실패: {error}
-tx_EN0H79ACA8,샐러리캡 초과 ({total} / {cap}). 레벨을 내리거나 다른 선수를 고르세요
+tx_EN0H79ACA8,샐러리캡 초과 ({total} / {cap}). 다른 선수를 고르세요
 tx_PYSFH9VR8V,포지션마다 1명씩: {n} / {max}명
 tx_Z7WZT1J6Q7,편성 완료 · 남은 샐러리 {n}
 tx_RQV5HNW8TV,편성 완료
 tx_N58C8KX6P1,게임 시작
+tx_B0NGFXJ0F2,랭크 {rank} · Lv {level}
 tx_WMF4H900Y6,루키 리그
 tx_WHEYGN2VQZ,슈퍼 리그
 tx_FHYTT6JZHE,샐러리캡이 낮다. 비싼 선수는 두세 명이 한계.
@@ -1688,6 +1750,13 @@ tx_5Y82DHJ5DX,오전: {name} · {name2} 만남
 tx_444WVNHT09,{day} 오전 · 훈련 소감
 tx_V0SAHDNET7,오전 만남을 건너뛸까요?
 tx_H3RGAX8ZG6,아직 선수를 만나 훈련 소감을 들을 수 있습니다. 이대로 오후로 넘어갈까요?
+tx_NJVPQAVA5J,경기장 · 내일 경기를 준비합니다 (상대 분석 · 밴픽)
+tx_P7Q0RHTR7C,경기장 · 오늘은 경기 날입니다
+tx_9FT8896B37,경기장 · 경기를 마치고 기자회견이 기다립니다
+tx_D4H4CEEAQX,저녁 · 조용히 한 주를 마무리합니다
+tx_34NK587JXR,경기 준비
+tx_2PHY0EQHSZ,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일
+tx_3MV5ZYWADH,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다
 tx_EVS2K4Z4YF,설정
 tx_4S0H7A92KR,설정
 tx_EB8R7HBW32,언어
@@ -1718,7 +1787,7 @@ tx_ZQZY2WVPR2,"런을 마치면 런 점수만큼 패스 EXP 를 얻습니다. Lv
 tx_5NS864BVSS,{d}일 {h}시간
 tx_GZ735QTDWP,{h}시간 {m}분
 tx_JXF877Y58D,수령 완료
-tx_Z70PR5PYNY,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파, 돌파를 다 채운 뒤엔 선수 파편{i} 됩니다."
+tx_Z70PR5PYNY,"대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 중복 선수는 돌파(최대 랭크 +1), 돌파를 다 채운 뒤엔 선수 파편과 승급석이 됩니다."
 tx_5DHTBBFC6B,대상이 없는 등급이 뽑히면 가장 가까운 등급에서 뽑습니다. 이미 가진 특성은 특성 재료{i} 됩니다.
 tx_ZFYE3A1TJR,선수 영입 확률
 tx_DZEWNGHZ0V,특성 연구 확률
@@ -1730,7 +1799,7 @@ tx_J2TT6QPKEW,선수 영입
 tx_7NDPFWQK3B,특성 연구
 tx_PEPY8003ZH,선수 영입 결과
 tx_W65CM8AH9Y,특성 연구 결과
-tx_4TEB6HP1KS,"네임드 선수 {n}인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편"
+tx_4TEB6HP1KS,"네임드 선수 {n}인 중 한 명 · 중복은 돌파, 돌파를 다 채우면 선수 파편 · 승급석"
 tx_59WEARXAX8,감독 특성 {n}종 중 하나 · 이미 가진 특성은 특성 재료
 tx_VX3QB7MM4B,{n}장
 tx_RN8BBG1945,보유 선수
@@ -1743,7 +1812,7 @@ tx_XKMSGF34S8,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅�
 tx_8VFYRT9Z7Z,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다. {n}회 영입은 재화로 치르는 몫이 {pct}% 할인됩니다."
 tx_PWWSG8QS24,"{ticket}{i} 먼저 쓰이고, 모자란 만큼 재화로 치릅니다. {n}회 연구는 재화로 치르는 몫이 {pct}% 할인됩니다."
 tx_73MWJV0ATK,보유 {currency} {n}
-tx_YB4E1VVJ83,원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 오릅니다.
+tx_YB4E1VVJ83,원하는 선수를 확정 구매합니다. 보유한 선수면 돌파 단계가 올라 최대 랭크가 +1 됩니다.
 tx_GPSPYQ66XK,돌파 {n}/{max}
 tx_3HQMAP64E2,돌파\n파편 {n}
 tx_QSJ3WK35GE,영입\n파편 {n}
@@ -1778,6 +1847,10 @@ tx_NW50K9HBCE,교환소
 tx_33WRAHQJKW,확률 보기
 tx_G4RY3DMSCT,개발용
 tx_68ZA6FCJGY,{currency} +{n}
+tx_SDD8KRGMVC,승급석 교환
+tx_CTQ9Z79KG5,재화 {cost} → 승급석 {gain}
+tx_AGWHRMH9AR,보유 재화 {coins} · 승급석 {stones}
+tx_74MNNANQ3P,승급석 +{n}
 tx_6C29X8HMEF,능력치
 tx_E7KJ6CX53P,유효값 = 감독(보정 포함) · 어시스턴트 · 전담 스태프 중 최댓값
 tx_JZ767X3S8Y,일시 보정
@@ -1992,19 +2065,21 @@ tx_WSY436KCVQ,현상금
 tx_EQ77MGHTT1,기절
 tx_WAPNWFECJE,취약
 tx_9Z3YXBGMTT,교전
-tx_KEVDQS5CGB,기초 훈련
-tx_SN9RWDKSD9,기초 훈련 2
-tx_ETXQNX2FF3,사격 훈련
-tx_DYKR3KZW2R,회피 기동
-tx_E8AJQ6WVHS,근접 교전
-tx_Z2QHPPQ7QN,반응 훈련
-tx_6PFR1BYJ2Q,화력 증강
-tx_RZMEH6PFCE,내구 단련
+tx_95JG2WTYR0,승급석
+tx_ZNA4AGXBVT,★{n}
+tx_K0DXAWF4R1,랭크 {n}
+tx_KEVDQS5CGB,기초 훈련 I
+tx_SN9RWDKSD9,기초 훈련 II
+tx_ETXQNX2FF3,사격 훈련 I
+tx_DYKR3KZW2R,회피 기동 I
+tx_E8AJQ6WVHS,근접 교전 I
+tx_Z2QHPPQ7QN,반응 훈련 I
+tx_6PFR1BYJ2Q,화력 증강 I
+tx_RZMEH6PFCE,내구 단련 I
 tx_V37TNBJQV9,합동 훈련
 tx_T4WV59VSPB,집중 특강
 tx_X4QVQX3E4B,전술 회의
 tx_Z7JQDJ9DV2,합숙 스크림
-tx_G5ENXM984P,한계 돌파
 tx_CHY4PWBWTD,멘토링
 tx_D40J2EG75V,전지 훈련
 tx_PAVG1B8HGJ,메크 연구
@@ -2048,6 +2123,20 @@ tx_NCRNZK44YE,{stat}: {name} 코치 {value}
 tx_8V6MVWWBTF,{stat}: {name} 어시스턴트 {value}
 tx_ME5MJKE2GD,전술 {n} 필요
 tx_4X2JSX6BJA,{reason} (지금 전술 {n})
+tx_AKX9JC564C,기초 훈련 III
+tx_M93TH8WA3N,기초 훈련 IV
+tx_X60W879MF5,사격 훈련 II
+tx_E5BCQFXVA9,사격 훈련 III
+tx_7BZC8083FZ,회피 기동 II
+tx_X37TXGN9QS,회피 기동 III
+tx_YP0KMHFZ2H,근접 교전 II
+tx_YGHJJ2XYDE,근접 교전 III
+tx_HPE2AGS72N,반응 훈련 II
+tx_4DNCEM3K4T,반응 훈련 III
+tx_67HRWPCEBE,화력 증강 II
+tx_J7C56J00N6,화력 증강 III
+tx_BFBZYQPMDG,내구 단련 II
+tx_E7XM9N13SW,내구 단련 III
 tx_QQVPQ29K6X,훈련광
 tx_6HSK5W6C20,메크 연구가
 tx_SJVSQJ1HZ2,스폰서 친화

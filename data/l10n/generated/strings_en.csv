@@ -98,6 +98,12 @@ tx_CT7HANNW9F,All pilot stats +{n}
 tx_WWXBFY3CCH,Training EXP +{n}%
 tx_NGS28BKV7X,Salary -{n}
 tx_JA0XRDKBW0,Swap pilot card {slot}
+tx_9G6D9XEJGY,You don't own this player
+tx_3R7MK9D1MX,Reach Lv {level} to rank up
+tx_PBKVCHGXV5,Max rank {max} · Break through to go higher
+tx_89EPGD3DM8,Already at the highest rank
+tx_9FRC0J6AKT,Not enough Rank Stone ({n} needed)
+tx_F6X41NRVWG,Level cap Lv {level} · Rank up to go higher
 tx_5QJ40QYDDV,Open Engage
 tx_PEJVP7QE73,Perfect Opportunity
 tx_A2X2F9VGZJ,Duel
@@ -347,6 +353,29 @@ tx_FN1RTFB39A,Green numbers = vs. Lv1 · before breakthrough
 tx_E8MWC8R25R,Breakthrough: one stage per duplicate recruit
 tx_MJR84KHMPT,No breakthrough table
 tx_YEC6P2JRFH,Player Shards
+tx_38WKBM353J,Rank {n} / {max}
+tx_9CXWBRZENJ,Level cap Lv {cap} reached
+tx_2QZP5PS95J,Salary (Rank {rank} · Lv {level})
+tx_92NH0ET51W,Stats · Rank {rank} · Lv {level}
+tx_79EBDTRQZ7,Needs breakthrough
+tx_T9KPAPA7NX,Each duplicate = breakthrough +1 = max rank +1 (breakthrough cap {cap})
+tx_SWHWCBEN9S,At the level cap (Lv {cap}) · rank up to raise it
+tx_F3GE3GD4Y1,Top rank {rank} · level cap Lv {cap} reached
+tx_0P6XV6T6PS,Rank Up
+tx_4KPN3SC2TV,Rank {rank} reached · level cap Lv {cap}
+tx_FHD1S4X2ZD,Rank {rank} · Save failed: {error}
+tx_G8YWRW7XY3,Lv {level} reached
+tx_A773KTFMJ6,Pilot Card · Swapped by Rank
+tx_2FR7C7SNP7,{name} Lv {level}
+tx_6GJDBMHDQ0,{name} reached Rank {rank}
+tx_S02DYG4RPW,Rank: every reached rank applies
+tx_HJ1DCGDYTB,No rank table
+tx_BWEJSV365E,Green numbers = rank · level bonus
+tx_W1P4FE4Q31,Training EXP Bonus (Rank)
+tx_BBXCHB19XW,You don't own any players yet. Recruit them in the shop.
+tx_S7KK5JW0WZ,Rank Up  ·  {cost}
+tx_6G7WNMXNPM,{have} Level-up Currency owned · level cap Lv {cap}
+tx_DQSPN4WRKQ,{have} Rank Stone owned · ranking up resets the level to Lv 0
 tx_H1V09QCXSD,Short-Term Training Coach
 tx_E731FZHB4R,Tactics Consultant
 tx_8SZM4HBC56,Guest Mech Researcher
@@ -833,6 +862,8 @@ tx_WYAR6ATGZK,SNIPER
 tx_51C591RCKG,Threat
 tx_FVQ03DD4B3,Overall
 tx_EE9ZYA8C66,No main mech
+tx_P5GRXR0NQ6,Start Ban/Pick
+tx_E2AWTQEV33,Ready
 tx_MR5VKS3AHG,Overload
 tx_C214C4GTV6,Deploy Reactive Armor
 tx_4AGJGY73MM,Pain and Pleasure
@@ -1198,6 +1229,36 @@ tx_T0XXC81CWK,"{name2}, look after them today."
 tx_6GSWJZY616,&Leave it to me.
 tx_94NECDHB76,&Honestly I'm a bit worn out too.
 tx_2HXM8CJ9R6,{name} trust Lv.{n}
+tx_3WDBRBT5GW,@League Weekly
+tx_39HG016RAC,Congratulations on today's win. You never let go of the initiative.
+tx_1T8YSHM654,What was the biggest driver of the win?
+tx_82Z4T8S37D,The players showed exactly what we prepared.
+tx_XRXZW8C39R,I think we had already won at ban/pick.
+tx_5GZVMCADA4,We still have a lot to work on.
+tx_YAM761NP7H,@Game Today
+tx_XXGJ8T8AMF,{name} was dazzling today.
+tx_5WT1HTXEXH,Any special words of praise?
+tx_D6CFVSA5FZ,Today belongs to {name}.
+tx_9TKKWG51FR,It was a win the whole team made together.
+tx_EZF6PG4AWS,That's only what I expect.
+tx_TGANFVZDW3,@Esports Daily
+tx_BFRD3MFTCJ,You're on a roll. Can you carry this into next week?
+tx_4RB6GM0B12,People say the next opponent is no pushover either.
+tx_HYYM6S1Z2D,"When the momentum comes, you push."
+tx_JMR8KDQH00,We'll stay grounded and go back to training.
+tx_9SZN9TA016,I'll think about the next opponent tomorrow.
+tx_QF8WWDJMVD,@League Weekly
+tx_5RMFW4Y97D,A disappointing loss.
+tx_DBJB108KNX,Where do you think it started to go wrong?
+tx_HV427WM4QM,I made the wrong calls at ban/pick.
+tx_HJNV35D4QG,"One or two fights decided it, that's all."
+tx_TKTTCQ6AHV,The players lacked focus.
+tx_5VG97NVEV0,@Game Today
+tx_11BXCC4A5J,{name} struggled a lot today.
+tx_98RHXX4CMN,Are you considering changes?
+tx_H15XZER9KR,{name} is the core of our team. I trust them.
+tx_FZWDZJM4MJ,They know it better than anyone.
+tx_DGCV1JP42M,"I'll take a cold, hard look at it."
 tx_6RHXR0K8TD,Nekomata
 tx_KCKAPV8M44,Yuzuha
 tx_1TSM3CVTC7,Corin
@@ -1485,7 +1546,7 @@ tx_4JW54W3MFD,Manager EXP
 tx_ERBNFWJ2H9,New removal points (Manager tab)
 tx_36E6M38JM0,Player Growth
 tx_6DXJDQC258,Player EXP +{n}
-tx_RQ4SQ39BQ7,Max Lv {from} → {to}
+tx_RQ4SQ39BQ7,Lv {from} → {to}
 tx_RRX6FCNZ2Q,Run Achievements
 tx_ZA35FTB9TG,No players recorded
 tx_6DT1P5Z0AS,Run Settlement
@@ -1526,11 +1587,12 @@ tx_NC5BF9FXM3,Role {role}: {n} remaining {plural:n|player|players} don't match {
 tx_42EJTTYFX4,{scenario} · Salary Cap
 tx_8HD5KTG0WT,{scenario} · Salary Cap (traits {adj})
 tx_4HM99WN4PS,Start failed: {error}
-tx_EN0H79ACA8,Over the salary cap ({total} / {cap}). Lower levels or pick other players
+tx_EN0H79ACA8,Over the salary cap ({total} / {cap}). Pick other players
 tx_PYSFH9VR8V,One per position: {n} / {max}
 tx_Z7WZT1J6Q7,Lineup complete · {n} salary left
 tx_RQV5HNW8TV,Lineup complete
 tx_N58C8KX6P1,Start Game
+tx_B0NGFXJ0F2,Rank {rank} · Lv {level}
 tx_WMF4H900Y6,Rookie League
 tx_WHEYGN2VQZ,Super League
 tx_FHYTT6JZHE,Low salary cap: two or three expensive pilots at most.
@@ -1688,6 +1750,13 @@ tx_5Y82DHJ5DX,Morning: Talk with {name} and {name2}
 tx_444WVNHT09,{day} morning · After training
 tx_V0SAHDNET7,Skip the morning talk?
 tx_H3RGAX8ZG6,You can still meet a player about today's training. Move on to the afternoon anyway?
+tx_NJVPQAVA5J,Stadium · Get ready for tomorrow's match (scouting · ban/pick)
+tx_P7Q0RHTR7C,Stadium · It's match day
+tx_9FT8896B37,Stadium · The press conference awaits after the match
+tx_D4H4CEEAQX,Evening · A quiet end to the week
+tx_34NK587JXR,Match Prep
+tx_2PHY0EQHSZ,Scout the opponent and finish ban/pick today · the match is tomorrow
+tx_3MV5ZYWADH,Ban/pick done · Start Match goes straight into the match
 tx_EVS2K4Z4YF,Settings
 tx_4S0H7A92KR,Settings
 tx_EB8R7HBW32,Language
@@ -1718,7 +1787,7 @@ tx_ZQZY2WVPR2,"Finish a run to earn pass EXP equal to your run score. EXP past L
 tx_5NS864BVSS,{d}d {h}h
 tx_GZ735QTDWP,{h}h {m}m
 tx_JXF877Y58D,Claimed
-tx_Z70PR5PYNY,"If a rarity with no items is rolled, the nearest rarity is used instead. Duplicate players give a breakthrough, then player shards once breakthroughs are maxed."
+tx_Z70PR5PYNY,"If a star tier with no players is rolled, the nearest tier is used instead. Duplicate players give a breakthrough (max rank +1), then player shards and rank stones once breakthroughs are maxed."
 tx_5DHTBBFC6B,"If a rarity with no items is rolled, the nearest rarity is used instead. Traits you already own become trait materials."
 tx_ZFYE3A1TJR,Player Recruit Rates
 tx_DZEWNGHZ0V,Trait Research Rates
@@ -1730,7 +1799,7 @@ tx_J2TT6QPKEW,Player Recruit
 tx_7NDPFWQK3B,Trait Research
 tx_PEPY8003ZH,Recruit Results
 tx_W65CM8AH9Y,Research Results
-tx_4TEB6HP1KS,"One of {n} named {plural:n|player|players} · Duplicates give breakthroughs, then player shards once maxed"
+tx_4TEB6HP1KS,"One of {n} named {plural:n|player|players} · Duplicates give breakthroughs, then shards and rank stones once maxed"
 tx_59WEARXAX8,One of {n} manager {plural:n|trait|traits} · Traits you own become trait materials
 tx_VX3QB7MM4B,{n}
 tx_RN8BBG1945,Owned Players
@@ -1743,7 +1812,7 @@ tx_XKMSGF34S8,{ticket}s are used first; the rest is paid in coins.
 tx_8VFYRT9Z7Z,{ticket}s are used first; the rest is paid in coins. Recruit ×{n} gets {pct}% off the coin part.
 tx_PWWSG8QS24,{ticket}s are used first; the rest is paid in coins. Research ×{n} gets {pct}% off the coin part.
 tx_73MWJV0ATK,{currency} owned: {n}
-tx_YB4E1VVJ83,"Buy the player you want. If you already own them, their breakthrough goes up."
+tx_YB4E1VVJ83,"Buy the player you want. If you already own them, their breakthrough goes up (max rank +1)."
 tx_GPSPYQ66XK,Breakthrough {n}/{max}
 tx_3HQMAP64E2,Breakthrough\n{n} {plural:n|Shard|Shards}
 tx_QSJ3WK35GE,Recruit\n{n} {plural:n|Shard|Shards}
@@ -1778,6 +1847,10 @@ tx_NW50K9HBCE,Exchange
 tx_33WRAHQJKW,View Rates
 tx_G4RY3DMSCT,Dev Only
 tx_68ZA6FCJGY,{currency} +{n}
+tx_SDD8KRGMVC,Rank Stone Exchange
+tx_CTQ9Z79KG5,{cost} Coins → {gain} Rank Stone
+tx_AGWHRMH9AR,Owned: Coins {coins} · Rank Stone {stones}
+tx_74MNNANQ3P,Rank Stone +{n}
 tx_6C29X8HMEF,Stats
 tx_E7KJ6CX53P,Effective = highest of manager (incl. modifiers) · assistant · dedicated staff
 tx_JZ767X3S8Y,Temporary Modifiers
@@ -1992,19 +2065,21 @@ tx_WSY436KCVQ,Bounty
 tx_EQ77MGHTT1,Stun
 tx_WAPNWFECJE,Vulnerable
 tx_9Z3YXBGMTT,engage
-tx_KEVDQS5CGB,Basic Training
-tx_SN9RWDKSD9,Basic Training 2
-tx_ETXQNX2FF3,Shooting Drill
-tx_DYKR3KZW2R,Evasive Maneuvers
-tx_E8AJQ6WVHS,Close Engagement
-tx_Z2QHPPQ7QN,Reaction Drill
-tx_6PFR1BYJ2Q,Firepower Boost
-tx_RZMEH6PFCE,Endurance Training
+tx_95JG2WTYR0,Rank Stone
+tx_ZNA4AGXBVT,★{n}
+tx_K0DXAWF4R1,Rank {n}
+tx_KEVDQS5CGB,Basic Training I
+tx_SN9RWDKSD9,Basic Training II
+tx_ETXQNX2FF3,Shooting Drill I
+tx_DYKR3KZW2R,Evasive Maneuvers I
+tx_E8AJQ6WVHS,Close Engagement I
+tx_Z2QHPPQ7QN,Reaction Drill I
+tx_6PFR1BYJ2Q,Firepower Boost I
+tx_RZMEH6PFCE,Endurance Training I
 tx_V37TNBJQV9,Joint Training
 tx_T4WV59VSPB,Focused Lecture
 tx_X4QVQX3E4B,Tactics Meeting
 tx_Z7JQDJ9DV2,Bootcamp Scrims
-tx_G5ENXM984P,Breaking Limits
 tx_CHY4PWBWTD,Mentoring
 tx_D40J2EG75V,Field Training Camp
 tx_PAVG1B8HGJ,Mech Research
@@ -2048,6 +2123,20 @@ tx_NCRNZK44YE,{stat}: Coach {name} {value}
 tx_8V6MVWWBTF,{stat}: Assistant {name} {value}
 tx_ME5MJKE2GD,Needs Tactics {n}
 tx_4X2JSX6BJA,{reason} (Tactics now {n})
+tx_AKX9JC564C,Basic Training III
+tx_M93TH8WA3N,Basic Training IV
+tx_X60W879MF5,Shooting Drill II
+tx_E5BCQFXVA9,Shooting Drill III
+tx_7BZC8083FZ,Evasive Maneuvers II
+tx_X37TXGN9QS,Evasive Maneuvers III
+tx_YP0KMHFZ2H,Close Engagement II
+tx_YGHJJ2XYDE,Close Engagement III
+tx_HPE2AGS72N,Reaction Drill II
+tx_4DNCEM3K4T,Reaction Drill III
+tx_67HRWPCEBE,Firepower Boost II
+tx_J7C56J00N6,Firepower Boost III
+tx_BFBZYQPMDG,Endurance Training II
+tx_E7XM9N13SW,Endurance Training III
 tx_QQVPQ29K6X,Training Fanatic
 tx_6HSK5W6C20,Mech Researcher
 tx_SJVSQJ1HZ2,Sponsor-Friendly

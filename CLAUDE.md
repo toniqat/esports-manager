@@ -15,8 +15,8 @@ Godot 4.5-stable, GDScript · 2D mobile portrait 1080×1920 · main scene `res:/
 
 ```
 Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub) ◀──────────┐
-  │  (tabs: 홈 · 컬렉션 · 감독 · 상점 · 패스)     │ week: HUB → PRESS → TRAINING → WEEK │
-  └──continue─────────────────────────────▶   │ match day ▼                       │
+  │  (tabs: 홈 · 컬렉션 · 감독 · 상점 · 패스)     │ week: HUB → TRAINING → WEEK         │
+  └──continue─────────────────────────────▶   │ 토 ban/pick · 일 match ▼ → PRESS   │
                                                MatchFlow (PREP → BAN_PICK) ──▶ BattleSim
                                                run over ▶ RunResult ▶ Lobby     (result back)
 ```
@@ -29,8 +29,8 @@ Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub
 | Data | `data/csv/*.csv` → `data/game.db` (SQLite) → `GameDb` / `ConstTable`; tuning numbers only in `const.csv` | `data/`, `resources/` |
 | UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = the same white paper via `BattleTheme` (only plate-less text over the field keeps outlines) | `resources/`, `docs/mobile_safe_area.md` |
 
-Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`), one week at a time, days 월~금 training /
-토·일 matches; rules in `features/season/README.md` + `calendar/README.md`.
+Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`, 36 weeks), one week at a time, days 월~금 training /
+토 stadium + ban/pick / 일 stadium match + press (one player match a week); rules in `features/season/README.md` + `calendar/README.md`.
 
 ---
 
@@ -51,12 +51,12 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `run_result/` | Run settlement (`RunResult`), result screen, run balance sim | `features/meta/run_result/README.md` |
 | ↳ `traits/` | Manager traits, bonus points, unlocks (`TraitSystem`) | `features/meta/traits/README.md` |
 | ↳ `manager/` | Manager levels, specialisation, presets, prestige, 감독 tab | `features/meta/manager/README.md` |
-| ↳ `collection/` | 컬렉션 tab: pilot levels, breakthroughs | `features/meta/collection/README.md` |
+| ↳ `collection/` | 컬렉션 tab: owned pilots, level · rank (★ stars, breakthrough = max rank), rank-up | `features/meta/collection/README.md` |
 | ↳ `shop/` | 상점 / 패스 tabs: gacha, shards, crafting, `PassSystem` | `features/meta/shop/README.md` |
 | `features/season/` | In-run campaign: `SeasonHub` orchestrator, `HubView`, pilot card · detail sheet (`SeasonPilotCard` · `SeasonPilotDetail`), handoffs, playoff / INTL brackets (`tournament/`) | `features/season/README.md` |
 | ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
 | ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |
-| ↳ `training/` | Daily training tile board, coach auto-arrange | `features/season/training/README.md` |
+| ↳ `training/` | Daily training tile board, owned courses (`TrainingCourses`: counts, I~IV upgrade lines), coach auto-arrange | `features/season/training/README.md` |
 | ↳ `week/` | 시간 경과 screen (day rail, morning → talk → afternoon → evening, day cards) | `features/season/week/README.md` |
 | ↳ `week/base_map/` | Team base map widget (`BaseMap`) + one scene per map (art, spot markers), `teams.csv` `map_id` | `features/season/week/base_map/README.md` |
 | ↳ `league/` | `LeagueManager`, standings view | `features/season/league/README.md` |

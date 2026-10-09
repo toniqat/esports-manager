@@ -13,8 +13,6 @@ tx_X4QVQX3E4B,training.tile.t11.name,active,training_tiles.csv name (id=T11),,,�
 tx_Z7JQDJ9DV2,training.tile.t12.name,active,training_tiles.csv name (id=T12),,,합숙 스크림,Bootcamp Scrims,draft,3e0490cb
 tx_CHY4PWBWTD,training.tile.t14.name,active,training_tiles.csv name (id=T14),,,멘토링,Mentoring,draft,28971cb8
 tx_D40J2EG75V,training.tile.t15.name,active,training_tiles.csv name (id=T15),,,전지 훈련,Field Training Camp,draft,76b299c5
-tx_PAVG1B8HGJ,training.tile.t16.name,active,training_tiles.csv name (id=T16),,,메크 연구,Mech Research,draft,a27ab83a
-tx_BFGHJCY1F1,training.tile.t17.name,active,training_tiles.csv name (id=T17),,,메크 집중 연구,Intensive Mech Research,draft,5be39ed9
 tx_XXMTB9J4JQ,training.tile.t18.name,active,training_tiles.csv name (id=T18),,,기벽 발굴,Quirk Discovery,draft,62ee7efe
 tx_JWT9F5YXD6,training.tile.t19.name,active,training_tiles.csv name (id=T19),,,기벽 재조정,Quirk Rework,draft,9e4541d1
 tx_6ZSE84YQEQ,training.tile.t20.name,active,training_tiles.csv name (id=T20),,,동반 발굴,Paired Discovery,draft,2004055b
@@ -36,7 +34,7 @@ tx_8M81KN05QP,training.effect.flat,active,"훈련 타일 효과 한 줄 — 고�
 tx_4FZGJ5J85K,training.effect.quirk,active,훈련 타일 효과 한 줄 — 기벽 절. {op}=training.quirk_op.* 설명,,,훈련한 선수: {op},Trained pilot: {op},draft,c184d27a
 tx_M8FGBCRE85,training.exp.none,active,훈련 타일 팝오버 EXP 요약 — 스탯 EXP 를 주지 않는 타일,,,경험치 없음,No EXP,draft,871b05a8
 tx_HAH93PRWJJ,training.exp.quirk_day,active,훈련 타일 팝오버 EXP 요약 — 기벽 칸만 있는 타일,,,{tx_M8FGBCRE85} (그날은 기벽 훈련),{tx_M8FGBCRE85} (the day goes to quirk training),draft,0b5c3bae
-tx_8C0EV0B2WT,training.exp.mastery,active,훈련 타일 팝오버 EXP 요약 — 숙련도 칸 하나가 주는 메크 숙련도 EXP {n},,,메크 숙련도 +{n} (연구 메크),Mech mastery +{n} (research mech),draft,87d6eff8
+tx_8C0EV0B2WT,training.exp.mastery,deprecated,훈련 타일 팝오버 EXP 요약 — 숙련도 칸 하나가 주는 메크 숙련도 EXP {n},,,메크 숙련도 +{n} (연구 메크),Mech mastery +{n} (research mech),draft,87d6eff8
 tx_B7Y34DBG5A,training.exp.all,active,훈련 타일 팝오버 EXP 요약 — 여섯 스탯 모두 칸당 {n},,,{tx_0RR59YT76D} +{n},{tx_0RR59YT76D} +{n},draft,03ac97f9
 tx_TC94WX8SJC,training.exp.stat,active,훈련 타일 팝오버 EXP 요약 — 스탯 하나의 칸당 EXP. {stat}=스탯 이름. 여러 개는 training.list_sep 로 이음,,,{stat} +{n},{stat} +{n},draft,604ec14d
 tx_8A7H4WFZ7K,training.list_sep,active,훈련 타일 요약에서 항목을 나열할 때 쓰는 구분자 (앞뒤 공백 포함),,," · ", · ,draft,d3dacf89
@@ -46,12 +44,12 @@ tx_GJCV7B4T36,training.training_view.clear_button,active,UI_View_TrainingView.ts
 tx_4ZC95B7Y0R,training.training_view.auto_button,active,UI_View_TrainingView.tscn Bar/AutoButton text,,,코치 추천,Coach's Pick,draft,f32def16
 tx_HN9EHFNSJ1,training.training_view.confirm_button,active,UI_View_TrainingView.tscn Bar/ConfirmButton text,,,훈련 확정,Confirm Training,draft,1b567ba5
 tx_BZ8CPNHN9V,training.view.effect_line,deprecated,TrainingView effect line,,,{effect} · 사용 가능 {grade} 등급까지,{effect} · Up to grade {grade},draft,b73dc62c
-tx_XM1SPM1990,training.view.effect,active,"TrainingView effect, no breakdown",,,훈련 효과 ×{mult},Training effect ×{mult},draft,c8e1b738
-tx_106TT6ZFPV,training.view.effect_breakdown,active,TrainingView effect with parts,,,훈련 효과 ×{mult} ({parts}),Training effect ×{mult} ({parts}),draft,025faf5f
+tx_XM1SPM1990,training.view.effect,deprecated,"TrainingView effect, no breakdown",,,훈련 효과 ×{mult},Training effect ×{mult},draft,c8e1b738
+tx_106TT6ZFPV,training.view.effect_breakdown,deprecated,TrainingView effect with parts,,,훈련 효과 ×{mult} ({parts}),Training effect ×{mult} ({parts}),draft,025faf5f
 tx_9HK1CX3AS3,training.view.part_finance,active,TrainingView effect part,,,재무,Finance,draft,b0382dc9
 tx_DWEX5CKQ69,training.view.part_trait,active,TrainingView effect part,,,특성,Traits,draft,93bfd478
-tx_NCRNZK44YE,training.view.owner_staff,active,TrainingView staff line — covered by a coach,,,{stat}: {name} 코치 {value},{stat}: Coach {name} {value},draft,cbacbbb4
-tx_8V6MVWWBTF,training.view.owner_assistant,active,TrainingView staff line — covered by an assistant,,,{stat}: {name} 어시스턴트 {value},{stat}: Assistant {name} {value},draft,fdac3f3f
+tx_NCRNZK44YE,training.view.owner_staff,deprecated,TrainingView staff line — covered by a coach,,,{stat}: {name} 코치 {value},{stat}: Coach {name} {value},draft,cbacbbb4
+tx_8V6MVWWBTF,training.view.owner_assistant,deprecated,TrainingView staff line — covered by an assistant,,,{stat}: {name} 어시스턴트 {value},{stat}: Assistant {name} {value},draft,fdac3f3f
 tx_ME5MJKE2GD,training.view.lock_reason,deprecated,Locked course grade,,,{tx_9265Y1MCPW} {n} 필요,Needs {tx_9265Y1MCPW} {n},draft,a2215ddf
 tx_4X2JSX6BJA,training.view.lock_now,deprecated,Popover lock line,,,{reason} (지금 {tx_9265Y1MCPW} {n}),{reason} ({tx_9265Y1MCPW} now {n}),draft,54560b29
 tx_AKX9JC564C,training.tile.t22.name,active,training_tiles.csv name (id=T22),,,기초 훈련 III,Basic Training III,draft,2020a2e9
@@ -88,3 +86,11 @@ tx_JZQ1JZRHPM,training.limit_break.goal_line,active,"Active limit-break goal wit
 tx_0BVZ0NR212,training.limit_break.progress_count,active,Limit-break goal progress — count toward need,,,{have}/{need},{have}/{need},draft,d7278344
 tx_1ZM6HE38ZP,training.limit_break.progress_kda,active,Limit-break KDA goal progress — current window KDA vs need,,,KDA {v} / {need},KDA {v} / {need},draft,3301d509
 tx_WDHZDJF3V7,training.limit_break.note_done,active,"Limit-break result note (week screen / hub). {name}=pilot, {n}=new level, {gain}=stat gain",,,{name} 한계돌파 성공 — 훈련 Lv{n} · 모든 스탯 +{gain},{name}: limit break! Training Lv{n} · all stats +{gain},draft,03ba85c7
+tx_0P8318871G,training.view.staff_line,active,Training screen staff line: per-facility occupants joined by ' · ',,,훈련장 — {parts},Training — {parts},draft,0f2ce294
+tx_41TFBZ6P0C,training.view.fac_owner,active,"Training screen staff line item: facility short name, occupant, training stat",,,{fac} {name} {value},{fac} {name} {value},draft,313e984d
+tx_TTT7SGWMV6,training.view.fac_short.train_field,active,Short name of the 전장 훈련장 facility (training screen),,,전장,Field,draft,d1035752
+tx_ZAGAHJXF2V,training.view.fac_short.train_engage,active,Short name of the 교전 훈련장 facility (training screen),,,교전,Engage,draft,b6bf4b17
+tx_12SWRVVP9V,training.view.fac_short.train_growth,active,Short name of the 성장 훈련장 facility (training screen),,,성장,Growth,draft,705103b6
+tx_AJKVZQH4TF,training.view.fac_mult,active,Training screen effect line item: facility short name + EXP multiplier,,,{fac} ×{mult},{fac} ×{mult},draft,20783e92
+tx_EJXYR1ZTRE,training.view.effect_fac,active,Training screen effect line: per-facility EXP multipliers,,,훈련 효과 {parts},Training effect {parts},draft,982d9615
+tx_BXBGNK9B53,training.view.effect_fac_breakdown,active,Training screen effect line + finance / trait parts,,,훈련 효과 {parts} ({extra}),Training effect {parts} ({extra}),draft,2ded2fa9

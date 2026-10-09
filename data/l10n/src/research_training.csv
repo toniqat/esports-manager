@@ -2,24 +2,72 @@ key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_C3D9TTX7RM,research_training.tr_h1.name,active,research.csv name_key (id=tr_h1),,,사격 훈련 I,Shooting Drill I,draft,7f46124a
 tx_288T6NSM51,research_training.tr_h1.desc,active,research.csv desc_key (id=tr_h1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
 tx_CRDZVM594S,research_training.tr_h2.name,active,research.csv name_key (id=tr_h2),,,사격 훈련 II,Shooting Drill II,draft,25044bca
-tx_5H1AF87EJ5,research_training.tr_h2.desc,active,research.csv desc_key (id=tr_h2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
-tx_Y0VAD18VWY,research_training.tr_e1.name,active,research.csv name_key (id=tr_e1),,,회피 기동 I,Evasive Manoeuvres I,draft,d3199dd3
+tx_5H1AF87EJ5,research_training.tr_h2.desc,active,research.csv desc_key (id=tr_h2),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_Y0VAD18VWY,research_training.tr_e1.name,active,research.csv name_key (id=tr_e1),,,회피 기동 I,Evasive Maneuvers I,draft,d3199dd3
 tx_AQV0FTJB5W,research_training.tr_e1.desc,active,research.csv desc_key (id=tr_e1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
-tx_S5BDGF3H6V,research_training.tr_e2.name,active,research.csv name_key (id=tr_e2),,,회피 기동 II,Evasive Manoeuvres II,draft,9bf1d31a
-tx_NSEM58XZBZ,research_training.tr_e2.desc,active,research.csv desc_key (id=tr_e2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_S5BDGF3H6V,research_training.tr_e2.name,active,research.csv name_key (id=tr_e2),,,회피 기동 II,Evasive Maneuvers II,draft,9bf1d31a
+tx_NSEM58XZBZ,research_training.tr_e2.desc,active,research.csv desc_key (id=tr_e2),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
 tx_0GVRJWFGHF,research_training.tr_c1.name,active,research.csv name_key (id=tr_c1),,,근접 교전 I,Close Engagement I,draft,956d0b32
 tx_Q60T3VWG6B,research_training.tr_c1.desc,active,research.csv desc_key (id=tr_c1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
 tx_37MDDPRG9Z,research_training.tr_c2.name,active,research.csv name_key (id=tr_c2),,,근접 교전 II,Close Engagement II,draft,5a75b3ad
-tx_Y1MJ5HPDYA,research_training.tr_c2.desc,active,research.csv desc_key (id=tr_c2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_Y1MJ5HPDYA,research_training.tr_c2.desc,active,research.csv desc_key (id=tr_c2),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
 tx_H4PZBD0H2F,research_training.tr_d1.name,active,research.csv name_key (id=tr_d1),,,반응 훈련 I,Reaction Drill I,draft,c7b8d8e1
 tx_VF9GDD44PJ,research_training.tr_d1.desc,active,research.csv desc_key (id=tr_d1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
 tx_8PWMARC1YD,research_training.tr_d2.name,active,research.csv name_key (id=tr_d2),,,반응 훈련 II,Reaction Drill II,draft,a3d19095
-tx_EQKVF3XHRB,research_training.tr_d2.desc,active,research.csv desc_key (id=tr_d2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_EQKVF3XHRB,research_training.tr_d2.desc,active,research.csv desc_key (id=tr_d2),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
 tx_DES565NJBB,research_training.tr_a1.name,active,research.csv name_key (id=tr_a1),,,화력 증강 I,Firepower Boost I,draft,6709e8dd
 tx_7BWPQE649G,research_training.tr_a1.desc,active,research.csv desc_key (id=tr_a1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
-tx_C8K89H4B51,research_training.tr_p1.name,active,research.csv name_key (id=tr_p1),,,내구 단련 I,Endurance Drill I,draft,d2c88466
+tx_C8K89H4B51,research_training.tr_p1.name,active,research.csv name_key (id=tr_p1),,,내구 단련 I,Endurance Training I,draft,d2c88466
 tx_F85JHZN635,research_training.tr_p1.desc,active,research.csv desc_key (id=tr_p1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
 tx_W35EV2FTR7,research_training.tr_b2.name,active,research.csv name_key (id=tr_b2),,,기초 훈련 II,Basic Training II,draft,d81c210e
-tx_QDYMDSS6VG,research_training.tr_b2.desc,active,research.csv desc_key (id=tr_b2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_QDYMDSS6VG,research_training.tr_b2.desc,active,research.csv desc_key (id=tr_b2),,,기초 훈련이 이 단계로 오릅니다 — 판의 빈 칸이 모두 이 코스로 훈련합니다.,Basic Training rises to this level — every empty board cell trains it.,draft,bff0c8d0
 tx_2BQGFBTYKJ,research_training.tr_q1.name,active,research.csv name_key (id=tr_q1),,,기벽 발굴,Quirk Discovery,draft,62ee7efe
 tx_W546ZD811X,research_training.tr_q1.desc,active,research.csv desc_key (id=tr_q1),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_XSTBV57D0E,research_training.tr_h3.name,active,research.csv name_key (id=tr_h3),,,사격 훈련 III,Shooting Drill III,draft,40bd063e
+tx_5E3CWKKQFB,research_training.tr_h3.desc,active,research.csv desc_key (id=tr_h3),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_SDPXNP0NQD,research_training.tr_e3.name,active,research.csv name_key (id=tr_e3),,,회피 기동 III,Evasive Maneuvers III,draft,cae3a4b2
+tx_R5Z59C8P2S,research_training.tr_e3.desc,active,research.csv desc_key (id=tr_e3),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_BJ4QZRBHG0,research_training.tr_c3.name,active,research.csv name_key (id=tr_c3),,,근접 교전 III,Close Engagement III,draft,517bdd41
+tx_ATFEZQQVK4,research_training.tr_c3.desc,active,research.csv desc_key (id=tr_c3),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_K7WGTVEFYH,research_training.tr_d3.name,active,research.csv name_key (id=tr_d3),,,반응 훈련 III,Reaction Drill III,draft,2f787484
+tx_X27TBKZCCA,research_training.tr_d3.desc,active,research.csv desc_key (id=tr_d3),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_GAMEE4PGAP,research_training.tr_a2.name,active,research.csv name_key (id=tr_a2),,,화력 증강 II,Firepower Boost II,draft,b27e02d9
+tx_F0NXFBTCD6,research_training.tr_a2.desc,active,research.csv desc_key (id=tr_a2),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_5M7A2T32PC,research_training.tr_a3.name,active,research.csv name_key (id=tr_a3),,,화력 증강 III,Firepower Boost III,draft,688d458e
+tx_7GSA0GTTEN,research_training.tr_a3.desc,active,research.csv desc_key (id=tr_a3),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_ACNVBDVZ3F,research_training.tr_p2.name,active,research.csv name_key (id=tr_p2),,,내구 단련 II,Endurance Training II,draft,f2101dfd
+tx_XJV44357RD,research_training.tr_p2.desc,active,research.csv desc_key (id=tr_p2),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_WR670VYFHD,research_training.tr_p3.name,active,research.csv name_key (id=tr_p3),,,내구 단련 III,Endurance Training III,draft,80f31ae7
+tx_S099ZS5DSK,research_training.tr_p3.desc,active,research.csv desc_key (id=tr_p3),,,"이 코스 한 장을 얻고, 보유한 같은 계열 코스는 모두 이 단계로 오릅니다(판 위에 놓인 것 포함).",Adds one copy; every owned course of the same line (also those on the board) rises to this level.,draft,aeffabe4
+tx_PJT2KQZGZ5,research_training.tr_b3.name,active,research.csv name_key (id=tr_b3),,,기초 훈련 III,Basic Training III,draft,2020a2e9
+tx_ECEXAYK1PE,research_training.tr_b3.desc,active,research.csv desc_key (id=tr_b3),,,기초 훈련이 이 단계로 오릅니다 — 판의 빈 칸이 모두 이 코스로 훈련합니다.,Basic Training rises to this level — every empty board cell trains it.,draft,bff0c8d0
+tx_2X1PHJ4NWP,research_training.tr_b4.name,active,research.csv name_key (id=tr_b4),,,기초 훈련 IV,Basic Training IV,draft,8237af82
+tx_XA7HGYCKK8,research_training.tr_b4.desc,active,research.csv desc_key (id=tr_b4),,,기초 훈련이 이 단계로 오릅니다 — 판의 빈 칸이 모두 이 코스로 훈련합니다.,Basic Training rises to this level — every empty board cell trains it.,draft,bff0c8d0
+tx_G05GT07WXV,research_training.tr_q2.name,active,research.csv name_key (id=tr_q2),,,기벽 재조정,Quirk Rework,draft,9e4541d1
+tx_383E3GST4M,research_training.tr_q2.desc,active,research.csv desc_key (id=tr_q2),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_6AS2K331A0,research_training.tr_q3.name,active,research.csv name_key (id=tr_q3),,,동반 발굴,Paired Discovery,draft,2004055b
+tx_JV8PB8S2J5,research_training.tr_q3.desc,active,research.csv desc_key (id=tr_q3),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_N8HTB1FG38,research_training.tr_q4.name,active,research.csv name_key (id=tr_q4),,,잠재력 개방,Unlock Potential,draft,823f0101
+tx_X92ANSG0J1,research_training.tr_q4.desc,active,research.csv desc_key (id=tr_q4),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_W2MN9NQEXX,research_training.tr_joint.name,active,research.csv name_key (id=tr_joint),,,합동 훈련,Joint Training,draft,afc10c4f
+tx_HA3VMQNNJ9,research_training.tr_joint.desc,active,research.csv desc_key (id=tr_joint),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_CDQX93JGKY,research_training.tr_focus.name,active,research.csv name_key (id=tr_focus),,,집중 특강,Focused Lecture,draft,11006f3c
+tx_GCNV581S7C,research_training.tr_focus.desc,active,research.csv desc_key (id=tr_focus),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_B6EPHBJW8X,research_training.tr_meeting.name,active,research.csv name_key (id=tr_meeting),,,전술 회의,Tactics Meeting,draft,1e441ec6
+tx_1Q4R17PNKT,research_training.tr_meeting.desc,active,research.csv desc_key (id=tr_meeting),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_4QAJJH1MQ7,research_training.tr_scrim.name,active,research.csv name_key (id=tr_scrim),,,합숙 스크림,Bootcamp Scrims,draft,3e0490cb
+tx_Y8ZTXRQFFT,research_training.tr_scrim.desc,active,research.csv desc_key (id=tr_scrim),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_7NCVP355BG,research_training.tr_mentor.name,active,research.csv name_key (id=tr_mentor),,,멘토링,Mentoring,draft,28971cb8
+tx_963K9HZFF6,research_training.tr_mentor.desc,active,research.csv desc_key (id=tr_mentor),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_16WJXM7YEQ,research_training.tr_camp.name,active,research.csv name_key (id=tr_camp),,,전지 훈련,Field Training Camp,draft,76b299c5
+tx_0VWHVEM9F5,research_training.tr_camp.desc,active,research.csv desc_key (id=tr_camp),,,완료하면 이 훈련 코스 하나를 보유 목록에 더합니다.,"On completion, adds one copy of this training course.",draft,2fea76f1
+tx_EBFDNYKE96,research_training.block.owned_higher,active,Training research block reason: the line is already owned at a higher level (basic: this level or higher),,,이미 {tile} 보유 중 — 이 연구로 얻을 것이 없습니다,Already own {tile} — nothing to gain,draft,8079da24
+tx_6WVG8N4C08,research_training.note.gain,active,Research toast note: one course copy added,,,{tile} +1 (보유 {count}),{tile} +1 (owned {count}),draft,f8f6c4fa
+tx_V9NPEPYYS2,research_training.note.upgrade,active,Research toast note: course line upgraded,,,{from} → {tile} (보유 {count}),{from} → {tile} (owned {count}),draft,42918791
+tx_5QB65MDX49,research_training.note.basic,active,Research toast note: basic course upgraded,,,빈 칸 훈련 → {tile},Empty cells now train {tile},draft,d489014f
+tx_AC1WCSB0X8,research_training.body.title,active,Facility sheet training body: section title (scene text),,,훈련 코스 연구,Course Research,draft,1962d2dd
+tx_V93GKWZPM0,research_training.body.stat,active,Facility sheet training body: occupant + EXP multiplier of this facility's courses,,,{name} 담당 · 훈련 {value} → 이 훈련장 코스 EXP ×{mult},{name} · training {value} → this facility's courses EXP ×{mult},draft,25003b71
+tx_88S9T5ZDNW,research_training.body.owned,active,Facility sheet training body: owned level + count of a line,,,보유 {tile} ×{count},Own {tile} ×{count},draft,57e1f0e8
+tx_3TCS926866,research_training.body.owned_all,active,Facility sheet training body: basic line (unlimited),,,보유 {tile} · 빈 칸 전부,Own {tile} · every empty cell,draft,8633d5ec
+tx_EWD5MBCCEY,research_training.body.not_owned,active,Facility sheet training body: line not owned,,,미보유,Not owned,draft,e7ff5073
+tx_PN5J2CCXY4,research_training.body.step,active,Facility sheet training body: one research step = course grade + facility level needed,,,{grade} Lv{level},{grade} Lv{level},draft,44e85a16

@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://b4y8g30l1sq6a"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://features/season/facility/research/TrainingResearchBody.gd" id="2_script"]
+
+[node name="TrainingResearchBody" type="VBoxContainer"]
+editor_description = "Training facility sheet section (TrainingResearch.make_body): who runs this facility and the EXP multiplier of its courses, then one TrainingResearchLine per course line it researches."
+offset_right = 912.0
+offset_bottom = 300.0
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_override_constants/separation = 10
+script = ExtResource("2_script")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "tx_AC1WCSB0X8"
+
+[node name="StatLine" type="Label" parent="."]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TrainingResearchBody.gd _apply()"
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 20
+text = "강민호 담당 · 훈련 17 → 이 훈련장 코스 EXP ×1.14"
+autowrap_mode = 3
+
+[node name="Lines" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TrainingResearchBody.gd _apply()
+Code adds one UI_Comp_TrainingResearchLine per course line (TrainingResearch.ladder)."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8

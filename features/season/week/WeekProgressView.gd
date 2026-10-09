@@ -590,7 +590,7 @@ func _in_talk(pid: int) -> bool:
 
 # ── 훈련 결과 연출 (RESULT) ──────────────────────────────────────────────────
 ## The day's results rise out of each portrait's top and fade, one line after another
-## (stat ups by full name, else the EXP earned · stress change · mech mastery · quirk events).
+## (stat ups by full name, else the EXP earned · stress change · quirk events).
 ## When the last line is gone the afternoon starts by itself (`_finish_result_fx`).
 func _play_result_fx() -> void:
 	_fx_day = _day
@@ -667,9 +667,6 @@ func _result_lines(row: Dictionary) -> Array:
 	if stress != 0:
 		out.append([Loc.t(L.SEASON_WEEK_MAP_STRESS, {"delta": "%+d" % stress}),
 				OutgameTheme.NEGATIVE if stress > 0 else OutgameTheme.POSITIVE])
-	var mastery: String = _mastery_text(int(row["pilot_id"]), int(row.get("mastery", 0)))
-	if mastery != "":
-		out.append([mastery, OutgameTheme.LINK])
 	out.append_array(_quirk_lines(row.get("quirk", [])))
 	return out
 
@@ -880,28 +877,6 @@ static func _team_name(namer: Node, team_id: int) -> String:
 	if namer != null and namer.has_method("team_name"):
 		return String(namer.call("team_name", team_id))
 	return "Team %d" % team_id
-
-
-## "숙련 +12 · <mech>" — what the day's mastery cells actually added to the pilot's
-## research mech: the same steps as `MechMastery.add_training_exp` (train scale, then
-## `gain_preview`'s multipliers). Empty when nothing was earned or mastery is off.
-func _mastery_text(pilot_id: int, raw: int) -> String:
-	var state: Dictionary = _gm.season_state
-	if raw <= 0 or not MechMastery.is_enabled(state):
-		return ""
-	var amount: int = MechMastery.gain_preview(state, pilot_id,
-			roundi(float(raw) * ConstTable.num("MASTERY_TRAIN_SCALE")))
-	var mech: int = MechMastery.research_mech(state, pilot_id)
-	if mech < 0:   # same fallback as `add_training_exp` — the coach's pick
-		var pd: PlayerData = MechMastery.find_pilot(state, pilot_id)
-		if pd != null:
-			mech = MechMastery.auto_research_mech(state, pd)
-	if mech >= 0:
-		# §15 A — the mech's level after the gain ("Bastion Lv3").
-		var mech_txt: String = "%s %s" % [MechMastery.mech_name(mech),
-				MechMastery.level_name(MechMastery.level_of(state, pilot_id, mech))]
-		return Loc.t(L.SEASON_WEEK_MASTERY_MECH, {"n": amount, "mech": mech_txt})
-	return Loc.t(L.SEASON_WEEK_MASTERY, {"n": amount})
 
 
 ## Quirk events → `[[text, colour]]`. Row shape (§14.1):

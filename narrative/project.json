@@ -4,7 +4,7 @@
   "name": "EsportsManager",
   "description": "EsportsManager 멘탈 이벤트 (면담 · 외출 · 사건 · 기자회견 · 오전 만남). 규약: README.md",
   "createdAt": "2026-10-08T00:00:00.000Z",
-  "updatedAt": "2026-10-08T00:00:00.000Z",
+  "updatedAt": "2026-10-08T14:17:52.595Z",
   "folders": {
     "62f147df-5140-56b2-86d0-23bce19a7bf5": {
       "id": "62f147df-5140-56b2-86d0-23bce19a7bf5",
@@ -42,8 +42,8 @@
     "dd665e10-0059-53d3-a1c2-b806960e315d": {
       "id": "dd665e10-0059-53d3-a1c2-b806960e315d",
       "name": "인물",
-      "icon": "User",
-      "attributes": []
+      "attributes": [],
+      "icon": "User"
     }
   },
   "wikiEntries": {
@@ -112,6 +112,12 @@
       "name": "Korean",
       "iso": "Ko"
     }
+  },
+  "scriptView": {
+    "paperSize": "a4",
+    "fontSize": 11,
+    "pageMargin": 96,
+    "dialogMargin": 48
   },
   "exportPresets": [
     {

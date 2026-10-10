@@ -1,6 +1,6 @@
 key,alias,status,context,max_len,note,ko,en,en_status,en_hash
 tx_EVS2K4Z4YF,settings.open_button,deprecated,로비 홈 탭 오른쪽 위 버튼: 설정 팝업을 연다. 짧게,,merged into settings.title,설정,Settings,draft,c14a567e
-tx_4S0H7A92KR,settings.title,active,설정 팝업 제목 · 로비 홈 탭 오른쪽 위 설정 버튼. 짧게,,,설정,Settings,draft,c14a567e
+tx_4S0H7A92KR,settings.title,active,설정 팝업 제목. 짧게,,,설정,Settings,draft,c14a567e
 tx_EB8R7HBW32,settings.language,active,설정 팝업의 언어 목록 머리글,,,언어,Language,draft,1a723e1d
 tx_WH60K8T29E,settings.language_note,active,언어 목록 아래 안내 한 줄,,,언어를 바꾸면 화면을 다시 불러옵니다,Changing the language reloads the screen,draft,3d179e9a
 tx_TAQGY61B4S,settings.close,deprecated,설정 팝업 닫기 버튼,,merged into ui.button.close,닫기,Close,draft,94b7dba1

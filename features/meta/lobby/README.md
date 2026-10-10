@@ -1,7 +1,7 @@
 # Lobby
 
 Project entry point — `scenes/Lobby.tscn` (`run/main_scene`). White outgame
-theme (`OutgameTheme`): floating top bar (manager level disc · wallet pills), tab body, optional
+theme (`OutgameTheme`): floating top bar (manager level disc · wallet pills · settings disc), tab body, optional
 action bar, **floating capsule nav** at the bottom. Replaces the old 3-slot TitleScreen
 (save structure is now profile 1 + run 1 — `features/save_load/README.md`).
 
@@ -14,13 +14,13 @@ are `deprecated`.
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
+| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`, settings disc → `SettingsPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
 | `UI_Comp_LobbyCurrencyPill.tscn` | — (no script, `Button` `LobbyCurrencyPill`) | One wallet pill: `%Icon` · `%Value` (right-aligned, `Loc.grouped` commas) · `%Plus` (accent "+" disc) — item scene, one per `WALLET` row; the whole pill opens the currency shop |
 | `UI_Comp_LobbyNavButton.tscn` | — (no script, flat `Button`) | One cell of the capsule nav: `%Icon` (52, white SVG tinted by `self_modulate`) · `%Caption` (17, shown only when selected) · red `%Badge` — item scene, one per `TABS` row |
 | `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
 | `UI_View_ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
 | `UI_View_ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
-| `UI_View_SettingsPopup.tscn` + `SettingsPopup.gd` | `class_name SettingsPopup extends CanvasLayer` | Settings modal (l10n D10) — language list, one button per `L.LOCALES`. Opened from the 홈 tab's `%SettingsButton`. **Layout lives in the `.tscn`** |
+| `UI_View_SettingsPopup.tscn` + `SettingsPopup.gd` | `class_name SettingsPopup extends CanvasLayer` | Settings modal (l10n D10) — language list, one button per `L.LOCALES`. Opened from the lobby top bar's `%SettingsButton` (gear disc). **Layout lives in the `.tscn`** |
 | `UI_Comp_SettingsLanguageButton.tscn` | — (no script, `Button`) | One language row of `SettingsPopup` (`SelectableCardButton` / `…On`, 112 high) — item scene, one per locale |
 | `UI_Comp_ManagerTypeOption.tscn` + `.gd` | `class_name ManagerTypeOption extends PanelContainer` | One option card of `ManagerTypePopup` (name, `현재` chip, desc, six stat cells) — item scene instantiated per type. Name / desc = `Loc.t` of the row's `name_key` / `desc_key` (`manager.type.*`); F6 preview uses type 0's keys |
 
@@ -35,11 +35,10 @@ to only print (`UiPreview.mute`).
   `manager_types.csv`, "현재" chip on the last type, first option selected.
 - `ManagerTypeOption` — hand-written 운영형 card, selected + "현재".
 - `SettingsPopup` — opened with the real `L.LOCALES`; picking / closing only prints (no save, no reload).
-  `HomeTab`'s settings button works in its preview too; a pick there only prints.
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
-┌ top bar (%TopBar, no plate) — (Lv disc)                 [coin 1,234][gem 56 (+)] ┐
+┌ top bar (%TopBar, no plate) — (Lv disc)             [coin 1,234][gem 56 (+)] (⚙) ┐
 │ tab body (current tab's Control)                                                │
 ├ action bar (only when the tab's bar_specs() is non-empty)                       ┤
 └   ( RECORD · PILOT · HOME · PASS · SHOP )  floating capsule nav, icons only      ┘
@@ -71,7 +70,12 @@ to only print (`UiPreview.mute`).
   `on_bar_pressed(i)`, `on_shown()` (every activation — redraw from the profile).
 - Host services: `show_toast(msg, is_error)`, `refresh_currency()` (wallet + level disc), `rebuild_bar()` /
   `relayout_bar()` / `bar_buttons()`, `switch_tab(id)`, `set_tab_badge(id, on)` / `refresh_badges()`,
-  `open_confirm(title, body, cancel, confirm, danger, callback)`, `open_manager()`, `open_wallet()`.
+  `open_confirm(title, body, cancel, confirm, danger, callback)`, `open_manager()`, `open_wallet()`,
+  `open_settings()`.
+- **Settings disc** (`%SettingsButton`, top bar, right of the wallet): → `open_settings()` (one `SettingsPopup`,
+  lazy child) → `locale_chosen(code)` → `_on_locale_chosen`: `ProfileManager.set_locale(code)` (saves) →
+  `get_tree().reload_current_scene()` — the only way texts refresh after a language switch (§10.4: no
+  `NOTIFICATION_TRANSLATION_CHANGED` handling). Save error → red toast `settings.save_failed`.
 - **Bottom-bar exception**: only the lobby puts the nav at the very bottom; the action bar
   (`OutgameTheme.add_bottom_bar` specs, weights, primary on the right — shared code, built per tab) is
   placed in the `%ActionBar` slot right above the capsule (`_lift_bar`: y 0 in the slot, slot height). The slots
@@ -89,8 +93,10 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
 │ │ │              (tint_under white 16 %, tint_progress ACCENT)
 │ │ ├ LevelCaption `RailLabel` 18 "Lv" (y 22..44) · %LevelValue `OnFillLabel` 40 (y 40..90)
 │ │ └ %LevelBadge  ColorRect 16×16, top-right, hidden
-│ └ %Wallet        HBox sep 12, right-anchored (24 px margin), y 36..100, grows left
-│                  → LobbyCurrencyPill_Outgame · _Premium (300×64; preview: gem + plus)
+│ ├ %Wallet        HBox sep 12, right-anchored (108 px = disc 72 + gap 12 + margin 24), y 36..100, grows left
+│ │                → LobbyCurrencyPill_Outgame (300×64, Row right margin 22) · _Premium (252×64; preview: gem + plus)
+│ └ %SettingsButton Button `LobbyCurrencyPill` (same black pill look → a circle at 72×72), right-anchored
+│                  (24 px margin), y 32..104 (centred on the pills) → `Icon` TextureRect 44×44 `icon_settings.svg`
 └ %SafeBottom      Control, full rect (bottom offset = device inset, code)
   ├ %ActionBar     Control slot, bottom-anchored, y −272..−176 (96 tall = one bottom capsule, 16 px above the nav capsule)
   ├ %NavBar        Control, bottom-anchored, 40 px side margins, y −160..−32 (128 high)
@@ -109,7 +115,8 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `LobbyNavSelector`, `LobbyLevelDisc`, `LobbyCurrencyPill` (Button, black 50 % / pressed 62 % pill),
   `LobbyCurrencyPlus` (ACCENT disc), `LobbyToast`; badges / ring tints are node colours.
 - Icons: `resources/images/ui/lobby/*.svg` — white single-colour nav icons (`nav_*`), `currency_coin` /
-  `currency_gem` (coloured), `icon_plus`, `icon_close`, `ring_track` (112 px ring for the level disc).
+  `currency_gem` (coloured), `icon_plus`, `icon_close`, `icon_settings` (white stroked gear, 64 px, stroke 5),
+  `ring_track` (112 px ring for the level disc).
 
 ## HomeTab (was LobbyScreen body)
 - **Layout lives in `UI_View_HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
@@ -139,13 +146,6 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
   Load fails (corrupt run) → warning, `delete_run()` and straight to a new run without settlement.
 - A summary line under the title: manager level · owned pilots · owned traits.
-- **`%SettingsButton`** (`GhostButton`, 150×60, font 24, key `settings.title`, the popup's own title) — anchored top-right of the
-  tab, 32 px from the right edge, y 12..72 (inside the top gap, beside the centred title). The tab already starts
-  below the top bar, which the host indents under the notch, so no extra safe-area code. Pressed →
-  `_open_settings` (creates one `SettingsPopup` lazily as a child) → `locale_chosen(code)` →
-  `_on_locale_chosen`: `ProfileManager.set_locale(code)` (saves) → `get_tree().reload_current_scene()` —
-  the only way texts refresh after a language switch (§10.4: no `NOTIFICATION_TRANSLATION_CHANGED` handling).
-  Save error → red toast `settings.save_failed`.
 
 ## SettingsPopup (l10n M5 — `docs/localization_design.md` D10 · §10.4)
 `SettingsPopup.create()` → `open()` / `close()` / `is_open()`; signals `locale_chosen(code)` (a locale other

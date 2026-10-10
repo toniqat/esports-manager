@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://btc8wvyy52eo3"]
+[gd_scene load_steps=9 format=3 uid="uid://btc8wvyy52eo3"]
 
 [ext_resource type="Script" uid="uid://cxs8jh34thg08" path="res://features/meta/lobby/LobbyScreen.gd" id="1_lobby"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" path="res://resources/images/ui/lobby/ring_track.svg" id="5_ring"]
 [ext_resource type="Texture2D" path="res://resources/images/ui/lobby/currency_gem.svg" id="6_gem"]
 [ext_resource type="Texture2D" path="res://resources/images/ui/lobby/nav_record.svg" id="7_record"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/icon_settings.svg" id="8_settings"]
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -136,15 +137,15 @@ mouse_filter = 2
 color = Color(0.878, 0.271, 0.271, 1)
 
 [node name="Wallet" type="HBoxContainer" parent="TopBar"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet(). One LobbyCurrencyPill per WALLET row, right-aligned; grows to the left."
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet(). One LobbyCurrencyPill per WALLET row, right-aligned left of %SettingsButton (12 px gap); grows to the left."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -636.0
+offset_left = -720.0
 offset_top = 36.0
-offset_right = -24.0
+offset_right = -108.0
 offset_bottom = 100.0
 grow_horizontal = 0
 mouse_filter = 2
@@ -154,7 +155,11 @@ alignment = 2
 [node name="LobbyCurrencyPill_Outgame" parent="TopBar/Wallet" instance=ExtResource("3_pill")]
 layout_mode = 2
 
+[node name="Row" parent="TopBar/Wallet/LobbyCurrencyPill_Outgame" index="0"]
+offset_right = -22.0
+
 [node name="LobbyCurrencyPill_Premium" parent="TopBar/Wallet" instance=ExtResource("3_pill")]
+custom_minimum_size = Vector2(252, 64)
 layout_mode = 2
 
 [node name="Icon" parent="TopBar/Wallet/LobbyCurrencyPill_Premium/Row" index="0"]
@@ -165,6 +170,39 @@ text = "3,280"
 
 [node name="Plus" parent="TopBar/Wallet/LobbyCurrencyPill_Premium/Row" index="2"]
 visible = true
+
+[node name="SettingsButton" type="Button" parent="TopBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _build() (opens SettingsPopup). Settings disc right of the wallet, 24 px from the right edge, centred on the pills (y 32..104); stays put in scenario mode while the wallet slides away."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -96.0
+offset_top = 32.0
+offset_right = -24.0
+offset_bottom = 104.0
+grow_horizontal = 0
+focus_mode = 0
+theme_type_variation = &"LobbyCurrencyPill"
+
+[node name="Icon" type="TextureRect" parent="TopBar/SettingsButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -22.0
+offset_top = -22.0
+offset_right = 22.0
+offset_bottom = 22.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("8_settings")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="SafeBottom" type="Control" parent="."]
 editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area() · LobbyScreen.gd _place_tab()"

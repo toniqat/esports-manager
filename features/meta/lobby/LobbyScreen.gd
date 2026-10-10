@@ -3,7 +3,7 @@ extends Control
 
 # 프로젝트 진입점 — 로비. **탭 화면의 주인(host)** 이다(M8~M10, 계획서 §12).
 #
-#   ┌ 위 막대 (%TopBar) — 감독 레벨 원(좌) · 재화 알약 둘(우), 판 없이 떠 있다 ┐
+#   ┌ 위 막대 (%TopBar) — 감독 레벨 원(좌) · 재화 알약 둘 · 설정 원(우), 판 없이 ┐
 #   │ 탭 본문 (지금 탭의 Control, %Tabs 아래)                                 │
 #   ├ 행동 바 (%ActionBar — 탭이 `bar_specs()` 를 주면)                      ┤
 #   └ 떠 있는 캡슐 메뉴 (%NavBar — 기록 · 컬렉션 · 홈 · 패스 · 상점, 아이콘만)  ┘
@@ -84,6 +84,7 @@ var _manager_popup: ManagerTypePopup = null
 var _manager_sheet: ManagerPopup = null
 var _wallet_popup: CurrencyShopPopup = null
 var _nav_fade: Tween
+var _settings: SettingsPopup = null
 var _built: bool = false
 
 
@@ -104,6 +105,7 @@ func _build() -> void:
 	_sync_wallet()
 	_sync_nav_buttons()
 	%LevelButton.pressed.connect(open_manager)
+	%SettingsButton.pressed.connect(open_settings)
 	# 칸 크기는 첫 배치 뒤에야 정해진다 — 그때(와 화면이 바뀔 때마다) 알약을 제자리에 놓는다.
 	%NavButtons.sort_children.connect(_move_selector.bind(false))
 	_toast_style = (%Toast as Panel).get_theme_stylebox("panel")
@@ -429,6 +431,27 @@ func _hide_toast() -> void:
 		_toast_tween = null
 	%Toast.visible = false
 	%ToastText.text = ""
+
+
+# ── Settings (language, l10n D10 · §10.4) ────────────────────────────────────
+## The settings disc (top bar, right of the wallet) — one `SettingsPopup`, made on first open.
+func open_settings() -> void:
+	if _settings == null:
+		_settings = SettingsPopup.create()
+		add_child(_settings)
+		_settings.locale_chosen.connect(_on_locale_chosen)
+	_hide_toast()
+	_settings.open()
+
+
+## Saves the language and reloads the lobby — the only path that rebuilds code-filled texts in
+## the new language (no `NOTIFICATION_TRANSLATION_CHANGED` handling).
+func _on_locale_chosen(code: String) -> void:
+	var err: String = _pm.set_locale(code)
+	if err != "":
+		show_toast(Loc.t(L.SETTINGS_SAVE_FAILED, {"error": err}), true)
+		return
+	get_tree().reload_current_scene()
 
 
 ## Modal confirm; `on_confirm` runs when confirmed.

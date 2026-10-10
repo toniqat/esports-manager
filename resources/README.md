@@ -972,6 +972,12 @@ adjacent non-space characters so autowrapped Korean breaks only at spaces (ICU
 otherwise breaks between any two Hangul syllables — "비/용"). Measure the same
 joined text, or the height disagrees with the label.
 
+Lobby modals that drop from the top (감독 `ManagerPopup` · 재화 `CurrencyShopPopup` · 특성 교체 `TraitSwapPopup`):
+- `slide_top_sheet(owner, prev_tween, fade, sheet, rest_y, show, on_hidden)` — kills `prev_tween`, fades `fade` and slides
+  `sheet` from a quarter screen above `rest_y` (cubic, 0.24 s; hide = reverse, then `on_hidden`). Returns the tween.
+- `place_floating_close(btn, lift = 32)` — anchors the floating close capsule bottom-right (40 px from the right, `lift`
+  above the bottom, + device inset) and returns its top offset, so a sheet can stop above it.
+
 ### UI_Comp_FloatingBarButton.tscn + FloatingBarButton.gd (bottom action capsule)
 `@tool class_name FloatingBarButton extends Button` — **every outgame bottom-bar button** (뒤로 / 다음 / 확인 / 정산 …,
 scene bars instance it as `FloatingBarButton_<Role>`; code bars via `add_bottom_bar` → `create()`). Colour + font = the
@@ -980,6 +986,12 @@ inspector sliders on the root**: `shadow_strength` (alpha 0~1, default 0.18), `s
 (6) — change them in this scene to retune every bottom button; an instance may override one. `refresh_style()` rebuilds the
 per-state boxes from the variation (called on THEME_CHANGED and by `OutgameTheme.fit_bar_button` after a variation switch);
 the overrides are runtime-only (`_validate_property` strips storage, so no StyleBox lands in a host scene).
+
+### UI_Comp_FloatingCloseButton.tscn (shared floating close capsule)
+Button `FloatingCloseButton` variation (dark `RAIL` pill + shadow, pressed lighter), 216 × 96: `Row` HBox (centred) →
+`Icon` (`images/ui/lobby/icon_close.svg`, 40², white) · `Caption` (`OnFillLabel` 28, `ui.button.close`). No script — hosts
+instance it as `FloatingCloseButton_Close`, connect `pressed` and place it with `UiHelpers.place_floating_close`.
+Used by `ManagerPopup`, `CurrencyShopPopup`, `TraitSwapPopup`.
 
 ### OutgameTheme.gd
 `class_name OutgameTheme`, extends `RefCounted`. **Every colour on outgame screens passes
@@ -1134,7 +1146,8 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `LobbyNavCapsule` · `LobbyNavSelector` | Card | `Lobby` `NavBack` (RAIL pill + shadow) · `%NavSelector` (white pill, moved by code) | — |
 | `LobbyLevelDisc` | Card | `Lobby` `%LevelButton/Disc` (RAIL circle under the radial EXP ring) | — |
 | `LobbyCurrencyPill` (Button) · `LobbyCurrencyPlus` | Button · Card | `UI_Comp_LobbyCurrencyPill` root (black 50 % pill, pressed 62 %, white text) · `%Plus` (ACCENT disc) | — |
-| `ManagerPopupSheet` | Card | `UI_View_ManagerPopup` `%Sheet` (`BG`, `SHEET_RADIUS` top corners only) | — |
+| `ManagerPopupSheet` · `CurrencyShopSheet` · `TraitSwapPopupSheet` | Card | `%Sheet` of `UI_View_ManagerPopup` · `UI_View_CurrencyShopPopup` · `UI_View_TraitSwapPopup` (`BG`, square top, `SHEET_RADIUS` bottom corners, shadow — sheets that drop from the top) | — |
+| `FloatingCloseButton` (Button) | Button | `UI_Comp_FloatingCloseButton` root (`RAIL` pill + shadow, pressed lighter, white text) | — |
 | `CurrencyShopTile` (Button) · `CurrencyShopPrice` · `CurrencyShopPriceCash` | SelectableCardButton-like · SunkPanel | `UI_Comp_CurrencyShopProduct` root · `%Price` (sunk pill = premium price, ACCENT pill = KRW) | price variation (code) |
 | `PhaseIntroBackdrop` | ScreenBackground | `PhaseIntro` `Backdrop` (full-screen `RAIL`, no radius) | — |
 | `FacilityViewToast` | SurfaceChip | `FacilityView` `%Toast` (`RAIL` pill, radius 34 — same look as `LobbyToast`) | — |

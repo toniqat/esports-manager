@@ -41,7 +41,7 @@ Read the README of every row your task touches. Indented rows are submodules —
 | Folder | Covers | README |
 |---|---|---|
 | `autoloads/` | `GameManager` (run / match state, `start_run`), `ProfileManager`, `Haptics` · `HapticUi`, `L10nKeyMode` (dev: Ctrl+Alt+K shows l10n aliases in game), game.db copy | `autoloads/README.md` |
-| `resources/` | Shared data classes, `GameEnums`, `OutgameTheme` · `BattleTheme` (dark battle UI), `PositionBadge` (pilot position on every screen), `UI_Comp_FloatingBarButton` (every outgame bottom-bar button; drop-shadow sliders), `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
+| `resources/` | Shared data classes, `GameEnums`, `OutgameTheme` · `BattleTheme` (dark battle UI), `PositionBadge` (pilot position on every screen), `UI_Comp_FloatingCloseButton` (lobby modal close capsule), `UI_Comp_FloatingBarButton` (every outgame bottom-bar button; drop-shadow sliders), `ScreenMetrics`, `DragScroll`, `UiHelpers`, `ConstTable`, `GameDb`, image lookups, shaders | `resources/README.md` |
 | `data/` | CSV tables, SQLite API, **Rebuild game.db**, const table rules | `data/README.md` |
 | ↳ `l10n/` | Localization source CSVs (`src/`), `config.json`, generated `strings_*.csv` · `L.gd` · `refs.json` — text is l10n keys, shown via `Loc.t()` | `data/l10n/README.md` |
 | `features/save_load/` | Profile / run save, autosave points, mid-match resume, test run file | `features/save_load/README.md` |

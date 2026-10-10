@@ -40,14 +40,16 @@ to only print (`UiPreview.mute`).
 
 ## CurrencyShopPopup
 `LobbyScreen.open_wallet()` creates one lazily (plain Control child of the lobby — the lobby toast floats over it)
-and calls `open(lobby)`; `close()` emits `closed`.
+and calls `open(lobby)`; `close()` emits `closed`. The sheet drops from the top edge (`UiHelpers.slide_top_sheet`);
+the lobby fades its nav capsule out while it is open.
 ```
 CurrencyShopPopup (Control, full rect, theme)
 ├ %DimRect · %Dim (tap = close)            extended under the notch
-└ %Center (CenterContainer, top 24 / bottom −40 − inset) ─ Card (PopupCardWide, min w 1000)
-  └ VBox ─ Head (Title `shop.wallet.title` · %Close) · ExchangeTitle `shop.wallet.section_exchange`
-          · %ExchangeGrid (3 cols, 16 / 16, 6 preview tiles) · CashTitle `shop.wallet.section_cash`
-          · %CashGrid (3 cols) · Note `shop.wallet.dev_note` (FaintLabel)
+├ %Sheet (PanelContainer CurrencyShopSheet, top-wide, height = content; top offset = −notch, code)
+│ └ %Pad (Margin 40 / 28 + notch (code) / 40 / 40) ─ VBox ─ Head (Title `shop.wallet.title`)
+│     · ExchangeTitle `shop.wallet.section_exchange` · %ExchangeGrid (3 cols, 16 / 16, 6 preview tiles)
+│     · CashTitle `shop.wallet.section_cash` · %CashGrid (3 cols) · Note `shop.wallet.dev_note` (FaintLabel)
+└ %FloatingCloseButton_Close (resources/UI_Comp_FloatingCloseButton.tscn) — bottom-right, `UiHelpers.place_floating_close`
 ```
 - Rows: `currency_products.csv` — `section` `exchange` (premium → outgame bundles) / `cash` (KRW → premium packs),
   `amount` **includes** `bonus`. Tile = gain icon, `Loc.grouped(amount)`, `shop.wallet.bonus` (empty when 0, line keeps

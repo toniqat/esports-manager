@@ -2,7 +2,8 @@ class_name CurrencyShopPopup
 extends Control
 
 # Lobby currency shop — opened by the top-right wallet pills (`LobbyScreen.open_wallet`).
-#   ┌ 재화 구매                                      [닫기] ┐
+# A sheet drops from the top edge (height = content); the floating close capsule sits bottom-right.
+#   ┌ 재화 구매                                             ┐
 #   │ 재화 교환      — 3 × 2 tiles: premium → coin bundles   │
 #   │ 유료 재화 충전 — 3 × 2 tiles: KRW → premium packs       │
 #   └ dev note (nothing is charged)                          ┘
@@ -13,7 +14,7 @@ extends Control
 # - Layout lives in `UI_View_CurrencyShopPopup.tscn` (+ `UI_Comp_CurrencyShopProduct.tscn`);
 #   build with `create()`. A Control child of the lobby (toast z 5 floats over it).
 # - Code owns: tile count per grid (`_sync_items` — reuses the scene's preview tiles), tile
-#   texts / icons, the price pill variation (premium vs KRW), safe-area offsets.
+#   texts / icons, the price pill variation (premium vs KRW), safe-area offsets, the slide.
 
 signal closed
 
@@ -28,6 +29,8 @@ const CURRENCY_ICONS: Dictionary = {
 
 var _lobby = null          # LobbyScreen (untyped: duck-typed services; null in the F6 preview)
 var _pm: Node
+var _sheet_rest: float = 0.0
+var _anim: Tween
 
 
 static func create() -> CurrencyShopPopup:
@@ -43,26 +46,31 @@ static func currency_icon(key: String) -> Texture2D:
 func _ready() -> void:
 	_pm = get_node("/root/ProfileManager")
 	%Dim.pressed.connect(close)
-	%Close.pressed.connect(close)
+	%FloatingCloseButton_Close.pressed.connect(close)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
 
 func open(lobby: Node) -> void:
 	_lobby = lobby
+	# The lobby root sits below the notch: dim + sheet reach up over the notch band.
 	ScreenMetrics.extend_background(%DimRect)
 	ScreenMetrics.extend_background(%Dim)
-	(%Center as Control).offset_bottom = -40.0 - OutgameTheme.bottom_inset()
+	var sheet: Control = %Sheet
+	ScreenMetrics.extend_background(sheet)
+	(%Pad as MarginContainer).add_theme_constant_override("margin_top", int(ScreenMetrics.top_y()) + 28)
+	UiHelpers.place_floating_close(%FloatingCloseButton_Close)
+	_sheet_rest = sheet.offset_top
 	_fill()
 	visible = true
-	modulate.a = 0.0
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.15)
+	_anim = UiHelpers.slide_top_sheet(self, _anim, self, sheet, _sheet_rest, true)
 
 
 func close() -> void:
 	if not visible:
 		return
-	visible = false
+	_anim = UiHelpers.slide_top_sheet(self, _anim, self, %Sheet, _sheet_rest, false,
+			func() -> void: visible = false)
 	closed.emit()
 
 

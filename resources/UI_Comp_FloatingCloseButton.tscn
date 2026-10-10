@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3 uid="uid://blcecswo0g6v"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Texture2D" uid="uid://15bagh4eiy3l" path="res://resources/images/ui/lobby/icon_close.svg" id="2_icon"]
+
+[node name="FloatingCloseButton" type="Button"]
+editor_description = "Shared floating close capsule — bottom-right of the lobby modals that drop from the top (감독 · 재화 구매 · 특성 교체). Dark pill (FloatingCloseButton variation): X icon left, 닫기 caption right. The host places it bottom-anchored and lifts it by the device inset; it only connects `pressed`."
+custom_minimum_size = Vector2(216, 96)
+offset_right = 216.0
+offset_bottom = 96.0
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"FloatingCloseButton"
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Row"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("2_icon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Caption" type="Label" parent="Row"]
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_R1DMEF1S3E"
+vertical_alignment = 1

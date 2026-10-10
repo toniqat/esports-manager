@@ -56,13 +56,15 @@ to only print (`UiPreview.mute`).
   `self_modulate` (selected = `NAV_ICON_ON` dark on the white pill, else `NAV_ICON_OFF`) and shows only the selected
   cell's `%Caption`.
 - **감독 = modal, not a tab**: `%LevelButton` (top-left disc) → `open_manager()` → `ManagerPopup` (lazy, child of the
-  lobby, `../manager/README.md`). `%LevelBadge` = unseen unlocked traits (`refresh_badges`, `set_tab_badge("manager")`).
+  lobby, `../manager/README.md`). Both modals (감독 · 재화) drop from the top edge and close with the shared floating
+  close capsule bottom-right (`resources/UI_Comp_FloatingCloseButton.tscn`) — it sits where the nav capsule is, so
+  `_fade_nav(false)` fades `%NavBar` out (hidden once faded) on open and `_on_modal_closed` fades it back. `%LevelBadge` = unseen unlocked traits (`refresh_badges`, `set_tab_badge("manager")`).
 - **Level disc** (`refresh_level`, called by `refresh_currency`): `%LevelValue` = manager level, `%LevelRing`
   (`TextureProgressBar`, radial clockwise, 0..1) = EXP inside the level (`ManagerProgress.level_progress`; full at max).
 - **Wallet** (`WALLET` = `outgame`, `premium` + `plus`): pills show `Loc.grouped(amount)`; icons from
   `CurrencyShopPopup.currency_icon(key)`. Any pill → `open_wallet()` → `CurrencyShopPopup` (`../shop/README.md`).
   Other currencies are no longer in the lobby header (shop / collection screens show them).
-- Modal close (`closed`) → `_on_modal_closed`: `refresh_currency` · `refresh_badges` · current tab `on_shown`.
+- Modal close (`closed`) → `_on_modal_closed`: nav fades back · `refresh_currency` · `refresh_badges` · current tab `on_shown`.
 - **Tab rect** (`_place_tab`): anchors full rect, `offset_top` = `%TopBar`'s bottom, `offset_bottom` = top of
   `%ActionBar` (tab has a bar) or `%NavBar` (no bar) — read from the scene's offsets.
 - Tab duck-typed contract: `bar_specs() -> Array` (fixed has-bar / no-bar per tab), `setup(host)`,
@@ -245,5 +247,5 @@ Pattern B of `docs/mobile_safe_area.md`, scene version: `ScreenMetrics.indent_to
 whole screen below the notch; `%Background` gets `extend_background` (covers the notch band); everything at the
 bottom hangs from `%SafeBottom` (bottom offset = inset) so the action bar, the floating nav and the toast stay
 above the gesture zone (the capsule floats — nothing extends down to the screen edge). The toast sits 20 px above
-the action bar slot. The modals (`ManagerPopup`, `CurrencyShopPopup`) extend their dim under the notch and lift
-their bottom buttons / card by the inset themselves.
+the action bar slot. The modals (`ManagerPopup`, `CurrencyShopPopup`) extend their dim and their top sheet under the notch (content
+indented by the notch height) and lift the floating close capsule by the inset themselves.

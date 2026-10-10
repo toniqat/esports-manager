@@ -83,6 +83,7 @@ var _confirm_cb: Callable = Callable()
 var _manager_popup: ManagerTypePopup = null
 var _manager_sheet: ManagerPopup = null
 var _wallet_popup: CurrencyShopPopup = null
+var _nav_fade: Tween
 var _built: bool = false
 
 
@@ -276,6 +277,7 @@ func open_manager() -> void:
 		add_child(_manager_sheet)
 		_manager_sheet.closed.connect(_on_modal_closed)
 	_hide_toast()
+	_fade_nav(false)
 	_manager_sheet.open(self)
 
 
@@ -286,10 +288,25 @@ func open_wallet() -> void:
 		add_child(_wallet_popup)
 		_wallet_popup.closed.connect(_on_modal_closed)
 	_hide_toast()
+	_fade_nav(false)
 	_wallet_popup.open(self)
 
 
+## The modals that drop from the top put their floating close capsule where the nav capsule
+## sits — the nav fades out (hidden once faded, so it takes no taps) while one is open.
+func _fade_nav(show_it: bool) -> void:
+	var nav: Control = %NavBar
+	if _nav_fade != null:
+		_nav_fade.kill()
+	nav.visible = true
+	_nav_fade = create_tween()
+	_nav_fade.tween_property(nav, "modulate:a", 1.0 if show_it else 0.0, 0.18)
+	if not show_it:
+		_nav_fade.tween_callback(func() -> void: nav.visible = false)
+
+
 func _on_modal_closed() -> void:
+	_fade_nav(true)
 	refresh_currency()
 	refresh_badges()
 	var tab: Control = _tabs.get(current_tab, null)

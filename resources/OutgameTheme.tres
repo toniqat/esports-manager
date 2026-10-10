@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=182 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=190 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -307,6 +307,14 @@ corner_radius_top_right = 999
 corner_radius_bottom_right = 999
 corner_radius_bottom_left = 999
 
+[sub_resource type="StyleBoxFlat" id="CurrencyShopSheet_panel"]
+bg_color = Color(0.96, 0.96, 0.968, 1)
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
 [sub_resource type="StyleBoxFlat" id="CurrencyShopTile_disabled"]
 content_margin_left = 0.0
 content_margin_top = 0.0
@@ -589,6 +597,67 @@ corner_radius_top_right = 34
 corner_radius_bottom_right = 34
 corner_radius_bottom_left = 34
 
+[sub_resource type="StyleBoxFlat" id="FloatingCloseButton_disabled"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="FloatingCloseButton_focus"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="FloatingCloseButton_hover"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="FloatingCloseButton_hover_pressed"]
+bg_color = Color(0.23460001, 0.23460001, 0.24492002, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="FloatingCloseButton_normal"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="FloatingCloseButton_pressed"]
+bg_color = Color(0.23460001, 0.23460001, 0.24492002, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
 [sub_resource type="StyleBoxFlat" id="GhostButton_disabled"]
 content_margin_left = 18.0
 content_margin_top = 8.0
@@ -785,8 +854,11 @@ corner_radius_bottom_left = 16
 
 [sub_resource type="StyleBoxFlat" id="ManagerPopupSheet_panel"]
 bg_color = Color(0.96, 0.96, 0.968, 1)
-corner_radius_top_left = 28
-corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="ManagerPresetChip_disabled"]
 bg_color = Color(1, 1, 1, 1)
@@ -1958,6 +2030,14 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
+[sub_resource type="StyleBoxFlat" id="TraitSwapPopupSheet_panel"]
+bg_color = Color(0.96, 0.96, 0.968, 1)
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
 [sub_resource type="StyleBoxFlat" id="VisitMenuBubble_panel"]
 content_margin_left = 32.0
 content_margin_top = 28.0
@@ -2240,6 +2320,8 @@ CurrencyShopPrice/base_type = &"SunkPanel"
 CurrencyShopPrice/styles/panel = SubResource("CurrencyShopPrice_panel")
 CurrencyShopPriceCash/base_type = &"SunkPanel"
 CurrencyShopPriceCash/styles/panel = SubResource("CurrencyShopPriceCash_panel")
+CurrencyShopSheet/base_type = &"Card"
+CurrencyShopSheet/styles/panel = SubResource("CurrencyShopSheet_panel")
 CurrencyShopTile/base_type = &"Button"
 CurrencyShopTile/colors/font_color = Color(0.11, 0.11, 0.122, 1)
 CurrencyShopTile/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -2303,6 +2385,20 @@ FacilityViewToast/styles/panel = SubResource("FacilityViewToast_panel")
 FaintLabel/base_type = &"Label"
 FaintLabel/colors/font_color = Color(0.722, 0.722, 0.749, 1)
 FaintLabel/font_sizes/font_size = 22
+FloatingCloseButton/base_type = &"Button"
+FloatingCloseButton/colors/font_color = Color(1, 1, 1, 1)
+FloatingCloseButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+FloatingCloseButton/colors/font_focus_color = Color(1, 1, 1, 1)
+FloatingCloseButton/colors/font_hover_color = Color(1, 1, 1, 1)
+FloatingCloseButton/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+FloatingCloseButton/colors/font_pressed_color = Color(1, 1, 1, 1)
+FloatingCloseButton/font_sizes/font_size = 26
+FloatingCloseButton/styles/disabled = SubResource("FloatingCloseButton_disabled")
+FloatingCloseButton/styles/focus = SubResource("FloatingCloseButton_focus")
+FloatingCloseButton/styles/hover = SubResource("FloatingCloseButton_hover")
+FloatingCloseButton/styles/hover_pressed = SubResource("FloatingCloseButton_hover_pressed")
+FloatingCloseButton/styles/normal = SubResource("FloatingCloseButton_normal")
+FloatingCloseButton/styles/pressed = SubResource("FloatingCloseButton_pressed")
 GhostButton/base_type = &"Button"
 GhostButton/colors/font_color = Color(0.11, 0.11, 0.122, 1)
 GhostButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -2609,6 +2705,8 @@ TraitPickerSlotOver/styles/hover = SubResource("TraitPickerSlotOver_disabled")
 TraitPickerSlotOver/styles/hover_pressed = SubResource("TraitPickerSlotOver_disabled")
 TraitPickerSlotOver/styles/normal = SubResource("TraitPickerSlotOver_disabled")
 TraitPickerSlotOver/styles/pressed = SubResource("TraitPickerSlotOver_disabled")
+TraitSwapPopupSheet/base_type = &"Card"
+TraitSwapPopupSheet/styles/panel = SubResource("TraitSwapPopupSheet_panel")
 VisitMenuBubble/base_type = &"PopupCard"
 VisitMenuBubble/styles/panel = SubResource("VisitMenuBubble_panel")
 VnDialogueArtSlab/base_type = &"SunkPanel"

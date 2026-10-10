@@ -1022,12 +1022,28 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_button(th, "LobbyCurrencyPill", FONT_BODY, TEXT_ON_FILL, pill)
 	_add_derived(th, "LobbyCurrencyPlus", &"Card", flat_style(ACCENT, 999))
 
-	# meta/manager — 감독 modal sheet (rounded top, runs to the screen bottom; BG so the
-	# tab's white cards stand out).
-	var mgr_sheet := flat_style(BG, SHEET_RADIUS)
-	mgr_sheet.corner_radius_bottom_left = 0
-	mgr_sheet.corner_radius_bottom_right = 0
-	_add_derived(th, "ManagerPopupSheet", &"Card", mgr_sheet)
+	# Lobby modals that drop from the top edge (감독 · 재화 구매 · 특성 교체): square top under the
+	# notch, rounded bottom, soft shadow over the dim. BG so the white cards inside stand out.
+	for v in ["ManagerPopupSheet", "CurrencyShopSheet", "TraitSwapPopupSheet"]:
+		var top_sheet := flat_style(BG, SHEET_RADIUS)
+		top_sheet.corner_radius_top_left = 0
+		top_sheet.corner_radius_top_right = 0
+		top_sheet.shadow_color = Color(SHADOW, 0.30)
+		top_sheet.shadow_size = 18
+		top_sheet.shadow_offset = Vector2(0, 6)
+		_add_derived(th, v, &"Card", top_sheet)
+	# Shared floating close capsule (`resources/UI_Comp_FloatingCloseButton.tscn`, bottom-right of
+	# those modals): dark pill + shadow like the lobby nav capsule; X icon + caption are children.
+	var close_pill: Dictionary = {}
+	for n in BUTTON_STATES:
+		var cp := flat_style(RAIL.lightened(0.14) if n in ["pressed", "hover_pressed"] else RAIL, 999)
+		cp.shadow_color = Color(SHADOW, 0.30)
+		cp.shadow_size = 18
+		cp.shadow_offset = Vector2(0, 6)
+		close_pill[n] = cp
+	close_pill["focus"] = button_box(Color(0, 0, 0, 0), null)
+	_add_button(th, "FloatingCloseButton", FONT_BODY, TEXT_ON_FILL, close_pill)
+
 
 	# meta/shop — currency shop popup: product tile (white card button) + its price pill.
 	_add_button(th, "CurrencyShopTile", FONT_BTN_TEXT, TEXT,

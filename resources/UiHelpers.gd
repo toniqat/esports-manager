@@ -36,3 +36,45 @@ static func keep_words(text: String) -> String:
 		out += ch
 		prev_word = is_word
 	return out
+
+
+## Lobby modals that drop from the top edge (감독 · 재화 구매 · 특성 교체): `fade` (the modal's
+## root Control) fades in / out while `sheet` slides from a quarter screen above its resting
+## `rest_y`. Kills the previous `tween`; `on_hidden` runs once a hide finishes. Returns the tween.
+static func slide_top_sheet(owner: Node, prev: Tween, fade: CanvasItem, sheet: Control, rest_y: float,
+		show_it: bool, on_hidden: Callable = Callable(), sec: float = 0.24) -> Tween:
+	if prev != null:
+		prev.kill()
+	var off: float = sheet.get_viewport_rect().size.y * 0.25
+	var tw: Tween = owner.create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC)
+	if show_it:
+		fade.modulate.a = 0.0
+		sheet.position.y = rest_y - off
+		tw.set_ease(Tween.EASE_OUT)
+		tw.tween_property(fade, "modulate:a", 1.0, sec * 0.6)
+		tw.tween_property(sheet, "position:y", rest_y, sec)
+	else:
+		tw.set_ease(Tween.EASE_IN)
+		tw.tween_property(fade, "modulate:a", 0.0, sec * 0.8)
+		tw.tween_property(sheet, "position:y", rest_y - off, sec * 0.8)
+		if on_hidden.is_valid():
+			tw.chain().tween_callback(on_hidden)
+	return tw
+
+
+## Bottom-right floating close capsule (`resources/UI_Comp_FloatingCloseButton.tscn`): anchored
+## to the parent's bottom-right, 40 px from the right, `lift` px above the bottom, raised by the
+## device inset. Returns the capsule's top y (offset from the parent's bottom) so a sheet can
+## stop above it.
+static func place_floating_close(btn: Control, lift: float = 32.0) -> float:
+	var below: float = OutgameTheme.bottom_inset()
+	btn.anchor_left = 1.0
+	btn.anchor_right = 1.0
+	btn.anchor_top = 1.0
+	btn.anchor_bottom = 1.0
+	var sz: Vector2 = btn.custom_minimum_size
+	btn.offset_right = -40.0
+	btn.offset_left = -40.0 - sz.x
+	btn.offset_bottom = -lift - below
+	btn.offset_top = btn.offset_bottom - sz.y
+	return btn.offset_top

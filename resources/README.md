@@ -586,7 +586,7 @@ only bloating the pck). The pictures themselves are **wide landscapes** while th
 `STRETCH_KEEP_ASPECT_COVERED` fills the middle.
 
 ### Team base map art (`resources/images/base_map/`)
-Twelve area maps for the week screen's team base map (`features/season/week/base_map/`), loaded straight
+Ten area maps for the week screen's team base map (`features/season/week/base_map/`), loaded straight
 by the map scenes (no lookup class). **Prototype placeholders (Blue Archive / Nexon art): replace before any
 public release.** Sources and naming: `resources/images/base_map/README.md`.
 

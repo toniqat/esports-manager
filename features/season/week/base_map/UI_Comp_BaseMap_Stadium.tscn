@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://c6xblkegdwjua"]
+[gd_scene load_steps=3 format=3 uid="uid://c6xblkegdwjua"]
 
 [ext_resource type="Script" uid="uid://dklrmpucuhjmi" path="res://features/season/week/base_map/BaseMap.gd" id="1_map"]
+[ext_resource type="Script" uid="uid://c3byjm5vmy6wn" path="res://features/season/week/base_map/BaseMapLighting.gd" id="9_light"]
 
 [node name="BaseMap_Stadium" type="Control"]
 editor_description = "Weekend stadium map (BaseMap.gd, BaseMap.create_stadium). Saturday morning = match prep (team room), Sunday morning = the match (stage booths), Sunday afternoon = press room. Not a team map: no teams.csv map_id points here."
@@ -52,6 +53,18 @@ offset_right = 1152.0
 offset_bottom = 720.0
 mouse_filter = 2
 color = Color(0.4, 0.45, 0.54, 1)
+
+[node name="Lighting" type="Control" parent="."]
+editor_description = "Time-of-day lighting (BaseMapLighting): code adds a lit copy of Art + the normal / shadow views (never saved). Scrub `hour` in the inspector to preview the sun; the building shapes are under Buildings."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_light")
+noon_azimuth_deg = 70.0
 
 [node name="Spots" type="Control" parent="."]
 editor_description = "Spot markers (Marker2D, map-local position = where the portrait centre stands). Names are read by BaseMap.spot_point: Spot_<Booth|TeamRoom|Press|W|Entrance>; a missing one falls back to Spot_W."

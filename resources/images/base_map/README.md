@@ -1,8 +1,8 @@
 # Team base map art (`resources/images/base_map/`)
 
-Twelve isometric area maps used by the week screen's team base map
-(`features/season/week/base_map/`, one `UI_Comp_BaseMap_<Name>.tscn` per file). File name = `<map_id>_<name>.png`;
-the `map_id` order is `BaseMap.SCENES`.
+Ten isometric area maps used by the week screen's team base map
+(`features/season/week/base_map/`, one `UI_Comp_BaseMap_<Name>.tscn` per file). File name = `<NN>_<name>.png`;
+the numbering is `BaseMap.SCENES` order, `map_id` = NN − 2 (00 / 01, the indoor Schale maps, were deleted 2026-10).
 
 **Prototype placeholders only. These pictures are Blue Archive (Nexon) area maps, taken from the namu.wiki page
 "블루 아카이브/스케쥴" (converted from webp to png). They must be replaced with our own art before any public
@@ -10,8 +10,6 @@ release (store build, public test, trailer, screenshots).**
 
 | File | Source area |
 |---|---|
-| `00_schale_office.png` | 샬레 업무관 |
-| `01_schale_dorm.png` | 샬레 생활관 |
 | `02_gehenna.png` | 게헨나 중앙구 |
 | `03_abydos.png` | 아비도스 본관 |
 | `04_millennium.png` | 밀레니엄 학습관 |

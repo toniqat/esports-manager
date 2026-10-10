@@ -13,7 +13,7 @@ The weekend carries the week's one player match: **Saturday morning** = stadium 
 | `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
 | `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers) + the weekend `UI_Comp_BaseMap_Stadium.tscn`. See `base_map/README.md` |
 | `UI_Comp_WeekMapSection.tscn` | The map slot (fills `%MapPin`, full screen width): `%MapHolder` (plain Control) that receives the team's `BaseMap` / the stadium via `BaseMap.mount` (1200 × 761, centred, 60 px cropped each side). No caption and no facility research bubbles on this screen (both removed 2026-10; the hub keeps the bubbles) |
-| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 92 × 92, **portrait only** (`%Portrait` slot 84 · `%Mask` black circle over the portrait; the stress / trust gauges moved to the pilot cards under the map 2026-10) · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token). No name, no role badge |
+| `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 92 × 92, **portrait only** (`%Portrait` slot 84 · `%Mask` black circle over the portrait; the stress / trust gauges moved to the pilot cards under the map 2026-10) · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token · the portrait disc, black outline, tail and shadow are not in the scene — `BaseMap` draws them under the token, `base_map/README.md`). No name, no role badge |
 | `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
@@ -70,8 +70,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 * **Code owns** (data / device dependent): the chip numbers / abbreviations, which chip is today (variation switch
   `WeekDayChip` ↔ `WeekDayChipToday`, its `DayTag` shown) and the chip text colours,
   the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
-  (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96), the round portraits (drawn into the `%Portrait` slots with
-  `OutgameTheme.add_round_portrait`; the picked token gets an `ACCENT` ring and is scaled `MAP_PICKED_SCALE` 1.2 around its
+  (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96), the round portraits (cards: drawn into the `%Portrait` slots with
+  `OutgameTheme.add_round_portrait`; map tokens: battlefield markers drawn by `BaseMap` from the `portrait` / `ring` of each
+  `place_tokens` entry — the others a black outline, the picked token an `ACCENT` outline and is scaled `MAP_PICKED_SCALE` 1.2 around its
   centre, drawn over the others), the black mask of a token whose pilot cannot be picked
   (`_token_dimmed`: `%Mask`), which base map scene is instanced (team data), where the tokens
   stand (`BaseMap.place_tokens`), the bottom-bar variation switch and the safe-area insets. Fixed colours
@@ -145,7 +146,7 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
   pinned in `%MapPin` above the pilot cards and the scrolling list. Spots per colour group, the 1.2× scale / crop
-  and the fan-out of tokens sharing a spot: `base_map/README.md`. There is no caption over the map (the old `%Hint`
+  and the line-up of tokens sharing a spot: `base_map/README.md`. There is no caption over the map (the old `%Hint`
   "what Next does now" line was removed 2026-10) and no facility research bubbles (hub only).
 * **Pilot cards under the map** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order (portrait in the 깨달음 level ring, the two stress · trust gauges, no role badge, no card background); each gauge shows
   **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `(+N)` stress / `(+N%)` trust

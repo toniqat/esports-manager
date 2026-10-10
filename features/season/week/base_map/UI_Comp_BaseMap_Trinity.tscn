@@ -1,7 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://y60ws0cj4i0"]
+[gd_scene load_steps=6 format=3 uid="uid://y60ws0cj4i0"]
 
 [ext_resource type="Script" uid="uid://dklrmpucuhjmi" path="res://features/season/week/base_map/BaseMap.gd" id="1_map"]
 [ext_resource type="Texture2D" uid="uid://cr7tmwuownloc" path="res://resources/images/base_map/05_trinity.png" id="2_art"]
+[ext_resource type="Script" uid="uid://b3kyktqwh4jgl" path="res://features/season/week/base_map/BaseMapBuilding.gd" id="9_build"]
+[ext_resource type="Script" uid="uid://c3byjm5vmy6wn" path="res://features/season/week/base_map/BaseMapLighting.gd" id="9_light"]
+[ext_resource type="Script" uid="uid://dcfdybgjd0g1p" path="res://features/season/week/base_map/BaseMapRoads.gd" id="9_roads"]
 
 [node name="BaseMap_Trinity" type="Control"]
 editor_description = "Team base map (BaseMap.gd). Drag the Spots/Spot_* markers onto the buildings; pilots stand on the spot of their training colour (morning) or on Dorm / Entrance (afternoon away). Art is a prototype placeholder, see resources/images/base_map/README.md."
@@ -24,6 +27,18 @@ mouse_filter = 2
 texture = ExtResource("2_art")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="Lighting" type="Control" parent="."]
+editor_description = "Time-of-day lighting (BaseMapLighting): code adds a lit copy of Art + the normal / shadow views (never saved). Scrub `hour` in the inspector to preview the sun; the building shapes are under Buildings."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_light")
+noon_azimuth_deg = 70.0
 
 [node name="Spots" type="Control" parent="."]
 editor_description = "Spot markers (Marker2D, map-local position = where the portrait centre stands). Names are read by BaseMap.spot_point: Spot_<H|E|C|D|G|M|Q|W|Dorm|Entrance>; a missing one falls back to Spot_W."
@@ -142,3 +157,187 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="Buildings" type="Node2D" parent="."]
+editor_description = "Building shapes for the lighting (BaseMapBuilding, hidden at runtime): each polygon = the roof as seen on the art, `height` = wall height in screen px. Drafted by eye, refine the points / heights. The editor draws the derived walls (blue) and footprint (dashed)."
+
+[node name="IslandHall" type="Polygon2D" parent="Buildings"]
+position = Vector2(334, 99)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-56, -12, -9, -45, 28, -35, 65, 2, -24, 29)
+script = ExtResource("9_build")
+height = 25.0
+
+[node name="PalaceEast" type="Polygon2D" parent="Buildings"]
+position = Vector2(476, 220)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-71, -17, -44, -44, -16, -40, 5, -7, -46, 15)
+script = ExtResource("9_build")
+
+[node name="PalaceMain" type="Polygon2D" parent="Buildings"]
+position = Vector2(531, 209)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-67, -25, -18, -48, 6, -19, -50, 3)
+script = ExtResource("9_build")
+
+[node name="PalaceWest" type="Polygon2D" parent="Buildings"]
+position = Vector2(384, 242)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-39, -10, 18, -34, 38, -6, -15, 15)
+script = ExtResource("9_build")
+height = 35.0
+
+[node name="CathedralTower" type="Polygon2D" parent="Buildings"]
+position = Vector2(709, 172)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-37, -7, 7, -26, 67, 37, 22, 56)
+script = ExtResource("9_build")
+height = 70.0
+
+[node name="CathedralNave" type="Polygon2D" parent="Buildings"]
+position = Vector2(807, 242)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-65, -21, 59, -68, 72, -2, -41, 37)
+script = ExtResource("9_build")
+height = 90.0
+
+[node name="CathedralNave3" type="Polygon2D" parent="Buildings"]
+position = Vector2(807, 242)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-109, -12, -92, -27, -76, -8, -95, 3)
+script = ExtResource("9_build")
+height = 100.0
+
+[node name="CathedralNave2" type="Polygon2D" parent="Buildings"]
+position = Vector2(807, 242)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-106, 25, -66, 2, -47, 31, -86, 49)
+script = ExtResource("9_build")
+height = 90.0
+
+[node name="DomedHall7" type="Polygon2D" parent="Buildings"]
+position = Vector2(495, 286)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-61, -15, 20, -45, 51, -8, -32, 27)
+script = ExtResource("9_build")
+
+[node name="DomedHall" type="Polygon2D" parent="Buildings"]
+position = Vector2(627, 253)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-81, 1, -63, -6, -37, 28, 42, 0, 68, 27, 55, 34, 34, 11, -48, 48)
+script = ExtResource("9_build")
+height = 20.0
+
+[node name="DomedHall2" type="Polygon2D" parent="Buildings"]
+position = Vector2(495, 286)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-94, 25, -76, 18, -42, 63, -125, 98, -110, 119, -123, 124, -145, 91, -68, 60)
+script = ExtResource("9_build")
+height = 20.0
+
+[node name="DomedHall3" type="Polygon2D" parent="Buildings"]
+position = Vector2(596, 344)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-194, 67, -173, 79, -150, 123, -169, 133, -212, 77)
+script = ExtResource("9_build")
+height = 20.0
+
+[node name="DomedHall6" type="Polygon2D" parent="Buildings"]
+position = Vector2(938, 261)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-163, 138, -182, 115, -168, 110, -140, 143, -238, 184, -202, 234, -213, 239, -261, 181)
+script = ExtResource("9_build")
+height = 20.0
+
+[node name="DomedHall5" type="Polygon2D" parent="Buildings"]
+position = Vector2(876, 309)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-212, 173, -172, 170, -163, 181, -239, 213, -253, 204)
+script = ExtResource("9_build")
+height = 35.0
+
+[node name="DomedHall4" type="Polygon2D" parent="Buildings"]
+position = Vector2(711, 364)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-251, 136, -234, 161, -131, 118, -82, 174, -94, 180, -136, 134, -241, 179, -266, 144)
+script = ExtResource("9_build")
+height = 20.0
+
+[node name="EastHall" type="Polygon2D" parent="Buildings"]
+position = Vector2(968, 414)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-40, 3, 15, -21, 43, 14, -15, 36)
+script = ExtResource("9_build")
+height = 30.0
+
+[node name="GrandHall" type="Polygon2D" parent="Buildings"]
+position = Vector2(290, 475)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-95, -25, 16, -74, 97, 30, -20, 78)
+script = ExtResource("9_build")
+height = 55.0
+
+[node name="Manor" type="Polygon2D" parent="Buildings"]
+position = Vector2(872, 550)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-38, -13, 0, -34, 47, 21, 7, 38)
+script = ExtResource("9_build")
+
+[node name="Library" type="Polygon2D" parent="Buildings"]
+position = Vector2(535, 575)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-36, -6, 15, -29, 34, 5, -6, 23)
+script = ExtResource("9_build")
+height = 45.0
+
+[node name="Dorm" type="Polygon2D" parent="Buildings"]
+position = Vector2(651, 662)
+color = Color(1, 0.35, 0.3, 0.35)
+polygon = PackedVector2Array(-37, -18, 1, -35, 30, -1, -9, 15)
+script = ExtResource("9_build")
+height = 25.0
+
+[node name="Roads" type="Node2D" parent="."]
+editor_description = "Roads the pilots walk (BaseMapRoads, hidden at runtime): draw Line2D children along the roads. Ends / crossings within 12 px join; green dot = junction, red = dead end. Each spot's pilots aim at its nearest road point. Drafted by eye, redraw freely."
+visible = false
+script = ExtResource("9_roads")
+
+[node name="Road_RingWest" type="Line2D" parent="Roads"]
+points = PackedVector2Array(785, 683, 691, 722, 640, 666, 464, 682, 296, 728, 81, 412, 110, 346, 411, 210, 321, 114)
+width = 6.0
+default_color = Color(1, 0.55, 0.1, 0.85)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Road_RingEast" type="Line2D" parent="Roads"]
+points = PackedVector2Array(412, 210, 718, 110, 810, 126, 1112, 461, 1087, 571, 1007, 600, 986, 642, 814, 714, 412, 210)
+width = 6.0
+default_color = Color(1, 0.55, 0.1, 0.85)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Road_H" type="Line2D" parent="Roads"]
+points = PackedVector2Array(418, 695, 288, 493, 571, 408, 781, 273, 993, 265)
+width = 6.0
+default_color = Color(1, 0.55, 0.1, 0.85)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Road_East" type="Line2D" parent="Roads"]
+points = PackedVector2Array(663, 526, 870, 470, 960, 440, 995, 266)
+width = 6.0
+default_color = Color(1, 0.55, 0.1, 0.85)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="Road_Q" type="Line2D" parent="Roads"]
+points = PackedVector2Array(780, 500, 860, 550)
+width = 6.0
+default_color = Color(1, 0.55, 0.1, 0.85)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2

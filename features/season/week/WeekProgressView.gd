@@ -84,7 +84,6 @@ enum Stage { OFF, MORNING, RESULT, TALK, AFTERNOON, EVENING, STADIUM, PRESS }
 const MATCH_CARD_H: float = 168.0    # the player's match card (others: OTHER_MATCH_H)
 const OTHER_MATCH_H: float = 96.0
 const EVE_PORTRAIT_D: float = 84.0
-const MAP_PORTRAIT_D: float = 84.0
 # Result FX (RESULT stage): each line rises FX_RISE px and fades over FX_TIME s, the next
 # line of the same pilot starts FX_STAGGER s later; the afternoon starts FX_TAIL s after the last.
 const FX_RISE: float = 72.0
@@ -503,7 +502,9 @@ func _add_map_section(stage: int) -> void:
 		var token: Control = _add_map_token(map, stage, pid, String(names.get(seat, "")), away)
 		_tokens[pid] = token
 		var hold: Control = token.get_node("%Portrait")
-		entries.append({"node": token, "spot": spot, "anchor": hold.position + hold.size * 0.5})
+		entries.append({"node": token, "spot": spot, "key": pid,
+				"anchor": hold.position + hold.size * 0.5, "portrait": PilotImages.circle_for(pid),
+				"ring": OutgameTheme.ACCENT if _token_picked(stage, pid) else Color.BLACK})
 	map.place_tokens(entries)
 
 
@@ -526,8 +527,6 @@ func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: St
 	var token: Control = MAP_PILOT_SCENE.instantiate() as Control
 	map.add_token(token)
 	var picked: bool = _token_picked(stage, pid)
-	OutgameTheme.add_round_portrait(token.get_node("%Portrait"), PilotImages.circle_for(pid),
-			Vector2.ZERO, MAP_PORTRAIT_D, OutgameTheme.ACCENT if picked else OutgameTheme.SURFACE)
 	var bubble_on: bool = stage == Stage.MORNING and course != ""
 	(token.get_node("%Bubble") as Control).visible = bubble_on
 	(token.get_node("%BubbleTail") as CanvasItem).visible = bubble_on

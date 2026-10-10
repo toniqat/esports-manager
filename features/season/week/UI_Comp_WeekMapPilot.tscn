@@ -4,7 +4,7 @@
 
 [node name="WeekMapPilot" type="Control"]
 auto_translate_mode = 2
-editor_description = "One of my pilots on the base map (BaseMap %Tokens). The portrait centre stands on the spot. No name under the portrait. Morning: a speech bubble over the portrait names that day's training (%Bubble). After Next the day's results rise out of the portrait top and fade (%Floats, duplicates of %FloatLine). Portrait only: the stress / trust / awakening gauges sit on the pilot cards under the map (SeasonPilotCard). Afternoon: %Away (over the portrait) names an away state (혼자 외출 / 숙소 휴식). A pilot who cannot be picked gets the black mask (%Mask); the picked one is scaled up (code, pivot = centre)."
+editor_description = "One of my pilots on the base map (BaseMap %Tokens). Drawn as a battlefield marker: BaseMap draws the portrait disc, team ring, tail to the pilot's point and shadow on the token layer under this node (PilotMarker); this node holds what lies on top. No name under the portrait. Morning: a speech bubble over the portrait names that day's training (%Bubble). After Next the day's results rise out of the portrait top and fade (%Floats, duplicates of %FloatLine). Portrait only: the stress / trust / awakening gauges sit on the pilot cards under the map (SeasonPilotCard). Afternoon: %Away (over the portrait) names an away state (혼자 외출 / 숙소 휴식). A pilot who cannot be picked gets the black mask (%Mask); the picked one is scaled up (code, pivot = centre)."
 custom_minimum_size = Vector2(92, 92)
 layout_mode = 3
 anchors_preset = 0
@@ -16,7 +16,7 @@ theme = ExtResource("1_theme")
 [node name="Portrait" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token() · BaseMap.gd _fill_preview()
-Slot for the round portrait (code draws OutgameTheme.add_round_portrait here). Its centre is the token's anchor on the spot."
+Portrait slot (85 = the battlefield portrait). Empty: BaseMap draws the marker disc under the token with its centre here (the token's anchor)."
 anchors_preset = 0
 offset_left = 4.0
 offset_top = 4.0
@@ -41,7 +41,7 @@ theme_type_variation = &"WeekMapPilotMask"
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
 Bubble pointer under %Bubble (border + fill triangles); shown / hidden with it."
-position = Vector2(46, -8)
+position = Vector2(46, -18)
 
 [node name="Edge" type="Polygon2D" parent="BubbleTail"]
 color = Color(0.780, 0.784, 0.808, 1)
@@ -59,8 +59,8 @@ layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_top = -44.0
-offset_bottom = -8.0
+offset_top = -54.0
+offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -109,9 +109,9 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = -40.0
-offset_top = -6.0
+offset_top = -16.0
 offset_right = 40.0
-offset_bottom = -6.0
+offset_bottom = -16.0
 grow_horizontal = 2
 mouse_filter = 2
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://c7n804cn5hg56"]
+[gd_scene load_steps=10 format=3 uid="uid://c7n804cn5hg56"]
 
 [ext_resource type="Script" uid="uid://deb7xby64kis0" path="res://features/match_flow/ban_pick/BanPickView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://xbvkv0lycxp" path="res://features/match_flow/ban_pick/UI_Comp_BanPickPortrait.tscn" id="6_por"]
 [ext_resource type="PackedScene" uid="uid://bmyh6rf48ebw4" path="res://features/match_flow/ban_pick/UI_Comp_BanPickOrderRow.tscn" id="7_order"]
 [ext_resource type="Script" uid="uid://ytqiyweewhxx" path="res://features/match_flow/ban_pick/BanPickGrid.gd" id="9_grid"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="BanPickView" type="Control"]
 layout_mode = 3
@@ -735,17 +736,20 @@ theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 28
 text = "밴 확정"
 
-[node name="StartButton" type="Button" parent="SafeArea"]
+[node name="FloatingBarButton_StartButton" parent="SafeArea" instance=ExtResource("fbb_scene")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — BanPickView.gd start_button
-Assign-step bottom bar (BarPrimaryButton = square corners). The bottom inset (bar reaches the screen bottom, text stays above the inset) comes from OutgameTheme.fit_bottom_bar in BanPickView.fit_safe_area."
+Assign-step bottom capsule (BarPrimaryButton = floating orange pill + shadow), 40 px from the sides, 32 px above the safe line. The device inset comes from OutgameTheme.fit_bottom_bar in BanPickView.fit_safe_area."
 visible = false
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0

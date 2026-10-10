@@ -72,9 +72,8 @@ to only print (`UiPreview.mute`).
   `open_confirm(title, body, cancel, confirm, danger, callback)`, `open_manager()`, `open_wallet()`.
 - **Bottom-bar exception**: only the lobby puts the nav at the very bottom; the action bar
   (`OutgameTheme.add_bottom_bar` specs, weights, primary on the right — shared code, built per tab) is
-  placed in the `%ActionBar` slot right above the capsule (`_lift_bar`: y 0 in the slot, slot height, bottom inset
-  padding removed **before** the height is set — otherwise the inset margin's minimum height clamps the
-  button taller and it overhangs the nav).
+  placed in the `%ActionBar` slot right above the capsule (`_lift_bar`: y 0 in the slot, slot height). The slots
+  are the shared floating capsules (40 px side insets, 16 px gaps, orange primary / dark secondary).
 
 ### Scene (`scenes/Lobby.tscn`) — layout / style source of truth
 ```
@@ -91,7 +90,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
 │ └ %Wallet        HBox sep 12, right-anchored (24 px margin), y 36..100, grows left
 │                  → LobbyCurrencyPill_Outgame · _Premium (300×64; preview: gem + plus)
 └ %SafeBottom      Control, full rect (bottom offset = device inset, code)
-  ├ %ActionBar     Control slot, bottom-anchored, y −304..−176 (16 px above the capsule)
+  ├ %ActionBar     Control slot, bottom-anchored, y −272..−176 (96 tall = one bottom capsule, 16 px above the nav capsule)
   ├ %NavBar        Control, bottom-anchored, 40 px side margins, y −160..−32 (128 high)
   │ ├ NavBack      Panel `LobbyNavCapsule` (RAIL pill + shadow)
   │ ├ %NavSelector Panel `LobbyNavSelector` (white pill) — preview on the HOME cell

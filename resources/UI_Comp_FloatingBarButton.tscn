@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://doulqevypbgq4"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Script" path="res://resources/FloatingBarButton.gd" id="2_script"]
+
+[node name="FloatingBarButton" type="Button"]
+editor_description = "Shared floating capsule of every outgame bottom action bar (뒤로 / 다음 / 확인 …). Colour + font = the Bar*Button variation (BarPrimaryButton orange, BarDarkButton secondary); the drop shadow = the inspector sliders shadow_strength / shadow_size / shadow_offset_y on this root (FloatingBarButton.gd) — change them here to retune every bottom button. Hosts instance it as FloatingBarButton_<Role> inside the bar and place the row with OutgameTheme.fit_bottom_bar."
+custom_minimum_size = Vector2(0, 96)
+offset_right = 480.0
+offset_bottom = 96.0
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"BarPrimaryButton"
+text = "tx_GNK4E0021C"
+script = ExtResource("2_script")

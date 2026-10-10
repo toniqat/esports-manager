@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://btu5xdr7ds1fr"]
+[gd_scene load_steps=5 format=3 uid="uid://btu5xdr7ds1fr"]
 
 [ext_resource type="Script" uid="uid://bogtu0wxqfcc3" path="res://features/meta/run_result/RunResultScreen.gd" id="1_result"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="RunResult" type="Control"]
 layout_mode = 3
@@ -524,17 +525,20 @@ theme_type_variation = &"FaintLabel"
 text = "tx_84F8FGGM7Q"
 horizontal_alignment = 1
 
-[node name="BottomButton" type="Button" parent="."]
+[node name="FloatingBarButton_BottomButton" parent="." instance=ExtResource("fbb_scene")]
 auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — RunResultScreen.gd _apply_safe_area() · RunResultScreen.gd _fill_bottom_bar()
-Full-width bottom action bar (BarPrimaryButton). Code adds only the bottom inset (OutgameTheme.fit_bottom_bar: rect down over the inset, text lifted above it)."
+Full-width floating bottom capsule (BarPrimaryButton), 40 px from the sides, 32 px above the safe line. Code adds only the device inset (OutgameTheme.fit_bottom_bar)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0

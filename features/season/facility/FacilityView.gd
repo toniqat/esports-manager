@@ -55,8 +55,8 @@ func _bind() -> void:
 	%Toast.visible = false
 	%Occupant.pressed.connect(_on_occupant)
 	%Upgrade.pressed.connect(_on_upgrade)
-	%Action.pressed.connect(_on_action)
-	%Back.pressed.connect(_on_back)
+	%FloatingBarButton_Action.pressed.connect(_on_action)
+	%FloatingBarButton_Back.pressed.connect(_on_back)
 
 
 ## Shows facility `fid` of the run `state` (the body is rebuilt for the facility).
@@ -140,8 +140,8 @@ func _fill_action() -> void:
 	var text: String = ""
 	if _body != null and is_instance_valid(_body) and _body.has_method(&"bottom_action_text"):
 		text = String(_body.call(&"bottom_action_text"))
-	%Action.text = text
-	%Action.visible = text != ""
+	%FloatingBarButton_Action.text = text
+	%FloatingBarButton_Action.visible = text != ""
 
 
 func _set_body(b: Control) -> void:
@@ -210,5 +210,5 @@ func _fill_preview() -> void:
 	var gm: Node = UiPreview.ensure_run()
 	if gm == null:
 		return
-	UiPreview.trace(%Back.pressed, "back")
+	UiPreview.trace(%FloatingBarButton_Back.pressed, "back")
 	show_facility(gm.season_state, "intel")

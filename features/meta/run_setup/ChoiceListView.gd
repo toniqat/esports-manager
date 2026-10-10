@@ -55,6 +55,11 @@ func _hint_text() -> String:
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
 	OutgameTheme.fit_bottom_bar(%Bar, %Safe)
+	# The list runs to the screen bottom under the capsules (visible, not tappable).
+	OutgameTheme.fit_bar_shield(%BarShield)
+	(%Scroll as Control).offset_bottom = OutgameTheme.bottom_inset()
+	(%ListPad as MarginContainer).add_theme_constant_override("margin_bottom",
+			int(OutgameTheme.bar_scroll_pad()))
 	(%Hint as Label).text = _hint_text()
 	var list: Control = %List
 	# 씬의 견본 카드(에디터 미리보기용)는 지운다 — 목록은 데이터가 정한다.
@@ -71,9 +76,11 @@ func _build() -> void:
 		_cards[int(item["id"])] = card
 	# 손가락 / 마우스로 끌어 굴린다 — 엔진의 터치 드래그 대신(`DragScroll`).
 	DragScroll.attach(%Scroll)
+	# The scroll bar stops a little above the capsule row instead of running behind it.
+	OutgameTheme.fit_bar_scroll(%Scroll)
 
-	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
-	(%Next as Button).pressed.connect(_on_next_pressed)
+	(%FloatingBarButton_Back as Button).pressed.connect(func() -> void: back_requested.emit())
+	(%FloatingBarButton_Next as Button).pressed.connect(_on_next_pressed)
 	_refresh()
 
 
@@ -99,7 +106,7 @@ func _refresh() -> void:
 		var on: bool = int(id) == selected_id
 		(_cards[id] as Button).theme_type_variation = \
 				&"SelectableCardButtonOn" if on else &"SelectableCardButton"
-	(%Next as Button).disabled = selected_id < 0
+	(%FloatingBarButton_Next as Button).disabled = selected_id < 0
 
 
 ## F6 단독 실행 미리보기 (`resources/UiPreview.gd`) — 잇는 단계(`ScenarioStepView` ·

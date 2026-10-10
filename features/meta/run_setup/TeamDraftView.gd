@@ -70,9 +70,9 @@ static func create() -> TeamDraftView:
 @onready var _pick_root: Control = %PickPane
 @onready var _filters: Control = %Filters
 @onready var _grid: GridContainer = %Grid
-@onready var _back_btn: Button = %Back
-@onready var _next_btn: Button = %Next
-@onready var _confirm_btn: Button = %Start
+@onready var _back_btn: Button = %FloatingBarButton_Back
+@onready var _next_btn: Button = %FloatingBarButton_Next
+@onready var _confirm_btn: Button = %FloatingBarButton_Start
 
 var _picks: Array = [-1, -1, -1, -1, -1]   # 슬롯 인덱스 → pilot id (-1 = 빈 칸)
 var _thumbs_by_id: Dictionary = {}         # pilot_id(int) → PilotThumb
@@ -96,6 +96,9 @@ func _ready() -> void:
 		_fill_preview()
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	OutgameTheme.fit_bottom_bar(%Bar, _safe)
+	OutgameTheme.fit_bar_shield(%BarShield)
+	_fit_grid_to_bottom()
+	OutgameTheme.fit_bar_scroll(%GridScroll)
 	_bind_slots()
 	_bind_filters()
 	_fill_grid()
@@ -112,6 +115,16 @@ func _ready() -> void:
 
 
 # ── 세로 배치 ────────────────────────────────────────────────────────────────
+## The grid runs to the screen bottom under the floating capsules (visible, not tappable —
+## `%BarShield`); its pad lets the last row scroll clear of them.
+func _fit_grid_to_bottom() -> void:
+	var below: float = OutgameTheme.bottom_inset()
+	(%GridScroll as Control).offset_bottom = below
+	(%GridBack as Control).offset_bottom = below + 16.0
+	(%GridPad as MarginContainer).add_theme_constant_override("margin_bottom",
+			int(OutgameTheme.bar_scroll_pad()))
+
+
 func _gauge_bottom() -> float:
 	return _gauge.position.y + _gauge.size.y
 

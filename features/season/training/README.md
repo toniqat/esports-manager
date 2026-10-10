@@ -350,10 +350,10 @@ TrainingView (Control, full rect, PASS, theme = OutgameTheme.tres)  — script: 
 │   ├ %EffectLine  AccentLabel 20, right-aligned, 860 wide (overlaps the label row on purpose)
 │   └ %CourseScroll  ScrollContainer (h: never-show bar, v: disabled), y 32..
 │     └ %CourseRow   HBox sep 14 — code fills TrainingCourseCard × N + a 24px tail pad
-└ %Bar             HBox sep 0, bottom-anchored, height 128 (+ bottom inset, code)
-  ├ %ClearButton   BarGhostButton 28, ratio 1 ─ Sep (BarSeparator Panel, 2px at its right edge)
-  ├ %AutoButton    BarGhostButton 28, ratio 1 ─ Sep  (hidden unless training is delegated)
-  └ %ConfirmButton BarPrimaryButton 34, ratio 2
+└ %Bar             HBox sep 16, floating capsule row (96 tall, 32 above the safe line, 40 side insets; code places it)
+  ├ %FloatingBarButton_ClearButton   BarDarkButton 28, ratio 1
+  ├ %FloatingBarButton_AutoButton    BarDarkButton 28, ratio 1  (hidden unless training is delegated)
+  └ %FloatingBarButton_ConfirmButton BarPrimaryButton 34, ratio 2
 ```
 **Scene owns**: every position / size / font size, variations — including the training-only screen
 variations `TrainingThumbFrame` · `TrainingThumbExpChip` · `TrainingCourseCardFrame` · `TrainingCourseGradeBand` ·
@@ -688,12 +688,12 @@ Details in the "Player stats (six)" entry of `features/battle_sim/combat/README.
 With training delegated the bar is `판 비우기` (1) · `코치 추천` (1) · `훈련 확정` (2); otherwise the
 middle slot is hidden and the two below share the bar as described (see "Auto-arrange").
 "판 비우기" (Clear board) (1) and "훈련 확정" (Confirm training) (2) **split the bottom section 2:1** —
-edge to edge left to right, bottom flush to the safe line, square corners. Conventions and pitfalls
+as floating capsules (40 px side insets, 32 px above the safe line). Conventions and pitfalls
 are in the "Bottom action bar" section of `resources/README.md`; this screen knows one special thing —
 **the course list hangs from this bar's top edge** (`Inventory` is anchored to the bottom of `%SafeArea`, whose
 bottom is the bar's top), so adjusting the bar makes both the list and the board follow automatically.
 The bar is an HBox in the scene (ratios 1 : 1 : 2), not `OutgameTheme.add_bottom_bar`; the bar-only
-look is the scene's `BarGhostButton` / `BarPrimaryButton` variations (square corners) and the inset is
+look is the scene's `BarDarkButton` / `BarPrimaryButton` variations (capsules) and the placement is
 `OutgameTheme.fit_bottom_bar`. The confirm button used to float at screen
 centre at 460×104, with "판 비우기" small to its left.
 

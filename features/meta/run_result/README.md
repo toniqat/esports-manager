@@ -81,7 +81,7 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
 │   ├ %GrowthCard      %GrowthRows ← RunResultGrowthRow
 │   └ AchievementCard  %AchievementRows ← RunResultPilotRow · %AchievementEmpty
 ├ %Empty           (hidden) "런 정산" title + empty-state card
-└ %BottomButton    full-width bottom bar button (BarPrimaryButton, font 32)
+└ %FloatingBarButton_BottomButton    full-width bottom bar button (BarPrimaryButton, font 32)
 ```
 - Cards use the screen variations `RunResultSectionCard` / `RunResultSectionCardAmber` (white / amber,
   radius 24, padding 40 · top 28, derived from `Card`), amber dividers `RunResultAccentDivider`, trait rows
@@ -93,7 +93,7 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
   sign / rarity chip fills via `OutgameTheme.flat_style`); round portraits drawn into the rows'
   `%Portrait` slots (`OutgameTheme.add_round_portrait`, diameter = slot `custom_minimum_size.x`);
   card / chip visibility; safe area — `indent_to_safe_top(self)`, `%Scroll.offset_bottom` raised by
-  the bottom inset, `OutgameTheme.fit_bottom_bar(%BottomButton)` (bar rect down over the inset, text
+  the bottom inset, `OutgameTheme.fit_bottom_bar(%FloatingBarButton_BottomButton)` (bar rect down over the inset, text
   lifted above it — the square shape is the `BarPrimaryButton` variation).
 - Header: 런 클리어 (amber) / 런 실패 (red) / 런 포기 (grey), scenario (`Loc.t` of `RunRules.scenario(result.scenario).name_key`) · team, and a
   "테스트 런 — 프로필 미반영" chip when `test_run`.

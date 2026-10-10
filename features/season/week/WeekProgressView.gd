@@ -112,8 +112,8 @@ const MAP_PICKED_SCALE: float = 1.2
 ## (`_place_under_map` keeps both when the map is hidden).
 @onready var _pilot_row_h: float = _pilot_row.offset_bottom - _pilot_row.offset_top
 @onready var _under_map_gap: float = _pilot_row.offset_top - _map_pin.offset_bottom
-@onready var _stage_btn: Button = %Stage
-@onready var _action_btn: Button = %Action
+@onready var _stage_btn: Button = %FloatingBarButton_Stage
+@onready var _action_btn: Button = %FloatingBarButton_Action
 
 var _built: bool = false
 var _day: int = 0

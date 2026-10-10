@@ -17,21 +17,21 @@ sees a phase / week counter.
 
 ## Bottom action bar (하단 액션 바) (every screen in this folder)
 **The primary action is not a shape button floating in the middle of the screen but the whole
-bottom section** — the single function `OutgameTheme.add_bottom_bar(parent, specs)` builds a
-square-cornered bar running edge to edge, its bottom flush against the safe line. With N buttons the
+bottom section** — a row of floating capsules (orange primary, dark secondary; 40 px side insets, 32 px
+above the safe line, drop shadow — `resources/README.md` "Bottom action bar"). With N buttons the
 section is split **by weight ratio**, and the convention is **primary 2 : secondary 1** with **the
 primary action at the right end**.
 
 | Screen | Bar |
 |---|---|
-| HubView | `리그 순위` (League standings) (1, ghost) / `이번 주 시작 →` (Start this week) (2, primary) |
-| TrainingView | `판 비우기` (Clear board) (1, ghost) / `훈련 확정` (Confirm training) (2, primary) |
+| HubView | `리그 순위` (League standings) (1, dark) / `이번 주 시작 →` (Start this week) (2, primary) |
+| TrainingView | `판 비우기` (Clear board) (1, dark) / `훈련 확정` (Confirm training) (2, primary) |
 | LeagueView · BracketView · IntlBracketView | `확인` (OK) full width |
-| WeekProgressView | stage label (1, ghost) + `다음` / `확인` / `주 마감 →` (End of week) / `기자회견` (Press conference) (primary), or `경기 준비` (Match prep, Sat) / `경기 시작` (Start match, Sun) (dark) — `week/README.md` |
+| WeekProgressView | stage label (1, dark) + `다음` / `확인` / `주 마감 →` (End of week) / `기자회견` (Press conference) (primary), or `경기 준비` (Match prep, Sat) / `경기 시작` (Start match, Sun) (dark) — `week/README.md` |
 | EndingView · GameOverView | `정산` (Settle) full width → `RunResult.SCENE_PATH` (the run is already settled on entry) |
 
-The four conventions (body height is derived back from `bottom_bar_top()` · the colour fill extends
-below the safe line but the text stays above it · when a cell collapses, call `layout_bottom_bar`
+The four conventions (body height is derived back from `bottom_bar_top()` · nothing goes under the
+safe line · when a cell collapses, call `layout_bottom_bar`
 again · a slot that changes kind switches its `Bar*` variation and calls `fit_bar_button`) are in the "Bottom action bar" section of
 `resources/README.md`. **The press conference (기자회견) answer choices are not this bar** — they are
 choices standing inside the speech-bubble flow, so they are not pinned to the bottom.
@@ -216,7 +216,7 @@ HubView (Control · HubView.gd)
 │ └ %MapHolder Control (min h 761, not a container) ─ code: BaseMap_Team (team `BaseMap`, built once, `BaseMap.mount`: 1200 × 761 centred, 60 px cropped each side on a 1080 screen) + ResearchBubble per facility spot (`ResearchBubble.populate(map, state, true)` every refresh; `pressed(fid)` → `SeasonHub.open_facility(fid)`)
 └ %SafeBottom   full rect; code lifts its bottom by the bottom inset
   ├ %Toast      Accent label, 40 above the bar
-  └ %BottomBar  HBox, 128 tall, sep 0 ─ %Standings (BarGhost 32, ratio 1, + Sep BarSeparator) · %Start (BarPrimary, ratio 2)
+  └ %BottomBar  HBox capsule row (96 tall, 32 above the safe line, 40 side insets), sep 16 ─ %FloatingBarButton_Standings (BarDark 32, ratio 1) · %FloatingBarButton_Start (BarPrimary, ratio 2)
 
 HubManageCard (Panel · Card · HubManageCard.gd)
 ├ VBox (20,14): %Title · %Value (34) · %Sub (20) · %Owner (Accent 18)
@@ -225,19 +225,17 @@ HubManageCard (Panel · Card · HubManageCard.gd)
 
 EndingView: %Background · Title "WORLD CHAMPION" (Accent 72) · Subtitle · RecapCaption ·
   %Recap VBox (800 centred, y 390) ─ 6 lines × 40 · RosterCaption · %Roster VBox (y 720) ─ 5 rows × 40 (HBox: `Badge` PositionBadge · `Text`) ·
-  %SafeBottom/%BottomBar ─ %Settle (BarPrimary 32)
+  %SafeBottom/%BottomBar ─ %FloatingBarButton_Settle (BarPrimary 32)
 GameOverView: %Background · Title "GAME OVER" (NegativeLabel 80) · %Reason (Body 28) ·
-  %Summary (Caption) · %SafeBottom/%BottomBar ─ %Settle (BarPrimary 32)
+  %Summary (Caption) · %SafeBottom/%BottomBar ─ %FloatingBarButton_Settle (BarPrimary 32)
 ```
 
 - **Scene owns** layout, texts' sizes / variations, bar ratio, the five rows / three cards / line slots.
 - **Code owns** data, data colours (pilot cards: see below; recap line amber when won), safe-area offsets.
   The old `HubRosterRow` (horizontal row with face · name · TOTAL · trust gauge · six short stat columns) was deleted.
-- **Bottom bar in a scene**: the buttons are `Bar*` variations (square corners) and the separator is a
-  `BarSeparator` Panel inside every button but the last. `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)`
-  adds only the device inset: `%SafeBottom.offset_bottom = −inset`, `%BottomBar.offset_bottom = +inset` (colour
-  fill reaches the viewport bottom) and each button's `content_margin_bottom += inset` (text stays above the
-  safe line) — `resources/README.md` "Bottom action bar".
+- **Bottom bar in a scene**: the buttons are `Bar*` variations (floating capsules, no separators).
+  `OutgameTheme.fit_bottom_bar(%BottomBar, %SafeBottom)` places the row: `%SafeBottom.offset_bottom = −inset`,
+  the row 40 px in from the sides and 32 px above the safe line — `resources/README.md` "Bottom action bar".
 - Manage cards use the `Card` variation (radius 18; the old code card was 16).
 
 ### Pilot card · detail sheet (`SeasonPilotCard` · `SeasonPilotDetail`)
@@ -428,7 +426,7 @@ BracketView (Control, full rect, OutgameTheme)          IntlBracketView — same
 ├ %Bracket HBox (anchored top-centre, y 250, sep 70)          ├ Semis VBox ─ TopGap 145 · %IntlMatchBox_SF1 · MidGap 180 · %IntlMatchBox_SF2 (280×150)
 │ ├ Semis VBox (sep 60) ─ %BracketMatchBox_SF1 · %BracketMatchBox_SF2   (420×200)             ├ GapSF 50
 │ └ %BracketMatchBox_Final  (size_flags_vertical = centre)                    └ FinalColumn VBox ─ TopGap 300 · %IntlMatchBox_Final (320×170)
-└ %OkButton  BarPrimaryButton, anchored bottom-wide
+└ %FloatingBarButton_OkButton  BarPrimaryButton, anchored bottom-wide
 ```
 - Match boxes: `BracketMatchBox.gd` on two item scenes — `UI_Comp_BracketMatchBox.tscn` (playoff: 22/18/28 px
   fonts, radius 8) and `UI_Comp_IntlMatchBox.tscn` (INTL: 18/16/22 px, radius 6). Each instance sets
@@ -476,8 +474,8 @@ scene-built and hang the bar from `%SafeBottom` (above), `TrainingView` from `%S
 
 **Scene-based views** (`LeagueView` · `BracketView` · `IntlBracketView`): layout is anchors in the
 `.tscn`, so the script only applies offsets — `indent_to_safe_top(self)` + `extend_background(%Background)`
-in `_ready`, and the bottom-bar button (`%OkButton`, `BarPrimaryButton`, anchored bottom-wide in the scene)
-gets `OutgameTheme.fit_bottom_bar(%OkButton)` (`offset_top = -(BOTTOM_BAR_H + bottom inset)`, text lifted
+in `_ready`, and the bottom-bar button (`%FloatingBarButton_OkButton`, `BarPrimaryButton`, anchored bottom-wide in the scene)
+gets `OutgameTheme.fit_bottom_bar(%FloatingBarButton_OkButton)` (`offset_top = -(BOTTOM_BAR_H + bottom inset)`, text lifted
 above the inset) — the same rect `add_bottom_bar` would give.
 
 Details: **`docs/mobile_safe_area.md`**

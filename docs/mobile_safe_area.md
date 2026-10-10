@@ -182,12 +182,10 @@ func _ready() -> void:
 The shift is done with **`offset_top`**, not `position` — anchors overwrite `position` of a
 full-rect Control on the next layout.
 
-**Bottom action bar** (both shapes): the bar is anchored bottom-wide in the scene and **extends into
-the bottom inset** — the button grows by the inset and its text is lifted by the same amount
-(`content_margin_bottom += inset`), so the touch target ends at `bottom_y()` while the colour fills to
-the screen edge. Helpers: `OutgameTheme.style_bottom_button(btn, kind, font)` + `offset_top =
--(BOTTOM_BAR_H + inset)` for a single button; `HubView.fit_bottom_bar(safe_bottom, bar)` /
-`RunSetupScreen.fit_insets(safe, bar)` for a split bar (square corners, inset margin).
+**Bottom action bar** (both shapes): a row of floating capsules anchored bottom-wide in the scene,
+**standing on the safe line** — bottom `BOTTOM_BAR_LIFT` (32) above `bottom_y()`, 40 px side insets, so
+nothing touchable reaches into the inset. Helper: `OutgameTheme.fit_bottom_bar(bar, safe)` (scene bars)
+/ `add_bottom_bar` + `layout_bottom_bar` (code bars) — `resources/README.md` "Bottom action bar".
 
 > The notch area is **a place not to use**, not **a place to leave empty**. If the background
 > retreats too, that band alone stays the engine's default background colour and the screen

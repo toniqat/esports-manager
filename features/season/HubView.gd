@@ -14,7 +14,7 @@ extends Control
 # (`ResearchSystem.unset_facilities`). This script binds `%` nodes, fills data, wires
 # signals and applies the device safe-area offsets (pattern B, `docs/mobile_safe_area.md`):
 # the whole screen is lowered to the safe top, the background stretched back up, and the
-# bottom bar hung from the safe bottom (`OutgameTheme.fit_bottom_bar`). Create with `HubView.create()`.
+# bottom capsule row standing on the safe bottom (`OutgameTheme.fit_bottom_bar`). Create with `HubView.create()`.
 
 const SCENE_PATH: String = "res://features/season/UI_View_HubView.tscn"
 
@@ -82,8 +82,8 @@ func _bind() -> void:
 	for i in _manage_cards.size():
 		(_manage_cards[i] as HubManageCard).pressed.connect(_on_manage_pressed.bind(i))
 
-	_standings_btn = %Standings
-	_start_btn = %Start
+	_standings_btn = %FloatingBarButton_Standings
+	_start_btn = %FloatingBarButton_Start
 	_standings_btn.pressed.connect(_on_standings_pressed)
 	_start_btn.pressed.connect(_on_start_pressed)
 

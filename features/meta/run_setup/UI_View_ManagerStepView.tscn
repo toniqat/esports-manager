@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://bysqo5kyt0dbm"]
+[gd_scene load_steps=6 format=3 uid="uid://bysqo5kyt0dbm"]
 
 [ext_resource type="Script" uid="uid://cqj5ibsaia0wy" path="res://features/meta/run_setup/ManagerStepView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://gmvu0lc4cfef" path="res://features/meta/manager/UI_Comp_ManagerPresetChips.tscn" id="3_chips"]
 [ext_resource type="PackedScene" uid="uid://gwexgkt7p5c4" path="res://features/meta/manager/UI_Comp_TraitPickerView.tscn" id="4_traits"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="ManagerStepView" type="Control"]
 layout_mode = 3
@@ -47,14 +48,15 @@ text = "프리셋 1 · 보너스 점수 0 · 특성을 바꾸면 이 프리셋�
 clip_text = true
 
 [node name="Scroll" type="ScrollContainer" parent="Safe"]
-editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready() · ManagerStepView.gd _rebuild()"
+editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready() · ManagerStepView.gd _rebuild()
+Body from content_top (116) down to the screen bottom (code adds the bottom inset): the content scrolls under the floating bottom capsules and stays visible there; %BarShield keeps taps in that zone off it, %BottomGap lets the last block scroll clear of it. OutgameTheme.fit_bar_scroll ends the scroll bar a little above the capsules."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = 168.0
-offset_bottom = -144.0
+offset_bottom = 0.0
 grow_vertical = 2
 horizontal_scroll_mode = 0
 
@@ -185,14 +187,17 @@ unique_name_in_owner = true
 layout_mode = 2
 
 [node name="BottomGap" type="Control" parent="Safe/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready()
+Bottom padding — code sets its height to OutgameTheme.bar_scroll_pad() so the last block scrolls clear of the capsules."
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Bar" type="HBoxContainer" parent="."]
+[node name="BarShield" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready()
-Bottom action bar 뒤로 (1) / 다음 (2) — Bar* variations, BarSeparator. Code adds only the bottom inset (OutgameTheme.fit_bottom_bar)."
+Invisible input blocker over the bottom capsule zone (full width, bar top → screen bottom; OutgameTheme.fit_bar_shield). The body shows through it but taps there never reach it. Drawn above %Safe, below %Bar."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -201,31 +206,35 @@ anchor_bottom = 1.0
 offset_top = -128.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 0
 
-[node name="Back" type="Button" parent="Bar"]
+[node name="Bar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready()
+Bottom action bar 뒤로 (1) / 다음 (2) — floating capsules (BarDarkButton · BarPrimaryButton), 16 apart. Code adds only the bottom inset (OutgameTheme.fit_bottom_bar)."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 16
+
+[node name="FloatingBarButton_Back" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"BarGhostButton"
+theme_type_variation = &"BarDarkButton"
 theme_override_font_sizes/font_size = 30
 text = "tx_AT96DE2X15"
 
-[node name="Sep" type="Panel" parent="Bar/Back"]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -2.0
-grow_horizontal = 0
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"BarSeparator"
-
-[node name="Next" type="Button" parent="Bar"]
+[node name="FloatingBarButton_Next" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready() · ManagerStepView.gd _refresh_status()"
 unique_name_in_owner = true
 layout_mode = 2

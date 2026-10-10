@@ -38,7 +38,7 @@ extends Control
 #      갖는다(예전에는 카드 위에서 시작한 드래그가 전부 타일 집기로 먹혀 목록이
 #      아예 안 굴렀다). 지금은 **처음 움직임의 방향이 가른다** — 가로면 스크롤,
 #      세로면 그 카드의 타일을 집는다(`DragScroll` 의 `cross_drag_started`).
-#   4. **하단 액션 바** — 화면 끝에서 끝까지, 아래는 안전선에 밀착.
+#   4. **Bottom action bar** — floating capsules standing 32 px above the safe line.
 #      "판 비우기"(1) 와 "훈련 확정"(2) 이 그 구간을 1:2 로 나눠 갖는다
 #      (`%Bar` 의 stretch ratio — 코치에게 맡긴 동안만 "코치 추천"(1) 이 가운데에 선다).
 #
@@ -218,10 +218,10 @@ func _bind() -> void:
 	_bind_grid()
 	_bind_inventory()
 
-	_bar_buttons = [%ClearButton, %AutoButton, %ConfirmButton]
-	(%ClearButton as Button).pressed.connect(_on_clear_pressed)
-	(%AutoButton as Button).pressed.connect(_on_auto_pressed)
-	(%ConfirmButton as Button).pressed.connect(_on_confirm_pressed)
+	_bar_buttons = [%FloatingBarButton_ClearButton, %FloatingBarButton_AutoButton, %FloatingBarButton_ConfirmButton]
+	(%FloatingBarButton_ClearButton as Button).pressed.connect(_on_clear_pressed)
+	(%FloatingBarButton_AutoButton as Button).pressed.connect(_on_auto_pressed)
+	(%FloatingBarButton_ConfirmButton as Button).pressed.connect(_on_confirm_pressed)
 
 
 ## 열 머리글 다섯. **글자가 없다** — 얼굴이 누구인지를, 테두리 색이 역할을 말한다.

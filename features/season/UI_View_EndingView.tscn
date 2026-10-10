@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://cjpgo6qqt14js"]
+[gd_scene load_steps=5 format=3 uid="uid://cjpgo6qqt14js"]
 
 [ext_resource type="Script" uid="uid://bkqjaoo3ixaq6" path="res://features/season/EndingView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="pos_badge"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="EndingView" type="Control"]
 layout_mode = 3
@@ -265,18 +266,21 @@ mouse_filter = 2
 [node name="BottomBar" type="HBoxContainer" parent="SafeBottom"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — EndingView.gd _bind()
-Bottom action bar: edge to edge, 128 tall above the safe line, split by stretch ratio (secondary 1 : primary 2, primary on the right). Bar* variations give the square corners; code only extends it below the safe line by the device inset (OutgameTheme.fit_bottom_bar)."
+Bottom action bar: floating capsules 40 px from the sides, 32 px above the safe line, 16 apart, split by stretch ratio (secondary 1 : primary 2, primary on the right). Bar* variations give the capsule look; code adds only the device inset (OutgameTheme.fit_bottom_bar)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 0
+theme_override_constants/separation = 16
 
-[node name="Settle" type="Button" parent="SafeBottom/BottomBar"]
+[node name="FloatingBarButton_Settle" parent="SafeBottom/BottomBar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — EndingView.gd _bind() · EndingView.gd _fill_preview()"
 unique_name_in_owner = true
 layout_mode = 2

@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://cuij3jot2e142"]
+[gd_scene load_steps=6 format=3 uid="uid://cuij3jot2e142"]
 
 [ext_resource type="Script" path="res://features/season/facility/FacilityView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="Texture2D" path="res://resources/images/facilities/fac_intel.svg" id="3_icon"]
 [ext_resource type="Texture2D" path="res://resources/images/staff/manager_bust.svg" id="4_bust"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="FacilityView" type="Control"]
 editor_description = "Facility screen (SeasonHub Screen.FACILITY, FacilityView.gd): header = facility icon · name · status line, occupant button (portrait + the facility stat, opens OccupantPicker), level + upgrade (lit only when FacilitySystem.can_upgrade; ConfirmPopup). %BodySlot holds the kind body (ResearchSystem.make_body, full rect — the screen itself never scrolls). Bottom bar: the body's optional action (left) + back to the hub (right)."
@@ -257,12 +258,15 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 0
+theme_override_constants/separation = 16
 
-[node name="Action" type="Button" parent="SafeBottom/BottomBar"]
+[node name="FloatingBarButton_Action" parent="SafeBottom/BottomBar" instance=ExtResource("fbb_scene")]
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind() · _fill_action()
 The body's bottom_action_text() (e.g. 보유 중인 훈련 코스); hidden when the body has none."
@@ -270,23 +274,11 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"BarGhostButton"
+theme_type_variation = &"BarDarkButton"
 theme_override_font_sizes/font_size = 30
 text = "보유 중인 훈련 코스"
 
-[node name="Sep" type="Panel" parent="SafeBottom/BottomBar/Action"]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -2.0
-grow_horizontal = 0
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"BarSeparator"
-
-[node name="Back" type="Button" parent="SafeBottom/BottomBar"]
+[node name="FloatingBarButton_Back" parent="SafeBottom/BottomBar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — FacilityView.gd _bind()"
 unique_name_in_owner = true
 layout_mode = 2

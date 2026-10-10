@@ -65,7 +65,7 @@ func _bind() -> void:
 	_phase_lines = %Recap.get_children()
 	_roster_lines = %Roster.get_children()
 	# 갈 길은 하나 — 정산 화면.
-	%Settle.pressed.connect(_on_settle_pressed)
+	%FloatingBarButton_Settle.pressed.connect(_on_settle_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -184,5 +184,5 @@ func _fill_preview() -> void:
 			pr[int(phase)] = {"made_playoffs": true, "champion": pid}
 	s["phase_results"] = pr
 	s["current_phase"] = GameEnums.SeasonPhase.REGULAR_INTL
-	%Settle.pressed.disconnect(_on_settle_pressed)
-	UiPreview.trace(%Settle.pressed, "정산")  # l10n-ignore
+	%FloatingBarButton_Settle.pressed.disconnect(_on_settle_pressed)
+	UiPreview.trace(%FloatingBarButton_Settle.pressed, "정산")  # l10n-ignore

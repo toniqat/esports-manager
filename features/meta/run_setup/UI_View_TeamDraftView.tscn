@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://d3v8rnbj0i1ll"]
+[gd_scene load_steps=5 format=3 uid="uid://d3v8rnbj0i1ll"]
 
 [ext_resource type="Script" uid="uid://h2bdsrqj6ye2" path="res://features/meta/run_setup/TeamDraftView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://18peqm35cgkn" path="res://features/meta/run_setup/UI_Comp_DraftSlot.tscn" id="3_slot"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="TeamDraftView" type="Control"]
 layout_mode = 3
@@ -236,7 +237,9 @@ theme_override_font_sizes/font_size = 26
 text = "tx_KAGZSJJGSE"
 
 [node name="GridBack" type="Panel" parent="Safe/PickPane"]
-editor_description = "Backplate 8px around the grid — keeps a short / filtered list from reading as 'the screen ended'."
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _fit_grid_to_bottom()
+Backplate 8px around the grid — keeps a short / filtered list from reading as 'the screen ended'. Runs past the screen bottom (code adds the bottom inset) so the bottom capsules float over it, no strip of screen background behind them."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -245,7 +248,7 @@ anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = -872.0
 offset_right = -16.0
-offset_bottom = -132.0
+offset_bottom = 16.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -254,7 +257,7 @@ theme_type_variation = &"TeamDraftGridBack"
 [node name="GridScroll" type="ScrollContainer" parent="Safe/PickPane"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _ready()
-Hangs 12px above the bar; height = 3.5 thumbnail rows (TeamDraftView.grid_h()) — the half row says 'there is more'."
+Shows 3.5 rows of 240px cells above the capsules. OutgameTheme.fit_bar_scroll ends its scroll bar a little above the capsule row. Runs down to the screen bottom (code adds the bottom inset): the list scrolls under the floating bottom capsules and stays visible there; %BarShield keeps taps in that zone off the thumbnails, %GridPad lets the last row scroll clear of it."
 layout_mode = 1
 anchors_preset = -1
 anchor_top = 1.0
@@ -263,11 +266,20 @@ anchor_bottom = 1.0
 offset_left = 24.0
 offset_top = -864.0
 offset_right = -24.0
-offset_bottom = -140.0
+offset_bottom = 0.0
 grow_vertical = 0
 horizontal_scroll_mode = 0
 
-[node name="Grid" type="GridContainer" parent="Safe/PickPane/GridScroll"]
+[node name="GridPad" type="MarginContainer" parent="Safe/PickPane/GridScroll"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _fit_grid_to_bottom()
+Bottom margin = the bottom capsule zone (OutgameTheme.bar_scroll_pad(): BOTTOM_BAR_H + 12 + inset, set by code) so the last thumbnail row can scroll above the capsules."
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/margin_bottom = 140
+
+[node name="Grid" type="GridContainer" parent="Safe/PickPane/GridScroll/GridPad"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _grid
 PilotThumb items are instantiated here by code (owned pilots, slot order then overall desc). Hidden cells are skipped by the container, so a filter just toggles visible."
@@ -276,10 +288,10 @@ theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 5
 
-[node name="Bar" type="HBoxContainer" parent="."]
+[node name="BarShield" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _ready()
-Bottom action bar: 뒤로 (1) / 다음 · 게임 시작 (2, one at a time) — Bar* variations, BarSeparator. Code adds only the bottom inset (OutgameTheme.fit_bottom_bar)."
+Invisible input blocker over the bottom capsule zone (full width, bar top → screen bottom; OutgameTheme.fit_bar_shield). The grid shows through it but taps there never pick a thumbnail. Drawn above %Safe, below %Bar."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -288,31 +300,35 @@ anchor_bottom = 1.0
 offset_top = -128.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 0
 
-[node name="Back" type="Button" parent="Bar"]
+[node name="Bar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _ready()
+Bottom action bar: 뒤로 (1) / 다음 · 게임 시작 (2, one at a time) — floating capsules (BarDarkButton · BarPrimaryButton), 16 apart. Code adds only the bottom inset (OutgameTheme.fit_bottom_bar)."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 16
+
+[node name="FloatingBarButton_Back" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _back_btn"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"BarGhostButton"
+theme_type_variation = &"BarDarkButton"
 theme_override_font_sizes/font_size = 30
 text = "tx_AT96DE2X15"
 
-[node name="Sep" type="Panel" parent="Bar/Back"]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -2.0
-grow_horizontal = 0
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"BarSeparator"
-
-[node name="Next" type="Button" parent="Bar"]
+[node name="FloatingBarButton_Next" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _next_btn"
 unique_name_in_owner = true
 layout_mode = 2
@@ -324,7 +340,7 @@ theme_override_font_sizes/font_size = 38
 disabled = true
 text = "tx_GNK4E0021C"
 
-[node name="Start" type="Button" parent="Bar"]
+[node name="FloatingBarButton_Start" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _confirm_btn"
 unique_name_in_owner = true
 visible = false

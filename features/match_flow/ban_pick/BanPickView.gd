@@ -18,7 +18,7 @@ extends Control
 #   │ │   ├ PaneCard · Content (%BanPickOrderRow_OrderRow · %Tabs · %Scroll/%Grid)
 #   │ │   ├ %SheetDim            dims the pane only (team blocks stay readable)
 #   │ │   └ %Sheet               bottom sheet, bottom-aligned to the grid
-#   │ ├ %StartButton            assign-step bottom bar ("게임 시작")
+#   │ ├ %FloatingBarButton_StartButton            assign-step bottom bar ("게임 시작")
 #   │ └ %DragGhost              the mech slot under the finger while dragging
 #   └ %Banner                    turn banner (viewport-centred, above everything)
 
@@ -114,7 +114,7 @@ func _ready() -> void:
 	sheet_intel = %SheetIntel
 	sheet_close = %SheetClose
 	sheet_confirm = %SheetConfirm
-	start_button = %StartButton
+	start_button = %FloatingBarButton_StartButton
 	drag_ghost = %DragGhost
 	drag_ghost_art = %DragGhostArt
 	_banner_bar = %BannerBar
@@ -127,8 +127,8 @@ func _ready() -> void:
 
 ## Device insets → offsets (`docs/mobile_safe_area.md` pattern B as a scene: the background
 ## covers the whole viewport, everything else lives in `%SafeArea`). The bottom side is
-## `OutgameTheme.fit_bottom_bar`: `%SafeArea` ends at the safe line and the bottom bar
-## (`BarPrimaryButton`) reaches down through the bottom inset with its text kept above it.
+## `OutgameTheme.fit_bottom_bar`: `%SafeArea` ends at the safe line and the bottom capsule
+## (`BarPrimaryButton`) floats 32 px above it.
 func fit_safe_area() -> void:
 	safe_area.offset_top = ScreenMetrics.top_y()
 	OutgameTheme.fit_bottom_bar(start_button, safe_area)

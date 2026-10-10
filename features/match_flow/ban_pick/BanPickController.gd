@@ -1363,8 +1363,8 @@ func _enter_assign_layout() -> void:
 	_set_block_tappable(_player_side, true)
 
 
-## "게임 시작"은 **하단 구간을 통째로 차지하는 바**다(씬의 `%StartButton` = `BarPrimaryButton`,
-## 아래 인셋은 `BanPickView.fit_safe_area` 의 `OutgameTheme.fit_bottom_bar`) — 아웃게임 화면의 주된 행동이 서는
+## "게임 시작" is the full-width bottom capsule (scene `%FloatingBarButton_StartButton` = `BarPrimaryButton`;
+## placement + inset: `OutgameTheme.fit_bottom_bar` in `BanPickView.fit_safe_area`) — 아웃게임 화면의 주된 행동이 서는
 ## 자리. 배정 진입 연출(`_play_assign_intro`)이 끝날 때까지 잠겨 있다. 제목("메크
 ## 배정")은 없다 — 화면에 남은 것이 양 팀 초상화와 그 밑의 기체뿐이면 무엇을 하는
 ## 단계인지는 그림이 말한다.

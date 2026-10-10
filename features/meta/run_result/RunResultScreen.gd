@@ -72,7 +72,7 @@ func _apply_safe_area() -> void:
 	var below: float = maxf(0.0, ScreenMetrics.insets().w)
 	%Scroll.offset_bottom -= below
 	# The bar's shape is the scene (`BarPrimaryButton`); only the device inset is code.
-	OutgameTheme.fit_bottom_bar(%BottomButton)
+	OutgameTheme.fit_bottom_bar(%FloatingBarButton_BottomButton)
 
 
 func _fill_header() -> void:
@@ -272,7 +272,7 @@ func _fill_achievement_card() -> void:
 
 func _fill_bottom_bar() -> void:
 	var to_new_run: bool = String(_result.get("outcome", "")) == RunResult.OUTCOME_ABANDON
-	var btn: Button = %BottomButton
+	var btn: Button = %FloatingBarButton_BottomButton
 	btn.text = Loc.t(L.LOBBY_HOME_NEW_RUN if to_new_run else L.UI_BUTTON_TO_LOBBY)
 	btn.pressed.connect(_on_new_run_pressed if to_new_run else _on_lobby_pressed)
 

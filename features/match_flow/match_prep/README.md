@@ -45,8 +45,8 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
   analyst note (both card rows are the same height, so `VS` sits at the block's middle — about the
   screen centre on a 1080×1920 screen); they collapse to 0 when the content is taller than the scroll.
 - Code-owned: the top safe-area offset, the bottom inset via `OutgameTheme.fit_bottom_bar(%Start, %Safe)`
-  (`%Safe` ends at the safe line; the bar reaches the screen bottom with its text kept above the inset —
-  the square corners are the `BarPrimaryButton` variation), filling the enemy `IntelView` note
+  (`%Safe` ends at the safe line; the start capsule floats 32 px above it, 40 px in from the sides —
+  the capsule look is the `BarPrimaryButton` variation), filling the enemy `IntelView` note
   (`show_intel`), the ten cards from `OpponentIntel.build()` rows (seat order; a missing pilot hides
   its card) and the versus block (`_fill_versus`: `TeamLogos.texture(team_id)` + `GameManager.team_short_name`
   = `teams.csv` `short_name_key`, team ids = the two `build()` results' `team_id`; no team id → no logo and

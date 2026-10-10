@@ -241,9 +241,9 @@ RunSetup (scenes/RunSetup.tscn — root offset_top = safe top inset, code)
 <step view> (ChoiceListView / ManagerStepView / TeamDraftView — same frame)
 ├ %Safe   full rect; code: offset_bottom = -bottom inset               ┐ OutgameTheme.fit_bottom_bar(%Bar, %Safe)
 │ └ body, first block at y 116 (content_top)                           │
-└ %Bar    HBox sep 0, bottom 128 — Back (BarGhostButton 30, stretch 1,   │
-          Sep = BarSeparator Panel) / Next (BarPrimaryButton 38, stretch 2) │
-          [/ Start] — code adds only the inset (rect + text lift)       ┘
+└ %Bar    HBox sep 16, floating capsules 40 in, 32 above the safe line  │
+          — FloatingBarButton_Back (BarDarkButton 30, stretch 1) / _Next  │
+          (BarPrimaryButton 38, stretch 2) [/ _Start] — code places it ┘
 
 ChoiceListView: %Hint (32,116) h 44 · %Scroll (24,168 → bottom -144, grows right only) → %List VBox sep 20, min w 1032
   UI_View_ScenarioStepView.tscn / UI_View_TeamStepView.tscn inherit it (+ one preview card under %List, cleared by code)

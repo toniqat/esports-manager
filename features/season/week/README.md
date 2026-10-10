@@ -59,9 +59,9 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   ├ %PilotRow   HBox sep 12, x 40 … −40, y 969 … 1213 (= %MapPin bottom + 14, top-anchored): SeasonPilotCard_Pilot0..4
   │             (seat order), **always shown**. `_place_under_map` keeps row + list under the map (authored gap 14); with no
   │             map (`Stage.OFF`) both move up to %MapPin's top
-  └ %Bar        HBox bottom bar, y −128 … 0 — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
-    ├ %Stage    BarGhostButton 28, ratio 1, mouse Ignore (a label: 오전 / 오후 / 저녁) + `BarSeparator`; hidden when the day has no stage
-    └ %Action   BarPrimaryButton, ratio 2 (다음 / 확인 / 기자회견 / 주 마감 →); `BarDarkButton` for 경기 준비 / 경기 시작 + `fit_bar_button`
+  └ %Bar        HBox capsule row, sep 16, y −128 … −32, 40 side insets — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
+    ├ %FloatingBarButton_Stage  BarDarkButton 28, ratio 1, mouse Ignore (a label: 오전 / 오후 / 저녁); hidden when the day has no stage
+    └ %FloatingBarButton_Action BarPrimaryButton, ratio 2 (다음 / 확인 / 기자회견 / 주 마감 →); `BarDarkButton` for 경기 준비 / 경기 시작 + `fit_bar_button`
 ```
 
 * **Scene owns**: every position / size, fonts (variations + size overrides), the rail pill (screen variation,

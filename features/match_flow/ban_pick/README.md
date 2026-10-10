@@ -53,7 +53,7 @@ BanPickView (Control full rect, theme = OutgameTheme.tres)
 │ │                     SheetName · SheetStats · SheetNoPassive / %SheetPassiveIcon (36² passive icon tile) · SheetPassiveHead · SheetPassiveDesc ·
 │ │                     SheetCardsHeader · %SheetCardRow · SheetNoCards · SheetMastery(SheetRider · SheetIntel) ·
 │ │                     SheetButtons(SheetClose · SheetConfirm)
-│ ├ %StartButton        assign-step bottom bar (`BarPrimaryButton`, 128 tall; inset from OutgameTheme.fit_bottom_bar)
+│ ├ %FloatingBarButton_StartButton        assign-step bottom bar (`BarPrimaryButton`, 128 tall; inset from OutgameTheme.fit_bottom_bar)
 │ └ %DragGhost          (+ DragGhostArt) the slot under the finger
 └ Banner                viewport-centred: %BannerBar · %BannerLabel (above everything, mouse-ignore)
 ```

@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://bemmrliyy6nn1"]
+[gd_scene load_steps=5 format=3 uid="uid://bemmrliyy6nn1"]
 
 [ext_resource type="Script" uid="uid://crdbnaxpunrt0" path="res://features/season/tournament/IntlBracketView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://c2m47j4qcd7m2" path="res://features/season/tournament/UI_Comp_IntlMatchBox.tscn" id="3_box"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="IntlBracketView" type="Control"]
 layout_mode = 3
@@ -197,7 +198,7 @@ custom_minimum_size = Vector2(320, 170)
 layout_mode = 2
 slot_title = "tx_TRMS5ZZQY6"
 
-[node name="OkButton" type="Button" parent="."]
+[node name="FloatingBarButton_OkButton" parent="." instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — IntlBracketView.gd _fill_preview() · IntlBracketView.gd _layout_ok_button() · IntlBracketView.gd _ready()"
 unique_name_in_owner = true
 layout_mode = 1
@@ -205,7 +206,10 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
 focus_mode = 0

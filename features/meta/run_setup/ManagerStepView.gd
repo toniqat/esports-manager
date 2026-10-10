@@ -47,10 +47,15 @@ func _ready() -> void:
 	_built = true
 	_pm = get_node("/root/ProfileManager")
 	OutgameTheme.fit_bottom_bar(%Bar, %Safe)
+	# The body runs to the screen bottom under the capsules (visible, not tappable).
+	OutgameTheme.fit_bar_shield(%BarShield)
+	(%Scroll as Control).offset_bottom = OutgameTheme.bottom_inset()
+	(%BottomGap as Control).custom_minimum_size.y = OutgameTheme.bar_scroll_pad()
+	OutgameTheme.fit_bar_scroll(%Scroll)
 	# Drag / fling scrolling instead of the engine's touch drag (`DragScroll`).
 	DragScroll.attach(%Scroll)
-	(%Back as Button).pressed.connect(func() -> void: back_requested.emit())
-	(%Next as Button).pressed.connect(_on_next_pressed)
+	(%FloatingBarButton_Back as Button).pressed.connect(func() -> void: back_requested.emit())
+	(%FloatingBarButton_Next as Button).pressed.connect(_on_next_pressed)
 	(%ManagerPresetChips_Chips as ManagerPresetChips).chip_pressed.connect(_on_chip_pressed)
 	(%TraitPickerView_Traits as TraitPickerView).trait_pressed.connect(_on_trait_pressed)
 	select_preset(ManagerProgress.active_index(_pm.profile))
@@ -131,7 +136,7 @@ func _rebuild(status_override: String = "") -> void:
 
 func _refresh_status(override: String = "") -> void:
 	var err: String = validation_error()
-	(%Next as Button).disabled = err != ""
+	(%FloatingBarButton_Next as Button).disabled = err != ""
 	var status: Label = %Status
 	if override != "":
 		status.text = override

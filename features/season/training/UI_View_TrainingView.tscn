@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://dkc4ervyl282d"]
+[gd_scene load_steps=5 format=3 uid="uid://dkc4ervyl282d"]
 
 [ext_resource type="Script" uid="uid://mgbtbbkxgbgw" path="res://features/season/training/TrainingView.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://crg2etciyhyy" path="res://features/season/training/UI_Comp_TrainingThumb.tscn" id="3_thumb"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="TrainingView" type="Control"]
 layout_mode = 3
@@ -267,63 +268,42 @@ theme_override_constants/separation = 14
 [node name="Bar" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _bind()
-Bottom action bar: edge to edge, square corners, slots split by stretch ratio (1 : 1 : 2, primary at the right). Bar* variations give the square corners; code adds the device's bottom inset to its height and to each button's bottom content margin (OutgameTheme.fit_bottom_bar — the colour runs under the home indicator, the text stays above it). 코치 추천 is hidden unless training is delegated — the others re-split by ratio."
+Bottom action bar: floating capsules 40 px from the sides, 32 px above the safe line, 16 apart, split by stretch ratio (1 : 1 : 2, primary at the right). Bar* variations give the capsule look (secondary = BarDarkButton); code adds only the device inset (OutgameTheme.fit_bottom_bar)."
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 40.0
 offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = 16
 
-[node name="ClearButton" type="Button" parent="Bar"]
+[node name="FloatingBarButton_ClearButton" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _bar_buttons · TrainingView.gd _bind()"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"BarGhostButton"
+theme_type_variation = &"BarDarkButton"
 theme_override_font_sizes/font_size = 28
 text = "tx_GJCV7B4T36"
 
-[node name="Sep" type="Panel" parent="Bar/ClearButton"]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -2.0
-grow_horizontal = 0
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"BarSeparator"
-
-[node name="AutoButton" type="Button" parent="Bar"]
+[node name="FloatingBarButton_AutoButton" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _bar_buttons · TrainingView.gd _bind()"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_type_variation = &"BarGhostButton"
+theme_type_variation = &"BarDarkButton"
 theme_override_font_sizes/font_size = 28
 text = "tx_4ZC95B7Y0R"
 
-[node name="Sep" type="Panel" parent="Bar/AutoButton"]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -2.0
-grow_horizontal = 0
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"BarSeparator"
-
-[node name="ConfirmButton" type="Button" parent="Bar"]
+[node name="FloatingBarButton_ConfirmButton" parent="Bar" instance=ExtResource("fbb_scene")]
 editor_description = "[필수] 지우면 오류 — TrainingView.gd _bar_buttons · TrainingView.gd _bind()"
 unique_name_in_owner = true
 layout_mode = 2

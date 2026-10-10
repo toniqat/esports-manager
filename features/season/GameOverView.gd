@@ -59,7 +59,7 @@ func _bind() -> void:
 	_reason_lbl = %Reason
 	_summary_lbl = %Summary
 	# 갈 길은 하나 — 정산 화면.
-	%Settle.pressed.connect(_on_settle_pressed)
+	%FloatingBarButton_Settle.pressed.connect(_on_settle_pressed)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -183,5 +183,5 @@ func _fill_preview() -> void:
 	s["phase_week"] = int(s["phase_week"]) + 1
 	var fin: Dictionary = b[2]
 	_tournament.record_result(2, int(fin["team_b"]) if int(fin["team_a"]) == pid else int(fin["team_a"]))
-	%Settle.pressed.disconnect(_on_settle_pressed)
-	UiPreview.trace(%Settle.pressed, "정산")  # l10n-ignore
+	%FloatingBarButton_Settle.pressed.disconnect(_on_settle_pressed)
+	UiPreview.trace(%FloatingBarButton_Settle.pressed, "정산")  # l10n-ignore

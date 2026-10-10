@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=189 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=182 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -84,6 +84,10 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="BarDarkButton_focus"]
 content_margin_left = 18.0
@@ -91,6 +95,10 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="BarDarkButton_hover"]
 content_margin_left = 18.0
@@ -98,6 +106,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.2168, 0.2168, 0.22736001, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarDarkButton_hover_pressed"]
 content_margin_left = 18.0
@@ -105,6 +120,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.3058, 0.3058, 0.31516, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarDarkButton_normal"]
 content_margin_left = 18.0
@@ -112,6 +134,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarDarkButton_pressed"]
 content_margin_left = 18.0
@@ -119,73 +148,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.3058, 0.3058, 0.31516, 1)
-
-[sub_resource type="StyleBoxFlat" id="BarGhostButton_disabled"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-
-[sub_resource type="StyleBoxFlat" id="BarGhostButton_focus"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0, 0, 0, 0)
-
-[sub_resource type="StyleBoxFlat" id="BarGhostButton_hover"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-
-[sub_resource type="StyleBoxFlat" id="BarGhostButton_hover_pressed"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.78, 0.784, 0.808, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-
-[sub_resource type="StyleBoxFlat" id="BarGhostButton_normal"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-
-[sub_resource type="StyleBoxFlat" id="BarGhostButton_pressed"]
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.78, 0.784, 0.808, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarPrimaryButton_disabled"]
 content_margin_left = 18.0
@@ -198,6 +167,10 @@ border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="BarPrimaryButton_focus"]
 content_margin_left = 18.0
@@ -205,6 +178,10 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="BarPrimaryButton_hover"]
 content_margin_left = 18.0
@@ -212,6 +189,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.9649, 0.68590003, 0.22330001, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarPrimaryButton_hover_pressed"]
 content_margin_left = 18.0
@@ -219,6 +203,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.84568, 0.57288, 0.12056, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarPrimaryButton_normal"]
 content_margin_left = 18.0
@@ -226,6 +217,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="BarPrimaryButton_pressed"]
 content_margin_left = 18.0
@@ -233,13 +231,13 @@ content_margin_top = 8.0
 content_margin_right = 18.0
 content_margin_bottom = 8.0
 bg_color = Color(0.84568, 0.57288, 0.12056, 1)
-
-[sub_resource type="StyleBoxFlat" id="BarSeparator_panel"]
-content_margin_left = 0.0
-content_margin_top = 0.0
-content_margin_right = 0.0
-content_margin_bottom = 0.0
-bg_color = Color(0.11, 0.11, 0.122, 0.14)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="Card_panel"]
 content_margin_left = 32.0
@@ -2199,20 +2197,6 @@ BarDarkButton/styles/hover = SubResource("BarDarkButton_hover")
 BarDarkButton/styles/hover_pressed = SubResource("BarDarkButton_hover_pressed")
 BarDarkButton/styles/normal = SubResource("BarDarkButton_normal")
 BarDarkButton/styles/pressed = SubResource("BarDarkButton_pressed")
-BarGhostButton/base_type = &"Button"
-BarGhostButton/colors/font_color = Color(0.11, 0.11, 0.122, 1)
-BarGhostButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
-BarGhostButton/colors/font_focus_color = Color(0.11, 0.11, 0.122, 1)
-BarGhostButton/colors/font_hover_color = Color(0.11, 0.11, 0.122, 1)
-BarGhostButton/colors/font_hover_pressed_color = Color(0.11, 0.11, 0.122, 1)
-BarGhostButton/colors/font_pressed_color = Color(0.11, 0.11, 0.122, 1)
-BarGhostButton/font_sizes/font_size = 30
-BarGhostButton/styles/disabled = SubResource("BarGhostButton_disabled")
-BarGhostButton/styles/focus = SubResource("BarGhostButton_focus")
-BarGhostButton/styles/hover = SubResource("BarGhostButton_hover")
-BarGhostButton/styles/hover_pressed = SubResource("BarGhostButton_hover_pressed")
-BarGhostButton/styles/normal = SubResource("BarGhostButton_normal")
-BarGhostButton/styles/pressed = SubResource("BarGhostButton_pressed")
 BarPrimaryButton/base_type = &"Button"
 BarPrimaryButton/colors/font_color = Color(1, 1, 1, 1)
 BarPrimaryButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -2227,8 +2211,6 @@ BarPrimaryButton/styles/hover = SubResource("BarPrimaryButton_hover")
 BarPrimaryButton/styles/hover_pressed = SubResource("BarPrimaryButton_hover_pressed")
 BarPrimaryButton/styles/normal = SubResource("BarPrimaryButton_normal")
 BarPrimaryButton/styles/pressed = SubResource("BarPrimaryButton_pressed")
-BarSeparator/base_type = &"Panel"
-BarSeparator/styles/panel = SubResource("BarSeparator_panel")
 BodyLabel/base_type = &"Label"
 BodyLabel/colors/font_color = Color(0.11, 0.11, 0.122, 1)
 BodyLabel/font_sizes/font_size = 26

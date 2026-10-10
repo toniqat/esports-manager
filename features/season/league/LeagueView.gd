@@ -17,7 +17,7 @@ extends Control
 # **Layout lives in `UI_View_LeagueView.tscn`** (+ one `UI_Comp_LeagueRow.tscn` per rank in `%Rows`) —
 # build it with `LeagueView.create()`. The script fills text, wires the rows / button and
 # applies the device-dependent bits: safe-area top indent, background extension into the
-# notch, and the bottom bar's square corners + bottom inset.
+# notch, and the bottom capsule's placement + bottom inset.
 
 ## Built from `UI_View_LeagueView.tscn` — use `create()`, not `.new()`.
 const SCENE_PATH: String = "res://features/season/league/UI_View_LeagueView.tscn"
@@ -42,7 +42,7 @@ func _ready() -> void:
 	ScreenMetrics.extend_background(%Background)
 	_ensure_rows()
 	_layout_ok_button()
-	%OkButton.pressed.connect(_on_ok_pressed)
+	%FloatingBarButton_OkButton.pressed.connect(_on_ok_pressed)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 	ensure_view()
@@ -74,11 +74,11 @@ func _ensure_rows() -> void:
 		(box.get_child(r) as LeagueRow).tapped.connect(_on_row_pressed.bind(r))
 
 
-## 확인 하나뿐이라 **하단 구간을 통째로 차지한다** — 좌우 끝에서 끝까지, 아래는
-## 안전선에 밀착. 자리와 각진 모양은 씬(앵커 · `BarPrimaryButton`)이, 기기 몫(아래
-## 인셋)만 코드가 넣는다 — `OutgameTheme.fit_bottom_bar`.
+## The only action, so one full-width floating capsule (40 px side insets, 32 px above the
+## safe line). The look is the scene's (`BarPrimaryButton`); placement + device inset are
+## `OutgameTheme.fit_bottom_bar`.
 func _layout_ok_button() -> void:
-	OutgameTheme.fit_bottom_bar(%OkButton)
+	OutgameTheme.fit_bottom_bar(%FloatingBarButton_OkButton)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────

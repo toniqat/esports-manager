@@ -972,6 +972,15 @@ adjacent non-space characters so autowrapped Korean breaks only at spaces (ICU
 otherwise breaks between any two Hangul syllables — "비/용"). Measure the same
 joined text, or the height disagrees with the label.
 
+### UI_Comp_FloatingBarButton.tscn + FloatingBarButton.gd (bottom action capsule)
+`@tool class_name FloatingBarButton extends Button` — **every outgame bottom-bar button** (뒤로 / 다음 / 확인 / 정산 …,
+scene bars instance it as `FloatingBarButton_<Role>`; code bars via `add_bottom_bar` → `create()`). Colour + font = the
+`Bar*Button` variation picked on the instance (`BarPrimaryButton` orange, `BarDarkButton` secondary). The **drop shadow is
+inspector sliders on the root**: `shadow_strength` (alpha 0~1, default 0.18), `shadow_size` (blur px, 18), `shadow_offset_y`
+(6) — change them in this scene to retune every bottom button; an instance may override one. `refresh_style()` rebuilds the
+per-state boxes from the variation (called on THEME_CHANGED and by `OutgameTheme.fit_bar_button` after a variation switch);
+the overrides are runtime-only (`_validate_property` strips storage, so no StyleBox lands in a host scene).
+
 ### OutgameTheme.gd
 `class_name OutgameTheme`, extends `RefCounted`. **Every colour on outgame screens passes
 through here** — season hub · press conference (기자회견) · training board · time-passing · standings · brackets ·
@@ -1000,7 +1009,7 @@ The design principle is coloured cards on white paper. Three rules:
 | StyleBox | `card_style` `flat_style` `lead_bar_style` `set_corner_radius` `selectable_box(on, radius, border_on)` |
 | Button | `style_primary_button` (amber, one per screen) `style_ghost_button` `style_text_button` `style_dark_button` (dark colour field — "leave this screen") `style_danger_button` (`NEGATIVE` field — destructive confirm). All read **`button_spec(kind)`** (colours + default font) and **`button_styles(kind)`** (one `button_box` per `BUTTON_STATES`, incl. `hover_pressed` = pressed so the engine default never shows while held) — the same table the theme is built from |
 | Theme | `build_theme()` → `Theme`, `save_theme()` → writes `THEME_PATH` (`OutgameTheme.tres`), `BUTTON_VARIATIONS` `BAR_BUTTON_VARIATIONS`, `variation_box(name, item)` (duplicate of a variation's stylebox for data colours) — see **OutgameTheme.tres** below |
-| Bottom bar | `BOTTOM_BAR_H` `BOTTOM_BAR_SEP` `bottom_bar_top()` `bottom_inset()` · scene bars: `fit_bottom_bar(bar, safe)` `fit_bar_button(b)` `bar_button_styles(kind, below)` · code-built bars: `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` — see **Bottom action bar** below |
+| Bottom bar | `BOTTOM_BAR_H` `BOTTOM_PILL_H` `BOTTOM_BAR_LIFT` `BOTTOM_BAR_SIDE` `BOTTOM_BAR_GAP` `bottom_bar_top()` `bottom_inset()` · scene bars: `fit_bottom_bar(bar, safe)` `fit_bar_button(b)` `bar_button_styles(kind)` · scroll under the bar: `fit_bar_shield(shield)` `bar_scroll_pad()` · scroll bar end: `fit_bar_scroll(scroll)` · code-built bars: `add_bottom_bar(parent, specs)` `layout_bottom_bar(buttons, specs)` `style_bottom_button(b, style, font)` — see **Bottom action bar** below |
 | Pieces | `add_background` (`ScreenBackground` Panel; internally calls `ScreenMetrics.extend_background`) `add_card` `add_divider` `add_round_portrait` `add_chip` `add_vscroll` |
 
 **Button styles decide colour only — feel is not decided here.** At one point these four
@@ -1052,8 +1061,7 @@ shows only real value changes.
 | `NegativeLabel` · `PositiveLabel` · `LinkLabel` | Label | Semantic text colour `NEGATIVE` (loss, error, warning) · `POSITIVE` (gain, qualified) · `LINK` (blue info, e.g. mastery gain), all `FONT_CAPTION` like `AccentLabel`; a body-size use adds `theme_override_font_sizes/font_size` = `FONT_BODY` |
 | `RailLabel` | Label | Grey text on the dark rail (`FONT_CAPTION`, `RAIL_TEXT`) — `UI_View_PhaseIntro` rail labels (the week screen's `%WeekLabel` was removed 2026-10) |
 | `OnFillTextButton` | Button | `TextButton` with every font colour `TEXT_ON_FILL` — a text button on a colour fill (상점 배너 "확률 보기") |
-| `BarPrimaryButton` · `BarGhostButton` · `BarDarkButton` | Button | One slot of a **bottom action bar** — same colours / fonts as `PrimaryButton` · `GhostButton` · `DarkButton` with **square corners** (`bar_button_styles(kind)`, `BAR_BUTTON_VARIATIONS`). Only inside a bar; the device inset is added by `fit_bottom_bar` |
-| `BarSeparator` | Panel | The vertical line between bar slots (`BOTTOM_BAR_SEP`, no radius) — a `Panel` child of every slot but the last, anchored right-wide, `offset_left = -2`, mouse Ignore. Replaces the `Sep` `ColorRect` and its colour literal |
+| `BarPrimaryButton` · `BarDarkButton` | Button | One slot of a **bottom action bar** — same colours / fonts as `PrimaryButton` (orange) · `DarkButton` (secondary) drawn as a **floating capsule** (radius 999 + the close capsule's drop shadow, `bar_button_styles(kind)`, `BAR_BUTTON_VARIATIONS`). Only inside a bar; placement + device inset by `fit_bottom_bar`
 | `SelectableCard` · `SelectableCardOn` | PanelContainer | Selectable option card, normal / selected: `SURFACE` + `SELECT_BORDER` `BORDER` / `ACCENT_DIM` + `SELECT_BORDER_ON` `ACCENT`, `CARD_RADIUS`, **padding 0 in both states** (a `MarginContainer` child pads, so content never shifts with the border). Code switches the variation name |
 | `SelectableCardButton` · `SelectableCardButtonOn` | Button | The same card look on a `Button` root (whole card = tap target). Every press state draws the same box; focus empty; font `FONT_BTN_TEXT` `TEXT` |
 | `SelectableTile` · `SelectableTileOn` | Button | Small selectable tab / filter / grid cell: `SELECT_TILE_RADIUS`, border `SELECT_BORDER` / `SELECT_TILE_BORDER_ON`, same fills as the card pair, padding 0. Text `TEXT_SUB` (hover `TEXT`) / `ACCENT_TEXT`, `FONT_BTN_TEXT` |
@@ -1062,7 +1070,7 @@ shows only real value changes.
 
 Not variations (data- or device-dependent, stay in code): tinted cards (`card_style(r, tint)`), lead-bar
 cards (`lead_bar_style(bar)`), chips whose fill is data (`add_chip`, rarity / tier colours), role / rarity
-colours, and the bottom action bar's **device inset** (`fit_bottom_bar` — the bar's shape is the `Bar*`
+colours, and the bottom action bar's **placement + device inset** (`fit_bottom_bar` — the capsule look is the `Bar*`
 variations).
 A card whose padding no variation has: use the variation with a smaller (or no) padding and add a
 `MarginContainer` child for the rest.
@@ -1243,62 +1251,62 @@ The victory panel uses the shared `BattleGoldModal` / `BattleTitleLabel`; its re
 `BattleTextLabel` (48 · 34 overrides), its button `BattleGoldButton` (32).
 
 ### Bottom action bar (`add_bottom_bar`)
-**The main action on an outgame screen is not a shape floating in the middle of the screen but the whole bottom
-zone.** Zero left/right margin, bottom flush to the safe line, square corners — so the bar becomes
-a section of the screen and "everything down here is this action" reads from position alone. With
-several buttons they split that zone **by weight ratio**, and the convention is **primary 2 : secondary 1** with
+**The main action on an outgame screen is a row of floating capsules at the bottom** — the same shape as
+the lobby modals' close capsule (`UI_Comp_FloatingCloseButton`): `BOTTOM_BAR_SIDE` (40) in from both screen
+sides, its bottom `BOTTOM_BAR_LIFT` (32) above the safe line, `BOTTOM_PILL_H` (96) tall, fully rounded, with
+the close capsule's soft drop shadow. The primary slot is the **accent (orange)** capsule, a secondary slot
+(뒤로 · 리그 순위 · 판 비우기 …) the **dark** capsule. With several buttons they split the row **by weight
+ratio** with `BOTTOM_BAR_GAP` (16) between them, the convention being **primary 2 : secondary 1** with
 **the primary at the far right** (where the thumb reaches and where the scanning eye stops last).
 
-Eight screens use it: season hub (`리그 순위` (League standings) 1 / `이번 주 시작 →` (Start this week →) 2) · daily training (일상 훈련)
-(`판 비우기` (Clear board) 1 / `훈련 확정` (Confirm training) 2) · draft (`뒤로` (Back) 1 / `다음` (Next)·`게임 시작` (Start game) 2) ·
-league standings · playoffs · international tournament (국제대회) brackets · time-passing (each a single full-width `확인` (OK)) ·
-ending / game over (a single full-width `정산` (Settle)), lobby (`새 런` 1 / `이어하기` 2, no run → `새 런` full width).
+Users: season hub (`리그 순위` (League standings) 1 / `이번 주 시작 →` (Start this week →) 2) · daily training (일상 훈련)
+(`판 비우기` 1 / `코치 추천` 1 / `훈련 확정` (Confirm training) 2) · draft and the other run-setup steps (`뒤로` (Back) 1 /
+`다음` (Next)·`게임 시작` (Start game) 2) · facility · time-passing · league standings · playoffs · international
+tournament (국제대회) brackets (single full-width `확인` (OK)) · ending / game over (`정산` (Settle)) · match prep ·
+ban/pick assign step · run result · lobby (`새 런` 1 / `이어하기` 2, no run → `새 런` full width; it sits in
+the lobby's `%ActionBar` slot above the nav capsule).
 
-Four conventions.
-- **Derive body height backwards from `bottom_bar_top()`.** If each screen re-wrote the bar height as a constant,
-  every time the bar was touched those screens' lists would quietly slide under the bar.
-- **The colour field extends below the safe line; the text stays above it.** Leaving the home indicator /
-  gesture bar area empty leaves a strip of background colour under the bar, making the bar look like it floats.
-  Stretch the button rectangle down to the viewport bottom but add the inset to `content_margin_bottom`, and
-  Button places the text at the centre of that inner rectangle, so both the press area and the read area
-  are inside the safe area.
-- **Screens whose slots collapse call `layout_bottom_bar` again.** Only visible slots share the weight,
-  so in the draft's PICK state "다음" (Next) uses the full screen width.
-- **Buttons that change outfits stay bar buttons.** Calling `style_dark_button` directly brings back
-  rounded corners and that slot alone pops back up off the screen (the time-passing screen's
-  "경기 시작" (Start match) switches this way). Scene bars switch the variation
-  (`BarPrimaryButton` → `BarDarkButton`) and call `fit_bar_button(b)`; code-built bars call
-  `style_bottom_button` again.
+Conventions.
+- **Derive body height backwards from `bottom_bar_top()`** (= safe height − `BOTTOM_BAR_H`, where
+  `BOTTOM_BAR_H` = capsule + lift = 128). If each screen re-wrote the bar height as a constant, every time
+  the bar was touched those screens' lists would quietly slide under it.
+- **Nothing goes under the safe line.** The capsules stand on it; the device inset only raises the row.
+- **Screens whose slots collapse call `layout_bottom_bar` again** (code bars) — only visible slots share
+  the weight; scene HBox bars re-split by themselves.
+- **Buttons that change outfits stay bar buttons.** Scene bars switch the variation
+  (`BarPrimaryButton` → `BarDarkButton`, the time-passing screen's "경기 시작") and call `fit_bar_button(b)`
+  (clears stale overrides); code-built bars call `style_bottom_button` again. Calling `style_dark_button`
+  directly would bring back the plain rounded-rect button.
 
 #### Scene-built bars (`.tscn`) — `fit_bottom_bar(bar, safe = null)`
-The scene owns the shape: a bottom-wide anchored node (`anchor_top = anchor_bottom = 1`,
-`offset_top = -BOTTOM_BAR_H`, `offset_bottom = 0`) that is either **one `Button`** (single full-width
-slot) or an **`HBoxContainer`** (`separation` 0) of `Button`s split by `size_flags_stretch_ratio`
-(secondary 1 : primary 2, primary right). Each button picks `BarPrimaryButton` / `BarGhostButton` /
-`BarDarkButton` (+ `theme_override_font_sizes/font_size` when not the default); every slot but the
-last gets a `BarSeparator` Panel child. The script adds only the device inset, from `_ready`
-(the scene must be in the tree):
+The scene owns the look: a bottom-wide anchored node (`anchor_top = anchor_bottom = 1`, `anchor_right = 1`;
+preview offsets `40 / -128 / -40 / -32`) that is either **one `Button`** (single full-width capsule) or an
+**`HBoxContainer`** (`separation` = `BOTTOM_BAR_GAP` 16) of `Button`s split by `size_flags_stretch_ratio`
+(secondary 1 : primary 2, primary right). Each button picks `BarPrimaryButton` / `BarDarkButton`
+(+ `theme_override_font_sizes/font_size` when not the default). No separators. The script places it from
+`_ready` (the scene must be in the tree):
 
 ```gdscript
 OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)   # safe is optional: the panel whose bottom = safe line
 ```
 - `safe` (optional): its `offset_bottom` becomes `-bottom_inset()`.
-- The bar's rect becomes *top = safe line - `BOTTOM_BAR_H`, bottom = viewport bottom*: bar inside `safe`
-  (`safe.is_ancestor_of(bar)`) → `offset_top = -BOTTOM_BAR_H`, `offset_bottom = +inset`; otherwise (bar
-  anchored to a parent whose bottom is the viewport bottom) → `offset_top = -(BOTTOM_BAR_H + inset)`,
-  `offset_bottom = 0`. So the bar's parent bottom must be the safe line (inside `safe`) or the viewport
-  bottom (outside).
-- Every `Button` (the bar itself, or its children — hidden ones too) gets `fit_bar_button`: with an inset
-  each state is overridden with `bar_button_styles(kind, inset)` (text lifted above the inset, colour runs
-  under it); with no inset the overrides are removed (the variation is already exact). The variation must
-  be one of `BAR_BUTTON_VARIATIONS` (otherwise a warning and no change).
-- Idempotent — values are set, never added. Call again after switching a slot's variation; toggling a
-  slot's `visible` needs nothing (the HBox re-splits the visible slots by ratio).
+- The bar's rect: `offset_left = BOTTOM_BAR_SIDE`, `offset_right = -BOTTOM_BAR_SIDE`, bottom = safe line −
+  `BOTTOM_BAR_LIFT`, height `BOTTOM_PILL_H`. Inside `safe` (`safe.is_ancestor_of(bar)`) the inset is already
+  paid; otherwise (bar anchored to a parent whose bottom is the viewport bottom) it is added here.
+- Idempotent — values are set, never added. Toggling a slot's `visible` needs nothing.
+A scroll running to the viewport bottom under the capsules also calls `fit_bar_scroll(scroll)` so its scroll bar
+ends above the row.
+
+**Scroll under the capsules** (run setup `ChoiceListView` · `TeamDraftView`): the scroll runs to the viewport bottom,
+its content gets a bottom pad `bar_scroll_pad()` (= `BOTTOM_BAR_H` + 12 + inset) so the last item clears the row, and a
+`%BarShield` Control (mouse Stop, placed between the body and the bar) is sized by `fit_bar_shield(shield)` over the
+capsule zone (full width, `bottom_bar_top()` → viewport bottom): content stays visible behind the capsules but cannot
+be tapped there.
 
 ```gdscript
 # 1 slot — a Button anchored bottom-wide on the screen root (not inside the safe panel):
 OutgameTheme.fit_bottom_bar(%OkButton)
-# 2 slots — HBox %Bar (Back: BarGhostButton + BarSeparator child, Next: BarPrimaryButton, ratio 2) in %SafeArea:
+# 2 slots — HBox %Bar (Back: BarDarkButton, Next: BarPrimaryButton, ratio 2) in %SafeArea:
 OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)
 # a slot that changes kind at runtime:
 btn.theme_type_variation = &"BarDarkButton"
@@ -1306,9 +1314,10 @@ OutgameTheme.fit_bar_button(btn)
 ```
 
 #### Code-built bars — `add_bottom_bar` / `layout_bottom_bar` / `style_bottom_button`
-Kept for the lobby's action bar, whose slots come from each tab's `bar_specs()`.
-`style_bottom_button(b, style, font)` = the `style_<kind>_button` colours + `bar_button_styles(kind, inset)`
-(the same boxes as the `Bar*` variations). Scene-built bars do not call it — they use the variations.
+Kept for the lobby's action bar, whose slots come from each tab's `bar_specs()` (`style` `"primary"` /
+`"ghost"` · `"dark"` (both = dark capsule) / `"danger"`). `layout_bottom_bar` places the visible slots on
+the safe line with the side insets and gaps; `style_bottom_button(b, style, font)` = the `style_<kind>_button`
+colours + `bar_button_styles(kind)` (the same boxes as the `Bar*` variations).
 
 **`add_round_portrait` is not built with `clip_contents`.** That clips by the Control's
 rectangle, not the StyleBox corner radius, so putting a `TextureRect` inside a `Panel`

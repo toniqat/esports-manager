@@ -329,105 +329,97 @@ static func button_box(bg: Color, border: Variant) -> StyleBoxFlat:
 	return sb
 
 
-# ── 하단 액션 바 ─────────────────────────────────────────────────────────────
+# ── Bottom action bar ────────────────────────────────────────────────────────
 #
-# **아웃게임 화면의 주된 행동은 화면 한가운데 떠 있는 도형이 아니라 하단
-# 구간 전체다.** 좌우 여백 없이 화면 끝에서 끝까지, 아래는 안전선에 밀착하고
-# 모서리는 각지게 — 그래서 바가 화면의 한 구획이 되고 "여기 아래는 전부 이
-# 행동"이 자리만으로 읽힌다. 버튼이 여럿이면 그 구간을 **무게 비율대로**
-# 나눠 갖는다(주 행동 2 : 보조 1) — 무엇이 주 행동인지가 색뿐 아니라 폭으로도
-# 읽혀야 하기 때문이다.
+# The main action of an outgame screen sits at the bottom as **floating capsules** — the same
+# shape as the lobby modals' close capsule (`UI_Comp_FloatingCloseButton`): 40 px in from the
+# screen sides, lifted `BOTTOM_BAR_LIFT` above the safe line, fully rounded, with a soft drop
+# shadow. The primary action is the accent (orange) capsule; a secondary slot (뒤로 · 리그 순위 …)
+# is a dark capsule. Several slots split the row **by weight** (primary 2 : secondary 1) with
+# `BOTTOM_BAR_GAP` between them — the primary reads by width as well as colour. The primary
+# goes on the **right** (where the thumb lands and the scan ends).
 #
-# **색면은 안전선 아래까지 내려간다.** 홈 인디케이터 / 제스처 바 자리를 비워
-# 두면 바 밑에 배경색 띠가 한 줄 남아 바가 화면에서 떠 보인다. 그래서 버튼
-# 사각형은 뷰포트 바닥까지 늘리되 **글자는 안전선 위에 남긴다** —
-# `content_margin_bottom` 에 인셋을 얹으면 Button 이 글자를 그 안쪽 사각형
-# 한가운데에 놓으므로, 눌리는 자리와 읽히는 자리가 둘 다 안전 영역 안이다.
+# Nothing reaches under the safe line any more: the capsules stand on it, so the device
+# inset only moves the row up (`fit_bottom_bar` / `layout_bottom_bar`).
 #
-# 화면은 `bottom_bar_top()` 하나만 알면 된다 — 본문 높이를 그 값에서 역산하면
-# 바가 기기마다 오르내려도 내용이 그 밑에 깔리지 않는다.
+# A screen only needs `bottom_bar_top()` — body height derived from it never slides under
+# the row, whatever the device.
 
-## 바의 높이(안전 영역 안쪽 기준). 아래 인셋은 여기에 포함되지 않는다 —
-## 그것은 글자가 아니라 색면만 내려가는 몫이다.
-const BOTTOM_BAR_H: float = 128.0
+## Capsule height.
+const BOTTOM_PILL_H: float = 96.0
+## Gap between the capsules' bottom edge and the safe line (same as the floating close capsule).
+const BOTTOM_BAR_LIFT: float = 32.0
+## Inset from the screen's left / right edge.
+const BOTTOM_BAR_SIDE: float = 40.0
+## Gap between two capsules in one row.
+const BOTTOM_BAR_GAP: float = 16.0
+## Height the row reserves above the safe line (capsule + lift). The device inset is not in it.
+const BOTTOM_BAR_H: float = BOTTOM_PILL_H + BOTTOM_BAR_LIFT
 
-## 구간 사이의 실선. ghost 버튼은 자기 테두리가 이미 경계를 만들지만
-## primary · dark 끼리 붙으면 그 자리가 통짜 색면이 된다.
-const BOTTOM_BAR_SEP: Color = Color(0.110, 0.110, 0.122, 0.14)
 
-
-## **본문이 끝나야 하는 y.** 화면째 `indent_to_safe_top` 으로 내려놓은
-## 좌표계 기준이라 `bottom_y()` 가 아니라 `safe_h()` 에서 뺀다.
+## **y where the body must end**, in the safe-top-indented coordinate system
+## (`indent_to_safe_top`), hence `safe_h()` and not `bottom_y()`.
 static func bottom_bar_top() -> float:
 	return ScreenMetrics.safe_h() - BOTTOM_BAR_H
 
 
-## 하단 바 한 줄을 세운다. `specs` 는 왼쪽부터의 구간 목록이고 한 칸은
-## `{text, style, weight, font}` — `style` 은 `"primary"`(기본) / `"ghost"` /
-## `"dark"` / `"text"`, `weight` 는 구간 폭의 비(기본 1), `font` 는 글자 크기.
-## 주 행동은 **오른쪽 끝**에 둔다(엄지가 닿는 자리이고, 훑는 눈이 마지막에
-## 멎는 자리다).
+## Builds one bottom row in code from `UI_Comp_FloatingBarButton` instances. `specs` lists the slots from the left, each
+## `{text, style, weight, font}` — `style` `"primary"` (default) / `"ghost"` · `"dark"`
+## (both = the dark secondary capsule) / `"danger"`, `weight` = width ratio (default 1),
+## `font` = font size.
 ##
-## 돌려주는 것은 만든 `Button` 배열이다. 상태에 따라 구간이 접히는 화면
-## (드래프트의 "뒤로")은 `visible` 을 끄고 `layout_bottom_bar` 를 다시 부른다.
+## Returns the created `Button`s. A screen that folds a slot away hides it (`visible`) and
+## calls `layout_bottom_bar` again.
 static func add_bottom_bar(parent: Control, specs: Array) -> Array:
 	var out: Array = []
 	for s_raw in specs:
 		var s: Dictionary = s_raw
-		var b := Button.new()
+		var style: String = String(s.get("style", "primary"))
+		var b: Button
+		if style == "danger":
+			b = Button.new()
+			b.focus_mode = Control.FOCUS_NONE
+			style_bottom_button(b, style, int(s.get("font", 34)))
+		else:
+			# The shared capsule scene — its shadow sliders apply here too.
+			b = FloatingBarButton.create()
+			b.theme_type_variation = &"BarDarkButton" if style in ["ghost", "dark"] 					else &"BarPrimaryButton"
+			b.add_theme_font_size_override("font_size", int(s.get("font", 34)))
 		b.text = String(s.get("text", ""))
-		b.focus_mode = Control.FOCUS_NONE
-		style_bottom_button(b, String(s.get("style", "primary")),
-				int(s.get("font", 34)))
 		parent.add_child(b)
 		out.append(b)
-		if out.size() < specs.size():
-			var sep := ColorRect.new()
-			sep.color = BOTTOM_BAR_SEP
-			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			b.add_child(sep)
 	layout_bottom_bar(out, specs)
 	return out
 
 
-## 보이는 구간만 무게 비율대로 다시 늘어놓는다. 마지막 구간의 오른쪽 끝은
-## 반올림 잔차 없이 화면 끝에 정확히 닿는다 — 1px 이라도 남으면 그 틈으로
-## 배경이 비쳐 바가 두 조각으로 보인다.
+## Lays the visible slots out by weight between the side insets, `BOTTOM_BAR_GAP` apart.
+## The last slot's right edge lands exactly on the inset (no rounding remainder).
 static func layout_bottom_bar(buttons: Array, specs: Array) -> void:
-	var vp_w: float = ScreenMetrics.vp_w()
+	var left: float = BOTTOM_BAR_SIDE
+	var right: float = ScreenMetrics.vp_w() - BOTTOM_BAR_SIDE
 	var top: float = bottom_bar_top()
-	var below: float = maxf(0.0, ScreenMetrics.insets().w)
 	var total: float = 0.0
-	for i in buttons.size():
-		if (buttons[i] as Button).visible:
-			total += _bar_weight(specs, i)
-	if total <= 0.0:
-		return
-
-	var x: float = 0.0
-	var used: float = 0.0
+	var shown: int = 0
 	var last: int = -1
 	for i in buttons.size():
 		if (buttons[i] as Button).visible:
+			total += _bar_weight(specs, i)
+			shown += 1
 			last = i
+	if total <= 0.0:
+		return
+
+	var avail: float = right - left - BOTTOM_BAR_GAP * float(shown - 1)
+	var x: float = left
 	for i in buttons.size():
 		var b: Button = buttons[i]
 		if not b.visible:
 			continue
-		var w: float = vp_w - used if i == last \
-				else floorf(vp_w * _bar_weight(specs, i) / total)
+		var w: float = right - x if i == last \
+				else floorf(avail * _bar_weight(specs, i) / total)
 		b.position = Vector2(x, top)
-		b.size     = Vector2(w, BOTTOM_BAR_H + below)
-		for c in b.get_children():
-			var sep := c as ColorRect
-			if sep != null:
-				# 구분선은 그 구간의 **오른쪽** 끝에 선다. 마지막 구간은
-				# 화면 끝이라 선을 세우면 바깥 테두리가 된다.
-				sep.visible = i != last
-				sep.position = Vector2(w - 2.0, 0.0)
-				sep.size     = Vector2(2.0, BOTTOM_BAR_H + below)
-		x   += w
-		used += w
+		b.size     = Vector2(w, BOTTOM_PILL_H)
+		x += w + BOTTOM_BAR_GAP
 
 
 static func _bar_weight(specs: Array, i: int) -> float:
@@ -436,52 +428,55 @@ static func _bar_weight(specs: Array, i: int) -> float:
 	return maxf(0.01, float((specs[i] as Dictionary).get("weight", 1.0)))
 
 
-## 바 한 칸의 옷을 입힌다 — 색을 고르고, 모서리를 각지게 펴고, 안전선 아래로
-## 내려간 몫만큼 글자를 위로 물린다. 스타일박스는 `button_box` 가 호출마다 새로
-## 만든 것이라 여기서 고쳐도 다른 버튼에 번지지 않는다.
+## Dresses one code-built slot as a floating capsule (`bar_button_styles`). The boxes are
+## fresh per call, so editing them never leaks into other buttons.
 ##
-## **바뀌는 버튼은 이 함수를 다시 부른다** — `style_primary_button` 을 직접
-## 부르면 둥근 모서리가 되살아나 그 칸만 화면에서 도로 떠오른다.
+## **A slot that changes kind calls this again** — `style_primary_button` would bring back
+## the plain rounded-rect button.
 ##
-## **코드로 세우는 바(`add_bottom_bar`) 전용이다.** 씬(.tscn)에 놓은 바는 버튼에
-## `Bar*Button` 변형을 고르고 `fit_bottom_bar` 로 기기 인셋만 넣는다.
+## **Code-built rows (`add_bottom_bar`) only.** A row placed in a scene picks a `Bar*Button`
+## variation and calls `fit_bottom_bar`.
 static func style_bottom_button(b: Button, style: String = "primary",
 		font_size: int = 34) -> Button:
 	if b == null:
 		return b
-	var kind: String = style if style in ["ghost", "dark", "text", "danger"] else "primary"
+	var kind: String = style if style in ["dark", "danger"] else "primary"
+	if style == "ghost":
+		kind = "dark"
 	_style_button(b, font_size, kind)
-	var boxes: Dictionary = bar_button_styles(kind, bottom_inset())
+	var boxes: Dictionary = bar_button_styles(kind)
 	for n in BUTTON_STATES:
 		b.add_theme_stylebox_override(n, boxes[n])
 	return b
 
 
-## 아래 인셋(홈 인디케이터 / 제스처 바), 뷰포트 단위 — 없으면 0.
+## Bottom inset (home indicator / gesture bar), in viewport units — 0 when none.
 static func bottom_inset() -> float:
 	return maxf(0.0, ScreenMetrics.insets().w)
 
 
-## 하단 바 한 칸의 상태별 스타일박스 — `button_styles(kind)` 의 모서리를 각지게 펴고
-## 아래 여백에 `below`(색면만 내려가는 인셋 몫)를 얹는다. `below` 0 이 테마 변형
-## `Bar*Button` 의 값이고, `fit_bar_button` · `style_bottom_button` 이 기기 값으로 부른다.
-static func bar_button_styles(kind: String, below: float = 0.0) -> Dictionary:
+## Per-state boxes of one bottom capsule — `button_styles(kind)` fully rounded with the
+## floating close capsule's drop shadow (the disabled state keeps its flat look, no shadow).
+static func bar_button_styles(kind: String) -> Dictionary:
 	var boxes: Dictionary = button_styles(kind)
 	for n in BUTTON_STATES:
 		var sb: StyleBoxFlat = boxes[n]
-		set_corner_radius(sb, 0)
-		sb.content_margin_bottom += below
+		set_corner_radius(sb, 999)
+		if n != "focus" and n != "disabled":
+			sb.shadow_color = Color(SHADOW, 0.30)
+			sb.shadow_size = 18
+			sb.shadow_offset = Vector2(0, 6)
 	return boxes
 
 
-## **씬에 놓은 하단 바의 기기 몫.** 모양(변형 `Bar*Button` · 칸 비율 · 글자 크기 ·
-## 구분선 `BarSeparator`)은 씬이 정하고, 여기서는 아래 인셋만 넣는다:
-##   - `safe` 를 주면 그 판의 아래끝을 안전선으로 올린다(`offset_bottom = -인셋`).
-##   - 바의 사각형: 위끝 = 안전선 - `BOTTOM_BAR_H`, 아래끝 = 뷰포트 바닥.
-##     바가 `safe` 안에 있으면 `offset_bottom = +인셋`, 밖(뷰포트 바닥에 붙은 판)이면
-##     `offset_top = -(BOTTOM_BAR_H + 인셋)`. 바는 아래 넓게 앵커(anchor_top = 1)여야 한다.
-##   - 바 안의 버튼(바가 곧 버튼이면 그 버튼)마다 `fit_bar_button`.
-## 다시 불러도 같은 결과다(값을 더하지 않고 정한다).
+## **Device part of a bottom row placed in a scene.** The look (`Bar*Button` variation,
+## stretch ratios, font size, `BOTTOM_BAR_GAP` separation) is the scene's; this only places it:
+##   - with `safe`, lifts that panel's bottom edge to the safe line (`offset_bottom = -inset`);
+##   - the row: `BOTTOM_BAR_SIDE` in from both sides, bottom edge `BOTTOM_BAR_LIFT` above the
+##     safe line, `BOTTOM_PILL_H` tall. Inside `safe` the inset is already paid; outside
+##     (a panel on the viewport bottom) it is added here. The row must be bottom-wide anchored
+##     (anchor_top = 1, anchor_left 0, anchor_right 1).
+## Calling it again gives the same result (values are set, not added).
 static func fit_bottom_bar(bar: Control, safe: Control = null) -> void:
 	if bar == null:
 		return
@@ -490,35 +485,72 @@ static func fit_bottom_bar(bar: Control, safe: Control = null) -> void:
 	if safe != null:
 		safe.offset_bottom = -below
 		in_safe = safe.is_ancestor_of(bar)
-	bar.offset_top = -BOTTOM_BAR_H - (0.0 if in_safe else below)
-	bar.offset_bottom = below if in_safe else 0.0
-	if bar is Button:
-		fit_bar_button(bar as Button)
+	var lift: float = BOTTOM_BAR_LIFT + (0.0 if in_safe else below)
+	bar.offset_left = BOTTOM_BAR_SIDE
+	bar.offset_right = -BOTTOM_BAR_SIDE
+	bar.offset_bottom = -lift
+	bar.offset_top = -lift - BOTTOM_PILL_H
+
+
+## For a `ScrollContainer` that runs to the viewport bottom under the capsules: its vertical
+## scroll bar (track + grabber travel) stops `bar_scroll_pad()` + 4 above the scroll's bottom,
+## i.e. a little above the capsule row, instead of running down behind it. Call after the scroll
+## is in the tree (theme resolved); calling again gives the same result.
+static func fit_bar_scroll(scroll: ScrollContainer, pad: float = -1.0) -> void:
+	if scroll == null:
 		return
-	for c in bar.get_children():
-		if c is Button:
-			fit_bar_button(c as Button)
+	var vb: VScrollBar = scroll.get_v_scroll_bar()
+	var cut: float = pad if pad >= 0.0 else bar_scroll_pad() + 4.0
+	for n in ["scroll", "scroll_focus"]:
+		vb.remove_theme_stylebox_override(n)
+		var base: StyleBox = vb.get_theme_stylebox(n)
+		var sb: StyleBox = base.duplicate() if base != null else StyleBoxEmpty.new()
+		sb.content_margin_bottom = maxf(0.0, base.get_margin(SIDE_BOTTOM) if base != null else 0.0) + cut
+		if sb is StyleBoxFlat:
+			(sb as StyleBoxFlat).expand_margin_bottom = -cut
+		elif sb is StyleBoxTexture:
+			(sb as StyleBoxTexture).expand_margin_bottom = -cut
+		vb.add_theme_stylebox_override(n, sb)
 
 
-## 바 한 칸의 글자를 인셋만큼 위로 물린다(색면은 인셋 아래까지). 버튼의 변형은
-## `BAR_BUTTON_VARIATIONS` 중 하나여야 한다. **칸의 종류가 바뀌면**(시간 경과의
-## "경기 시작" = `BarDarkButton`) `theme_type_variation` 을 바꾼 뒤 이것을 다시 부른다.
+## Invisible tap blocker over the bottom capsule zone, for screens whose scroll runs under the
+## capsules: full width, from the row's top (`bottom_bar_top()`) to the viewport bottom. Its
+## parent's bottom must be the viewport bottom. Content behind stays visible; taps stop here.
+static func fit_bar_shield(shield: Control) -> void:
+	if shield == null:
+		return
+	shield.anchor_left = 0.0
+	shield.anchor_right = 1.0
+	shield.anchor_top = 1.0
+	shield.anchor_bottom = 1.0
+	shield.offset_left = 0.0
+	shield.offset_right = 0.0
+	shield.offset_top = -BOTTOM_BAR_H - bottom_inset()
+	shield.offset_bottom = 0.0
+	shield.mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+## Bottom padding for a scroll that runs to the viewport bottom under the capsules: the last
+## item can scroll up to 12 px above the row.
+static func bar_scroll_pad() -> float:
+	return BOTTOM_BAR_H + 12.0 + bottom_inset()
+
+
+## Call after a slot switches kind at runtime (시간 경과 "경기 시작" = `BarDarkButton`): a
+## `FloatingBarButton` rebuilds its shadowed boxes from the new variation; a plain Button just
+## drops stale overrides.
 static func fit_bar_button(b: Button) -> void:
 	if b == null:
 		return
-	var v: String = String(b.theme_type_variation)
-	if not BAR_BUTTON_VARIATIONS.has(v):
+	if not BAR_BUTTON_VARIATIONS.has(String(b.theme_type_variation)):
 		push_warning("OutgameTheme.fit_bar_button: %s 의 변형 '%s' 는 Bar*Button 이 아니다"
-				% [b.name, v])
+				% [b.name, b.theme_type_variation])
 		return
-	var below: float = bottom_inset()
-	if below <= 0.0:
-		for n in BUTTON_STATES:
-			b.remove_theme_stylebox_override(n)
+	if b is FloatingBarButton:
+		(b as FloatingBarButton).refresh_style()
 		return
-	var boxes: Dictionary = bar_button_styles(String(BAR_BUTTON_VARIATIONS[v]), below)
 	for n in BUTTON_STATES:
-		b.add_theme_stylebox_override(n, boxes[n])
+		b.remove_theme_stylebox_override(n)
 
 
 # ── 자주 쓰는 조각 ───────────────────────────────────────────────────────────
@@ -667,11 +699,11 @@ const BUTTON_VARIATIONS: Dictionary = {
 	"DangerButton": "danger",
 }
 
-## 하단 바 버튼 변형 이름 → `button_spec` 종류. 위 버튼과 같은 색 · 글자에 모서리 0
-## (`bar_button_styles`) — 바의 칸으로만 쓴다(`fit_bottom_bar`).
+## Bottom-row capsule variation name → `button_spec` kind. Same colours / fonts as the buttons
+## above, drawn as floating capsules (`bar_button_styles`) — only inside a bottom row
+## (`fit_bottom_bar`). The secondary slot is `BarDarkButton`.
 const BAR_BUTTON_VARIATIONS: Dictionary = {
 	"BarPrimaryButton": "primary",
-	"BarGhostButton": "ghost",
 	"BarDarkButton": "dark",
 }
 
@@ -695,8 +727,6 @@ static func build_theme() -> Theme:
 		var kind: String = BAR_BUTTON_VARIATIONS[v]
 		_add_button(th, v, int(button_spec(kind)["font"]), button_spec(kind)["fg"],
 				bar_button_styles(kind))
-	# 바 칸 사이의 2px 세로선 (ColorRect 대신 Panel 에 이 변형).
-	_add_panel(th, "BarSeparator", &"Panel", flat_style(BOTTOM_BAR_SEP, 0), 0.0)
 
 	# 선택형 — 판 전체가 누르는 자리. 상태(일반 / 선택)는 코드가 변형 이름을 바꿔 고른다.
 	_add_panel(th, "SelectableCard", &"PanelContainer",

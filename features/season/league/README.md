@@ -119,7 +119,7 @@ LeagueView (Control, full rect, mouse PASS, theme OutgameTheme)
 │ ├ Header      column captions (순위 · 팀 · 승-패 · 승률 · PO, CaptionLabel 20) + Divider
 │ └ Body        VBox ─ %Rows (VBox, sep 10, LeagueRow ×8 — scene holds one preview row,
 │                       `_ensure_rows` reuses it and instantiates the rest) · HintGap · Hint
-└ %OkButton     BarPrimaryButton, anchored bottom-wide (code: `OutgameTheme.fit_bottom_bar` = bottom inset)
+└ %FloatingBarButton_OkButton     BarPrimaryButton, anchored bottom-wide (code: `OutgameTheme.fit_bottom_bar` = bottom inset)
 ```
 Scene owns: positions, column widths, font sizes / variations, the PO mark colour. Code owns: text,
 row card colours, rank colour, safe-area top indent, bottom-bar inset. The PO mark is `PositiveLabel` 24.

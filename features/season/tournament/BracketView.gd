@@ -32,7 +32,7 @@ func _ready() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
 	_layout_ok_button()
-	%OkButton.pressed.connect(_on_back_pressed)
+	%FloatingBarButton_OkButton.pressed.connect(_on_back_pressed)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 	ensure_view()
@@ -55,11 +55,11 @@ func _resolve_refs() -> void:
 
 ## 버튼은 하나뿐이다("확인") — 주를 넘기는 일은 시간 경과 화면의 일요일
 ## 마감이 가져갔고, 돌아갈 자리는 버튼이 아니라 주 진행 상태가 정한다
-## (`SeasonHub.on_standings_confirmed`). 하나뿐인 행동이라 **하단 구간을 통째로
-## 차지한다** — 자리와 각진 모양은 씬(앵커 · `BarPrimaryButton`)이, 기기 몫(아래
-## 인셋)만 코드가 넣는다(`OutgameTheme.fit_bottom_bar`).
+## (`SeasonHub.on_standings_confirmed`). The only action, so one full-width
+## floating capsule — the look is the scene's (`BarPrimaryButton`), placement + device inset
+## are `OutgameTheme.fit_bottom_bar`.
 func _layout_ok_button() -> void:
-	OutgameTheme.fit_bottom_bar(%OkButton)
+	OutgameTheme.fit_bottom_bar(%FloatingBarButton_OkButton)
 
 
 # ── Refresh ──────────────────────────────────────────────────────────────────
@@ -153,4 +153,4 @@ func _fill_preview() -> void:
 		var winner: int = pid if pid == a or pid == bb else _league.simulate_ai_match(a, bb)
 		_tournament.record_result(slot, winner)
 	s["phase_week"] = int(s["phase_week"]) + 1
-	UiPreview.trace(%OkButton.pressed, "확인")  # l10n-ignore
+	UiPreview.trace(%FloatingBarButton_OkButton.pressed, "확인")  # l10n-ignore

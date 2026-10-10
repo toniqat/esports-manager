@@ -7,9 +7,9 @@ extends Control
 #
 # **레이아웃의 정본은 `UI_View_MatchPrepView.tscn` 이다.** 이 스크립트가 하는 일:
 #   • 안전 영역 — `%Safe` 를 노치만큼 내린다(`Paper` 는 화면 전체를 덮으므로 노치 띠를
-#     따로 메울 필요가 없다). 아래쪽은 `OutgameTheme.fit_bottom_bar(%Start, %Safe)` 가 맡는다 —
-#     `%Safe` 를 아래 인셋만큼 올리고, 하단 바(`BarPrimaryButton`, 모서리 0 은 변형 몫)는
-#     인셋 자리까지 내려가 그 높이만큼 아래 여백을 갖는다(기기 값이라 변형이 아니라 코드).
+#     따로 메울 필요가 없다). 아래쪽은 `OutgameTheme.fit_bottom_bar(%FloatingBarButton_Start, %Safe)` 가 맡는다 —
+#     lifts `%Safe` by the bottom inset and floats the start capsule (`BarPrimaryButton`)
+#     32 px above the safe line, 40 px in from the sides.
 #   • 상대 팀 분석 메모 — `%IntelView_EnemyIntel` 은 `IntelView` 씬 인스턴스(리그 팀 상세와 공용)를
 #     `show_rows = false` · `show_header = false` 로 둔 것: 분석 메모(분석가 썸네일)만 보인다.
 #   • 대진 블록 — 두 팀 로고(`TeamLogos`) · 약칭(`GameManager.team_short_name`).
@@ -36,7 +36,7 @@ static func create() -> MatchPrepView:
 func _ready() -> void:
 	var safe: Control = %Safe
 	safe.offset_top = ScreenMetrics.top_y()
-	var start: Button = %Start
+	var start: Button = %FloatingBarButton_Start
 	OutgameTheme.fit_bottom_bar(start, safe)
 	start.pressed.connect(func() -> void: start_pressed.emit())
 	DragScroll.attach(%Scroll)
@@ -49,7 +49,7 @@ func _ready() -> void:
 
 ## Relabels the bottom bar (Saturday prep: "밴픽 시작" instead of the scene's "경기 시작").
 func set_start_text(text: String) -> void:
-	var start: Button = %Start
+	var start: Button = %FloatingBarButton_Start
 	start.text = text
 
 

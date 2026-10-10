@@ -15,7 +15,7 @@ Godot 4.5-stable, GDScript · 2D mobile portrait 1080×1920 · main scene `res:/
 
 ```
 Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub) ◀──────────┐
-  │  (tabs: 홈 · 컬렉션 · 감독 · 상점 · 패스)     │ week: HUB → TRAINING → WEEK         │
+  │  (nav: 기록 · 컬렉션 · 홈 · 패스 · 상점)     │ week: HUB → TRAINING → WEEK         │
   └──continue─────────────────────────────▶   │ 토 ban/pick · 일 match ▼ → PRESS   │
                                                MatchFlow (PREP → BAN_PICK) ──▶ BattleSim
                                                run over ▶ RunResult ▶ Lobby     (result back)
@@ -46,13 +46,13 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `l10n/` | Localization source CSVs (`src/`), `config.json`, generated `strings_*.csv` · `L.gd` · `refs.json` — text is l10n keys, shown via `Loc.t()` | `data/l10n/README.md` |
 | `features/save_load/` | Profile / run save, autosave points, mid-match resume, test run file | `features/save_load/README.md` |
 | `features/meta/` | Outgame outside a run | `features/meta/README.md` |
-| ↳ `lobby/` | Entry scene = tab host, confirm popup, manager type popup | `features/meta/lobby/README.md` |
+| ↳ `lobby/` | Entry scene = tab host: floating capsule nav, level disc (→ 감독 modal), wallet pills (→ currency shop), confirm popup, manager type popup | `features/meta/lobby/README.md` |
 | ↳ `run_setup/` | Scenario → team → manager preset → 5-pilot lineup (levels, salary cap), `DraftDetailPanel` | `features/meta/run_setup/README.md` |
 | ↳ `run_result/` | Run settlement (`RunResult`), result screen, run balance sim | `features/meta/run_result/README.md` |
 | ↳ `traits/` | Manager traits, bonus points, unlocks (`TraitSystem`) | `features/meta/traits/README.md` |
-| ↳ `manager/` | Manager levels, specialisation, presets, prestige, 감독 tab | `features/meta/manager/README.md` |
+| ↳ `manager/` | Manager levels, specialisation, presets, prestige, 감독 modal (`ManagerPopup` → `ManagerTab`) | `features/meta/manager/README.md` |
 | ↳ `collection/` | 컬렉션 tab: owned pilots, level · rank (★ stars, breakthrough = max rank), rank-up | `features/meta/collection/README.md` |
-| ↳ `shop/` | 상점 / 패스 tabs: gacha, shards, crafting, `PassSystem` | `features/meta/shop/README.md` |
+| ↳ `shop/` | 상점 / 패스 tabs: gacha, shards, crafting, `PassSystem`; currency shop popup (`CurrencyShopPopup`, `currency_products.csv`) | `features/meta/shop/README.md` |
 | `features/season/` | In-run campaign: `SeasonHub` orchestrator, `HubView`, pilot card · detail sheet (`SeasonPilotCard` · `SeasonPilotDetail`), handoffs, playoff / INTL brackets (`tournament/`) | `features/season/README.md` |
 | ↳ `calendar/` | Week clock, weekdays / match days, phase transitions | `features/season/calendar/README.md` |
 | ↳ `press/` | Press conference messenger screen | `features/season/press/README.md` |

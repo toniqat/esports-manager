@@ -85,3 +85,11 @@ tx_SDD8KRGMVC,shop.tab.ex_rank_stone_title,active,ShopTab 교환소 행 제목,,
 tx_CTQ9Z79KG5,shop.tab.ex_rank_stone_desc,active,ShopTab 교환소 행 설명,,,{tx_X43BN649C3} {cost} → {tx_95JG2WTYR0} {gain},{cost} {tx_X43BN649C3} → {gain} {tx_95JG2WTYR0},draft,3e193baa
 tx_AGWHRMH9AR,shop.tab.ex_rank_stone_have,active,ShopTab 교환소 행 보유량,,,보유 {tx_X43BN649C3} {coins} · {tx_95JG2WTYR0} {stones},Owned: {tx_X43BN649C3} {coins} · {tx_95JG2WTYR0} {stones},draft,09dcd9cd
 tx_74MNNANQ3P,shop.tab.toast_rank_stone,active,ShopTab 토스트 — 승급석을 얻었을 때 (교환 · 돌파를 다 채운 선수의 중복),,,{tx_95JG2WTYR0} +{n},{tx_95JG2WTYR0} +{n},draft,d66ed356
+tx_421YYZ77T9,shop.wallet.title,active,로비 우상단 재화 칸을 누르면 뜨는 재화 구매처 팝업 제목,,,재화 구매,Get Currency,draft,b68957d1
+tx_CNC9P5R2BY,shop.wallet.section_exchange,active,재화 구매처 위 칸 제목: 유료 재화를 내고 재화를 받는 상품들,,,{tx_X43BN649C3} 교환,{tx_X43BN649C3} Exchange,draft,fc69bae0
+tx_206ZCN3N04,shop.wallet.section_cash,active,재화 구매처 아래 칸 제목: 현금으로 유료 재화를 사는 상품들,,,{tx_BZBSE52DHH} 구매,Buy {tx_BZBSE52DHH},draft,e51000b1
+tx_M5NTGX8A20,shop.wallet.dev_note,active,재화 구매처 현금 상품 칸 아래 안내,,,개발용: 결제 없이 바로 지급됩니다,"Dev build: granted instantly, nothing is charged",draft,73933ffb
+tx_0HBS4SSM70,shop.wallet.bonus,active,"재화 구매처 상품 칸: 묶음 보너스 수량. n = 1,000 처럼 쉼표 숫자",14,,+{n} 보너스,+{n} bonus,draft,c1bc300b
+tx_VD1519G313,shop.wallet.price_krw,active,"재화 구매처 현금 상품 가격. price = 1,200 처럼 쉼표 숫자",,,₩{price},₩{price},draft,c9a7ef53
+tx_Q5PN94BZDF,shop.wallet.bought,active,"토스트: 재화 구매처 구매 성공. name = 재화 이름, n = 쉼표 숫자",,,{name} {n} 획득,Got {n} {name},draft,9fd2e6e2
+tx_B8CHFX90MS,shop.wallet.unknown_product,active,재화 구매처 규칙 메시지: 상품 id 가 표에 없음,,,판매하지 않는 상품입니다,This item is not on sale,draft,6d65fe18

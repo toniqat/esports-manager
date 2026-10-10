@@ -13,7 +13,8 @@ Manager stats as a whole are `term.stat.manager` (key ref `{tx_…}` inside sent
 | File | Class | Role |
 |---|---|---|
 | `ManagerProgress.gd` | `class_name ManagerProgress extends RefCounted` (static) | Pure rules over the profile dict: levels (`manager_levels.csv`), removal / specialisation points, preset stats + validation, prestige. UI helpers: `level_progress`, `toggle_trait`, `preset_copy` / `store_preset` |
-| `UI_View_ManagerTab.tscn` + `.gd` | `class_name ManagerTab extends Control` | Lobby `감독` tab (header · presets · stats · traits, action bar). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `ManagerTab.create()` (not `.new()`) by `LobbyScreen._make_tab` |
+| `UI_View_ManagerTab.tscn` + `.gd` | `class_name ManagerTab extends Control` | 감독 screen body (header · presets · stats · traits; action bar via its host). **Layout lives in the `.tscn`** (style = `OutgameTheme.tres` variations); built with `ManagerTab.create()` (not `.new()`) by `ManagerPopup.open`. Still speaks the lobby tab contract; `_host` is untyped (`LobbyScreen` or `ManagerPopup`) |
+| `UI_View_ManagerPopup.tscn` + `ManagerPopup.gd` | `class_name ManagerPopup extends Control` | Lobby **감독 modal** (opened by the lobby's top-left level disc): dim + rounded-top sheet (`ManagerPopupSheet`) holding one `ManagerTab` + its own bar `%Use` / `%Save`. It is the tab's host — see **ManagerPopup** below |
 | `UI_Comp_ManagerStatRow.tscn` | — (no script) | Item scene: one 감독 스탯 row (`%Divider`, `%Key`, `%Parts`, `%Final`, `%Remove`, `%Minus` / `%Alloc` / `%Plus`), one per `StaffSystem.STATS`, instanced once in `ManagerTab._ready` |
 | `UI_Comp_TraitPickerView.tscn` + `.gd` | `class_name TraitPickerView extends VBoxContainer` | Trait block shared with the run setup `감독` step: bonus gauge, equipped slots, owned / locked trait rows. `fill(equipped, owned, new_ids)`; emits `trait_pressed(id)` only (the host applies the rule). Placed as a scene instance (`%Traits`) in both hosts; `create()` for code |
 | `UI_Comp_TraitPickerSlot.tscn` | — (no script) | Item scene: one equip slot (`%Frame` button: `%Strip` · `%Name` · `%Cost`; `%Empty` "빈 칸"), equal widths in `%Slots` |
@@ -40,12 +41,32 @@ Each level-up = `MANAGER_REMOVE_PER_LEVEL` removal points; one removal = `MANAGE
 re-chosen, presets → `kind = "prestige"` (unusable until `reset_preset`), `PRESTIGE_NEW_PRESETS` normal presets (`{presets}` in `manager.tab.prestige_body`) (≤
 `PRESET_MAX_COUNT`), `PRESTIGE_REWARD_*` currency. Mutators don't save — the screen calls `save_profile()`.
 
-## Lobby `감독` tab (`ManagerTab`)
+## ManagerPopup (lobby 감독 modal)
+The 감독 screen is no longer a lobby tab: `LobbyScreen.open_manager()` (tap on the top-left level disc) creates one
+`ManagerPopup` lazily (a plain Control child of the lobby, added after the bottom bars) and calls `open(lobby)`.
+```
+ManagerPopup (Control, full rect, theme)
+├ %DimRect (DimPanel) · %Dim (flat Button — tap = close)       both extended under the notch
+└ %Sheet (Panel ManagerPopupSheet, offset_top 72, to the screen bottom; slides up 25 % + fades in)
+  ├ Title (TitleLabel, `term.person.manager`) · %Close (GhostButton, `ui.button.close`)
+  ├ %Body (y 112 .. bar top − 16, clip) ← ManagerTab, full rect, created on the first open
+  └ %Bar (HBox sep 16, 24 px sides; 112 high, 24 + inset above the bottom) ─ %Use GhostButton 28 (1) · %Save PrimaryButton 32 (1.4)
+```
+- **Host contract** (same as `LobbyScreen` — header of `LobbyScreen.gd`): `bar_buttons()` = `[%Use, %Save]`,
+  `rebuild_bar()` copies texts from `ManagerTab.bar_specs()` (the tab sets enabled states in `_refresh_bar`),
+  `relayout_bar()` no-op; `show_toast` · `refresh_currency` · `refresh_badges` · `set_tab_badge` · `open_confirm`
+  are forwarded to the lobby. The lobby `%Toast` (z 5) floats over the sheet; `ConfirmPopup` and the prestige
+  `ManagerTypePopup` are CanvasLayers above it.
+- `open` → `ManagerTab.on_shown()` every time (NEW traits list, badge clear). `close()` emits `closed`; the lobby
+  then refreshes the wallet / level disc / badges and the current tab. Unsaved draft edits survive closing.
+- F6: opens without a lobby (toasts print); `%Use` / `%Save` only print.
+
+## 감독 screen body (`ManagerTab`)
 Scene-authored (`docs/ui_scene_migration.md`); every change refills the same nodes (`_rebuild`), so the
 scroll position stays. Every tap target inside is a `MOUSE_FILTER_PASS` Button
 (`docs/mobile_safe_area.md` §5).
 ```
-ManagerTab (Control, theme = OutgameTheme.tres, preview 1080×1568 — host sets position / size)
+ManagerTab (Control, theme = OutgameTheme.tres, preview 1080×1568 — ManagerPopup sets it full rect in %Body)
 └ %Scroll (v-mode Never: no bar, DragScroll drags) ─ DragScroll · %Body (Margin 24 / 24 / 24 / 40)
   └ Sections (VBox, separation 28)
     ├ Header (MarginContainer, min h 236) ─ Bg (Panel · Card) + Pad (Margin 28 / 28) ─ Content (anchored):

@@ -1,7 +1,8 @@
 class_name ManagerTab
 extends Control
 
-# Lobby tab — 감독 (Manager). Tab contract: header of `features/meta/lobby/LobbyScreen.gd`;
+# 감독 (Manager) screen body, shown in the lobby 감독 modal (`ManagerPopup`, its host). Tab
+# contract: header of `features/meta/lobby/LobbyScreen.gd`;
 # scope: plan §12 (work C), rules: `ManagerProgress` / `TraitSystem`.
 #
 #   ┌ header card — type · Lv · EXP bar · prestige count · [프레스티지] ┐
@@ -29,7 +30,7 @@ const STAT_ROW_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp
 ## Order of the prestige reward items (profile currency keys).
 const REWARD_ORDER: Array = ["outgame", "gacha_ticket_pilot", "gacha_ticket_trait"]
 
-var _host: LobbyScreen
+var _host = null     # LobbyScreen or ManagerPopup (duck-typed host services)
 var _pm: Node
 var _type_popup: ManagerTypePopup = null
 
@@ -77,7 +78,7 @@ func bar_specs() -> Array:
 	]
 
 
-func setup(host: LobbyScreen) -> void:
+func setup(host: Node) -> void:
 	_host = host
 	_pm = get_node("/root/ProfileManager")
 

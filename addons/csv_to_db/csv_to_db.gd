@@ -49,6 +49,8 @@ const SCHEMAS: Dictionary = {
 	"mech_upgrades": {"req": ["id","mech_id","level","target","param","card_id","value","desc_key"], "pk": "id"},
 	"gacha_rates":   {"req": ["id","pool","rarity","weight"], "pk": "id"},
 	"pass_rewards":  {"req": ["level","currency","amount"], "pk": "level"},
+	# Lobby currency shop popup — premium → outgame bundles, dev cash → premium packs
+	"currency_products": {"req": ["id","section","price_currency","price","gain_currency","amount","bonus"], "pk": "id"},
 	# §14 (기벽 · 재무 특별 지출) — 계약: docs/outgame_dev_plan.md §14
 	"quirks":        {"req": ["id","name_key","grade","stats","cond","cond_stats","weight","desc_key"], "pk": "id"},
 	"finance_specials": {"req": ["id","name_key","kind","cost","p1","p2","weeks","cond","desc_key"], "pk": "id"},
@@ -430,6 +432,17 @@ const TABLE_DEFS: Dictionary = {
 		"level":    {"data_type": "int",  "primary_key": true, "not_null": true},
 		"currency": {"data_type": "text", "not_null": true},
 		"amount":   {"data_type": "int",  "not_null": true},
+	},
+	# Lobby currency shop (`ShopCatalog.currency_products`): `section` exchange | cash,
+	# `price_currency` premium | krw (krw = dev purchase, nothing is charged).
+	"currency_products": {
+		"id":             {"data_type": "int",  "primary_key": true, "not_null": true},
+		"section":        {"data_type": "text", "not_null": true},
+		"price_currency": {"data_type": "text", "not_null": true},
+		"price":          {"data_type": "int",  "not_null": true},
+		"gain_currency":  {"data_type": "text", "not_null": true},
+		"amount":         {"data_type": "int",  "not_null": true},
+		"bonus":          {"data_type": "int",  "not_null": true},
 	},
 	# §15 A — mech upgrades (돌파형): reaching mastery `level` (3 / 4 / 5) on `mech_id`
 	# unlocks this step (cumulative). `target` passive → `param` (p1 | p2) of the mech's

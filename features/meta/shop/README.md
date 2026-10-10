@@ -16,7 +16,9 @@ Currency names inside sentences are `{tx_…}` references to `term.currency.*` /
 | File | Class | Role |
 |---|---|---|
 | `Gacha.gd` | `class_name Gacha extends RefCounted` (static) | Gacha rules + the one pull action: rates (`gacha_rates.csv`), named-pilot / trait buckets (`named_pilots` rows carry `name_key`; `pilot_name(id)` = `Loc.t`), tier roll, cost, `pull(pm, pool, count, rng, save)`, `rank_stone_total(results)` |
-| `ShopCatalog.gd` | `class_name ShopCatalog extends RefCounted` (static) | Fixed-price actions: shard purchase, trait craft, outgame → levelup / rank stone exchange, premium → tickets, dev premium grant. Do not save |
+| `ShopCatalog.gd` | `class_name ShopCatalog extends RefCounted` (static) | Fixed-price actions: shard purchase, trait craft, outgame → levelup / rank stone exchange, premium → tickets, dev premium grant; **currency shop** rows (`currency_products(section)` / `currency_product(id)` over `currency_products.csv`, `buy_currency_product(pm, id)` — `krw` price = dev purchase, nothing is charged). Do not save |
+| `CurrencyShopPopup.gd` · `UI_View_CurrencyShopPopup.tscn` | `class_name CurrencyShopPopup extends Control` | Lobby **currency shop** (opened by the top-right wallet pills) — see **CurrencyShopPopup** below. Owns `CURRENCY_ICONS` / `currency_icon(key)` (outgame coin, premium gem — the lobby wallet uses them too) |
+| `UI_Comp_CurrencyShopProduct.tscn` | *(no script)* | One product tile (Button `CurrencyShopTile`, h 268): `%Icon` · `%Amount` · `%Bonus` · `%Price` (`%PriceIcon` · `%PriceText`) |
 | `PassSystem.gd` | `class_name PassSystem extends RefCounted` (static) | Weekly pass rules over the profile dict: ISO-week reset (device clock, local time), exp → level, overflow → outgame currency, `pass_rewards.csv`, `claim` / `claim_all` |
 | `ShopTab.gd` · `UI_View_ShopTab.tscn` | `class_name ShopTab extends Control` | 상점 tab — segmented control (선수 영입 · 특성 연구 · 파편 상점 · 특성 제작 · 교환소), no action bar — see **ShopTab · PassTab scenes** below |
 | `UI_Comp_ShopRateChip.tscn` · `UI_Comp_ShopShardRow.tscn` · `UI_Comp_ShopCraftRow.tscn` · `UI_Comp_ShopExchangeRow.tscn` | *(no script)* | ShopTab items: banner rate pill · 파편 상점 row (`%PositionBadge_Position` = `PositionBadge`) · 특성 제작 row · 교환소 row, filled by `ShopTab` |
@@ -35,6 +37,26 @@ to only print (`UiPreview.mute`).
   profile change), every list-row `%Buy` and the dev grant only print.
 - `PassTab` — real profile's week (week roll-over in memory only); `수령` only prints.
 - `ShopPopup` — a 10-pull reveal (NEW · 돌파 · 파편 · 재료). `ShopRevealItem` — one 돌파 2 card.
+
+## CurrencyShopPopup
+`LobbyScreen.open_wallet()` creates one lazily (plain Control child of the lobby — the lobby toast floats over it)
+and calls `open(lobby)`; `close()` emits `closed`.
+```
+CurrencyShopPopup (Control, full rect, theme)
+├ %DimRect · %Dim (tap = close)            extended under the notch
+└ %Center (CenterContainer, top 24 / bottom −40 − inset) ─ Card (PopupCardWide, min w 1000)
+  └ VBox ─ Head (Title `shop.wallet.title` · %Close) · ExchangeTitle `shop.wallet.section_exchange`
+          · %ExchangeGrid (3 cols, 16 / 16, 6 preview tiles) · CashTitle `shop.wallet.section_cash`
+          · %CashGrid (3 cols) · Note `shop.wallet.dev_note` (FaintLabel)
+```
+- Rows: `currency_products.csv` — `section` `exchange` (premium → outgame bundles) / `cash` (KRW → premium packs),
+  `amount` **includes** `bonus`. Tile = gain icon, `Loc.grouped(amount)`, `shop.wallet.bonus` (empty when 0, line keeps
+  its height), price pill: premium = `CurrencyShopPrice` (sunk) + gem + number, KRW = `CurrencyShopPriceCash`
+  (ACCENT) + `shop.wallet.price_krw` in `OnFillLabel`.
+- Tap = buy at once: `ShopCatalog.buy_currency_product` → `save_profile()` → SUCCESS haptic + lobby toast
+  `shop.wallet.bought` + `lobby.refresh_currency()`. Not enough premium → red toast (`shop.catalog.not_enough_premium`).
+  KRW products never charge anything (dev build) — they just add the premium amount.
+- F6: opens with the real table; taps only print.
 
 ## ShopPopup scene
 Layout is authored in the `.tscn` files (`docs/ui_scene_migration.md`); scripts only bind `%` nodes.

@@ -950,6 +950,12 @@ tx_JBCN4AT26F,감독 레벨과 감독 능력치 제거가 초기화됩니다.
 tx_DQC9ZE38ES,유형을 고르세요
 tx_XPFT0WY8DB,{type} 감독으로 시작
 tx_K1ZQ410BJ2,{type} 감독으로 프레스티지
+tx_V8Y87ZCZD2,RECORD
+tx_PGD2RKHT6C,PILOT
+tx_3M4BE5GPXC,HOME
+tx_28F8XG4H78,PASS
+tx_MK3GPRAY5Y,SHOP
+tx_VPTW1MTX4D,Lv
 tx_J99WKD5PN8,운영형
 tx_KQSXCRDMQT,실전형
 tx_T2Z72WAY5Q,조직 운영에 밝은 감독. 관리 · 멘탈 쪽으로 조금 기운 고른 분배
@@ -2436,6 +2442,14 @@ tx_SDD8KRGMVC,승급석 교환
 tx_CTQ9Z79KG5,재화 {cost} → 승급석 {gain}
 tx_AGWHRMH9AR,보유 재화 {coins} · 승급석 {stones}
 tx_74MNNANQ3P,승급석 +{n}
+tx_421YYZ77T9,재화 구매
+tx_CNC9P5R2BY,재화 교환
+tx_206ZCN3N04,유료 재화 구매
+tx_M5NTGX8A20,개발용: 결제 없이 바로 지급됩니다
+tx_0HBS4SSM70,+{n} 보너스
+tx_VD1519G313,₩{price}
+tx_Q5PN94BZDF,{name} {n} 획득
+tx_B8CHFX90MS,판매하지 않는 상품입니다
 tx_6C29X8HMEF,능력치
 tx_E7KJ6CX53P,유효값 = 그 능력치를 쓰는 시설에 앉은 사람의 값 (시설이 여럿이면 최댓값)
 tx_JZ767X3S8Y,일시 보정

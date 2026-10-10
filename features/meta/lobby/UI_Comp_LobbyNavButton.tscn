@@ -1,0 +1,59 @@
+[gd_scene load_steps=2 format=3 uid="uid://dams6eewp47pi"]
+
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/nav_home.svg" id="1_icon"]
+
+[node name="LobbyNavButton" type="Button"]
+editor_description = "One cell of the lobby floating nav capsule. Transparent (flat) — the sliding white selector pill is a sibling under the cells (LobbyScreen %NavSelector). LobbyScreen sets the icon, the caption text, the icon / caption colours (selected = dark on the white pill) and caption visibility."
+custom_minimum_size = Vector2(0, 108)
+size_flags_horizontal = 3
+focus_mode = 0
+flat = true
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Content"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_nav_buttons() · _paint_nav()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+texture = ExtResource("1_icon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Caption" type="Label" parent="Content"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_nav_buttons() · _paint_nav()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 17
+text = "HOME"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Badge" type="ColorRect" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_nav_buttons()"
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 22.0
+offset_top = 20.0
+offset_right = 36.0
+offset_bottom = 34.0
+mouse_filter = 2
+color = Color(0.878, 0.271, 0.271, 1)

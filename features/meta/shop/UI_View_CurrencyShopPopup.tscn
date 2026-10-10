@@ -1,0 +1,187 @@
+[gd_scene load_steps=4 format=3 uid="uid://kn6q2jyu3dvw"]
+
+[ext_resource type="Script" path="res://features/meta/shop/CurrencyShopPopup.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/meta/shop/UI_Comp_CurrencyShopProduct.tscn" id="3_tile"]
+
+[node name="CurrencyShopPopup" type="Control"]
+editor_description = "Lobby currency shop (opened by the top-right wallet pills). Top: premium → coin bundles; bottom: dev cash → premium packs. Each section is a 3 × 2 grid of CurrencyShopProduct tiles. A Control child of the lobby so the lobby toast (z 5) floats over it."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="DimRect" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd open() (extended under the notch)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="Dim" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _ready() (tap outside the card = close)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Center" type="CenterContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd open() (bottom offset = −40 − device inset)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 24.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(1000, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCardWide"
+
+[node name="VBox" type="VBoxContainer" parent="Center/Card"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Head" type="HBoxContainer" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Center/Card/VBox/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+text = "tx_421YYZ77T9"
+vertical_alignment = 1
+
+[node name="Close" type="Button" parent="Center/Card/VBox/Head"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _ready()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 64)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "tx_R1DMEF1S3E"
+
+[node name="Gap0" type="Control" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ExchangeTitle" type="Label" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_CNC9P5R2BY"
+vertical_alignment = 1
+
+[node name="Gap1" type="Control" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ExchangeGrid" type="GridContainer" parent="Center/Card/VBox"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill() (section exchange — one tile per currency_products row)"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 3
+
+[node name="CurrencyShopProduct_Exchange0" parent="Center/Card/VBox/ExchangeGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Exchange1" parent="Center/Card/VBox/ExchangeGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Exchange2" parent="Center/Card/VBox/ExchangeGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Exchange3" parent="Center/Card/VBox/ExchangeGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Exchange4" parent="Center/Card/VBox/ExchangeGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Exchange5" parent="Center/Card/VBox/ExchangeGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="Gap2" type="Control" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CashTitle" type="Label" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "tx_206ZCN3N04"
+vertical_alignment = 1
+
+[node name="Gap3" type="Control" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CashGrid" type="GridContainer" parent="Center/Card/VBox"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill() (section cash — one tile per currency_products row)"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 3
+
+[node name="CurrencyShopProduct_Cash0" parent="Center/Card/VBox/CashGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Cash1" parent="Center/Card/VBox/CashGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Cash2" parent="Center/Card/VBox/CashGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Cash3" parent="Center/Card/VBox/CashGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Cash4" parent="Center/Card/VBox/CashGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="CurrencyShopProduct_Cash5" parent="Center/Card/VBox/CashGrid" instance=ExtResource("3_tile")]
+layout_mode = 2
+
+[node name="Gap4" type="Control" parent="Center/Card/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Note" type="Label" parent="Center/Card/VBox"]
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+text = "tx_M5NTGX8A20"
+horizontal_alignment = 1

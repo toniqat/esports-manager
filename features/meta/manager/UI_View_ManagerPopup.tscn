@@ -1,0 +1,135 @@
+[gd_scene load_steps=3 format=3 uid="uid://dxn25wfuxsacp"]
+
+[ext_resource type="Script" path="res://features/meta/manager/ManagerPopup.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="ManagerPopup" type="Control"]
+editor_description = "Lobby 감독 modal (opened by the top-left level disc). A Control child of the lobby (not a CanvasLayer) so the lobby toast (z 5) floats over it; ConfirmPopup / ManagerTypePopup are CanvasLayers above. Hosts ManagerTab in %Body and is its host (tab contract) — own action bar %Use / %Save."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="DimRect" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (extended under the notch)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="Dim" type="Button" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _ready() (tap outside the sheet = close)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Sheet" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (slides up). Rounded-top sheet down to the screen bottom; 72 px gap above shows the dim."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 72.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"ManagerPopupSheet"
+
+[node name="Title" type="Label" parent="Sheet"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 20.0
+offset_right = -220.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_type_variation = &"TitleLabel"
+text = "tx_PR6YFXCW5G"
+vertical_alignment = 1
+
+[node name="Close" type="Button" parent="Sheet"]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -192.0
+offset_top = 28.0
+offset_right = -32.0
+offset_bottom = 92.0
+grow_horizontal = 0
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "tx_R1DMEF1S3E"
+
+[node name="Body" type="Control" parent="Sheet"]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (ManagerTab goes here, full rect). Bottom offset = above %Bar (code adds the device inset)."
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 112.0
+offset_bottom = -152.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Bar" type="HBoxContainer" parent="Sheet"]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _fit_safe_area(). The tab's action bar: [이 프리셋 사용 (1) | 저장 (1.4)]."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -136.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 16
+
+[node name="Use" type="Button" parent="Sheet/Bar"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd bar_buttons() (index 0)"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 28
+text = "tx_6ZMPGY904G"
+
+[node name="Save" type="Button" parent="Sheet/Bar"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd bar_buttons() (index 1)"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.4
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 32
+text = "tx_VP2K42B9Z4"

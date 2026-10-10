@@ -15,11 +15,12 @@ Two layers of state (plan §2.1):
 | `run_setup/` | M1 ✅ M9 ✅ | Run setup (`scenes/RunSetup.tscn`): scenario → team → manager preset (traits) → 5-pilot lineup (collection rank + level, salary cap) → `GameManager.start_run` → `Season.tscn` → `run_setup/README.md` |
 | `run_result/` | M2 | Run-end settlement (`RunResult.settle_current_run`: score, currency, manager EXP, MVP/POM achievements → profile) + result screen `scenes/RunResult.tscn` → `run_result/README.md` |
 | `traits/` | M8 | `TraitSystem` — trait table, bonus points, run-time effect reads, unlocks → `traits/README.md` |
-| `manager/` | M9 ✅ | `ManagerProgress` (levels, removal / specialisation, presets, prestige) + lobby `감독` tab → `manager/README.md` |
+| `manager/` | M9 ✅ | `ManagerProgress` (levels, removal / specialisation, presets, prestige) + lobby `감독` modal (`ManagerPopup` → `ManagerTab`, opened from the level disc) → `manager/README.md` |
 | `collection/` | M10 | Lobby `컬렉션` tab — pilots, levels, breakthroughs → `collection/README.md` |
 | `shop/` | M10 | `PassSystem` + lobby `상점` / `패스` tabs (gacha, shards, crafting, pass) → `shop/README.md` |
 
-The lobby is a **tab host** (홈 · 컬렉션 · 감독 · 상점 · 패스) — tab contract in `lobby/README.md`.
+The lobby is a **tab host** with a floating capsule nav (기록 (locked) · 컬렉션 · 홈 · 패스 · 상점), a level disc
+(→ 감독 modal) and wallet pills (→ currency shop popup, `shop/`) — tab contract in `lobby/README.md`.
 
 표시 텍스트는 l10n key — domains `lobby` · `settings` · `run_setup` · `run_result` · `trait` (+ shared `ui` · `term`),
 per submodule README.

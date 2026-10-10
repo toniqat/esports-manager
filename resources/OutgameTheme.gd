@@ -973,8 +973,37 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "FacilityViewToast", &"SurfaceChip", flat_style(RAIL, 34))
 
 	# meta/lobby — 로비
-	_add_derived(th, "LobbySurfaceBar", &"Card", flat_style(SURFACE, 0))
 	_add_derived(th, "LobbyToast", &"SurfaceChip", flat_style(RAIL, 34))
+	# Floating nav capsule (dark pill + shadow) and the white inner selector pill that slides.
+	var nav := flat_style(RAIL, 999)
+	nav.shadow_color = Color(SHADOW, 0.30)
+	nav.shadow_size = 18
+	nav.shadow_offset = Vector2(0, 6)
+	_add_derived(th, "LobbyNavCapsule", &"Card", nav)
+	_add_derived(th, "LobbyNavSelector", &"Card", flat_style(SURFACE, 999))
+	# Top-left manager level disc (the radial EXP ring is a TextureProgressBar on top).
+	_add_derived(th, "LobbyLevelDisc", &"Card", flat_style(RAIL, 999))
+	# Top-right wallet: translucent black pill per currency (whole pill = button) + the
+	# accent "+" disc on the premium one.
+	var pill: Dictionary = {}
+	for n in BUTTON_STATES:
+		pill[n] = flat_style(Color(0, 0, 0, 0.62 if n in ["pressed", "hover_pressed"] else 0.5), 999)
+	pill["focus"] = button_box(Color(0, 0, 0, 0), null)
+	_add_button(th, "LobbyCurrencyPill", FONT_BODY, TEXT_ON_FILL, pill)
+	_add_derived(th, "LobbyCurrencyPlus", &"Card", flat_style(ACCENT, 999))
+
+	# meta/manager — 감독 modal sheet (rounded top, runs to the screen bottom; BG so the
+	# tab's white cards stand out).
+	var mgr_sheet := flat_style(BG, SHEET_RADIUS)
+	mgr_sheet.corner_radius_bottom_left = 0
+	mgr_sheet.corner_radius_bottom_right = 0
+	_add_derived(th, "ManagerPopupSheet", &"Card", mgr_sheet)
+
+	# meta/shop — currency shop popup: product tile (white card button) + its price pill.
+	_add_button(th, "CurrencyShopTile", FONT_BTN_TEXT, TEXT,
+			_selectable_states(false, CARD_RADIUS, SELECT_BORDER_ON))
+	_add_derived(th, "CurrencyShopPrice", &"SunkPanel", flat_style(SURFACE_SUNK, 999))
+	_add_derived(th, "CurrencyShopPriceCash", &"SunkPanel", flat_style(ACCENT, 999))
 
 	# --- B week UI rework ---
 	# season — the round black masks over a stat gauge ring (`UI_Comp_PilotGauge` %Mask, ring

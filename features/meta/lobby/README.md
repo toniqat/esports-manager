@@ -1,20 +1,22 @@
 # Lobby
 
 Project entry point — `scenes/Lobby.tscn` (`run/main_scene`). White outgame
-theme (`OutgameTheme`), bottom action bar. Replaces the old 3-slot TitleScreen
+theme (`OutgameTheme`): floating top bar (manager level disc · wallet pills), tab body, optional
+action bar, **floating capsule nav** at the bottom. Replaces the old 3-slot TitleScreen
 (save structure is now profile 1 + run 1 — `features/save_load/README.md`).
 
-표시 텍스트는 l10n key (`lobby` · `settings` 도메인 + 공유 `ui` · `term`). `TABS` / `CURRENCY_STRIP` `label`
-values are keys (the strip reuses `term.currency.{outgame,gacha_ticket_pilot,gacha_ticket_trait}`; only the
-shortened `lobby.currency.levelup` · `pilot_shard` captions are lobby keys) (`Loc.t` when drawn — other screens reading `CURRENCY_STRIP` must do the same). Scene nodes
-the scripts fill carry `auto_translate_mode = 2` (preview text stays); fixed captions hold key literals.
+표시 텍스트는 l10n key (`lobby` · `settings` 도메인 + 공유 `ui` · `term`). `TABS` `caption` values are keys
+(`lobby.nav.*` — English upper-case in every locale: RECORD · PILOT · HOME · PASS · SHOP), `Loc.t` when drawn.
+The level disc caption is `lobby.level.caption` ("Lv"). Scene nodes the scripts fill carry `auto_translate_mode = 2`
+(preview text stays); fixed captions hold key literals. Old `lobby.tab.*` / `lobby.currency.{levelup,pilot_shard}`
+are `deprecated`.
 
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): currency strip, tab bar, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
-| `UI_Comp_LobbyCurrencyCell.tscn` | — (no script, `VBoxContainer`) | One cell of the currency strip (`%Caption` · `%Value`) — item scene, one per `CURRENCY_STRIP` row |
-| `UI_Comp_LobbyTabButton.tscn` | — (no script, flat `Button`) | One tab of the tab bar + its red `%Badge` dot — item scene, one per `TABS` row |
+| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
+| `UI_Comp_LobbyCurrencyPill.tscn` | — (no script, `Button` `LobbyCurrencyPill`) | One wallet pill: `%Icon` · `%Value` (right-aligned, `Loc.grouped` commas) · `%Plus` (accent "+" disc) — item scene, one per `WALLET` row; the whole pill opens the currency shop |
+| `UI_Comp_LobbyNavButton.tscn` | — (no script, flat `Button`) | One cell of the capsule nav: `%Icon` (52, white SVG tinted by `self_modulate`) · `%Caption` (17, shown only when selected) · red `%Badge` — item scene, one per `TABS` row |
 | `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
 | `UI_View_ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
 | `UI_View_ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
@@ -37,56 +39,76 @@ to only print (`UiPreview.mute`).
 
 ## Tab host (M8~M10) — `docs/outgame_dev_plan.md` §12.6
 ```
-┌ currency strip (%CurrencyStrip) — outgame · levelup · tickets · shards ┐
-│ tab body (current tab's Control)                                   │
-├ action bar (only when the tab's bar_specs() is non-empty)          ┤
-└ tab bar (홈 · 컬렉션 · 감독 · 상점 · 패스), extends into the bottom inset ┘
+┌ top bar (%TopBar, no plate) — (Lv disc)                 [coin 1,234][gem 56 (+)] ┐
+│ tab body (current tab's Control)                                                │
+├ action bar (only when the tab's bar_specs() is non-empty)                       ┤
+└   ( RECORD · PILOT · HOME · PASS · SHOP )  floating capsule nav, icons only      ┘
 ```
-- `TABS` is the one table; `_make_tab(id)` builds each tab with its `create()` (`HomeTab` / `CollectionTab` /
-  `ManagerTab` / `ShopTab` / `PassTab` — all scene-based) lazily on first open, adds it under `%Tabs`, then hides / shows.
-- **Tab rect** (`_place_tab`): anchors full rect, `offset_top` = `%CurrencyStrip`'s height, `offset_bottom` =
-  top of `%ActionBar` (tab has a bar) or `%TabBar` (no bar) — read from the scene's offsets, so resizing a
-  bar in the editor moves the tab bodies with it. Set before `setup(host)`, so tabs can read `size` there.
+- `TABS` is the one table (left → right: `record` (locked) · `collection` · `home` · `pass` · `shop`, each with
+  `caption` key + `icon` file in `resources/images/ui/lobby/`). `_make_tab(id)` builds each tab with its `create()`
+  (`HomeTab` / `CollectionTab` / `ShopTab` / `PassTab` — all scene-based) lazily on first open, adds it under `%Tabs`,
+  then hides / shows. The lobby opens on `home` (the centre cell).
+- **Locked cell** (`locked: true` — 기록): icon at `NAV_ICON_LOCKED`, button disabled + `MOUSE_FILTER_IGNORE` — no
+  reaction at all (no haptic, selector stays). `switch_tab` also refuses it.
+- **Selector** (`%NavSelector`, white pill under the cells): `_move_selector(animate)` puts it on the current cell's
+  rect (`%NavButtons.position + button.position`, button size) — tweened `SELECTOR_SEC` (cubic ease-out) on a tab
+  switch, snapped on every `%NavButtons.sort_children` (first layout, resize). `_paint_nav` tweens each icon's
+  `self_modulate` (selected = `NAV_ICON_ON` dark on the white pill, else `NAV_ICON_OFF`) and shows only the selected
+  cell's `%Caption`.
+- **감독 = modal, not a tab**: `%LevelButton` (top-left disc) → `open_manager()` → `ManagerPopup` (lazy, child of the
+  lobby, `../manager/README.md`). `%LevelBadge` = unseen unlocked traits (`refresh_badges`, `set_tab_badge("manager")`).
+- **Level disc** (`refresh_level`, called by `refresh_currency`): `%LevelValue` = manager level, `%LevelRing`
+  (`TextureProgressBar`, radial clockwise, 0..1) = EXP inside the level (`ManagerProgress.level_progress`; full at max).
+- **Wallet** (`WALLET` = `outgame`, `premium` + `plus`): pills show `Loc.grouped(amount)`; icons from
+  `CurrencyShopPopup.currency_icon(key)`. Any pill → `open_wallet()` → `CurrencyShopPopup` (`../shop/README.md`).
+  Other currencies are no longer in the lobby header (shop / collection screens show them).
+- Modal close (`closed`) → `_on_modal_closed`: `refresh_currency` · `refresh_badges` · current tab `on_shown`.
+- **Tab rect** (`_place_tab`): anchors full rect, `offset_top` = `%TopBar`'s bottom, `offset_bottom` = top of
+  `%ActionBar` (tab has a bar) or `%NavBar` (no bar) — read from the scene's offsets.
 - Tab duck-typed contract: `bar_specs() -> Array` (fixed has-bar / no-bar per tab), `setup(host)`,
   `on_bar_pressed(i)`, `on_shown()` (every activation — redraw from the profile).
-- Host services: `show_toast(msg, is_error)`, `refresh_currency()`, `rebuild_bar()` / `relayout_bar()` /
-  `bar_buttons()`, `switch_tab(id)`, `set_tab_badge(id, on)` / `refresh_badges()` (감독 = unseen
-  unlocked traits), `open_confirm(title, body, cancel, confirm, danger, callback)`.
-- **Bottom-bar exception**: only the lobby puts the tab bar at the very bottom; the action bar
+- Host services: `show_toast(msg, is_error)`, `refresh_currency()` (wallet + level disc), `rebuild_bar()` /
+  `relayout_bar()` / `bar_buttons()`, `switch_tab(id)`, `set_tab_badge(id, on)` / `refresh_badges()`,
+  `open_confirm(title, body, cancel, confirm, danger, callback)`, `open_manager()`, `open_wallet()`.
+- **Bottom-bar exception**: only the lobby puts the nav at the very bottom; the action bar
   (`OutgameTheme.add_bottom_bar` specs, weights, primary on the right — shared code, built per tab) is
-  placed in the `%ActionBar` slot on top of it (`_lift_bar`: y 0 in the slot, slot height, bottom inset
+  placed in the `%ActionBar` slot right above the capsule (`_lift_bar`: y 0 in the slot, slot height, bottom inset
   padding removed **before** the height is set — otherwise the inset margin's minimum height clamps the
-  button taller and it overhangs the tab bar).
-- (The old static helpers `tab_bar_top()` / `action_bar_top()` / `content_rect()` and `CURRENCY_H` /
-  `TAB_BAR_H` are gone — the scene owns those sizes.)
+  button taller and it overhangs the nav).
 
 ### Scene (`scenes/Lobby.tscn`) — layout / style source of truth
 ```
 Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
-├ %Background      ColorRect BG, full rect
+├ %Background      Panel ScreenBackground, full rect
 ├ %Tabs            Control, full rect — tab bodies are added here (below everything else)
-├ %CurrencyStrip   Control, top-wide, 96 high
-│ ├ %StripBack     Panel (local SURFACE style)
-│ ├ %CurrencyCells HBox (16 px side margins, sep 0) → 5 preview LobbyCurrencyCell instances
-│ │                (Gap 12 · %Caption CaptionLabel 18 · Gap 2 · %Value BodyLabel 30)
-│ └ StripDivider   HSeparator `Divider`, bottom 1 px
+├ %TopBar          Control, top-wide, 136 high, no plate
+│ ├ %LevelButton   flat Button 112×112 at (24, 12)
+│ │ ├ Disc         Panel `LobbyLevelDisc` (RAIL circle)
+│ │ ├ %LevelRing   TextureProgressBar, fill_mode clockwise, under / progress = `ring_track.svg`
+│ │ │              (tint_under white 16 %, tint_progress ACCENT)
+│ │ ├ LevelCaption `RailLabel` 18 "Lv" (y 22..44) · %LevelValue `OnFillLabel` 40 (y 40..90)
+│ │ └ %LevelBadge  ColorRect 16×16, top-right, hidden
+│ └ %Wallet        HBox sep 12, right-anchored (24 px margin), y 36..100, grows left
+│                  → LobbyCurrencyPill_Outgame · _Premium (300×64; preview: gem + plus)
 └ %SafeBottom      Control, full rect (bottom offset = device inset, code)
-  ├ %ActionBar     Control slot, bottom-anchored, 128 high, right above the tab bar
-  ├ %TabBar        Control, bottom-anchored, 128 high
-  │ ├ %TabBarBack  Panel (local SURFACE style) — extends down into the inset (code)
-  │ ├ TopLine      ColorRect BORDER_STRONG, 1 px
-  │ └ %TabButtons  HBox sep 0 → 5 preview LobbyTabButton instances (flat, font 28, %Badge 14×14 hidden)
-  └ %Toast         Panel (local RAIL pill, radius 34), z 5, 20 px above the action bar slot
+  ├ %ActionBar     Control slot, bottom-anchored, y −304..−176 (16 px above the capsule)
+  ├ %NavBar        Control, bottom-anchored, 40 px side margins, y −160..−32 (128 high)
+  │ ├ NavBack      Panel `LobbyNavCapsule` (RAIL pill + shadow)
+  │ ├ %NavSelector Panel `LobbyNavSelector` (white pill) — preview on the HOME cell
+  │ └ %NavButtons  HBox (10 px inset, sep 0) → 5 LobbyNavButton instances (Record · Pilot · Home · Pass · Shop)
+  └ %Toast         Panel `LobbyToast`, z 5, 20 px above the action bar slot (also over the modals)
     └ %ToastText   OnFillLabel 26, centred, clipped
 ```
-- **Code-owned**: `indent_to_safe_top(self)` + `_fit_safe_area` (`%Background` / `%StripBack` extended under the
-  notch, `%SafeBottom.offset_bottom = -inset`, `%TabBarBack.offset_bottom = +inset`); item counts / texts from
-  `TABS` · `CURRENCY_STRIP` (`_sync_items` reuses the scene's preview instances, instantiates or frees the
-  rest); selected-tab font colours; badge visibility; the action bar buttons; the error toast colour (the
-  scene's toast style duplicated and recoloured `NEGATIVE`).
-- Lobby-only looks are screen variations (`resources/README.md` → Screen variations): `LobbySurfaceBar`
-  (flat `SURFACE`, square — strip and tab bar), `LobbyToast` (flat `RAIL` pill, radius 34); `TopLine` /
-  badge / background are `ColorRect` colours.
+- **Code-owned**: `indent_to_safe_top(self)` + `_fit_safe_area` (`%Background` extended under the notch,
+  `%SafeBottom.offset_bottom = -inset`); item counts / texts / icons from `TABS` · `WALLET` (`_sync_items` reuses the
+  scene's preview instances, instantiates or frees the rest); selector position; nav icon / caption colours; badge
+  visibility; level disc values; the action bar buttons; the error toast colour (the scene's toast style duplicated
+  and recoloured `NEGATIVE`).
+- Lobby-only looks are screen variations (`resources/README.md` → Screen variations): `LobbyNavCapsule`,
+  `LobbyNavSelector`, `LobbyLevelDisc`, `LobbyCurrencyPill` (Button, black 50 % / pressed 62 % pill),
+  `LobbyCurrencyPlus` (ACCENT disc), `LobbyToast`; badges / ring tints are node colours.
+- Icons: `resources/images/ui/lobby/*.svg` — white single-colour nav icons (`nav_*`), `currency_coin` /
+  `currency_gem` (coloured), `icon_plus`, `icon_close`, `ring_track` (112 px ring for the level disc).
 
 ## HomeTab (was LobbyScreen body)
 - **Layout lives in `UI_View_HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
@@ -118,7 +140,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
 - A summary line under the title: manager level · owned pilots · owned traits.
 - **`%SettingsButton`** (`GhostButton`, 150×60, font 24, key `settings.title`, the popup's own title) — anchored top-right of the
   tab, 32 px from the right edge, y 12..72 (inside the top gap, beside the centred title). The tab already starts
-  below the currency strip, which the host indents under the notch, so no extra safe-area code. Pressed →
+  below the top bar, which the host indents under the notch, so no extra safe-area code. Pressed →
   `_open_settings` (creates one `SettingsPopup` lazily as a child) → `locale_chosen(code)` →
   `_on_locale_chosen`: `ProfileManager.set_locale(code)` (saves) → `get_tree().reload_current_scene()` —
   the only way texts refresh after a language switch (§10.4: no `NOTIFICATION_TRANSLATION_CHANGED` handling).
@@ -221,7 +243,8 @@ profile**; changing it later is only via prestige (M9).
 
 ## Safe area
 Pattern B of `docs/mobile_safe_area.md`, scene version: `ScreenMetrics.indent_to_safe_top(self)` moves the
-whole screen below the notch; `%Background` and `%StripBack` get `extend_background` (cover the notch band);
-everything at the bottom hangs from `%SafeBottom` (bottom offset = inset) so the action bar, tab bar and
-toast stay above the gesture zone, while `%TabBarBack` extends back down to the screen edge. The toast
-sits 20 px above the action bar slot.
+whole screen below the notch; `%Background` gets `extend_background` (covers the notch band); everything at the
+bottom hangs from `%SafeBottom` (bottom offset = inset) so the action bar, the floating nav and the toast stay
+above the gesture zone (the capsule floats — nothing extends down to the screen edge). The toast sits 20 px above
+the action bar slot. The modals (`ManagerPopup`, `CurrencyShopPopup`) extend their dim under the notch and lift
+their bottom buttons / card by the inset themselves.

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=171 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=189 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -295,6 +295,111 @@ content_margin_bottom = 1.0
 bg_color = Color(0.11, 0.11, 0.122, 0.78)
 corner_radius_top_left = 12
 
+[sub_resource type="StyleBoxFlat" id="CurrencyShopPrice_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopPriceCash_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopTile_disabled"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopTile_focus"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopTile_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopTile_hover_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopTile_normal"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="CurrencyShopTile_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
 [sub_resource type="StyleBoxFlat" id="DangerButton_disabled"]
 content_margin_left = 18.0
 content_margin_top = 8.0
@@ -584,8 +689,82 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
-[sub_resource type="StyleBoxFlat" id="LobbySurfaceBar_panel"]
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPill_disabled"]
+bg_color = Color(0, 0, 0, 0.5)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPill_focus"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPill_hover"]
+bg_color = Color(0, 0, 0, 0.5)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPill_hover_pressed"]
+bg_color = Color(0, 0, 0, 0.62)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPill_normal"]
+bg_color = Color(0, 0, 0, 0.5)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPill_pressed"]
+bg_color = Color(0, 0, 0, 0.62)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyCurrencyPlus_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyLevelDisc_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="LobbyNavCapsule_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="LobbyNavSelector_panel"]
 bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
 
 [sub_resource type="StyleBoxFlat" id="LobbyToast_panel"]
 bg_color = Color(0.11, 0.11, 0.122, 1)
@@ -605,6 +784,11 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPopupSheet_panel"]
+bg_color = Color(0.96, 0.96, 0.968, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
 
 [sub_resource type="StyleBoxFlat" id="ManagerPresetChip_disabled"]
 bg_color = Color(1, 1, 1, 1)
@@ -2070,6 +2254,24 @@ CollectionCellStar/base_type = &"OnFillLabel"
 CollectionCellStar/colors/font_color = Color(1, 1, 1, 0.38)
 CollectionCellStarOn/base_type = &"OnFillLabel"
 CollectionCellStarOn/colors/font_color = Color(0.961, 0.651, 0.137, 1)
+CurrencyShopPrice/base_type = &"SunkPanel"
+CurrencyShopPrice/styles/panel = SubResource("CurrencyShopPrice_panel")
+CurrencyShopPriceCash/base_type = &"SunkPanel"
+CurrencyShopPriceCash/styles/panel = SubResource("CurrencyShopPriceCash_panel")
+CurrencyShopTile/base_type = &"Button"
+CurrencyShopTile/colors/font_color = Color(0.11, 0.11, 0.122, 1)
+CurrencyShopTile/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+CurrencyShopTile/colors/font_focus_color = Color(0.11, 0.11, 0.122, 1)
+CurrencyShopTile/colors/font_hover_color = Color(0.11, 0.11, 0.122, 1)
+CurrencyShopTile/colors/font_hover_pressed_color = Color(0.11, 0.11, 0.122, 1)
+CurrencyShopTile/colors/font_pressed_color = Color(0.11, 0.11, 0.122, 1)
+CurrencyShopTile/font_sizes/font_size = 26
+CurrencyShopTile/styles/disabled = SubResource("CurrencyShopTile_disabled")
+CurrencyShopTile/styles/focus = SubResource("CurrencyShopTile_focus")
+CurrencyShopTile/styles/hover = SubResource("CurrencyShopTile_hover")
+CurrencyShopTile/styles/hover_pressed = SubResource("CurrencyShopTile_hover_pressed")
+CurrencyShopTile/styles/normal = SubResource("CurrencyShopTile_normal")
+CurrencyShopTile/styles/pressed = SubResource("CurrencyShopTile_pressed")
 DangerButton/base_type = &"Button"
 DangerButton/colors/font_color = Color(1, 1, 1, 1)
 DangerButton/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -2141,12 +2343,34 @@ IntelAnalystNote/styles/panel = SubResource("IntelAnalystNote_panel")
 LinkLabel/base_type = &"Label"
 LinkLabel/colors/font_color = Color(0.18, 0.4, 0.918, 1)
 LinkLabel/font_sizes/font_size = 22
-LobbySurfaceBar/base_type = &"Card"
-LobbySurfaceBar/styles/panel = SubResource("LobbySurfaceBar_panel")
+LobbyCurrencyPill/base_type = &"Button"
+LobbyCurrencyPill/colors/font_color = Color(1, 1, 1, 1)
+LobbyCurrencyPill/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+LobbyCurrencyPill/colors/font_focus_color = Color(1, 1, 1, 1)
+LobbyCurrencyPill/colors/font_hover_color = Color(1, 1, 1, 1)
+LobbyCurrencyPill/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+LobbyCurrencyPill/colors/font_pressed_color = Color(1, 1, 1, 1)
+LobbyCurrencyPill/font_sizes/font_size = 26
+LobbyCurrencyPill/styles/disabled = SubResource("LobbyCurrencyPill_disabled")
+LobbyCurrencyPill/styles/focus = SubResource("LobbyCurrencyPill_focus")
+LobbyCurrencyPill/styles/hover = SubResource("LobbyCurrencyPill_hover")
+LobbyCurrencyPill/styles/hover_pressed = SubResource("LobbyCurrencyPill_hover_pressed")
+LobbyCurrencyPill/styles/normal = SubResource("LobbyCurrencyPill_normal")
+LobbyCurrencyPill/styles/pressed = SubResource("LobbyCurrencyPill_pressed")
+LobbyCurrencyPlus/base_type = &"Card"
+LobbyCurrencyPlus/styles/panel = SubResource("LobbyCurrencyPlus_panel")
+LobbyLevelDisc/base_type = &"Card"
+LobbyLevelDisc/styles/panel = SubResource("LobbyLevelDisc_panel")
+LobbyNavCapsule/base_type = &"Card"
+LobbyNavCapsule/styles/panel = SubResource("LobbyNavCapsule_panel")
+LobbyNavSelector/base_type = &"Card"
+LobbyNavSelector/styles/panel = SubResource("LobbyNavSelector_panel")
 LobbyToast/base_type = &"SurfaceChip"
 LobbyToast/styles/panel = SubResource("LobbyToast_panel")
 ManagerDangerCard/base_type = &"Card"
 ManagerDangerCard/styles/panel = SubResource("ManagerDangerCard_panel")
+ManagerPopupSheet/base_type = &"Card"
+ManagerPopupSheet/styles/panel = SubResource("ManagerPopupSheet_panel")
 ManagerPresetChip/base_type = &"SelectableCardButton"
 ManagerPresetChip/styles/disabled = SubResource("ManagerPresetChip_disabled")
 ManagerPresetChip/styles/focus = SubResource("ManagerPresetChip_disabled")

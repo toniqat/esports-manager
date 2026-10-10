@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=3 uid="uid://btc8wvyy52eo3"]
+[gd_scene load_steps=8 format=3 uid="uid://btc8wvyy52eo3"]
 
 [ext_resource type="Script" uid="uid://cxs8jh34thg08" path="res://features/meta/lobby/LobbyScreen.gd" id="1_lobby"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://features/meta/lobby/UI_Comp_LobbyCurrencyCell.tscn" id="3_cell"]
-[ext_resource type="PackedScene" path="res://features/meta/lobby/UI_Comp_LobbyTabButton.tscn" id="4_tab"]
+[ext_resource type="PackedScene" path="res://features/meta/lobby/UI_Comp_LobbyCurrencyPill.tscn" id="3_pill"]
+[ext_resource type="PackedScene" path="res://features/meta/lobby/UI_Comp_LobbyNavButton.tscn" id="4_nav"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/ring_track.svg" id="5_ring"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/currency_gem.svg" id="6_gem"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/nav_record.svg" id="7_record"]
 
 [node name="Lobby" type="Control"]
 layout_mode = 3
@@ -38,18 +41,39 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="CurrencyStrip" type="Control" parent="."]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab()"
+[node name="TopBar" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab() (tab bodies start at its bottom). Floating header: manager level disc (left) + wallet pills (right), no plate."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 96.0
+offset_bottom = 136.0
 grow_horizontal = 2
 mouse_filter = 2
 
-[node name="StripBack" type="Panel" parent="CurrencyStrip"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area()"
+[node name="LevelButton" type="Button" parent="TopBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _build() (opens the 감독 modal, ManagerPopup)"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 24.0
+offset_top = 12.0
+offset_right = 136.0
+offset_bottom = 124.0
+focus_mode = 0
+flat = true
+
+[node name="Disc" type="Panel" parent="TopBar/LevelButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"LobbyLevelDisc"
+
+[node name="LevelRing" type="TextureProgressBar" parent="TopBar/LevelButton"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd refresh_level() (value = EXP ratio inside the level, 0..1). Radial clockwise from 12 o'clock; tint_under = track, tint_progress = ACCENT."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -58,48 +82,89 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_type_variation = &"LobbySurfaceBar"
+max_value = 1.0
+step = 0.001
+value = 0.62
+fill_mode = 4
+texture_under = ExtResource("5_ring")
+texture_progress = ExtResource("5_ring")
+tint_under = Color(1, 1, 1, 0.16)
+tint_progress = Color(0.961, 0.651, 0.137, 1)
 
-[node name="CurrencyCells" type="HBoxContainer" parent="CurrencyStrip"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_currency_cells()"
+[node name="LevelCaption" type="Label" parent="TopBar/LevelButton"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 22.0
+offset_bottom = 44.0
+grow_horizontal = 2
+theme_type_variation = &"RailLabel"
+theme_override_font_sizes/font_size = 18
+text = "tx_VPTW1MTX4D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelValue" type="Label" parent="TopBar/LevelButton"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd refresh_level()"
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_right = -16.0
+offset_top = 40.0
+offset_bottom = 90.0
 grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 40
+text = "12"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="LobbyCurrencyCell_Cell0" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
-layout_mode = 2
-
-[node name="LobbyCurrencyCell_Cell1" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
-layout_mode = 2
-
-[node name="LobbyCurrencyCell_Cell2" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
-layout_mode = 2
-
-[node name="LobbyCurrencyCell_Cell3" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
-layout_mode = 2
-
-[node name="LobbyCurrencyCell_Cell4" parent="CurrencyStrip/CurrencyCells" instance=ExtResource("3_cell")]
-layout_mode = 2
-
-[node name="StripDivider" type="HSeparator" parent="CurrencyStrip"]
+[node name="LevelBadge" type="ColorRect" parent="TopBar/LevelButton"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd refresh_badges() (unseen unlocked traits)"
+unique_name_in_owner = true
+visible = false
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 1
+anchor_left = 1.0
 anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -1.0
-grow_horizontal = 2
-grow_vertical = 0
+offset_left = -22.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = 22.0
 mouse_filter = 2
-theme_type_variation = &"Divider"
+color = Color(0.878, 0.271, 0.271, 1)
+
+[node name="Wallet" type="HBoxContainer" parent="TopBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet(). One LobbyCurrencyPill per WALLET row, right-aligned; grows to the left."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -636.0
+offset_top = 36.0
+offset_right = -24.0
+offset_bottom = 100.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="LobbyCurrencyPill_Outgame" parent="TopBar/Wallet" instance=ExtResource("3_pill")]
+layout_mode = 2
+
+[node name="LobbyCurrencyPill_Premium" parent="TopBar/Wallet" instance=ExtResource("3_pill")]
+layout_mode = 2
+
+[node name="Icon" parent="TopBar/Wallet/LobbyCurrencyPill_Premium/Row" index="0"]
+texture = ExtResource("6_gem")
+
+[node name="Value" parent="TopBar/Wallet/LobbyCurrencyPill_Premium/Row" index="1"]
+text = "3,280"
+
+[node name="Plus" parent="TopBar/Wallet/LobbyCurrencyPill_Premium/Row" index="2"]
+visible = true
 
 [node name="SafeBottom" type="Control" parent="."]
 editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area() · LobbyScreen.gd _place_tab()"
@@ -120,28 +185,29 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -256.0
-offset_bottom = -128.0
+offset_top = -304.0
+offset_bottom = -176.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 
-[node name="TabBar" type="Control" parent="SafeBottom"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab()"
+[node name="NavBar" type="Control" parent="SafeBottom"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab(). Floating capsule, 40 px from the sides and 32 px above the safe bottom."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -128.0
+offset_left = 40.0
+offset_top = -160.0
+offset_right = -40.0
+offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 
-[node name="TabBarBack" type="Panel" parent="SafeBottom/TabBar"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _fit_safe_area()"
-unique_name_in_owner = true
+[node name="NavBack" type="Panel" parent="SafeBottom/NavBar"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -149,53 +215,57 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_type_variation = &"LobbySurfaceBar"
+theme_type_variation = &"LobbyNavCapsule"
 
-[node name="TopLine" type="ColorRect" parent="SafeBottom/TabBar"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 1.0
-grow_horizontal = 2
+[node name="NavSelector" type="Panel" parent="SafeBottom/NavBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _move_selector(). The inner white pill; code moves / sizes it onto the selected cell (tween). Preview = the HOME cell."
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 402.0
+offset_top = 10.0
+offset_right = 598.0
+offset_bottom = 118.0
 mouse_filter = 2
-color = Color(0.78, 0.784, 0.808, 1)
+theme_type_variation = &"LobbyNavSelector"
 
-[node name="TabButtons" type="HBoxContainer" parent="SafeBottom/TabBar"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_tab_buttons()"
+[node name="NavButtons" type="HBoxContainer" parent="SafeBottom/NavBar"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_nav_buttons(). One LobbyNavButton per TABS row (기록 · 컬렉션 · 홈 · 패스 · 상점)."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="LobbyTabButton_Tab0" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
+[node name="LobbyNavButton_Record" parent="SafeBottom/NavBar/NavButtons" instance=ExtResource("4_nav")]
 layout_mode = 2
 
-[node name="LobbyTabButton_Tab1" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
-auto_translate_mode = 2
-layout_mode = 2
-text = "컬렉션"
+[node name="Icon" parent="SafeBottom/NavBar/NavButtons/LobbyNavButton_Record/Content" index="0"]
+texture = ExtResource("7_record")
 
-[node name="LobbyTabButton_Tab2" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
-auto_translate_mode = 2
-layout_mode = 2
-text = "감독"
+[node name="Caption" parent="SafeBottom/NavBar/NavButtons/LobbyNavButton_Record/Content" index="1"]
+visible = false
 
-[node name="LobbyTabButton_Tab3" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
-auto_translate_mode = 2
+[node name="LobbyNavButton_Pilot" parent="SafeBottom/NavBar/NavButtons" instance=ExtResource("4_nav")]
 layout_mode = 2
-text = "상점"
 
-[node name="LobbyTabButton_Tab4" parent="SafeBottom/TabBar/TabButtons" instance=ExtResource("4_tab")]
-auto_translate_mode = 2
+[node name="LobbyNavButton_Home" parent="SafeBottom/NavBar/NavButtons" instance=ExtResource("4_nav")]
 layout_mode = 2
-text = "패스"
+
+[node name="LobbyNavButton_Pass" parent="SafeBottom/NavBar/NavButtons" instance=ExtResource("4_nav")]
+layout_mode = 2
+
+[node name="LobbyNavButton_Shop" parent="SafeBottom/NavBar/NavButtons" instance=ExtResource("4_nav")]
+layout_mode = 2
 
 [node name="Toast" type="Panel" parent="SafeBottom"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _hide_toast() · LobbyScreen.gd _toast_style · LobbyScreen.gd show_toast()"
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _hide_toast() · LobbyScreen.gd _toast_style · LobbyScreen.gd show_toast(). z 5: also floats over the 감독 / 재화 구매 modals (siblings added after SafeBottom)."
 unique_name_in_owner = true
 z_index = 5
 layout_mode = 1
@@ -204,9 +274,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = -344.0
+offset_top = -392.0
 offset_right = -40.0
-offset_bottom = -276.0
+offset_bottom = -324.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2

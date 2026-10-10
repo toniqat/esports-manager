@@ -15,6 +15,15 @@ extends RefCounted
 #   `SHOP_RANK_STONE_EXCHANGE_COST` outgame → `SHOP_RANK_STONE_EXCHANGE_GAIN` rank stones (승급석);
 #   `SHOP_PILOT_TICKET_PREMIUM` / `SHOP_TRAIT_TICKET_PREMIUM` premium → one gacha ticket.
 # - Dev: `SHOP_DEV_PREMIUM_GRANT` premium for free (premium is a local number, §12.0).
+# - Currency shop (lobby wallet popup): `currency_products.csv` rows — `exchange` = premium →
+#   outgame bundles, `cash` = premium packs "bought" for KRW (dev: nothing is charged).
+
+const PRODUCT_EXCHANGE: String = "exchange"
+const PRODUCT_CASH: String = "cash"
+const PRICE_KRW: String = "krw"
+
+static var _products: Array = []
+static var _products_loaded: bool = false
 
 
 # ── Shard shop ───────────────────────────────────────────────────────────────
@@ -131,3 +140,58 @@ static func dev_premium_grant() -> int:
 static func dev_add_premium(pm: Node) -> String:
 	pm.add_currency("premium", dev_premium_grant())
 	return ""
+
+
+# ── Currency shop (lobby wallet popup) ───────────────────────────────────────
+## Rows of one `section` (`PRODUCT_EXCHANGE` / `PRODUCT_CASH`) in id order:
+## `{id, section, price_currency, price, gain_currency, amount, bonus}` (`amount` includes `bonus`).
+static func currency_products(section: String) -> Array:
+	_load_products()
+	return _products.filter(func(r: Dictionary) -> bool: return String(r["section"]) == section)
+
+
+static func currency_product(product_id: int) -> Dictionary:
+	_load_products()
+	for r in _products:
+		if int(r["id"]) == product_id:
+			return r
+	return {}
+
+
+## Buys one product: pays `price` of `price_currency` (KRW = dev purchase, free) and adds
+## `amount` of `gain_currency`. "" on success; does not save.
+static func buy_currency_product(pm: Node, product_id: int) -> String:
+	var row: Dictionary = currency_product(product_id)
+	if row.is_empty():
+		return Loc.t(L.SHOP_WALLET_UNKNOWN_PRODUCT)
+	var pay: String = String(row["price_currency"])
+	var price: int = int(row["price"])
+	if pay != PRICE_KRW and not pm.spend_currency(pay, price):
+		if pay == "premium":
+			return Loc.t(L.SHOP_CATALOG_NOT_ENOUGH_PREMIUM, {"n": price})
+		return Loc.t(L.SHOP_WALLET_UNKNOWN_PRODUCT)
+	pm.add_currency(String(row["gain_currency"]), int(row["amount"]))
+	return ""
+
+
+static func _load_products() -> void:
+	if _products_loaded:
+		return
+	_products_loaded = true
+	var db := SQLite.new()
+	db.path = GameDb.path()
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_warning("ShopCatalog: cannot open game.db")
+		return
+	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='currency_products'")
+	if not db.query_result.is_empty():
+		db.query("SELECT * FROM currency_products ORDER BY id")
+		for r in db.query_result:
+			_products.append({
+				"id": int(r["id"]), "section": String(r["section"]),
+				"price_currency": String(r["price_currency"]), "price": int(r["price"]),
+				"gain_currency": String(r["gain_currency"]), "amount": int(r["amount"]),
+				"bonus": int(r["bonus"]),
+			})
+	db.close_db()

@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://gmvu0lc4cfef" path="res://features/meta/manager/UI_Comp_ManagerPresetChips.tscn" id="5_chips"]
 
 [node name="ManagerTab" type="Control"]
-editor_description = "Lobby 감독 tab. LobbyScreen sets this root's position / size to its content rect (below the currency strip, above the action bar) — the 1080×1568 here is only the editor preview size."
+editor_description = "감독 screen body, hosted by the lobby 감독 modal (ManagerPopup sets this root full rect in its %Body) — the 1080×1568 here is only the editor preview size."
 layout_mode = 3
 anchors_preset = 0
 offset_right = 1080.0

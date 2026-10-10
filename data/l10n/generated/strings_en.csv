@@ -950,6 +950,12 @@ tx_JBCN4AT26F,Manager level and manager stat removals are reset.
 tx_DQC9ZE38ES,Choose a type
 tx_XPFT0WY8DB,Start as {type}
 tx_K1ZQ410BJ2,Prestige as {type}
+tx_V8Y87ZCZD2,RECORD
+tx_PGD2RKHT6C,PILOT
+tx_3M4BE5GPXC,HOME
+tx_28F8XG4H78,PASS
+tx_MK3GPRAY5Y,SHOP
+tx_VPTW1MTX4D,Lv
 tx_J99WKD5PN8,Organizer
 tx_KQSXCRDMQT,Field Veteran
 tx_T2Z72WAY5Q,A manager versed in running an organization. A balanced spread leaning slightly toward Management and Mental
@@ -2436,6 +2442,14 @@ tx_SDD8KRGMVC,Rank Stone Exchange
 tx_CTQ9Z79KG5,{cost} Coins → {gain} Rank Stone
 tx_AGWHRMH9AR,Owned: Coins {coins} · Rank Stone {stones}
 tx_74MNNANQ3P,Rank Stone +{n}
+tx_421YYZ77T9,Get Currency
+tx_CNC9P5R2BY,Coins Exchange
+tx_206ZCN3N04,Buy Premium Currency
+tx_M5NTGX8A20,"Dev build: granted instantly, nothing is charged"
+tx_0HBS4SSM70,+{n} bonus
+tx_VD1519G313,₩{price}
+tx_Q5PN94BZDF,Got {n} {name}
+tx_B8CHFX90MS,This item is not on sale
 tx_6C29X8HMEF,Stats
 tx_E7KJ6CX53P,Effective = the value of whoever sits in the stat's facility (highest if several)
 tx_JZ767X3S8Y,Temporary Modifiers

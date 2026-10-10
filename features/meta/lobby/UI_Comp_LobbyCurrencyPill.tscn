@@ -1,0 +1,74 @@
+[gd_scene load_steps=4 format=3 uid="uid://dfbahadjd1aeh"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/currency_coin.svg" id="2_coin"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/icon_plus.svg" id="3_plus"]
+
+[node name="LobbyCurrencyPill" type="Button"]
+editor_description = "One wallet pill of the lobby top bar (translucent black capsule): icon left, amount right-aligned with thousands commas, optional accent \"+\" disc (premium). The whole pill is the button — LobbyScreen opens the currency shop popup."
+custom_minimum_size = Vector2(300, 64)
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"LobbyCurrencyPill"
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_right = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Row"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("2_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Value" type="Label" parent="Row"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet() · refresh_currency()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 28
+text = "1,000,000"
+horizontal_alignment = 2
+vertical_alignment = 1
+clip_text = true
+
+[node name="Plus" type="Panel" parent="Row"]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet() (visible = the WALLET row's plus)"
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"LobbyCurrencyPlus"
+
+[node name="PlusIcon" type="TextureRect" parent="Row/Plus"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 9.0
+offset_top = 9.0
+offset_right = -9.0
+offset_bottom = -9.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_plus")
+expand_mode = 1
+stretch_mode = 5

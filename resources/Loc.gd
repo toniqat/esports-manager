@@ -96,6 +96,16 @@ static func number_text(v: float, signed: bool = false) -> String:
 	return "+" + txt if signed and r > 0.0 else txt
 
 
+## Integer with a comma every three digits (1000000 → "1,000,000") — currency amounts / prices.
+static func grouped(n: int) -> String:
+	var digits: String = str(absi(n))
+	var out: String = ""
+	while digits.length() > 3:
+		out = "," + digits.right(3) + out
+		digits = digits.left(digits.length() - 3)
+	return ("-" if n < 0 else "") + digits + out
+
+
 static var _re_const: RegEx = null
 static var _re_plural: RegEx = null
 const _CONST_MODS: Array = ["_pct", "_abs", "_signed"]

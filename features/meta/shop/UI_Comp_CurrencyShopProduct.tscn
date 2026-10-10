@@ -1,0 +1,98 @@
+[gd_scene load_steps=4 format=3 uid="uid://c8rkxuxnkb0xj"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/currency_coin.svg" id="2_coin"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/currency_gem.svg" id="3_gem"]
+
+[node name="CurrencyShopProduct" type="Button"]
+auto_translate_mode = 2
+editor_description = "One product tile of the currency shop popup (3 × 2 grid): gain icon, amount, bonus line, price pill. Filled by CurrencyShopPopup._fill_tile; the whole tile is the buy button."
+custom_minimum_size = Vector2(0, 268)
+size_flags_horizontal = 3
+focus_mode = 0
+theme = ExtResource("1_theme")
+theme_type_variation = &"CurrencyShopTile"
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 18.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="VBox"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill_tile()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 84)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+texture = ExtResource("2_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Amount" type="Label" parent="VBox"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill_tile()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 34
+text = "1,150"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Bonus" type="Label" parent="VBox"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill_tile() (empty text when the row has no bonus — the line keeps its height)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+text = "+150"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Price" type="PanelContainer" parent="VBox"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill_tile() (variation CurrencyShopPrice = premium price, CurrencyShopPriceCash = KRW)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"CurrencyShopPrice"
+
+[node name="Row" type="HBoxContainer" parent="VBox/Price"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="PriceIcon" type="TextureRect" parent="VBox/Price/Row"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill_tile() (hidden for KRW)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("3_gem")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PriceText" type="Label" parent="VBox/Price/Row"]
+editor_description = "[필수] 지우면 오류 — CurrencyShopPopup.gd _fill_tile()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+text = "300"
+vertical_alignment = 1

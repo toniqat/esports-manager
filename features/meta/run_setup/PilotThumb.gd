@@ -2,7 +2,7 @@ class_name PilotThumb
 extends Button
 
 # 런 준비 편성(`TeamDraftView`) 하단 격자의 캐릭터 썸네일 한 칸 — **얼굴 하나와
-# 역할군 배지, 그리고 오른쪽 아래 샐러리 꼬리표가 전부다.**
+# 역할군 배지, 왼쪽 아래 종합, 오른쪽 아래 샐러리 꼬리표가 전부다.**
 #
 # **모양의 정본은 `UI_Comp_PilotThumb.tscn`** (칸 크기 · 얼굴 마스크 · 배지 / 체크 / 꼬리표 자리 ·
 # 스타일). 이 스크립트는 데이터만 넣는다 — 얼굴 텍스처, 포지션 배지(`PositionBadge`),
@@ -16,10 +16,13 @@ extends Button
 # 위의 게이지가 빨개지기 전에 판단이 선다.
 #
 # 격자가 하는 일은 **누구인지 알아보게 하는 것**이지 능력치를 비교하게 하는
-# 것이 아니다 — 이름도 스탯도 한 번 눌러 위 칸에 앉힌 뒤 상세 팝업이 통째로
-# 들고 있고, 얼굴이 칸을 다 쓴다(칸이 정사각).
+# 것이 아니다 — 이름도 세부 스탯도 한 번 눌러 위 칸에 앉힌 뒤 상세 팝업이 통째로
+# 들고 있고, 얼굴이 칸을 다 쓴다.
+# The cell is 200x240 (portrait); the square face is cover-cropped to fill it. Two numbers sit
+# over the face: the **overall** bottom-left (`p.stat_total()`, `%Overall`) and the salary tag
+# bottom-right.
 #
-# 남은 글자는 **왼쪽 위 역할군 배지 두 글자**뿐이다 — 밴픽 화면의 메크 격자와
+# 숫자 밖의 글자는 **왼쪽 위 역할군 배지 두 글자**뿐이다 — 밴픽 화면의 메크 격자와
 # **같은 배지**라(`BanPickController._build_role_badge`) 두 화면이 같은 표시를 쓴다.
 #
 # 선택 표시는 **금색 테두리 + 우상단 체크 배지** 두 겹이다. 테두리만으로는
@@ -34,7 +37,7 @@ const SCENE_PATH: String = "res://features/meta/run_setup/UI_Comp_PilotThumb.tsc
 
 ## 칸 크기 — 씬의 `custom_minimum_size` 와 같다. 격자 높이 계산(`TeamDraftView.grid_h`)이 읽는다.
 const CELL_W: float = 200.0
-const CELL_H: float = 200.0
+const CELL_H: float = 240.0
 
 ## 꼬리표 높이 — 폭은 글자 수로 정한다(`set_tag`).
 const TAG_H: float = 34.0
@@ -83,9 +86,11 @@ func _refresh() -> void:
 	if pilot == null:
 		face.texture = null
 		badge.visible = false
+		(%Overall as Label).text = ""
 		return
 	face.texture = PilotImages.face_for(pilot.id)
 	badge.set_role(int(pilot.role))
+	(%Overall as Label).text = str(pilot.stat_total())
 
 
 ## **둥근 사각형으로 깎은 그림 한 장** — 컬렉션(`CollectionCell` · `CollectionDetailSheet`)이

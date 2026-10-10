@@ -5,7 +5,7 @@ tx_D251BAN217,run_setup.step.lineup,active,런 준비 단계 알약,,,편성,Lin
 tx_5RQNNDMCG6,run_setup.load_failed,active,선수 데이터 읽기 실패. 런 준비 화면 · 컬렉션 탭,,,선수 데이터를 읽지 못했습니다: {error},Couldn't read player data: {error},draft,441b3f67
 tx_RCC5BQZPBZ,run_setup.scenario.cap,deprecated,시나리오 카드 칩,,,샐러리캡 {n},Salary Cap {n},draft,978826eb
 tx_21QQ3H8S23,run_setup.scenario.hint,deprecated,시나리오 단계 안내,,,시나리오가 샐러리캡을 정합니다. 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다.,The scenario sets the salary cap. You can't start if your five players' salaries exceed it.,draft,49d37911
-tx_ZSHG5Y0W8Y,run_setup.team.hint,active,팀 단계 안내,,,예산이 높을수록 쉽습니다. 스태프가 많아 직접 해야 하는 일이 적습니다.,A bigger budget is easier: more staff means less to handle yourself.,draft,74885f83
+tx_ZSHG5Y0W8Y,run_setup.team.hint,active,팀 단계 안내,,,예산과 시설 레벨이 높을수록 쉽습니다.,A bigger budget and higher facility level make the run easier.,draft,84a4c360
 tx_XVN27323X5,run_setup.team.budget,active,팀 카드,,,예산 {n},Budget {n},draft,8ac751d8
 tx_8V1SPJW32G,run_setup.team.facility,active,팀 카드,,,시설 Lv {n},Facility Lv {n},draft,9f9cf92c
 tx_MY16P7N64F,run_setup.team.manual_title,active,팀 카드: 스태프가 없어 감독이 직접 하는 영역 목록의 제목,,,직접 해야 하는 일,Handled by you,draft,e8f9a655
@@ -40,5 +40,8 @@ tx_Z7WZT1J6Q7,run_setup.lineup.done_left,active,편성 게이지 메시지,,,{tx
 tx_RQV5HNW8TV,run_setup.lineup.done,active,편성 게이지 메시지 (캡 없음),,,편성 완료,Lineup complete,draft,b94c957c
 tx_N58C8KX6P1,run_setup.lineup.start,active,편성 하단 버튼,,,게임 시작,Start Game,draft,62d82d76
 tx_B0NGFXJ0F2,run_setup.slot.rank_level,active,편성 칸 일러스트 아래 — 보유 선수의 지금 랭크와 레벨 (런 준비에서 고를 수 없다),,,랭크 {rank} · Lv {level},Rank {rank} · Lv {level},draft,4db9996e
+tx_E2KQV3KWYX,run_setup.lineup.cap_label,active,편성 샐러리 게이지 왼쪽 라벨,,,샐러리캡,Salary Cap,draft,ba33d61b
+tx_WJSXREH223,run_setup.slot.overall_caption,active,편성 칸: 큰 종합 숫자 위 작은 캡션,,,OVERALL,OVERALL,draft,16a800f6
+tx_76VC17EP92,run_setup.level_n,active,런 준비 레벨 표기: 편성 초상화 좌하단 · 감독 카드 · 팀 시설 카드,,,Lv {n},Lv {n},draft,1e4d3a52
 tx_3PMG907FZ1,run_setup.scenario.choose,active,시나리오 선택 화면 하단 주 버튼 (리그를 골라 런 준비로),,,시나리오 선택,Select Scenario,draft,ce75e693
 tx_BBWCK9NDMS,run_setup.scenario.cap_tip,active,시나리오 선택 화면: 왼쪽 아래 샐러리캡 알약을 누르면 뜨는 툴팁,,,리그에서 사용할 수 있는 파일럿의 샐러리 총합의 제한입니다.,The limit on the total salary of the pilots you can field in this league.,draft,3b554aae

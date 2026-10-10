@@ -901,6 +901,19 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "PilotThumbArtMask", &"SunkPanel", _mask_box(14))
 	_add_derived(th, "PilotThumbCheck", &"AccentChip", flat_style(ACCENT, 20))
 	_add_derived(th, "PilotThumbTag", &"SurfaceChip", flat_style(RAIL, 17))
+
+	# meta/run_setup TeamCard (team banner card) — C
+	# Banner mask inset by SELECT_BORDER_ON so the selected amber border stays visible.
+	_add_derived(th, "TeamCardBannerMask", &"SunkPanel", _mask_box(CARD_RADIUS - SELECT_BORDER_ON))
+	_add_derived(th, "TeamCardStatPanel", &"SunkPanel", flat_style(Color(0, 0, 0, 0.30), 16))
+	for spec in [["TeamCardShortLabel", 60], ["TeamCardNameLabel", FONT_CAPTION + 2],
+			["TeamCardStatValue", FONT_BODY]]:
+		var v: String = spec[0]
+		_add_label(th, v, int(spec[1]), TEXT_ON_FILL)
+		th.set_color(&"font_shadow_color", v, Color(0, 0, 0, 0.45))
+		th.set_constant(&"shadow_offset_x", v, 0)
+		th.set_constant(&"shadow_offset_y", v, 2)
+		th.set_constant(&"shadow_outline_size", v, 4)
 	# resources/PositionBadge — 포지션 배지 = 역할 색(데이터, `PositionBadge.set_role`) — 여기 색은 탑 미리보기.
 	var pos_badge := flat_style((ROLE_COLORS[0] as Color).darkened(0.15), 8, POSITION_BADGE_EDGE, 1)
 	pos_badge.content_margin_left = POSITION_BADGE_PAD_H
@@ -908,9 +921,53 @@ static func _add_screen_variations(th: Theme) -> void:
 	pos_badge.content_margin_top = POSITION_BADGE_PAD_V
 	pos_badge.content_margin_bottom = POSITION_BADGE_PAD_V
 	_add_derived(th, "PositionBadgePanel", &"AccentChip", pos_badge)
-	# 단계 알약 = 상태 색(`StepChip.paint`) — 여기 색은 "지금 단계" 미리보기.
-	_add_derived(th, "StepChipPanel", &"AccentChip", flat_style(ACCENT, CHIP_RADIUS))
+	# meta/run_setup step header — B
+	# Dark floating capsule (+ shadow, like `LobbyNavCapsule`) holding the step icons, and the
+	# white disc behind the current step's icon (moved / tweened by `StepCapsule`).
+	var step_cap := flat_style(RAIL, 999)
+	step_cap.shadow_color = Color(SHADOW, 0.30)
+	step_cap.shadow_size = 14
+	step_cap.shadow_offset = Vector2(0, 5)
+	_add_derived(th, "RunSetupStepCapsule", &"Card", step_cap)
+	_add_derived(th, "RunSetupStepSelector", &"Card", flat_style(SURFACE, 999))
 	_add_derived(th, "TeamDraftGridBack", &"Card", flat_style(SURFACE, 12, BORDER, 2))
+	# meta/run_setup lineup step (편성) — E
+	# Slot portrait corner plates (inside the clipped ArtMask, flush with its bottom edge):
+	# level bottom-left (rounded top-right), rank stars bottom-right (rounded top-left).
+	for spec in [["DraftSlotLevelPlate", true], ["DraftSlotRankPlate", false]]:
+		var dp := flat_style(Color(RAIL, 0.78), 0)
+		if spec[1]:
+			dp.corner_radius_top_right = 10
+		else:
+			dp.corner_radius_top_left = 10
+		dp.content_margin_left = 10.0
+		dp.content_margin_right = 10.0
+		dp.content_margin_top = 1.0
+		dp.content_margin_bottom = 1.0
+		_add_derived(th, String(spec[0]), &"SurfaceChip", dp)
+	th.set_type_variation(&"DraftSlotStars", &"OnFillLabel")
+	th.set_color(&"font_color", &"DraftSlotStars", ACCENT)
+	# Thumbnail overall (bottom-left over the face) and the CONFIRM team banner texts: white
+	# with a soft dark shadow outline so they read over any art / team colour.
+	# Slot info lines (OVERALL caption · big number · salary) sit on the lineup team banner.
+	for spec in [["PilotThumbOverall", 30], ["RunTeamBannerShort", 56],
+			["RunTeamBannerName", FONT_CAPTION + 2], ["DraftSlotInfoCaption", 18],
+			["DraftSlotInfoTotal", 50], ["DraftSlotInfoSalary", FONT_CAPTION]]:
+		var lv: String = spec[0]
+		_add_label(th, lv, int(spec[1]), TEXT_ON_FILL)
+		th.set_color(&"font_shadow_color", lv, Color(0, 0, 0, 0.55))
+		th.set_constant(&"shadow_offset_x", lv, 0)
+		th.set_constant(&"shadow_offset_y", lv, 2)
+		th.set_constant(&"shadow_outline_size", lv, 5)
+	# The thumbnail number sits on light faces too — a crisp dark outline on top of the shadow.
+	th.set_color(&"font_outline_color", &"PilotThumbOverall", Color(RAIL, 0.85))
+	th.set_constant(&"outline_size", &"PilotThumbOverall", 6)
+	th.set_color(&"font_color", &"DraftSlotInfoCaption", Color(TEXT_ON_FILL, 0.78))
+	th.set_color(&"font_color", &"DraftSlotInfoSalary", ACCENT_DIM)
+	# Team banner (`UI_Comp_RunTeamBanner.tscn`, 감독 strip · lineup slot backdrop): rounded mask,
+	# or square for the full-bleed lineup backdrop.
+	_add_derived(th, "RunTeamBannerMask", &"SunkPanel", _mask_box(CARD_RADIUS))
+	_add_derived(th, "RunTeamBannerMaskSquare", &"SunkPanel", _mask_box(0))
 
 	# meta/shop — 상점
 	_add_derived(th, "ShopRowPanel", &"Card", flat_style(SURFACE, CARD_RADIUS, BORDER, 1))

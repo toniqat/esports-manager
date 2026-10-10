@@ -2176,7 +2176,7 @@ tx_D251BAN217,Lineup
 tx_5RQNNDMCG6,Couldn't read player data: {error}
 tx_RCC5BQZPBZ,Salary Cap {n}
 tx_21QQ3H8S23,The scenario sets the salary cap. You can't start if your five players' salaries exceed it.
-tx_ZSHG5Y0W8Y,A bigger budget is easier: more staff means less to handle yourself.
+tx_ZSHG5Y0W8Y,A bigger budget and higher facility level make the run easier.
 tx_XVN27323X5,Budget {n}
 tx_8V1SPJW32G,Facility Lv {n}
 tx_MY16P7N64F,Handled by you
@@ -2211,6 +2211,9 @@ tx_Z7WZT1J6Q7,Lineup complete · {n} salary left
 tx_RQV5HNW8TV,Lineup complete
 tx_N58C8KX6P1,Start Game
 tx_B0NGFXJ0F2,Rank {rank} · Lv {level}
+tx_E2KQV3KWYX,Salary Cap
+tx_WJSXREH223,OVERALL
+tx_76VC17EP92,Lv {n}
 tx_3PMG907FZ1,Select Scenario
 tx_BBWCK9NDMS,The limit on the total salary of the pilots you can field in this league.
 tx_WMF4H900Y6,Rookie League

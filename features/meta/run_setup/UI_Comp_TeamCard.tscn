@@ -1,20 +1,51 @@
-[gd_scene load_steps=3 format=3 uid="uid://wvnbldqq1n86"]
+[gd_scene load_steps=8 format=3 uid="uid://wvnbldqq1n86"]
 
 [ext_resource type="Script" uid="uid://csfj1w8f4j0xp" path="res://features/meta/run_setup/TeamCard.gd" id="1_card"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/ring_track.svg" id="3_ring"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/run_setup/icon_budget.svg" id="4_budget"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/run_setup/icon_facility.svg" id="5_facility"]
+
+[sub_resource type="Gradient" id="Gradient_shade"]
+offsets = PackedFloat32Array(0, 0.72)
+colors = PackedColorArray(0, 0, 0, 0.42, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shade"]
+gradient = SubResource("Gradient_shade")
+width = 256
+height = 8
+fill_to = Vector2(1, 0)
 
 [node name="TeamCard" type="Button"]
-editor_description = "One team-package card (step 2). The whole card is the tap target; selected / not = variation SelectableCardButton / SelectableCardButtonOn, switched by code (ChoiceListView._refresh). Height 300 = 26 + 50 + 10 + 37 + 11 + 31 + 1 + 37 + 9 + desc 72 + 16 (37 / 31 = the 26px / 22px label line heights)."
-custom_minimum_size = Vector2(0, 300)
+editor_description = "One team-package card (step 2). The whole card is the tap target; selected / not = variation SelectableCardButton / SelectableCardButtonOn, switched by code (ChoiceListView._refresh). The team banner sits inside BannerMask, inset by SELECT_BORDER_ON (4) so the amber selected border stays visible. Height 244 = stat cards 196 + 20 margin above and below + 2 x 4 inset (banner art cover-cropped to 1024 x 236)."
+custom_minimum_size = Vector2(0, 244)
 offset_right = 1032.0
-offset_bottom = 300.0
+offset_bottom = 244.0
 focus_mode = 0
 mouse_filter = 1
 theme = ExtResource("2_theme")
 theme_type_variation = &"SelectableCardButton"
 script = ExtResource("1_card")
 
-[node name="Pad" type="MarginContainer" parent="."]
+[node name="BannerMask" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"TeamCardBannerMask"
+
+[node name="BannerFill" type="ColorRect" parent="BannerMask"]
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()
+Team main colour (TeamLogos.color) — the fallback when the banner art is missing."
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,159 +53,186 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 26
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 16
+color = Color(0.541, 0.31, 0.82, 1)
 
-[node name="VBox" type="VBoxContainer" parent="Pad"]
+[node name="Banner" type="TextureRect" parent="BannerMask"]
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()
+TeamLogos.banner(team_id), cover crop (stretch KEEP_ASPECT_COVERED)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Shade" type="TextureRect" parent="BannerMask"]
+editor_description = "Left-side dark gradient so the white names read on every team colour."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_shade")
+expand_mode = 1
+
+[node name="Head" type="HBoxContainer" parent="BannerMask"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 676.0
+offset_bottom = 128.0
+mouse_filter = 2
+theme_override_constants/separation = 22
+
+[node name="Logo" type="TextureRect" parent="BannerMask/Head"]
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill() (TeamLogos.texture)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(108, 108)
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 0
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameRow" type="HBoxContainer" parent="Pad/VBox"]
+[node name="Names" type="VBoxContainer" parent="BannerMask/Head"]
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = -6
+alignment = 1
 
-[node name="Name" type="Label" parent="Pad/VBox/NameRow"]
+[node name="ShortName" type="Label" parent="BannerMask/Head/Names"]
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_type_variation = &"TitleLabel"
+theme_type_variation = &"TeamCardShortLabel"
+text = "VHK"
+clip_text = true
+
+[node name="Name" type="Label" parent="BannerMask/Head/Names"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TeamCardNameLabel"
 text = "Victoria Housekeeping"
 clip_text = true
 
-[node name="ShortPad" type="MarginContainer" parent="Pad/VBox/NameRow"]
-layout_mode = 2
-size_flags_vertical = 0
-mouse_filter = 2
-theme_override_constants/margin_top = 8
-
-[node name="ShortName" type="Label" parent="Pad/VBox/NameRow/ShortPad"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 36)
-layout_mode = 2
-theme_type_variation = &"FaintLabel"
-theme_override_font_sizes/font_size = 26
-text = "VHK"
-horizontal_alignment = 2
-clip_text = true
-
-[node name="Gap1" type="Control" parent="Pad/VBox"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="BudgetRow" type="HBoxContainer" parent="Pad/VBox"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
-
-[node name="Budget" type="Label" parent="Pad/VBox/BudgetRow"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 36)
-layout_mode = 2
-theme_type_variation = &"AccentLabel"
-theme_override_font_sizes/font_size = 26
-text = "예산 900"
-clip_text = true
-
-[node name="Sp1" type="Control" parent="Pad/VBox/BudgetRow"]
-custom_minimum_size = Vector2(10, 0)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="TrackPad" type="MarginContainer" parent="Pad/VBox/BudgetRow"]
-editor_description = "Budget bar relative to the highest budget in teams.csv — the fill width is data (anchor_right, code)."
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-theme_override_constants/margin_top = 12
-
-[node name="Track" type="ColorRect" parent="Pad/VBox/BudgetRow/TrackPad"]
-custom_minimum_size = Vector2(0, 12)
-layout_mode = 2
-size_flags_vertical = 0
-mouse_filter = 2
-color = Color(0.929, 0.933, 0.945, 1)
-
-[node name="Fill" type="ColorRect" parent="Pad/VBox/BudgetRow/TrackPad/Track"]
-editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
-unique_name_in_owner = true
+[node name="Stats" type="HBoxContainer" parent="BannerMask"]
+editor_description = "Bottom-right stat cards (budget, facility): ring ratio + value are data (TeamCard.gd fill)."
 layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.9
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
-grow_vertical = 2
+offset_left = -334.0
+offset_top = -216.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
 mouse_filter = 2
-color = Color(0.961, 0.651, 0.137, 1)
+theme_override_constants/separation = 14
 
-[node name="Sp2" type="Control" parent="Pad/VBox/BudgetRow"]
-custom_minimum_size = Vector2(20, 0)
+[node name="BudgetCard" type="Panel" parent="BannerMask/Stats"]
+custom_minimum_size = Vector2(150, 196)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"TeamCardStatPanel"
 
-[node name="Facility" type="Label" parent="Pad/VBox/BudgetRow"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
+[node name="BudgetRing" type="TextureProgressBar" parent="BannerMask/Stats/BudgetCard"]
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill() (value = budget / highest budget in teams.csv, 0..1)"
 unique_name_in_owner = true
-custom_minimum_size = Vector2(200, 36)
-layout_mode = 2
-theme_type_variation = &"BodyLabel"
-text = "시설 Lv 4"
-horizontal_alignment = 2
+layout_mode = 0
+offset_left = 19.0
+offset_top = 16.0
+offset_right = 131.0
+offset_bottom = 128.0
+mouse_filter = 2
+max_value = 1.0
+step = 0.001
+value = 0.7
+fill_mode = 4
+texture_under = ExtResource("3_ring")
+texture_progress = ExtResource("3_ring")
+tint_under = Color(1, 1, 1, 0.2)
+tint_progress = Color(0.961, 0.651, 0.137, 1)
+
+[node name="BudgetIcon" type="TextureRect" parent="BannerMask/Stats/BudgetCard"]
+layout_mode = 0
+offset_left = 47.0
+offset_top = 44.0
+offset_right = 103.0
+offset_bottom = 100.0
+mouse_filter = 2
+texture = ExtResource("4_budget")
+expand_mode = 1
+
+[node name="BudgetValue" type="Label" parent="BannerMask/Stats/BudgetCard"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill() (Loc.grouped(budget))"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 6.0
+offset_top = 142.0
+offset_right = 144.0
+offset_bottom = 180.0
+theme_type_variation = &"TeamCardStatValue"
+text = "700"
+horizontal_alignment = 1
 clip_text = true
 
-[node name="Gap2" type="Control" parent="Pad/VBox"]
-custom_minimum_size = Vector2(0, 11)
+[node name="FacilityCard" type="Panel" parent="BannerMask/Stats"]
+custom_minimum_size = Vector2(150, 196)
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"TeamCardStatPanel"
 
-[node name="ManualTitle" type="Label" parent="Pad/VBox"]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-text = "tx_MY16P7N64F"
-clip_text = true
-
-[node name="Gap3" type="Control" parent="Pad/VBox"]
-custom_minimum_size = Vector2(0, 1)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Manual" type="Label" parent="Pad/VBox"]
-auto_translate_mode = 2
+[node name="FacilityRing" type="TextureProgressBar" parent="BannerMask/Stats/FacilityCard"]
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill() (value = facility level / FacilitySystem.max_level(), 0..1)"
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()
-Empty list = '없음' → code switches the variation to PositiveLabel (font size stays 26 = FONT_BODY)."
-custom_minimum_size = Vector2(0, 36)
-layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 26
-text = "훈련 편성 · 메크 숙련도"
-clip_text = true
-
-[node name="Gap4" type="Control" parent="Pad/VBox"]
-custom_minimum_size = Vector2(0, 9)
-layout_mode = 2
+layout_mode = 0
+offset_left = 19.0
+offset_top = 16.0
+offset_right = 131.0
+offset_bottom = 128.0
 mouse_filter = 2
+max_value = 1.0
+step = 0.001
+value = 0.4
+fill_mode = 4
+texture_under = ExtResource("3_ring")
+texture_progress = ExtResource("3_ring")
+tint_under = Color(1, 1, 1, 0.2)
+tint_progress = Color(0.961, 0.651, 0.137, 1)
 
-[node name="Desc" type="Label" parent="Pad/VBox"]
+[node name="FacilityIcon" type="TextureRect" parent="BannerMask/Stats/FacilityCard"]
+layout_mode = 0
+offset_left = 47.0
+offset_top = 44.0
+offset_right = 103.0
+offset_bottom = 100.0
+mouse_filter = 2
+texture = ExtResource("5_facility")
+expand_mode = 1
+
+[node name="FacilityValue" type="Label" parent="BannerMask/Stats/FacilityCard"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TeamCard.gd fill()"
+editor_description = "[필수] 지우면 오류 — TeamCard.gd fill() (Loc.t(L.RUN_SETUP_LEVEL_N))"
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 72)
-layout_mode = 2
-size_flags_vertical = 3
-theme_type_variation = &"CaptionLabel"
-text = "중위 — 메크 숙련도 관리 직접"
-autowrap_mode = 3
+layout_mode = 0
+offset_left = 6.0
+offset_top = 142.0
+offset_right = 144.0
+offset_bottom = 180.0
+theme_type_variation = &"TeamCardStatValue"
+text = "Lv 2"
+horizontal_alignment = 1
 clip_text = true

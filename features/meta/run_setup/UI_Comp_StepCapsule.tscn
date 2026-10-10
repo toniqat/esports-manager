@@ -1,0 +1,82 @@
+[gd_scene load_steps=6 format=3 uid="uid://eia6wf02rboe"]
+
+[ext_resource type="Script" path="res://features/meta/run_setup/StepCapsule.gd" id="1_cap"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Texture2D" uid="uid://dw7koih17c8or" path="res://resources/images/ui/run_setup/step_team.svg" id="4_team"]
+[ext_resource type="Texture2D" uid="uid://bxdphb8m2ny38" path="res://resources/images/ui/run_setup/step_manager.svg" id="5_manager"]
+[ext_resource type="Texture2D" uid="uid://djdm1l7o744yt" path="res://resources/images/ui/run_setup/step_lineup.svg" id="6_lineup"]
+
+[node name="StepCapsule" type="Control"]
+editor_description = "Run-setup step header: dark floating capsule, one 40px icon per header step of RunSetupScreen.STEPS (팀 · 감독 · 편성 — the scenario pick is not a header step; 120 apart, 20 padding) and a white disc (%Selector, icon + 12 each side) behind the current step. Disc position, icon tints (current dark / done amber / upcoming faint) and the slide off the screen top (lineup CONFIRM) = code (StepCapsule.gd). Size 400 x 80."
+custom_minimum_size = Vector2(400, 80)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 400.0
+offset_bottom = 80.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_cap")
+
+[node name="Back" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"RunSetupStepCapsule"
+
+[node name="Selector" type="Panel" parent="."]
+editor_description = "[필수] 지우면 오류 — StepCapsule.gd _place_selector(). White disc; code moves it onto the current step's icon (tween). Preview = first header step (팀)."
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 72.0
+offset_bottom = 72.0
+mouse_filter = 2
+theme_type_variation = &"RunSetupStepSelector"
+
+[node name="Icons" type="HBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류 — StepCapsule.gd _collect_icons() · StepCapsule.gd setup(). One TextureRect per header step, in step order (code swaps textures / adds or frees cells to match the table). Tint = self_modulate (code)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 120
+
+[node name="Team" type="TextureRect" parent="Icons"]
+auto_translate_mode = 2
+self_modulate = Color(0.110, 0.110, 0.122, 1)
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("4_team")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Manager" type="TextureRect" parent="Icons"]
+auto_translate_mode = 2
+self_modulate = Color(0.62, 0.62, 0.65, 0.45)
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("5_manager")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Lineup" type="TextureRect" parent="Icons"]
+auto_translate_mode = 2
+self_modulate = Color(0.62, 0.62, 0.65, 0.45)
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("6_lineup")
+expand_mode = 1
+stretch_mode = 5

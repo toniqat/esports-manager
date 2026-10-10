@@ -4,14 +4,13 @@ extends Control
 # Run setup step 3 — 감독 (Manager): pick the manager preset for this run (plan §12.0 /
 # §12.2). Sits between 팀 and 편성 (`RunSetupScreen.STEPS`).
 #
-#   status line — "프리셋 n · 보너스 점수 +x" or the validation error (red)
-#   scroll: preset chips → stats card (type · Lv · six stats) → TraitPickerView
+#   scroll (to the screen bottom, under the capsules): error line (red, only on an error) →
+#   preset chips → stats card (Lv · six stats) → TraitPickerView
 #   bar: 뒤로 (1) / 다음 (2)
 #
-# **The layout is `UI_View_ManagerStepView.tscn`** (status line, scroll, chips / stats card / traits
-# slots, bottom bar). Construct with `ManagerStepView.create()`. Code fills the texts, picks
-# the status / note label variation (SubLabel ↔ NegativeLabel, FaintLabel ↔ AccentLabel),
-# refills the shared scenes placed in it (`ManagerPresetChips` · `TraitPickerView`, from
+# **The layout is `UI_View_ManagerStepView.tscn`** (scroll, error slot, chips / stats card / traits
+# slots, bar shield, bar fade, bottom bar). Construct with `ManagerStepView.create()`. Code fills
+# the texts, shows / hides the error line and the `manager_all` note, refills the shared scenes placed in it (`ManagerPresetChips` · `TraitPickerView`, from
 # `features/meta/manager/`) and rebuilds the code-built stat cells (`ManagerUi.add_stat_cells`).
 #
 # - The **active preset is preselected** (the M1 "nothing preselected" rule is for
@@ -79,6 +78,12 @@ func validation_error() -> String:
 	return ManagerProgress.validate_preset(_pm.profile, _draft, _pm.owned_trait_ids())
 
 
+## The 팀 step's choice — shown as the banner strip at the top of the body (`RunSetupScreen`
+## sets it on every entry to this step).
+func set_team(team_id: int) -> void:
+	(%RunTeamBanner_Team as RunTeamBanner).fill(team_id)
+
+
 func select_preset(idx: int) -> void:
 	preset_idx = clampi(idx, 0, maxi(0, ManagerProgress.presets(_pm.profile).size() - 1))
 	_draft = ManagerProgress.preset_copy(_pm.profile, preset_idx)
@@ -100,7 +105,7 @@ func set_traits(traits: Array) -> String:
 
 
 # ── Fill ─────────────────────────────────────────────────────────────────────
-# The layout (status line, scroll, chips, stats card, traits, bar) is the scene. The chips
+# The layout (error slot, scroll, chips, stats card, traits, bar) is the scene. The chips
 # and the trait block are shared scenes (also in the lobby 감독 tab) refilled on every change;
 # the six stat cells are built by `ManagerUi.add_stat_cells` into `%Cells` (height it returns).
 func _rebuild(status_override: String = "") -> void:
@@ -113,20 +118,13 @@ func _rebuild(status_override: String = "") -> void:
 	var prof: Dictionary = _pm.profile
 	(%ManagerPresetChips_Chips as ManagerPresetChips).fill(prof, preset_idx)
 
-	# Stats card — type · level, the six stats this preset gives.
-	var mgr: Dictionary = prof.get("manager", {})
-	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	var type_name: String = Loc.t(String(trow.get("name_key", "")))  # l10n-dynamic: manager.type.*.name
-	(%CardTitle as Label).text = Loc.t(L.RUN_SETUP_MANAGER_CARD_TITLE,
-			{"type": type_name, "level": ManagerProgress.level_of(prof)})
+	# Stats card — level (no manager type here), the six stats this preset gives.
+	(%CardTitle as Label).text = Loc.t(L.RUN_SETUP_LEVEL_N, {"n": ManagerProgress.level_of(prof)})
 	var all_bonus: int = TraitSystem.sum_p1(selected_traits(), "manager_all")
 	var note: Label = %CardNote
+	note.visible = all_bonus != 0
 	if all_bonus != 0:
 		note.text = Loc.t(L.RUN_SETUP_MANAGER_ALL_BONUS, {"value": ManagerUi.signed(all_bonus)})
-		note.theme_type_variation = &"AccentLabel"
-	else:
-		note.text = Loc.t(L.RUN_SETUP_MANAGER_SPEC_NOTE)
-		note.theme_type_variation = &"FaintLabel"
 	var cells_w: float = cells.size.x if cells.size.x > 0.0 else ScreenMetrics.vp_w() - 48.0 - 56.0
 	cells.custom_minimum_size.y = ManagerUi.add_stat_cells(cells, Vector2.ZERO, cells_w,
 			ManagerProgress.preset_stats(prof, _draft), ManagerProgress.base_stats(prof))
@@ -139,18 +137,10 @@ func _rebuild(status_override: String = "") -> void:
 func _refresh_status(override: String = "") -> void:
 	var err: String = validation_error()
 	(%FloatingBarButton_Next as Button).disabled = err != ""
-	var status: Label = %Status
-	if override != "":
-		status.text = override
-		status.theme_type_variation = &"NegativeLabel"
-	elif err != "":
-		status.text = err
-		status.theme_type_variation = &"NegativeLabel"
-	else:
-		var bonus: int = TraitSystem.bonus_points(selected_traits())
-		status.text = Loc.t(L.RUN_SETUP_MANAGER_STATUS, {
-			"preset": ManagerUi.preset_name(preset_idx), "bonus": ManagerUi.signed(bonus)})
-		status.theme_type_variation = &"SubLabel"
+	# Red error line only — nothing is shown while the preset is fine (the body starts higher).
+	var shown: String = override if override != "" else err
+	(%Status as Label).text = shown
+	(%StatusPad as Control).visible = shown != ""
 
 
 # ── Input ────────────────────────────────────────────────────────────────────
@@ -188,3 +178,4 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(back_requested)
 	UiPreview.trace(next_requested)
+	set_team(3)

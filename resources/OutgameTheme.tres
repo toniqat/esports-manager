@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=219 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=226 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -578,6 +578,22 @@ corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="DraftSlotLevelPlate_panel"]
+content_margin_left = 10.0
+content_margin_top = 1.0
+content_margin_right = 10.0
+content_margin_bottom = 1.0
+bg_color = Color(0.11, 0.11, 0.122, 0.78)
+corner_radius_top_right = 10
+
+[sub_resource type="StyleBoxFlat" id="DraftSlotRankPlate_panel"]
+content_margin_left = 10.0
+content_margin_top = 1.0
+content_margin_right = 10.0
+content_margin_bottom = 1.0
+bg_color = Color(0.11, 0.11, 0.122, 0.78)
+corner_radius_top_left = 10
 
 [sub_resource type="StyleBoxFlat" id="EventResultChip_panel"]
 content_margin_left = 20.0
@@ -1447,6 +1463,33 @@ shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
+[sub_resource type="StyleBoxFlat" id="RunSetupStepCapsule_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+shadow_color = Color(0.11, 0.11, 0.18, 0.3)
+shadow_size = 14
+shadow_offset = Vector2(0, 5)
+
+[sub_resource type="StyleBoxFlat" id="RunSetupStepSelector_panel"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="RunTeamBannerMask_panel"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="RunTeamBannerMaskSquare_panel"]
+bg_color = Color(1, 1, 1, 1)
+
 [sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_disabled"]
 
 [sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_focus"]
@@ -2005,13 +2048,6 @@ corner_radius_top_right = 18
 corner_radius_bottom_right = 18
 corner_radius_bottom_left = 18
 
-[sub_resource type="StyleBoxFlat" id="StepChipPanel_panel"]
-bg_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 999
-corner_radius_top_right = 999
-corner_radius_bottom_right = 999
-corner_radius_bottom_left = 999
-
 [sub_resource type="StyleBoxFlat" id="SunkPanel_panel"]
 content_margin_left = 0.0
 content_margin_top = 0.0
@@ -2033,6 +2069,20 @@ corner_radius_top_left = 999
 corner_radius_top_right = 999
 corner_radius_bottom_right = 999
 corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="TeamCardBannerMask_panel"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="TeamCardStatPanel_panel"]
+bg_color = Color(0, 0, 0, 0.3)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
 
 [sub_resource type="StyleBoxFlat" id="TeamDraftGridBack_panel"]
 bg_color = Color(1, 1, 1, 1)
@@ -2639,6 +2689,33 @@ DraftSlotFrame/styles/hover = SubResource("DraftSlotFrame_disabled")
 DraftSlotFrame/styles/hover_pressed = SubResource("DraftSlotFrame_disabled")
 DraftSlotFrame/styles/normal = SubResource("DraftSlotFrame_disabled")
 DraftSlotFrame/styles/pressed = SubResource("DraftSlotFrame_disabled")
+DraftSlotInfoCaption/base_type = &"Label"
+DraftSlotInfoCaption/colors/font_color = Color(1, 1, 1, 0.78)
+DraftSlotInfoCaption/colors/font_shadow_color = Color(0, 0, 0, 0.55)
+DraftSlotInfoCaption/constants/shadow_offset_x = 0
+DraftSlotInfoCaption/constants/shadow_offset_y = 2
+DraftSlotInfoCaption/constants/shadow_outline_size = 5
+DraftSlotInfoCaption/font_sizes/font_size = 18
+DraftSlotInfoSalary/base_type = &"Label"
+DraftSlotInfoSalary/colors/font_color = Color(0.996, 0.929, 0.808, 1)
+DraftSlotInfoSalary/colors/font_shadow_color = Color(0, 0, 0, 0.55)
+DraftSlotInfoSalary/constants/shadow_offset_x = 0
+DraftSlotInfoSalary/constants/shadow_offset_y = 2
+DraftSlotInfoSalary/constants/shadow_outline_size = 5
+DraftSlotInfoSalary/font_sizes/font_size = 22
+DraftSlotInfoTotal/base_type = &"Label"
+DraftSlotInfoTotal/colors/font_color = Color(1, 1, 1, 1)
+DraftSlotInfoTotal/colors/font_shadow_color = Color(0, 0, 0, 0.55)
+DraftSlotInfoTotal/constants/shadow_offset_x = 0
+DraftSlotInfoTotal/constants/shadow_offset_y = 2
+DraftSlotInfoTotal/constants/shadow_outline_size = 5
+DraftSlotInfoTotal/font_sizes/font_size = 50
+DraftSlotLevelPlate/base_type = &"SurfaceChip"
+DraftSlotLevelPlate/styles/panel = SubResource("DraftSlotLevelPlate_panel")
+DraftSlotRankPlate/base_type = &"SurfaceChip"
+DraftSlotRankPlate/styles/panel = SubResource("DraftSlotRankPlate_panel")
+DraftSlotStars/base_type = &"OnFillLabel"
+DraftSlotStars/colors/font_color = Color(0.961, 0.651, 0.137, 1)
 EventResultChip/base_type = &"SurfaceChip"
 EventResultChip/styles/panel = SubResource("EventResultChip_panel")
 FacilityViewToast/base_type = &"SurfaceChip"
@@ -2796,6 +2873,15 @@ PilotThumbArtMask/base_type = &"SunkPanel"
 PilotThumbArtMask/styles/panel = SubResource("PilotThumbArtMask_panel")
 PilotThumbCheck/base_type = &"AccentChip"
 PilotThumbCheck/styles/panel = SubResource("PilotThumbCheck_panel")
+PilotThumbOverall/base_type = &"Label"
+PilotThumbOverall/colors/font_color = Color(1, 1, 1, 1)
+PilotThumbOverall/colors/font_outline_color = Color(0.11, 0.11, 0.122, 0.85)
+PilotThumbOverall/colors/font_shadow_color = Color(0, 0, 0, 0.55)
+PilotThumbOverall/constants/outline_size = 6
+PilotThumbOverall/constants/shadow_offset_x = 0
+PilotThumbOverall/constants/shadow_offset_y = 2
+PilotThumbOverall/constants/shadow_outline_size = 5
+PilotThumbOverall/font_sizes/font_size = 30
 PilotThumbTag/base_type = &"SurfaceChip"
 PilotThumbTag/styles/panel = SubResource("PilotThumbTag_panel")
 PopupCard/base_type = &"PanelContainer"
@@ -2836,6 +2922,28 @@ RunResultSectionCardAmber/base_type = &"Card"
 RunResultSectionCardAmber/styles/panel = SubResource("RunResultSectionCardAmber_panel")
 RunResultTraitCard/base_type = &"Card"
 RunResultTraitCard/styles/panel = SubResource("RunResultTraitCard_panel")
+RunSetupStepCapsule/base_type = &"Card"
+RunSetupStepCapsule/styles/panel = SubResource("RunSetupStepCapsule_panel")
+RunSetupStepSelector/base_type = &"Card"
+RunSetupStepSelector/styles/panel = SubResource("RunSetupStepSelector_panel")
+RunTeamBannerMask/base_type = &"SunkPanel"
+RunTeamBannerMask/styles/panel = SubResource("RunTeamBannerMask_panel")
+RunTeamBannerMaskSquare/base_type = &"SunkPanel"
+RunTeamBannerMaskSquare/styles/panel = SubResource("RunTeamBannerMaskSquare_panel")
+RunTeamBannerName/base_type = &"Label"
+RunTeamBannerName/colors/font_color = Color(1, 1, 1, 1)
+RunTeamBannerName/colors/font_shadow_color = Color(0, 0, 0, 0.55)
+RunTeamBannerName/constants/shadow_offset_x = 0
+RunTeamBannerName/constants/shadow_offset_y = 2
+RunTeamBannerName/constants/shadow_outline_size = 5
+RunTeamBannerName/font_sizes/font_size = 24
+RunTeamBannerShort/base_type = &"Label"
+RunTeamBannerShort/colors/font_color = Color(1, 1, 1, 1)
+RunTeamBannerShort/colors/font_shadow_color = Color(0, 0, 0, 0.55)
+RunTeamBannerShort/constants/shadow_offset_x = 0
+RunTeamBannerShort/constants/shadow_offset_y = 2
+RunTeamBannerShort/constants/shadow_outline_size = 5
+RunTeamBannerShort/font_sizes/font_size = 56
 ScenarioSelectArrow/base_type = &"Button"
 ScenarioSelectArrow/colors/font_color = Color(1, 1, 1, 1)
 ScenarioSelectArrow/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
@@ -2956,8 +3064,6 @@ ShopDevRowPanel/base_type = &"SunkPanel"
 ShopDevRowPanel/styles/panel = SubResource("ShopDevRowPanel_panel")
 ShopRowPanel/base_type = &"Card"
 ShopRowPanel/styles/panel = SubResource("ShopRowPanel_panel")
-StepChipPanel/base_type = &"AccentChip"
-StepChipPanel/styles/panel = SubResource("StepChipPanel_panel")
 SubLabel/base_type = &"Label"
 SubLabel/colors/font_color = Color(0.541, 0.541, 0.569, 1)
 SubLabel/font_sizes/font_size = 26
@@ -2965,6 +3071,31 @@ SunkPanel/base_type = &"PanelContainer"
 SunkPanel/styles/panel = SubResource("SunkPanel_panel")
 SurfaceChip/base_type = &"PanelContainer"
 SurfaceChip/styles/panel = SubResource("SurfaceChip_panel")
+TeamCardBannerMask/base_type = &"SunkPanel"
+TeamCardBannerMask/styles/panel = SubResource("TeamCardBannerMask_panel")
+TeamCardNameLabel/base_type = &"Label"
+TeamCardNameLabel/colors/font_color = Color(1, 1, 1, 1)
+TeamCardNameLabel/colors/font_shadow_color = Color(0, 0, 0, 0.45)
+TeamCardNameLabel/constants/shadow_offset_x = 0
+TeamCardNameLabel/constants/shadow_offset_y = 2
+TeamCardNameLabel/constants/shadow_outline_size = 4
+TeamCardNameLabel/font_sizes/font_size = 24
+TeamCardShortLabel/base_type = &"Label"
+TeamCardShortLabel/colors/font_color = Color(1, 1, 1, 1)
+TeamCardShortLabel/colors/font_shadow_color = Color(0, 0, 0, 0.45)
+TeamCardShortLabel/constants/shadow_offset_x = 0
+TeamCardShortLabel/constants/shadow_offset_y = 2
+TeamCardShortLabel/constants/shadow_outline_size = 4
+TeamCardShortLabel/font_sizes/font_size = 60
+TeamCardStatPanel/base_type = &"SunkPanel"
+TeamCardStatPanel/styles/panel = SubResource("TeamCardStatPanel_panel")
+TeamCardStatValue/base_type = &"Label"
+TeamCardStatValue/colors/font_color = Color(1, 1, 1, 1)
+TeamCardStatValue/colors/font_shadow_color = Color(0, 0, 0, 0.45)
+TeamCardStatValue/constants/shadow_offset_x = 0
+TeamCardStatValue/constants/shadow_offset_y = 2
+TeamCardStatValue/constants/shadow_outline_size = 4
+TeamCardStatValue/font_sizes/font_size = 26
 TeamDraftGridBack/base_type = &"Card"
 TeamDraftGridBack/styles/panel = SubResource("TeamDraftGridBack_panel")
 TextButton/base_type = &"Button"

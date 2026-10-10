@@ -1133,8 +1133,15 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `DraftSlotArtMask` · `PilotThumbArtMask` | SunkPanel | `ArtMask` (white AA mask for `clip_children`) | — |
 | `PilotThumbCheck` · `PilotThumbTag` | AccentChip · SurfaceChip | `PilotThumb` `Check` · `Tag` | — |
 | `PositionBadgePanel` | AccentChip | `PositionBadge` root (r8, 1px `POSITION_BADGE_EDGE`, padding `POSITION_BADGE_PAD_H` / `_V`) — shared widget in `resources/`, used on outgame and battle screens | role fill (`set_role`) |
-| `StepChipPanel` | AccentChip | `StepChip` root (pill) | state fill / border (`paint`) |
 | `TeamDraftGridBack` | Card | `TeamDraftView` `GridBack` | — |
+| `DraftSlotLevelPlate` · `DraftSlotRankPlate` | SurfaceChip | `DraftSlot` `%LevelPlate` (bottom-left, r10 top-right) · `%RankPlate` (bottom-right, r10 top-left) inside the art mask — `RAIL` 78 % | — |
+| `DraftSlotStars` (Label) | OnFillLabel | `DraftSlot` `%Stars` (amber `ACCENT`) | — |
+| `PilotThumbOverall` (Label) | Label (white 30, dark outline 6 + soft shadow) | `PilotThumb` `%Overall` over the face | — |
+| `RunTeamBannerMask` · `RunTeamBannerMaskSquare` | SunkPanel | `RunTeamBanner` `%Mask` (white AA `clip_children` mask; r18 = 감독 strip, r0 = full-bleed lineup backdrop) | — |
+| `RunTeamBannerShort` · `RunTeamBannerName` (Label) | Label (white `TEXT_ON_FILL`, soft dark shadow) | `RunTeamBanner` short name (56; 36 in `%HeadTop`) · full name (24) | — |
+| `DraftSlotInfoCaption` · `DraftSlotInfoTotal` · `DraftSlotInfoSalary` (Label) | Label (white / 78% white / `ACCENT_DIM`, soft dark shadow) | `DraftSlot` `Info` lines (OVERALL 18 · overall 50 · salary 22) — they sit on the lineup team banner | — |
+| `TeamCardBannerMask` · `TeamCardStatPanel` | SunkPanel | `TeamCard` `BannerMask` (white AA `clip_children` mask, r = `CARD_RADIUS - SELECT_BORDER_ON`, inset 4 so the selected border shows) · stat cards (black 30%, r16) | — |
+| `TeamCardShortLabel` · `TeamCardNameLabel` · `TeamCardStatValue` | Label (white `TEXT_ON_FILL`, soft dark shadow) | `TeamCard` `ShortName` (60) · `Name` (24) · stat values (26) over the team banner | — |
 | `ScenarioSelectDot` · `ScenarioSelectDotOn` | SunkPanel | `ScenarioSelectView` league index pills (white 28 % / `ACCENT`, r7) | — |
 | `ScenarioSelectCapPill` | Button | `ScenarioSelectView` salary-cap pill (white 10 / 16 / 22 % glass, white 18 % 2px border, fully round) — tap = tooltip | — |
 | `ScenarioSelectArrow` | Button | `ScenarioSelectView` ‹ › league arrows — no plate in any state (empty boxes = tap area only), glyph drawn by `ScenarioArrowGlyph` | — |
@@ -1156,6 +1163,7 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `VisitMenuBubble` | PopupCard | `VisitMenu` `%Bubble`: the visit menu speech bubble (white, `BORDER_STRONG` 2px, r 28, shadow, padding 32 / 28; the scene's `%Tail` polygons use the same colours) | scene-set |
 | `LobbyToast` | SurfaceChip | `Lobby` `%Toast` | error toast = `NEGATIVE` copy |
 | `LobbyNavCapsule` · `LobbyNavSelector` | Card | `Lobby` `NavBack` (RAIL pill + shadow) · `%NavSelector` (white pill, moved by code) | — |
+| `RunSetupStepCapsule` · `RunSetupStepSelector` | Card | run-setup `StepCapsule` `Back` (RAIL pill + shadow) · `%Selector` (white disc, moved by code) | — |
 | `LobbyLevelDisc` | Card | `Lobby` `%LevelButton/Disc` (RAIL circle under the radial EXP ring) | — |
 | `LobbyCurrencyPill` (Button) · `LobbyCurrencyPlus` | Button · Card | `UI_Comp_LobbyCurrencyPill` root (black 50 % pill, pressed 62 %, white text) · `%Plus` (ACCENT disc) | — |
 | `ManagerPopupSheet` · `CurrencyShopSheet` · `TraitSwapPopupSheet` | Card | `%Sheet` of `UI_View_ManagerPopup` · `UI_View_CurrencyShopPopup` · `UI_View_TraitSwapPopup` (`BG`, square top, `SHEET_RADIUS` bottom corners, shadow — sheets that drop from the top) | — |

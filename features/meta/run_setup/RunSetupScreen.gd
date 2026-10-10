@@ -13,24 +13,26 @@ extends Control
 # 돌아갔다 와도 편성에서 고른 다섯과 레벨이 남는다.
 #
 # **모양의 정본은 `scenes/RunSetup.tscn`** (바탕 · 머리글 줄 · 단계 본문 자리 `%Steps` ·
-# 오류 줄) 과 각 단계 뷰의 `.tscn`. 이 스크립트는 안전 영역 들여쓰기(Pattern B), 머리글
-# 알약(`StepChip`)을 `STEPS` 수만큼 세우고 상태 색을 칠하는 일, 단계 이동 · 런 시작만 한다.
+# 오류 줄) 과 각 단계 뷰의 `.tscn`. 이 스크립트는 안전 영역 들여쓰기(Pattern B), step header
+# (`StepCapsule` — one icon per `STEPS` row, current step on the white disc; slides off the top in
+# the lineup CONFIRM mode), 단계 이동 · 런 시작만 한다.
 
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
 const SEASON_SCENE: String = "res://scenes/Season.tscn"
 
-## 단계 표. `id` 는 `_make_step_view` 의 분기 키, `label` 은 머리글 글자의 l10n key.
+## 단계 표. `id` 는 `_make_step_view` 의 분기 키, `label` = l10n key of the step name (header icon
+## tooltip), `icon` = the header capsule icon (white-stroke svg, tinted by `StepCapsule`).
 ## The scenario (league) is picked in the lobby (`ScenarioSelectView`) before this scene opens —
 ## every row here is a header step; 뒤로 on the first one returns to the lobby's scenario pick.
 const STEPS: Array = [    # l10n-keys: run_setup.step.*
-	{"id": "team",     "label": L.RUN_SETUP_STEP_TEAM},
-	{"id": "manager",  "label": L.TERM_PERSON_MANAGER},    # M8/M9 — preset + traits (ManagerStepView)
-	{"id": "lineup",   "label": L.RUN_SETUP_STEP_LINEUP},
+	{"id": "team",     "label": L.RUN_SETUP_STEP_TEAM,     "icon": "res://resources/images/ui/run_setup/step_team.svg"},
+	{"id": "manager",  "label": L.TERM_PERSON_MANAGER,  "icon": "res://resources/images/ui/run_setup/step_manager.svg"},    # M8/M9 — preset + traits (ManagerStepView)
+	{"id": "lineup",   "label": L.RUN_SETUP_STEP_LINEUP,   "icon": "res://resources/images/ui/run_setup/step_lineup.svg"},
 ]
 
 # ─── 머리글 (단계 표시) ──────────────────────────────────────────────────────
-# 머리글 줄의 자리 · 크기는 씬(`%Header`, y 28 · 높이 64)이 정한다. 단계 본문은
-# 그 아랫변 + 24 에서 시작한다 — 단계 뷰 씬들의 첫 블록이 그 y(116)에 놓여 있다.
+# The header capsule's place / size is the scene's (`%StepCapsule_Header`, y 20 .. 100). Step bodies
+# start below it at 116 — every step view scene puts its first block at that y.
 const CONTENT_TOP: float = 116.0
 
 
@@ -55,7 +57,6 @@ var _manager_view: ManagerStepView = null
 
 var _step: int = -1
 var _views: Dictionary = {}          # step id → Control
-var _header_chips: Array = []        # Array[StepChip]
 var _draft: TeamDraft = null
 var _pool: Array = []                # CSV Lv1 사본 (load_match_data)
 var _load_error: String = ""
@@ -114,6 +115,9 @@ func go_to_step(i: int) -> void:
 	_step = i
 	_on_step_entered(id)
 	_refresh_header()
+	# The header hides only in the lineup CONFIRM mode (`_on_confirm_mode_changed`).
+	if id != "lineup":
+		(%StepCapsule_Header as StepCapsule).set_hidden(false)
 
 
 func _next_step() -> void:
@@ -147,6 +151,8 @@ func _make_step_view(id: String) -> Control:
 			_draft.ensure_view()
 			_draft.back_requested.connect(_prev_step)
 			_draft.start_requested.connect(_on_start_requested)
+			# PICK → CONFIRM (just before 게임 시작): the step header slides off the top, back on 뒤로.
+			_draft.confirm_mode_changed.connect(_on_confirm_mode_changed)
 			return _draft
 	push_error("RunSetupScreen: unknown step '%s'" % id)
 	return null
@@ -154,10 +160,13 @@ func _make_step_view(id: String) -> Control:
 
 func _on_step_entered(id: String) -> void:
 	(%ErrorLabel as Control).visible = false
+	if id == "manager" and _manager_view != null:
+		_manager_view.set_team(team_id)
 	if id == "lineup":
 		if _draft != null:
 			# Trait `salary_cap` moves the cap — set before the scenario redraws the gauge.
 			_draft.set_traits(manager_traits())
+			_draft.set_team(team_id)
 			_draft.set_scenario(scenario_id)
 		if _load_error != "":
 			_show_error(Loc.t(L.RUN_SETUP_LOAD_FAILED, {"error": _load_error}))
@@ -234,26 +243,24 @@ func _show_error(msg: String) -> void:
 
 
 # ── 머리글 ───────────────────────────────────────────────────────────────────
-## 알약 한 칸씩 `STEPS` 수만큼 — 자리 · 간격 · 높이는 씬의 `%Header` 줄이 정한다.
+## One capsule icon per `STEPS` row (texture + step name as tooltip) — size / spacing are the scene's.
 func _build_header() -> void:
-	var row: Control = %Header
-	for i in STEPS.size():
-		var chip := StepChip.create()
-		row.add_child(chip)
-		chip.set_text("%d  %s" % [i + 1, Loc.t(String((STEPS[i] as Dictionary)["label"]))])  # l10n-dynamic: run_setup.step.*
-		_header_chips.append(chip)
+	var icons: Array = []
+	var tips: Array = []
+	for row in STEPS:
+		var step: Dictionary = row
+		icons.append(load(String(step["icon"])))
+		tips.append(Loc.t(String(step["label"])))  # l10n-dynamic: run_setup.step.*
+	(%StepCapsule_Header as StepCapsule).setup(icons, tips)
+	(%StepCapsule_Header as StepCapsule).set_step(0, false)
 
 
-## 지난 단계 = 옅은 앰버, 지금 = 앰버 색면, 남은 단계 = 흰 판.
+## Disc on the current step; done = amber, upcoming = faint (`StepCapsule`).
 func _refresh_header() -> void:
-	for i in _header_chips.size():
-		var chip: StepChip = _header_chips[i]
-		var bg: Color = OutgameTheme.SURFACE
-		var fg: Color = OutgameTheme.TEXT_FAINT
-		if i == _step:
-			bg = OutgameTheme.ACCENT
-			fg = OutgameTheme.TEXT_ON_FILL
-		elif i < _step:
-			bg = OutgameTheme.ACCENT_DIM
-			fg = OutgameTheme.ACCENT_TEXT
-		chip.paint(bg, fg, OutgameTheme.BORDER if i > _step else null)
+	if _step >= 0:
+		(%StepCapsule_Header as StepCapsule).set_step(_step)
+
+
+## `TeamDraft.confirm_mode_changed` — fired when the PICK ↔ CONFIRM tween starts.
+func _on_confirm_mode_changed(confirm: bool) -> void:
+	(%StepCapsule_Header as StepCapsule).set_hidden(confirm)

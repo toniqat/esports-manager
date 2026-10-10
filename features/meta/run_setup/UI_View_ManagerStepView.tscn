@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://bysqo5kyt0dbm"]
+[gd_scene load_steps=7 format=3 uid="uid://bysqo5kyt0dbm"]
 
 [ext_resource type="Script" uid="uid://cqj5ibsaia0wy" path="res://features/meta/run_setup/ManagerStepView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://gmvu0lc4cfef" path="res://features/meta/manager/UI_Comp_ManagerPresetChips.tscn" id="3_chips"]
 [ext_resource type="PackedScene" uid="uid://gwexgkt7p5c4" path="res://features/meta/manager/UI_Comp_TraitPickerView.tscn" id="4_traits"]
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
+[ext_resource type="PackedScene" path="res://features/meta/run_setup/UI_Comp_RunTeamBanner.tscn" id="banner_scene"]
 
 [node name="ManagerStepView" type="Control"]
 layout_mode = 3
@@ -29,24 +30,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Status" type="Label" parent="Safe"]
-auto_translate_mode = 2
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _refresh_status()
-Preset · bonus points line (SubLabel), or the validation error — code switches to NegativeLabel."
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 32.0
-offset_top = 116.0
-offset_right = -32.0
-offset_bottom = 160.0
-grow_horizontal = 2
-theme_type_variation = &"SubLabel"
-theme_override_font_sizes/font_size = 24
-text = "프리셋 1 · 보너스 점수 0 · 특성을 바꾸면 이 프리셋에 바로 저장됩니다"
-clip_text = true
-
 [node name="Scroll" type="ScrollContainer" parent="Safe"]
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _ready() · ManagerStepView.gd _rebuild()
 Body from content_top (116) down to the screen bottom (code adds the bottom inset): the content scrolls under the floating bottom capsules and stays visible there; %BarShield keeps taps in that zone off it, %BottomGap lets the last block scroll clear of it. OutgameTheme.fit_bar_scroll ends the scroll bar a little above the capsules."
@@ -55,7 +38,7 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 168.0
+offset_top = 116.0
 offset_bottom = 0.0
 grow_vertical = 2
 horizontal_scroll_mode = 0
@@ -68,6 +51,41 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 0
+
+[node name="BannerPad" type="MarginContainer" parent="Safe/Scroll/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="RunTeamBanner_Team" parent="Safe/Scroll/Body/BannerPad" instance=ExtResource("banner_scene")]
+editor_description = "[필수] 지우면 오류 — ManagerStepView.gd set_team(). The team chosen on the 팀 step: banner + logo + names only (strip layout), first thing under the step capsule; scrolls with the body."
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 148)
+layout_mode = 2
+
+[node name="StatusPad" type="MarginContainer" parent="Safe/Scroll/Body"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _refresh_status()
+Error line slot: hidden normally (the body starts with the chips); code shows it only for an error (validation failure, prestige-locked swap, save failure) and the VBox reflows."
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 12
+
+[node name="Status" type="Label" parent="Safe/Scroll/Body/StatusPad"]
+auto_translate_mode = 2
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _refresh_status()
+The error text (NegativeLabel), wraps."
+layout_mode = 2
+theme_type_variation = &"NegativeLabel"
+theme_override_font_sizes/font_size = 24
+text = "특성 보너스 점수가 부족합니다"
+autowrap_mode = 3
 
 [node name="TopGap" type="Control" parent="Safe/Scroll/Body"]
 custom_minimum_size = Vector2(0, 4)
@@ -137,13 +155,13 @@ offset_bottom = 42.0
 grow_horizontal = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 30
-text = "운영형 감독 · Lv 1"
+text = "Lv 1"
 
 [node name="CardNote" type="Label" parent="Safe/Scroll/Body/CardPad/Card/Pad/VBox/Head"]
 auto_translate_mode = 2
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerStepView.gd _rebuild()
-Trait 'manager_all' note — code switches FaintLabel ↔ AccentLabel (amber when a bonus applies)."
+Trait 'manager_all' bonus note (amber) — code shows it only when such a bonus applies."
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -152,9 +170,9 @@ offset_left = -300.0
 offset_top = 8.0
 offset_bottom = 38.0
 grow_horizontal = 0
-theme_type_variation = &"FaintLabel"
+theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 20
-text = "전문화는 로비 감독 탭에서"
+text = "모든 능력치 +1"
 horizontal_alignment = 2
 
 [node name="Gap" type="Control" parent="Safe/Scroll/Body/CardPad/Card/Pad/VBox"]

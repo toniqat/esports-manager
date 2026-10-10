@@ -4,11 +4,11 @@ extends Control
 # 런 준비의 **5인 편성** 화면 — 우마무스메식 인물 고르기.
 #
 #   맨 위: 단계 머리글(`RunSetupScreen` 이 그린다 — 이 화면은 그 아래부터)
-#   상단: **샐러리 게이지** — 합계 / 캡, 넘치면 빨강. 그 아래 규칙 한 줄
-#         (`RunRules.validate_lineup` 의 오류 문장 그대로)
+#   상단: **샐러리 게이지** — one row `샐러리캡` · bar · total / cap (red over cap); a red line
+#         under it only for errors (`RunRules.validate_lineup` 의 오류 문장 그대로)
 #   상: 선택한 5인의 **상체 일러스트** (탑 · 정글 · 미드 · 원딜 · 서폿).
-#       일러스트를 누르면 `DraftDetailPanel` 이 열린다. 칸 아래에 **레벨 스테퍼**
-#       (− Lv +, 1 ~ 달성 최대)와 그 레벨의 샐러리 · 종합 스탯
+#       일러스트를 누르면 `DraftDetailPanel` 이 열린다. Level / rank stars inside the art,
+#       the overall big under it, then the salary
 #   중: 전체 / 탑 / 정글 / 미드 / 원딜 / 서폿 필터 버튼 한 줄
 #   하: 보유 선수 썸네일 격자 (세로 스크롤, 3.5줄이 보인다, 칸마다 샐러리 꼬리표)
 #   맨 아래: 하단 바 `뒤로` / `다음`
@@ -23,7 +23,10 @@ extends Control
 #
 # **화면은 두 모드를 오간다.** PICK 은 위와 같고, `다음`을 누르면 CONFIRM 으로
 # 넘어가 **픽창(필터 + 격자)이 화면 아래로 빠지고 선택 5인이 화면 가운데로
-# 내려온다**(`_apply_mode`). 거기서 **`게임 시작`**이 `TeamDraft.start_requested`
+# 내려온다**(`_apply_mode`). The five always sit on the chosen **team banner**
+# (`%RunTeamBanner_Lineup`: banner art backdrop, logo + names centred above them) in both modes;
+# in CONFIRM the gauge fades out and the banner block is centred; the step header
+# leaves too (`RunSetupScreen`, on `TeamDraft.confirm_mode_changed`). 거기서 **`게임 시작`**이 `TeamDraft.start_requested`
 # 를 올리고, `RunSetupScreen` 이 암전 → 가짜 로딩 → 밝아짐 뒤에서 런을 연다.
 # `뒤로`는 PICK 에서는 팀 단계로(`back_requested`), CONFIRM 에서는 PICK 으로.
 #
@@ -42,8 +45,12 @@ const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 # 블록의 y 는 PICK / CONFIRM 사이를 오가며 트윈되므로 그 두 값만 여기서 낸다 —
 # 씬 노드의 실제 자리(`%Gauge` 아랫변, `%Filters` 윗변, 바 윗변)에서 읽어 오므로
 # 에디터에서 블록을 옮겨도 따라간다.
-## 게이지 아랫변 ↔ 선택 5인(CONFIRM 모드에서 위로 붙을 수 있는 한계).
-const GAUGE_ROW_GAP: float = 24.0
+## 게이지 아랫변 ↔ 선택 5인 (PICK 의 위 한계).
+const GAUGE_ROW_GAP: float = 10.0
+## CONFIRM: the top bound of the banner + slot block (the step header has left — near the safe top).
+const CONFIRM_TOP_PAD: float = 24.0
+## Team banner (backdrop of the slot row) reaches this far below the slot row.
+const BANNER_PAD_BOTTOM: float = 14.0
 ## 블록 아랫변 ↔ 필터 줄 (PICK).
 const SLOT_FILTER_GAP: float = 32.0
 ## 블록 아랫변 ↔ 하단 바 (CONFIRM 의 아래 한계).
@@ -67,6 +74,7 @@ static func create() -> TeamDraftView:
 @onready var _safe: Control = %Safe
 @onready var _gauge: Control = $Safe/Gauge
 @onready var _slot_row: Control = %SlotRow
+@onready var _team_banner: RunTeamBanner = %RunTeamBanner_Lineup
 @onready var _pick_root: Control = %PickPane
 @onready var _filters: Control = %Filters
 @onready var _grid: GridContainer = %Grid
@@ -111,6 +119,7 @@ func _ready() -> void:
 	_detail = DraftDetailPanel.create()
 	add_child(_detail)
 	_refresh_slots()
+	refresh_team()
 	_apply_mode(false)
 
 
@@ -129,18 +138,41 @@ func _gauge_bottom() -> float:
 	return _gauge.position.y + _gauge.size.y
 
 
-## PICK 모드에서 선택 5인 블록이 앉는 y — 필터 줄 바로 위(게이지와는 겹치지 않게).
+## Banner head (logo + names) above the slot row — the slot row starts this far below the banner top.
+func _banner_head() -> float:
+	return _team_banner.top_head_bottom()
+
+
+## Height of the whole banner block (head + slot row + bottom pad).
+func _banner_h() -> float:
+	return _banner_head() + _slot_row.size.y + BANNER_PAD_BOTTOM
+
+
+## PICK 모드에서 선택 5인 블록이 앉는 y — 필터 줄 바로 위(게이지와는 겹치지 않게). The team
+## banner (head above the row, pad below) is part of the block.
 func _pick_row_y() -> float:
-	return maxf(_gauge_bottom() + GAUGE_ROW_GAP,
-			_filters.position.y - SLOT_FILTER_GAP - _slot_row.size.y)
+	return maxf(_gauge_bottom() + GAUGE_ROW_GAP + _banner_head(),
+			_filters.position.y - SLOT_FILTER_GAP - _slot_row.size.y - BANNER_PAD_BOTTOM)
 
 
-## CONFIRM 모드에서 선택 5인 블록이 내려앉는 y — **화면(안전 영역)의 세로 가운데**.
-## 게이지 아래 · 하단 바 위로만 걸러 낸다.
+## CONFIRM 모드에서 선택 5인 블록이 내려앉는 y. The banner block (head + slot row) is centred
+## in the safe area (the gauge and the step header are gone, so the upper bound is near the
+## safe top); kept above the bottom bar.
 func _confirm_row_y() -> float:
-	var lo: float = _gauge_bottom() + GAUGE_ROW_GAP
-	var hi: float = maxf(lo, OutgameTheme.bottom_bar_top() - _slot_row.size.y - SLOT_BAR_GAP)
-	return clampf((_safe.size.y - _slot_row.size.y) * 0.5, lo, hi)
+	var block_h: float = _banner_h()
+	var lo: float = CONFIRM_TOP_PAD
+	var hi: float = maxf(lo, OutgameTheme.bottom_bar_top() - block_h - SLOT_BAR_GAP)
+	return clampf((_safe.size.y - block_h) * 0.5, lo, hi) + _banner_head()
+
+
+## Banner y for a slot row at `row_y`.
+func _banner_y(row_y: float) -> float:
+	return row_y - _banner_head()
+
+
+## The team chosen on the 팀 step (`TeamDraft.set_team` → here, and once in `_ready`).
+func refresh_team() -> void:
+	_team_banner.fill(_draft.team_id)
 
 
 # ── Bind ─────────────────────────────────────────────────────────────────────
@@ -295,8 +327,9 @@ func _on_back_pressed() -> void:
 	_apply_mode(true)
 
 
-## PICK ↔ CONFIRM. 바꾸는 것은 셋뿐이다 — 픽창(필터 + 격자)의 자리,
-## 선택 5인 블록의 y, 그리고 `다음` / `게임 시작` 중 무엇이 서는가.
+## PICK ↔ CONFIRM — 픽창(필터 + 격자)의 자리, 선택 5인 블록의 y, the gauge (fades out
+## in CONFIRM), the team banner (rides with the slot row), and `다음` / `게임 시작`.
+## The animated path emits `TeamDraft.confirm_mode_changed` (the step header follows).
 func _apply_mode(animate: bool) -> void:
 	var picking: bool = not _confirm_mode
 	_next_btn.visible = picking
@@ -309,26 +342,37 @@ func _apply_mode(animate: bool) -> void:
 			else _safe.size.y - _filters.position.y + PICK_EXIT_PAD
 	if _mode_tween != null and _mode_tween.is_valid():
 		_mode_tween.kill()
+	var banner_y: float = _banner_y(row_y)
+	_team_banner.size.y = _banner_h()
+	var alpha: float = 0.0 if picking else 1.0
 	if not animate:
 		_slot_row.position.y = row_y
 		_pick_root.position.y = pick_y
 		_pick_root.visible = picking
+		_team_banner.position.y = banner_y
+		_gauge.modulate.a = 1.0 - alpha
+		_gauge.visible = picking
 		_busy = false
 		return
 
 	_busy = true
 	_pick_root.visible = true
+	_gauge.visible = true
+	_draft.confirm_mode_changed.emit(not picking)
 	_mode_tween = create_tween().set_parallel(true) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_mode_tween.tween_property(_pick_root, "position:y", pick_y, MODE_ANIM_SEC)
 	_mode_tween.tween_property(_slot_row, "position:y", row_y, MODE_ANIM_SEC)
+	_mode_tween.tween_property(_team_banner, "position:y", banner_y, MODE_ANIM_SEC)
+	_mode_tween.tween_property(_gauge, "modulate:a", 1.0 - alpha, MODE_ANIM_SEC)
 	_mode_tween.chain().tween_callback(_on_mode_anim_done.bind(picking))
 
 
 func _on_mode_anim_done(picking: bool) -> void:
 	# 다 빠진 픽창은 숨긴다 — 화면 밖이라도 남아 있으면 스크롤 · 버튼이 계속
-	# 입력 경로에 걸린다.
+	# 입력 경로에 걸린다. The faded-out gauge is hidden too.
 	_pick_root.visible = picking
+	_gauge.visible = picking
 	_busy = false
 
 
@@ -369,19 +413,10 @@ func _refresh_rules() -> void:
 	var cap: int = _draft.salary_cap()
 	var total: int = _draft.lineup_salary(ids)
 	var over: bool = cap > 0 and total > cap
-	var scen: Dictionary = RunRules.scenario(_draft.scenario_id)
-	var title: Label = %GaugeTitle
 	var value: Label = %GaugeValue
 	var fill: ColorRect = %GaugeFill
 	var gauge_msg: Label = %GaugeMsg
-	var scen_name: String = Loc.t(String(scen.get("name_key", "")))  # l10n-dynamic: scenario.*.name
-	# M8 — trait `salary_cap` adjustment, when the manager preset carries one.
-	var trait_adj: int = _draft.cap_bonus()
-	if trait_adj != 0:
-		title.text = Loc.t(L.RUN_SETUP_LINEUP_GAUGE_TITLE_TRAIT,
-				{"scenario": scen_name, "adj": ManagerUi.signed(trait_adj)})
-	else:
-		title.text = Loc.t(L.RUN_SETUP_LINEUP_GAUGE_TITLE, {"scenario": scen_name})
+	# The cap already includes the preset's trait `salary_cap` adjustment (`salary_cap_with`).
 	value.text = "%d / %d" % [total, cap]
 	value.add_theme_color_override("font_color",
 			OutgameTheme.NEGATIVE if over else OutgameTheme.TEXT)
@@ -389,27 +424,17 @@ func _refresh_rules() -> void:
 	fill.anchor_right = ratio
 	fill.color = OutgameTheme.NEGATIVE if over else OutgameTheme.ACCENT
 
-	var err: String = _draft.validate(ids)
-	var msg: String = err
-	var col: Color = OutgameTheme.TEXT_SUB
+	# The line under the gauge carries errors only — nothing while picking normally / when done.
+	var msg: String = ""
 	if _start_error != "":
 		msg = Loc.t(L.RUN_SETUP_LINEUP_START_FAILED, {"error": _start_error})
-		col = OutgameTheme.NEGATIVE
 	elif over:
 		# 다섯을 다 고르기 전이라도 캡을 넘겼으면 그것부터 말한다 — 빈 칸을
 		# 채우면 더 넘칠 뿐이다.
 		msg = Loc.t(L.RUN_SETUP_LINEUP_OVER_CAP, {"total": total, "cap": cap})
-		col = OutgameTheme.NEGATIVE
-	elif ids.size() < SLOT_COUNT:
-		msg = Loc.t(L.RUN_SETUP_LINEUP_PROGRESS, {"n": ids.size(), "max": SLOT_COUNT})
-	elif err != "":
-		col = OutgameTheme.NEGATIVE
-	else:
-		msg = Loc.t(L.RUN_SETUP_LINEUP_DONE_LEFT, {"n": cap - total}) if cap > 0 \
-				else Loc.t(L.RUN_SETUP_LINEUP_DONE)
-		col = OutgameTheme.POSITIVE
+	elif ids.size() >= SLOT_COUNT:
+		msg = _draft.validate(ids)
 	gauge_msg.text = msg
-	gauge_msg.add_theme_color_override("font_color", col)
 	_refresh_action_btns()
 
 
@@ -453,6 +478,7 @@ func _fill_preview() -> void:
 	d.visible = false
 	d.setup(pool, pm.owned_levels(),
 			int((scens[0] as Dictionary).get("id", 0)) if not scens.is_empty() else 0)
+	d.set_team(3)
 	add_child(d)
 	_draft = d
 	UiPreview.trace(d.back_requested)

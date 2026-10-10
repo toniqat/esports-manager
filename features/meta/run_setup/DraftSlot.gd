@@ -1,12 +1,14 @@
 class_name DraftSlot
 extends VBoxContainer
 
-# 편성 화면(`TeamDraftView`) 위쪽 다섯 칸 중 한 칸 — 상체 일러스트(누르면 상세 팝업),
-# 그 아래 `랭크 R · Lv N` 줄(고를 수 없다 — 컬렉션의 랭크 · 레벨 그대로), 샐러리 줄, 종합 줄.
+# 편성 화면(`TeamDraftView`) 위쪽 다섯 칸 중 한 칸 — 상체 일러스트(누르면 상세 팝업).
+# Inside the art: level plate bottom-left (`Lv N`), rank as amber stars bottom-right (★ × rank —
+# not chosen here, the collection's rank / level as they are). Under the art: a small `OVERALL`
+# caption, the overall number big, then the salary line.
 #
 # **모양의 정본은 `UI_Comp_DraftSlot.tscn`** (일러스트 204×412 · 마스크 · 빈 칸 글자 · 배지 자리 ·
 # 글자 줄). 이 스크립트는 데이터만 넣는다 — 역할 배지, 일러스트 텍스처,
-# 랭크 · 레벨 · 샐러리 · 종합 글자, 그리고 칸 테두리(빈 칸 = 회색, 찬 칸 = 역할 색 → 데이터라 코드).
+# 레벨 · 별 · 샐러리 · 종합 글자, 그리고 칸 테두리(빈 칸 = 회색, 찬 칸 = 역할 색 → 데이터라 코드).
 #
 # **`%Frame` 을 `flat` 로 두면 안 된다** — flat 버튼은 스타일박스를 통째로 무시해 빈 칸의
 # 테두리가 사라진다.
@@ -32,7 +34,9 @@ func show_empty() -> void:
 	(%EmptyMark as Control).visible = true
 	frame.disabled = true
 	_set_frame_style(OutgameTheme.SURFACE_SUNK, OutgameTheme.BORDER)
-	(%Level as Label).text = ""
+	(%LevelPlate as Control).visible = false
+	(%RankPlate as Control).visible = false
+	(%OverallCaption as Control).visible = false
 	(%Salary as Label).text = ""
 	(%Total as Label).text = ""
 
@@ -44,9 +48,13 @@ func show_pilot(p: PlayerData, role_color: Color, salary: int) -> void:
 	(%EmptyMark as Control).visible = false
 	frame.disabled = false
 	_set_frame_style(OutgameTheme.SURFACE, role_color)
-	(%Level as Label).text = Loc.t(L.RUN_SETUP_SLOT_RANK_LEVEL, {"rank": p.rank, "level": p.level})
+	(%LevelPlate as Control).visible = true
+	(%LevelText as Label).text = Loc.t(L.RUN_SETUP_LEVEL_N, {"n": p.level})
+	(%RankPlate as Control).visible = p.rank > 0
+	(%Stars as Label).text = "★".repeat(maxi(0, p.rank))
+	(%OverallCaption as Control).visible = true
 	(%Salary as Label).text = Loc.t(L.RUN_SETUP_SLOT_SALARY, {"n": salary})
-	(%Total as Label).text = Loc.t(L.RUN_SETUP_SLOT_TOTAL, {"n": p.stat_total()})
+	(%Total as Label).text = str(p.stat_total())
 
 
 ## 칸 모양(반지름 · 테두리 두께)은 테마 변형 `DraftSlotFrame` 이 정하고 — 일러스트 마스크는

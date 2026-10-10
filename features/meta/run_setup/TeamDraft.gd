@@ -30,8 +30,14 @@ static func slot_of_role(role: int) -> int:
 ## 편성 화면이 위로 올리는 두 요청. 실제 런 시작 · 단계 이동은 `RunSetupScreen`.
 signal back_requested
 signal start_requested(pilot_ids: Array)
+## PICK ↔ CONFIRM switched (emitted by the view when the mode tween starts) — `RunSetupScreen`
+## slides the step header off the top in CONFIRM and back in PICK.
+signal confirm_mode_changed(confirm: bool)
 
 var scenario_id: int = 0
+## Team package id chosen on the 팀 step (`RunSetupScreen` sets it on every lineup entry) —
+## the CONFIRM team banner reads it.
+var team_id: int = -1
 ## M8 — trait ids of the chosen manager preset; their `salary_cap` sum moves the cap.
 var trait_ids: Array = []
 
@@ -57,6 +63,13 @@ func set_scenario(p_scenario_id: int) -> void:
 	scenario_id = p_scenario_id
 	if _view != null:
 		_view.refresh_rules()
+
+
+## The 팀 step's choice (set on every entry to the lineup step).
+func set_team(p_team_id: int) -> void:
+	team_id = p_team_id
+	if _view != null:
+		_view.refresh_team()
 
 
 ## The 감독 step's preset traits (set on every entry to the lineup step). The caller

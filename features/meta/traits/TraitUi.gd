@@ -6,8 +6,8 @@ extends RefCounted
 # picker, shop). Pure UI — rules stay in `TraitSystem`.
 #
 # Rarity 0..4 (`traits.rarity`, names `TraitSystem.rarity_name`):
-#   0 grey · 1 teal · 2 blue · 3 purple · 4 amber
-# (1 is teal, not `POSITIVE` green — the "+" polarity chip next to it is green.)
+#   0 grey · 1 green · 2 blue · 3 purple · 4 amber
+# (1 is `CARD_TINTS` green, a shade off the `POSITIVE` polarity green.)
 # The shop also uses this table for its pilot rows (`ShopPopup.rarity_color`
 # delegates here), so gacha results read the same on both pools.
 
@@ -16,7 +16,7 @@ extends RefCounted
 static func rarity_color(rarity: int) -> Color:
 	match clampi(rarity, 0, 4):
 		0: return OutgameTheme.TEXT_SUB
-		1: return OutgameTheme.CARD_TINTS[0]
+		1: return OutgameTheme.CARD_TINTS[4]
 		2: return OutgameTheme.CARD_TINTS[3]
 		3: return OutgameTheme.CARD_TINTS[2]
 	return OutgameTheme.ACCENT

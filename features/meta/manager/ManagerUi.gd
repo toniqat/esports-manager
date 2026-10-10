@@ -3,16 +3,32 @@ extends RefCounted
 
 # Shared building blocks of the lobby `감독` tab (`ManagerTab`) and the run setup
 # `감독` step (`run_setup/ManagerStepView`): preset names, the read-only six-stat
-# row and the Korean text of a trait unlock condition (plan §12.4 grammar).
-# The preset chips are the `UI_Comp_ManagerPresetChips.tscn` scene; the trait block is
+# row, preset numerals, stat icons and the text of a trait unlock condition (plan §12.4 grammar).
+# The preset capsule is the `UI_Comp_ManagerPresetChips.tscn` scene; the trait block is
 # `UI_Comp_TraitPickerView.tscn`.
 # Pure UI helpers — rules stay in `ManagerProgress` / `TraitSystem`.
 
 const STAT_CELL_H: float = 120.0
 
 
+const ROMAN: Array = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
+const STAT_ICON_DIR: String = "res://resources/images/ui/manager/stat_%s.svg"
+
+
+## "프리셋 III" — the numeral is the one the preset capsule shows.
 static func preset_name(idx: int) -> String:
-	return Loc.t(L.MANAGER_PRESET_NAME, {"n": idx + 1})
+	return Loc.t(L.MANAGER_PRESET_NAME, {"n": roman(idx + 1)})
+
+
+## 1 → "I" … 10 → "X" (`PRESET_MAX_COUNT` = 10); past the table the plain number.
+static func roman(n: int) -> String:
+	return String(ROMAN[n - 1]) if n >= 1 and n <= ROMAN.size() else str(n)
+
+
+## White glyph of a manager stat (`StaffSystem.STATS` key) — tint it with `self_modulate`.
+static func stat_icon(stat: String) -> Texture2D:
+	var path: String = STAT_ICON_DIR % stat
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
 # ── Read-only stats ──────────────────────────────────────────────────────────

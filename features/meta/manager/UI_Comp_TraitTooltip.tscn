@@ -1,0 +1,111 @@
+[gd_scene load_steps=3 format=3 uid="uid://6fs46krqnsor"]
+
+[ext_resource type="Script" path="res://features/meta/manager/TraitTooltip.gd" id="1_tip"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="TraitTooltip" type="CanvasLayer"]
+layer = 25
+script = ExtResource("1_tip")
+
+[node name="Root" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd _place()"
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Catcher" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd _ready() (a tap anywhere outside the card closes the tooltip)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Card" type="PanelContainer" parent="Root"]
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for() (placed beside the tapped card: right of it on the left half of the screen, left of it on the right half; clamped to the safe area)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 0
+offset_left = 300.0
+offset_top = 600.0
+offset_right = 820.0
+offset_bottom = 900.0
+theme_type_variation = &"TraitTooltipCard"
+
+[node name="VBox" type="VBoxContainer" parent="Root/Card"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Root/Card/VBox"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 30
+text = "성실한 훈련"
+autowrap_mode = 3
+
+[node name="Meta" type="HBoxContainer" parent="Root/Card/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Rarity" type="PanelContainer" parent="Root/Card/VBox/Meta"]
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for() (fill = rarity colour, AccentChip copy)"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"AccentChip"
+
+[node name="RarityText" type="Label" parent="Root/Card/VBox/Meta/Rarity"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 20
+text = "고급"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Root/Card/VBox/Meta"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for() (PositiveLabel / NegativeLabel = polarity)"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 22
+text = "보너스 −3"
+
+[node name="Desc" type="Label" parent="Root/Card/VBox"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "훈련 경험치 +20%"
+autowrap_mode = 3
+
+[node name="Action" type="Button" parent="Root/Card/VBox"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitTooltip.gd show_for() (shown only when the host passes an action — 장착 PrimaryButton / 해제 GhostButton, code)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 28
+text = "장착"

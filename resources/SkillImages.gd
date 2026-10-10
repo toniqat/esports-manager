@@ -69,6 +69,42 @@ const MECH_ICON: Dictionary = {
 }
 
 
+## traits.id → icon file name (manager traits, `UI_Comp_TraitCard`). Keyed by id, not `key`:
+## a "+" and a "−" trait share a key but need different pictures. No icon is shared with
+## `ICON` / `MECH_ICON`. Add a trait → add a row here.
+const TRAIT_ICON: Dictionary = {
+	1:  "Rising_Ram",           # train_exp_pct +
+	2:  "Grapple_Arm",          # mastery_pct +
+	3:  "Luggage_Cart",         # income_pct +
+	4:  "Tag_Along",            # trust_gain +
+	5:  "Frozen_Shelter",       # incident_pct − (fewer incidents)
+	6:  "Project_Mind",         # analysis_tier +
+	7:  "Borrowed_Decree",      # salary_cap +
+	8:  "Shining_Wonder",       # manager_all +
+	9:  "Rejuvenating_Aurora",  # upkeep_pct −
+	10: "Time_Wall",            # open_cost +
+	11: "Guided_Owl",           # first_draw +
+	12: "Lil'_Helpers",         # hand_size +
+	13: "Charged_Shot",         # first_card_cost −
+	14: "Lightning_Ball",       # cost_tick
+	15: "Life_Drain",           # income_pct −
+	16: "Nap_Time",             # train_exp_pct −
+	17: "Scorn",                # trust_gain −
+	18: "Storm_Cloud",          # incident_pct + (more incidents)
+	19: "Chain_Gang",           # salary_cap −
+	20: "Smoke_Bomb",           # analysis_tier −
+	21: "Afterburn",            # upkeep_pct +
+	22: "Sleep_Dagger",         # first_draw −
+	23: "Binding_Word",         # hand_size −
+	24: "Petrifying_Bola",      # first_card_cost +
+}
+
+
+## Icon for a manager trait id (`traits.id`). null when unmapped or missing.
+static func trait_icon_for(trait_id: int) -> Texture2D:
+	return _load_icon(String(TRAIT_ICON.get(trait_id, "")))
+
+
 ## Icon for a skill key (`pilot_skills.key`). null when unmapped or missing.
 static func icon_for(skill_key: String) -> Texture2D:
 	return _load_icon(String(ICON.get(skill_key, "")))

@@ -1,0 +1,262 @@
+[gd_scene load_steps=8 format=3 uid="uid://cam24vd7vosf4"]
+
+[ext_resource type="Script" path="res://features/meta/manager/TraitSwapPopup.gd" id="1_swap"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://c26kbfiu51p1a" path="res://resources/DragScroll.gd" id="3_drag"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/UI_Comp_TraitCard.tscn" id="4_card"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingCloseButton.tscn" id="5_close"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/UI_Comp_TraitTooltip.tscn" id="6_tip"]
+
+[node name="TraitSwapPopup" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_swap")
+
+[node name="Root" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd (fades with the slide)"
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="Dim" type="Button" parent="Root"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _ready() (tap outside the sheet = close)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="Sheet" type="Panel" parent="Root"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fit_safe_area() · open() (drops from the top; bottom = 16 px above the floating close capsule, code)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -176.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"TraitSwapPopupSheet"
+
+[node name="Content" type="Control" parent="Root/Sheet"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fit_safe_area() (top offset = notch height, code)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Root/Sheet/Content"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = -40.0
+offset_bottom = 96.0
+grow_horizontal = 2
+theme_type_variation = &"TitleLabel"
+text = "tx_PEQZX6R3EF"
+vertical_alignment = 1
+
+[node name="Gauge" type="Panel" parent="Root/Sheet/Content"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill() (TraitPickerGauge ↔ TraitPickerGaugeBad when the set's bonus < 0)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 108.0
+offset_right = -24.0
+offset_bottom = 196.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"TraitPickerGauge"
+
+[node name="Key" type="Label" parent="Root/Sheet/Content/Gauge"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_right = 200.0
+grow_vertical = 2
+theme_type_variation = &"CaptionLabel"
+text = "tx_0TVPZHMHDQ"
+vertical_alignment = 1
+
+[node name="Bonus" type="Label" parent="Root/Sheet/Content/Gauge"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill() (Positive / Negative / Caption label by sign)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 200.0
+offset_right = 320.0
+grow_vertical = 2
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 40
+text = "+3"
+vertical_alignment = 1
+
+[node name="Rule" type="Label" parent="Root/Sheet/Content/Gauge"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 320.0
+offset_right = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 20
+text = "남는 점수는 런 점수에 더해집니다"
+horizontal_alignment = 2
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Root/Sheet/Content"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd (equipped + owned grids; DragScroll drags it)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 212.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="DragScroll" type="Node" parent="Root/Sheet/Content/Scroll"]
+unique_name_in_owner = true
+script = ExtResource("3_drag")
+
+[node name="Body" type="MarginContainer" parent="Root/Sheet/Content/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="Root/Sheet/Content/Scroll/Body"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="EquippedTitle" type="Label" parent="Root/Sheet/Content/Scroll/Body/VBox"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "장착한 특성 2"
+
+[node name="EquippedGrid" type="GridContainer" parent="Root/Sheet/Content/Scroll/Body/VBox"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill() (one TraitCard per equipped trait, equip order; the scene's two are the preview)"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 5
+
+[node name="TraitCard_Equipped0" parent="Root/Sheet/Content/Scroll/Body/VBox/EquippedGrid" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="TraitCard_Equipped1" parent="Root/Sheet/Content/Scroll/Body/VBox/EquippedGrid" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="EquippedEmpty" type="Label" parent="Root/Sheet/Content/Scroll/Body/VBox"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill() (shown only when nothing is equipped)"
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+text = "tx_2G8T5Z3F2H"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Gap" type="Control" parent="Root/Sheet/Content/Scroll/Body/VBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="OwnedTitle" type="Label" parent="Root/Sheet/Content/Scroll/Body/VBox"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "보유 특성 8"
+
+[node name="OwnedGrid" type="GridContainer" parent="Root/Sheet/Content/Scroll/Body/VBox"]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _fill() (one TraitCard per owned trait — positives first; equipped ones get the amber TraitCardOn frame)"
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 5
+
+[node name="TraitCard_Owned0" parent="Root/Sheet/Content/Scroll/Body/VBox/OwnedGrid" instance=ExtResource("4_card")]
+layout_mode = 2
+theme_type_variation = &"TraitCardOn"
+
+[node name="TraitCard_Owned1" parent="Root/Sheet/Content/Scroll/Body/VBox/OwnedGrid" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="TraitCard_Owned2" parent="Root/Sheet/Content/Scroll/Body/VBox/OwnedGrid" instance=ExtResource("4_card")]
+layout_mode = 2
+
+[node name="FloatingCloseButton_Close" parent="Root" instance=ExtResource("5_close")]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd _ready() · _fit_safe_area() (bottom-right, lifted by the device inset)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -256.0
+offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="TraitTooltip_Tip" parent="." instance=ExtResource("6_tip")]
+editor_description = "[필수] 지우면 오류 — TraitSwapPopup.gd (card tap → effect + 장착 / 해제 action)"
+unique_name_in_owner = true

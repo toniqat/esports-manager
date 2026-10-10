@@ -837,17 +837,10 @@ static func _add_screen_variations(th: Theme) -> void:
 	mech_chip.content_margin_bottom = 2.0
 	_add_derived(th, "MatchPrepMechChip", &"SunkPanel", mech_chip)
 
-	# meta/collection · meta/manager — 컬렉션 칸 · 프리셋 칩 · 특성 블록 (R2a)
+	# meta/collection · meta/manager — 컬렉션 칸 · 특성 블록 게이지 (R2a)
 	# 버튼 판은 상태마다 같은 판 — 상태(보유 · 선택 · 장착 · 잠김 · 칸 초과)는 코드가 이름만 바꾼다.
 	var r2a_buttons := {
 		"CollectionCellFrame": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER_STRONG, 2)],
-		"ManagerPresetChip": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER, 2)],
-		"ManagerPresetChipOn": [&"SelectableCardButtonOn", flat_style(ACCENT_DIM, 16, ACCENT, 4)],
-		"TraitPickerSlot": [&"SelectableCardButton", flat_style(SURFACE, 14, BORDER_STRONG, 2)],
-		"TraitPickerSlotOver": [&"SelectableCardButton", flat_style(SURFACE, 14, NEGATIVE, 2)],
-		"TraitPickerRow": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER, 1)],
-		"TraitPickerRowOn": [&"SelectableCardButtonOn", flat_style(ACCENT_DIM, 16, ACCENT, 3)],
-		"TraitPickerRowLocked": [&"SelectableCardButton", flat_style(BG, 16, BORDER, 1)],
 	}
 	for v in r2a_buttons:
 		th.set_type_variation(v, r2a_buttons[v][0])
@@ -878,10 +871,7 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "TraitPickerGauge", &"SelectableCard", flat_style(SURFACE, 16, BORDER, 1))
 	_add_derived(th, "TraitPickerGaugeBad", &"ManagerDangerCard",
 			flat_style(SURFACE.lerp(NEGATIVE, 0.12), 16, NEGATIVE, 3))
-	_add_derived(th, "TraitPickerSlotEmpty", &"SunkPanel", flat_style(SURFACE_SUNK, 14, BORDER, 1))
-	_add_derived(th, "TraitPickerLayerChip", &"SurfaceChip", flat_style(SURFACE_SUNK, CHIP_RADIUS))
 	_add_derived(th, "TraitPickerNewChip", &"AccentChip", flat_style(NEGATIVE, CHIP_RADIUS))
-	_add_derived(th, "TraitPickerEquippedChip", &"AccentChip", flat_style(ACCENT, CHIP_RADIUS))
 
 	# meta/manager — 감독 탭 프레스티지 리셋
 	_add_derived(th, "ManagerDangerCard", &"Card",
@@ -1044,6 +1034,71 @@ static func _add_screen_variations(th: Theme) -> void:
 	close_pill["focus"] = button_box(Color(0, 0, 0, 0), null)
 	_add_button(th, "FloatingCloseButton", FONT_BODY, TEXT_ON_FILL, close_pill)
 
+	# meta/manager — preset capsule (`UI_Comp_ManagerPresetChips`): dark pill, a white selector
+	# pill slides under the chosen cell (same look as the lobby nav). Cells are flat buttons whose
+	# caption is white on the capsule, dark on the selector.
+	_add_derived(th, "ManagerPresetCapsule", &"Card", flat_style(RAIL, 999))
+	_add_derived(th, "ManagerPresetSelector", &"Card", flat_style(SURFACE, 999))
+	var flat_cell: Dictionary = {}
+	for n in BUTTON_STATES:
+		flat_cell[n] = button_box(Color(0, 0, 0, 0), null)
+	_add_button(th, "ManagerPresetCell", FONT_BODY, TEXT_ON_FILL, flat_cell)
+	_add_button(th, "ManagerPresetCellOn", FONT_BODY, TEXT, flat_cell)
+
+	# meta/manager — 감독 능력치 card (`UI_Comp_ManagerStatCard`, 3 × 2 grid): sunk card; its bottom
+	# adjust strip is bare in spec mode and light green while removal points are being placed.
+	_add_derived(th, "ManagerStatCard", &"SunkPanel", flat_style(SURFACE_SUNK, 16))
+	_add_derived(th, "ManagerStatAdjust", &"SunkPanel", flat_style(Color(SURFACE, 0.0), 14))
+	_add_derived(th, "ManagerStatAdjustRemove", &"SunkPanel", flat_style(POSITIVE.lerp(SURFACE, 0.78), 14))
+	# Its − / + steppers: the ghost button with almost no side padding (six cards share one row).
+	th.set_type_variation(&"ManagerStatStep", &"GhostButton")
+	var step_ghost: Dictionary = button_styles("ghost")
+	for n in BUTTON_STATES:
+		var sb: StyleBox = (step_ghost[n] as StyleBox).duplicate()
+		sb.content_margin_left = 2.0
+		sb.content_margin_right = 2.0
+		sb.content_margin_top = 2.0
+		sb.content_margin_bottom = 2.0
+		th.set_stylebox(n, &"ManagerStatStep", sb)
+	# meta/manager — bonus points pill beside the 특성 title (`UI_Comp_TraitPickerView` %BonusPill).
+	for v in ["TraitPickerBonusPill", "TraitPickerBonusPillBad"]:
+		var pill_box := flat_style(SURFACE_SUNK, CHIP_RADIUS) if v == "TraitPickerBonusPill" \
+				else flat_style(SURFACE.lerp(NEGATIVE, 0.12), CHIP_RADIUS, NEGATIVE, 2)
+		pill_box.content_margin_left = 18.0
+		pill_box.content_margin_right = 18.0
+		pill_box.content_margin_top = 4.0
+		pill_box.content_margin_bottom = 4.0
+		_add_derived(th, v, &"SurfaceChip", pill_box)
+
+	# meta/manager — trait card (`UI_Comp_TraitCard`): white card button; equipped (swap popup) =
+	# amber frame. Thumb = rounded square whose fill is the rarity colour (data, `variation_box`
+	# copy); score plate sits in its bottom-right corner (dark, rounded top-left).
+	var trait_cards := {
+		"TraitCard": [&"SelectableCardButton", flat_style(SURFACE, 16, BORDER, 1)],
+		"TraitCardOn": [&"SelectableCardButtonOn", flat_style(ACCENT_DIM, 16, ACCENT, 4)],
+	}
+	for v in trait_cards:
+		th.set_type_variation(v, trait_cards[v][0])
+		for n in BUTTON_STATES:
+			th.set_stylebox(n, v, trait_cards[v][1])
+	var thumb := flat_style(TEXT_SUB, 22)
+	thumb.anti_aliasing = true
+	_add_derived(th, "TraitCardThumb", &"SunkPanel", thumb)
+	var score := flat_style(Color(RAIL, 0.82), 0)
+	score.corner_radius_top_left = 14
+	score.corner_radius_bottom_right = 22
+	score.content_margin_left = 12.0
+	score.content_margin_right = 12.0
+	score.content_margin_top = 2.0
+	score.content_margin_bottom = 2.0
+	_add_derived(th, "TraitCardScore", &"SurfaceChip", score)
+	# Trait effect tooltip (`UI_Comp_TraitTooltip`) — white card with a strong border + shadow.
+	var tip := flat_style(SURFACE, 20, BORDER_STRONG, 2)
+	tip.shadow_color = Color(SHADOW, 0.35)
+	tip.shadow_size = 16
+	tip.shadow_offset = Vector2(0, 6)
+	tip.set_content_margin_all(24.0)
+	_add_derived(th, "TraitTooltipCard", &"PopupCard", tip)
 
 	# meta/shop — currency shop popup: product tile (white card button) + its price pill.
 	_add_button(th, "CurrencyShopTile", FONT_BTN_TEXT, TEXT,

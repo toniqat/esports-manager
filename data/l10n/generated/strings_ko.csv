@@ -1046,6 +1046,27 @@ tx_JNX31TB32C,프리셋: 전문화 분배 + 특성
 tx_96VG8VVT6V,프레스티지 프리셋. 재설정해야 쓸 수 있습니다
 tx_JXE6K3B8JS,"전문화 분배가 비워지고, 특성은 그대로 남습니다"
 tx_BG420X1TPQ,감독 능력치
+tx_1XPPS9RH12,교체
+tx_6SE29A9FXX,장착 {n}
+tx_2G8T5Z3F2H,장착한 특성이 없습니다. 교체를 눌러 고르세요
+tx_PEQZX6R3EF,특성 교체
+tx_5XYT6BP0NH,장착한 특성 {n}
+tx_HSFYC5WP1K,보유 특성 {n}
+tx_YEQ9DR0FZM,장착
+tx_MZHX5Z4AA5,해제
+tx_59W6QJYMYQ,보너스 점수가 0 미만입니다
+tx_W1ESC68E04,이 조합은 저장할 수 없습니다. 바꾼 내용을 버리고 닫을까요?
+tx_NAZXND3NGZ,계속 고르기
+tx_XD742N7FEV,버리고 닫기
+tx_SJHA0NBZ03,확정
+tx_AXYR1029FG,감독 능력치를 낮출까요?
+tx_BZJAWGNJRP,"제거 포인트 {n}을 써서 아래 기본값을 영구히 낮춥니다(모든 프리셋).
+{list}
+대신 전문화 포인트를 {gain} 얻습니다.
+프레스티지 전까지 되돌릴 수 없습니다."
+tx_ABPS76TWB6,{stat} {from} → {to}
+tx_PJFP6ZV8FH,감독 능력치를 낮췄습니다. 전문화 포인트 +{gain}
+tx_YB3D6SH2KQ,보너스 점수 {n}
 tx_43FCJDADR5,코치에게 맡기기
 tx_S3TMQTME0B,메크 코치가 없다. 선수마다 직접 연구 메크를 고른다
 tx_9795WB8ABE,미숙
@@ -2562,7 +2583,7 @@ tx_5A1V09D3HA,라인전
 tx_AXHT969FXE,일반
 tx_D41QQZRCGD,고급
 tx_2VJCYJ4V0W,희귀
-tx_HQ80SX4DB0,영웅
+tx_HQ80SX4DB0,서사
 tx_T1GJ91RP73,전설
 tx_0KSNX63V29,체력
 tx_CT45F83FMW,최대 체력

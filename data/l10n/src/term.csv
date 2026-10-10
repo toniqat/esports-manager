@@ -61,7 +61,7 @@ tx_5A1V09D3HA,term.card_cat.lane,active,카드 분류 (CardData.category_name),,
 tx_AXHT969FXE,term.rarity.common,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,일반,Common,draft,aef1a1e7
 tx_D41QQZRCGD,term.rarity.uncommon,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,고급,Uncommon,draft,1c208809
 tx_2VJCYJ4V0W,term.rarity.rare,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,희귀,Rare,draft,40209554
-tx_HQ80SX4DB0,term.rarity.epic,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,영웅,Epic,draft,be8063e0
+tx_HQ80SX4DB0,term.rarity.epic,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,서사,Epic,draft,b1c762b2
 tx_T1GJ91RP73,term.rarity.legendary,active,등급 이름 0..4 (GameEnums.rarity_label) — 특성 · 기벽 공용,,,전설,Legendary,draft,72041dd0
 tx_0KSNX63V29,term.combat.hp,active,전투 수치 이름,,,체력,HP,draft,a45ea58e
 tx_CT45F83FMW,term.combat.max_hp,active,전투 수치 이름,,,최대 체력,Max HP,draft,e36ea071

@@ -71,11 +71,13 @@ preset chips (`ManagerPresetChips`, from `../manager/`) → stats card (`<type> 
 `ManagerUi.add_stat_cells`, specialised part in amber, `manager_all` trait note) → `TraitPickerView`.
 - **The active preset is preselected** — the "nothing preselected" rule is for the choice lists; a
   preset is a loadout already built in the lobby `감독` tab.
-- Trait taps edit a draft copy of the chosen preset (`ManagerProgress.toggle_trait`). Whenever the
-  draft is valid it is written back (`store_preset`) and the profile saved — the preset itself is
-  edited. An invalid draft (bonus < 0) is never saved; switching chips drops it.
-- `다음` is disabled while `ManagerProgress.validate_preset` fails; the reason replaces the status line
-  (red). A prestige preset can't be edited here (reset it in the lobby tab).
+- Traits show as the equipped cards only (tap = effect tooltip). `교체` (`swap_requested`) opens the shared
+  `TraitSwapPopup` (`TraitPickerView.open_swap`); a prestige preset refuses it (red error line). A valid changed
+  set comes back through `traits_applied` → `set_traits` → written back (`store_preset`) and the profile saved when
+  the preset validates — the preset itself is edited. The popup never hands back a set with bonus < 0.
+- `다음` is disabled while `ManagerProgress.validate_preset` fails; the reason shows as the red error line
+  (also used for a prestige-locked swap and a profile save failure). No error = no line, the body starts
+  with the chips. A prestige preset can't be edited here (reset it in the lobby tab).
 - Specialisation (stat alloc) is not editable here — lobby tab only.
 - `다음` → `RunSetupScreen.manager_preset = preset_idx`; `manager_traits()` feeds the lineup cap.
 

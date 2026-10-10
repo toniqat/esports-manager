@@ -1,203 +1,108 @@
-[gd_scene load_steps=3 format=3 uid="uid://gwexgkt7p5c4"]
+[gd_scene load_steps=6 format=3 uid="uid://gwexgkt7p5c4"]
 
 [ext_resource type="Script" uid="uid://1owh2etg2tlb" path="res://features/meta/manager/TraitPickerView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/UI_Comp_TraitCard.tscn" id="3_card"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/UI_Comp_TraitTooltip.tscn" id="4_tip"]
+[ext_resource type="PackedScene" path="res://features/meta/manager/UI_View_TraitSwapPopup.tscn" id="5_swap"]
 
 [node name="TraitPickerView" type="VBoxContainer"]
-editor_description = "Trait block shared by the lobby 감독 tab and the run setup 감독 step: title + 장착 n / m, bonus gauge, equip slots, owned rows, locked rows. Rows / slots are item scenes (TraitPickerRow / TraitPickerSlot) added by fill(); the block sizes itself."
+editor_description = "Trait block shared by the lobby 감독 modal and the run setup 감독 step: title + 보너스 점수 pill + 교체 button, the equipped traits as TraitCard items (5 per row). A card tap opens the effect tooltip; 교체 asks the host (swap_requested) and the host calls open_swap() — the TraitSwapPopup instance here edits the set and reports traits_applied. The block sizes itself."
 offset_right = 1032.0
-offset_bottom = 900.0
+offset_bottom = 640.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 0
 script = ExtResource("1_view")
 
-[node name="Head" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 44)
+[node name="Head" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 mouse_filter = 2
+theme_override_constants/separation = 16
 
 [node name="Title" type="Label" parent="Head"]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 0.5
-offset_bottom = 44.0
-grow_horizontal = 2
+layout_mode = 2
 theme_type_variation = &"BodyLabel"
 theme_override_font_sizes/font_size = 30
 text = "tx_CT0XBF6ME9"
+vertical_alignment = 1
 
-[node name="Count" type="Label" parent="Head"]
-auto_translate_mode = 2
+[node name="BonusPill" type="PanelContainer" parent="Head"]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill() (TraitPickerBonusPill ↔ TraitPickerBonusPillBad while the bonus < 0)"
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill()
-CaptionLabel, NegativeLabel when more traits than slots (code)."
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 1.0
-offset_top = 6.0
-offset_bottom = 40.0
-grow_horizontal = 0
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "장착 3 / 4"
-horizontal_alignment = 2
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_type_variation = &"TraitPickerBonusPill"
 
-[node name="Gap1" type="Control" parent="."]
+[node name="BonusText" type="Label" parent="Head/BonusPill"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill() (보너스 점수 ±n — Positive / Negative / Caption label by sign)"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 22
+text = "보너스 점수 +2"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Swap" type="Button" parent="Head"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _ready() (→ swap_requested)"
+custom_minimum_size = Vector2(160, 64)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 26
+text = "tx_1XPPS9RH12"
+
+[node name="Gap2" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Gauge" type="Panel" parent="."]
+[node name="Cards" type="GridContainer" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _fill_gauge()
-Bonus gauge. Variation TraitPickerGauge, TraitPickerGaugeBad while bonus < 0 (code)."
-custom_minimum_size = Vector2(0, 104)
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill() (one TraitCard per equipped trait, equip order; the scene's three are the preview)"
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"TraitPickerGauge"
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 5
 
-[node name="Key" type="Label" parent="Gauge"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 12.0
-offset_right = 284.0
-offset_bottom = 44.0
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "tx_0TVPZHMHDQ"
+[node name="TraitCard_0" parent="Cards" instance=ExtResource("3_card")]
+layout_mode = 2
 
-[node name="Bonus" type="Label" parent="Gauge"]
+[node name="TraitCard_1" parent="Cards" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="TraitCard_2" parent="Cards" instance=ExtResource("3_card")]
+layout_mode = 2
+
+[node name="Empty" type="Label" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _fill_gauge()
-PositiveLabel > 0, NegativeLabel < 0, CaptionLabel 0 (code)."
-layout_mode = 0
-offset_left = 24.0
-offset_top = 38.0
-offset_right = 224.0
-offset_bottom = 96.0
-theme_type_variation = &"PositiveLabel"
-theme_override_font_sizes/font_size = 40
-text = "+2"
-
-[node name="Note" type="Label" parent="Gauge"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _fill_gauge()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 260.0
-offset_top = 14.0
-offset_right = -24.0
-offset_bottom = 46.0
-grow_horizontal = 2
-theme_type_variation = &"CaptionLabel"
-text = "부정 특성 제공 +4 · 긍정 특성 소모 −2"
-horizontal_alignment = 2
-
-[node name="Rule" type="Label" parent="Gauge"]
-auto_translate_mode = 2
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _fill_gauge()
-FaintLabel, NegativeLabel while bonus < 0 (code)."
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 260.0
-offset_top = 50.0
-offset_right = -24.0
-offset_bottom = 82.0
-grow_horizontal = 2
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill() (shown only when nothing is equipped)"
+visible = false
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
 theme_type_variation = &"FaintLabel"
-text = "남는 점수는 런 점수에 더해집니다"
-horizontal_alignment = 2
+text = "tx_2G8T5Z3F2H"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
-[node name="Gap2" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Slots" type="HBoxContainer" parent="."]
+[node name="TraitTooltip_Tip" parent="." instance=ExtResource("4_tip")]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd (card tap → effect tooltip, no action)"
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd _fill_slots()
-max(TraitSystem.slot_count(), equipped) UI_Comp_TraitPickerSlot.tscn items, equal widths, gap 12 — added by code."
-custom_minimum_size = Vector2(0, 112)
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 12
 
-[node name="Gap3" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="OwnedHead" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="OwnedTitle" type="Label" parent="OwnedHead"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill()"
+[node name="TraitSwapPopup_Swap" parent="." instance=ExtResource("5_swap")]
+editor_description = "[필수] 지우면 오류 — TraitPickerView.gd open_swap() (starts hidden)"
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 4.0
-offset_right = 4.0
-offset_bottom = 36.0
-grow_horizontal = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "보유 특성 6 — 눌러서 장착 / 해제"
-
-[node name="OwnedRows" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill()
-Owned traits (positives first, then negatives) — one UI_Comp_TraitPickerRow.tscn each, added by code."
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 10
-
-[node name="Locked" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill()
-Hidden when every trait is owned."
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
-
-[node name="Gap4" type="Control" parent="Locked"]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="LockedHead" type="Control" parent="Locked"]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="LockedTitle" type="Label" parent="Locked/LockedHead"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 4.0
-offset_right = 4.0
-offset_bottom = 36.0
-grow_horizontal = 2
-theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 24
-text = "잠긴 특성 18"
-
-[node name="LockedRows" type="VBoxContainer" parent="Locked"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — TraitPickerView.gd fill()
-Locked traits — greyed UI_Comp_TraitPickerRow.tscn items with the unlock condition, added by code."
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 10
+visible = false

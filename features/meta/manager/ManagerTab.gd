@@ -1,47 +1,53 @@
 class_name ManagerTab
 extends Control
 
-# 감독 (Manager) screen body, shown in the lobby 감독 modal (`ManagerPopup`, its host). Tab
-# contract: header of `features/meta/lobby/LobbyScreen.gd`;
+# 감독 (Manager) screen body, shown in the lobby 감독 modal (`ManagerPopup`, its host). Host
+# services: header of `features/meta/lobby/LobbyScreen.gd` (toast, confirm, currency / badges);
 # scope: plan §12 (work C), rules: `ManagerProgress` / `TraitSystem`.
 #
-#   ┌ header card — type · Lv · EXP bar · prestige count · [프레스티지] ┐
-#   │ ManagerPresetChips (all presets; ● 사용 중 / 재설정 필요)          │
-#   │ (prestige preset → reset card)                                  │
-#   │ stats card — removal / specialisation counters, six rows:        │
-#   │   label · 유형 n · 제거 −n · 전문화 +n · final · [제거] [−] n [+]   │
-#   │ TraitPickerView — bonus gauge, slots, owned / locked traits      │
-#   └ action bar: [이 프리셋 사용 (1) | 저장 (2)]                       ┘
+#   ┌ header card — Lv · prestige count · EXP bar · [프레스티지]          ┐
+#   │                              ( I  II  III  IV  V )  preset capsule  │
+#   │ (prestige preset → reset card)                                     │
+#   │ 감독 능력치 ······· 전문화 포인트 used/total  |  제거 포인트 n [확정]   │
+#   │   [훈련][전술][지식][멘탈][분석][관리]   6 cards in one row, each with  │
+#   │   [−7+] [−4+] …                       an adjust strip at the bottom │
+#   └ TraitPickerView — (보너스 점수 +n), equipped trait cards, [교체]      ┘
 #
-# Editing model:
-# - The chip-selected preset is edited on a **draft copy** (`_draft`); `저장` validates
-#   it with `ManagerProgress.validate_preset` and writes it back + `save_profile()`.
-#   Over-budget trait sets (bonus < 0) may be built on the draft — shown red — but
-#   never saved. Switching preset / prestiging with unsaved edits asks first.
-# - Removals are profile-level and permanent: confirm → `remove_stat` → save at once.
-# - Prestige presets are read-only until `재설정` (`reset_preset`, saved at once).
-# - Layout lives in `UI_View_ManagerTab.tscn` (+ one `UI_Comp_ManagerStatRow.tscn` per stat, and the shared
+# Editing model — **everything saves at once** (no draft / save bar):
+# - A preset tap makes it the active preset (saved). A prestige preset can't be used: the tap only
+#   selects it so its reset card shows; it stays read-only until `재설정` (`reset_preset`).
+# - Stat cards have two modes. **Spec mode** (no removal points left): − value + steps the selected
+#   preset's specialisation; the value includes it. **Removal mode** (removal points left — after a
+#   level-up): the strips turn light green, − places a removal on that stat, + takes it back
+#   (`_pending`, nothing saved yet); `확정` → danger confirm → `remove_stat` per placed point → save.
+#   Removals are profile-level (every preset) and permanent until prestige. Steppers are shown
+#   only when that step is possible (never dimmed).
+# - Spec steps and trait swaps edit the selected preset; each change is validated with
+#   `ManagerProgress.validate_preset` and stored + saved (`_store`). An invalid result is never
+#   stored (the screen falls back to the saved preset). Trait sets are edited in the swap popup
+#   (`TraitPickerView.open_swap`), which only hands back valid sets.
+# - Layout lives in `UI_View_ManagerTab.tscn` (+ one `UI_Comp_ManagerStatCard.tscn` per stat, and the shared
 #   `ManagerPresetChips` / `TraitPickerView` scenes); every change refills the same nodes
 #   (`_rebuild`), so the scroll position stays.
 
 const SCENE_PATH: String = "res://features/meta/manager/UI_View_ManagerTab.tscn"
-const STAT_ROW_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp_ManagerStatRow.tscn")
+const STAT_CARD_SCENE: PackedScene = preload("res://features/meta/manager/UI_Comp_ManagerStatCard.tscn")
 
 ## Order of the prestige reward items (profile currency keys).
 const REWARD_ORDER: Array = ["outgame", "gacha_ticket_pilot", "gacha_ticket_trait"]
 
-var _host = null     # LobbyScreen or ManagerPopup (duck-typed host services)
+var _host = null     # ManagerPopup (duck-typed host services)
 var _pm: Node
 var _type_popup: ManagerTypePopup = null
 
 var _edit_idx: int = -1
-var _draft: Dictionary = {}
-var _dirty: bool = false
-## Trait ids that were unseen when this tab was opened — "NEW" until the lobby closes.
+var _draft: Dictionary = {}          # working copy of preset `_edit_idx` (= the saved one between taps)
+## Trait ids that were unseen when this screen was opened — "NEW" until the lobby closes.
 var _new_ids: Array = []
-var _rows: Dictionary = {}           # String stat key → ManagerStatRow instance
+var _cards: Dictionary = {}          # String stat key → ManagerStatCard instance
+## Removal mode: removal points placed but not confirmed yet (stat key → count).
+var _pending: Dictionary = {}
 
-@onready var _scroll: ScrollContainer = %Scroll
 @onready var _traits_view: TraitPickerView = %TraitPickerView_Traits
 @onready var _preset_chips: ManagerPresetChips = %ManagerPresetChips_PresetChips
 
@@ -54,39 +60,33 @@ static func create() -> ManagerTab:
 func _ready() -> void:
 	%Prestige.pressed.connect(_on_prestige_pressed)
 	%Reset.pressed.connect(_on_reset_pressed)
-	_traits_view.trait_pressed.connect(_on_trait_pressed)
+	_traits_view.swap_requested.connect(_on_swap_requested)
+	_traits_view.traits_applied.connect(_on_traits_applied)
 	_preset_chips.chip_pressed.connect(_on_chip_pressed)
-	for i in StaffSystem.STATS.size():
-		var key: String = String(StaffSystem.STATS[i])
-		var row: Control = STAT_ROW_SCENE.instantiate()
-		%StatRows.add_child(row)
-		row.get_node("%Divider").visible = i > 0
-		row.get_node("%Key").text = StaffSystem.stat_label(key)
-		(row.get_node("%Remove") as Button).pressed.connect(_on_remove_pressed.bind(key))
-		(row.get_node("%Minus") as Button).pressed.connect(_on_alloc_pressed.bind(key, -1))
-		(row.get_node("%Plus") as Button).pressed.connect(_on_alloc_pressed.bind(key, 1))
-		_rows[key] = row
+	%RemoveConfirm.pressed.connect(_on_remove_confirm_pressed)
+	for key in StaffSystem.STATS:
+		var card: Control = STAT_CARD_SCENE.instantiate()
+		%StatCards.add_child(card)
+		(card.get_node("%Icon") as TextureRect).texture = ManagerUi.stat_icon(String(key))
+		card.get_node("%Key").text = StaffSystem.stat_label(String(key))
+		(card.get_node("%Minus") as Button).pressed.connect(_on_step_pressed.bind(String(key), -1))
+		(card.get_node("%Plus") as Button).pressed.connect(_on_step_pressed.bind(String(key), 1))
+		_cards[String(key)] = card
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
 
-# ── Tab contract ─────────────────────────────────────────────────────────────
-func bar_specs() -> Array:
-	return [
-		{"text": _use_text(), "style": "ghost", "font": 28, "weight": 1.0},
-		{"text": _save_text(), "style": "primary", "font": 32, "weight": 1.4},
-	]
-
-
+# ── Host contract ────────────────────────────────────────────────────────────
 func setup(host: Node) -> void:
 	_host = host
 	_pm = get_node("/root/ProfileManager")
 
 
+## Every open of the modal: back on the active preset, NEW traits marked for this visit.
 func on_shown() -> void:
 	var prof: Dictionary = _pm.profile
-	if not _dirty or _edit_idx < 0 or _edit_idx >= ManagerProgress.presets(prof).size():
-		_load_draft(ManagerProgress.active_index(prof) if _edit_idx < 0 else _edit_idx)
+	_load_draft(ManagerProgress.active_index(prof))
+	_pending.clear()
 	# Newly unlocked traits: mark them NEW for this visit, then clear the pending list.
 	var tr: Dictionary = prof.get("traits", {})
 	var pending: Array = tr.get("unlocked_pending", [])
@@ -102,87 +102,37 @@ func on_shown() -> void:
 	_rebuild()
 
 
-func on_bar_pressed(i: int) -> void:
-	if i == 0:
-		_commit(true)
-	else:
-		_commit(false)
-
-
 # ── State ────────────────────────────────────────────────────────────────────
 func _load_draft(idx: int) -> void:
 	_edit_idx = clampi(idx, 0, maxi(0, ManagerProgress.presets(_pm.profile).size() - 1))
 	_draft = ManagerProgress.preset_copy(_pm.profile, _edit_idx)
-	_dirty = false
 
 
 func _is_prestige_kind() -> bool:
 	return String(_draft.get("kind", ManagerProgress.KIND_NORMAL)) == ManagerProgress.KIND_PRESTIGE
 
 
-func _use_text() -> String:
-	if _pm == null:
-		return Loc.t(L.MANAGER_TAB_USE_PRESET)
-	if _edit_idx == ManagerProgress.active_index(_pm.profile) and not _dirty:
-		return Loc.t(L.MANAGER_TAB_IN_USE)
-	return Loc.t(L.MANAGER_TAB_SAVE_AND_USE) if _dirty else Loc.t(L.MANAGER_TAB_USE_PRESET)
-
-
-func _save_text() -> String:
-	return Loc.t(L.MANAGER_TAB_SAVE) if _dirty or _pm == null else Loc.t(L.MANAGER_TAB_SAVED)
-
-
-func _refresh_bar() -> void:
-	var bs: Array = _host.bar_buttons()
-	if bs.size() < 2:
-		return
-	var use_btn: Button = bs[0]
-	var save_btn: Button = bs[1]
-	use_btn.text = _use_text()
-	use_btn.disabled = _edit_idx == ManagerProgress.active_index(_pm.profile) and not _dirty
-	save_btn.text = _save_text()
-	save_btn.disabled = not _dirty
-
-
 func _owned() -> Array:
 	return _pm.owned_trait_ids()
 
 
-## `저장` (make_active = false) / `이 프리셋 사용` (true). Never stores an invalid preset.
-func _commit(make_active: bool) -> void:
+## Validates the draft and stores + saves it. Invalid → red toast, the draft goes back to the
+## saved preset. Returns true when stored and saved.
+func _store() -> bool:
 	var prof: Dictionary = _pm.profile
-	if _dirty:
-		var err: String = ManagerProgress.validate_preset(prof, _draft, _owned())
-		if err != "":
-			_host.show_toast(Loc.t(L.MANAGER_TAB_CANNOT_SAVE, {"error": err}), true)
-			return
-	elif make_active:
-		var verr: String = ManagerProgress.validate_preset(prof,
-				ManagerProgress.preset_at(prof, _edit_idx), _owned())
-		if verr != "":
-			_host.show_toast(Loc.t(L.MANAGER_TAB_CANNOT_USE, {"error": verr}), true)
-			return
-	if _dirty:
-		ManagerProgress.store_preset(prof, _edit_idx, _draft)
-	if make_active:
-		prof["active_preset"] = _edit_idx
+	var err: String = ManagerProgress.validate_preset(prof, _draft, _owned())
+	if err != "":
+		_host.show_toast(Loc.t(L.MANAGER_TAB_CANNOT_SAVE, {"error": err}), true)
+		_load_draft(_edit_idx)
+		_rebuild()
+		return false
+	ManagerProgress.store_preset(prof, _edit_idx, _draft)
 	var serr: String = _pm.save_profile()
 	if serr != "":
 		_host.show_toast(Loc.t(L.UI_ERROR_PROFILE_SAVE_FAILED, {"error": serr}), true)
-		return
-	_dirty = false
 	_draft = ManagerProgress.preset_copy(prof, _edit_idx)
-	Haptics.play(Haptics.Kind.SUCCESS)
-	if make_active:
-		_host.show_toast(Loc.t(L.MANAGER_TAB_TOAST_USE, {"preset": ManagerUi.preset_name(_edit_idx)}))
-	else:
-		_host.show_toast(Loc.t(L.MANAGER_TAB_TOAST_SAVED, {"preset": ManagerUi.preset_name(_edit_idx)}))
 	_rebuild()
-
-
-func _mark_dirty() -> void:
-	_dirty = true
-	_rebuild()
+	return serr == ""
 
 
 # ── Fill ─────────────────────────────────────────────────────────────────────
@@ -194,16 +144,11 @@ func _rebuild() -> void:
 	%ResetBox.visible = _is_prestige_kind()
 	_fill_stats()
 	_traits_view.fill(_draft.get("traits", []), _owned(), _new_ids)
-	if _host != null and not _host.bar_buttons().is_empty():
-		_refresh_bar()
 
 
 func _fill_header() -> void:
 	var prof: Dictionary = _pm.profile
 	var mgr: Dictionary = prof.get("manager", {})
-	var trow: Dictionary = StaffSystem.manager_type_row(int(mgr.get("type", 0)))
-	%TypeTitle.text = Loc.t(L.MANAGER_TAB_TYPE_TITLE,
-			{"type": Loc.t(String(trow.get("name_key", "")))})  # l10n-dynamic: manager.type.*.name
 	var pcount: int = int(mgr.get("prestige", 0))
 	_paint_chip(%PrestigeChip, %PrestigeChipText, Loc.t(L.MANAGER_TAB_PRESTIGE_COUNT, {"n": pcount}),
 			OutgameTheme.ACCENT_DIM if pcount > 0 else OutgameTheme.SURFACE_SUNK,
@@ -227,51 +172,76 @@ func _fill_header() -> void:
 	pb.theme_type_variation = &"PrimaryButton" if perr == "" else &"GhostButton"
 	pb.add_theme_font_size_override("font_size", 26 if perr == "" else 24)
 	pb.disabled = perr != ""
-	%Info.text = Loc.t(L.MANAGER_TAB_INFO, {"n": ConstTable.int_of("MANAGER_REMOVE_PER_LEVEL"),
-			"gain": ManagerProgress.spec_per_removal()})
 
 
 func _fill_stats() -> void:
 	var prof: Dictionary = _pm.profile
-	var left: int = ManagerProgress.removal_points_left(prof)
+	var removing: bool = _removal_mode()
+	var left: int = ManagerProgress.removal_points_left(prof) - _pending_total()
 	var spec_total: int = ManagerProgress.spec_points(prof)
 	var used: int = ManagerProgress.alloc_used(_draft)
-	_paint_chip(%RemoveChip, %RemoveChipText, Loc.t(L.MANAGER_TAB_REMOVAL_POINTS, {"n": left}),
-			OutgameTheme.ACCENT_DIM if left > 0 else OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.ACCENT_TEXT if left > 0 else OutgameTheme.TEXT_SUB)
-	_paint_chip(%SpecChip, %SpecChipText,
-			Loc.t(L.MANAGER_TAB_SPEC_POINTS, {"used": used, "total": spec_total}),
-			OutgameTheme.SURFACE_SUNK,
-			OutgameTheme.NEGATIVE if used > spec_total else OutgameTheme.TEXT_SUB)
-	%Formula.text = Loc.t(L.MANAGER_TAB_FORMULA, {"cap": ManagerProgress.stat_cap()})
+	(%RemoveChip as Control).visible = removing
+	(%RemoveConfirm as Button).visible = removing
+	(%SpecChip as Control).visible = not removing
+	if removing:
+		_paint_chip(%RemoveChip, %RemoveChipText, Loc.t(L.MANAGER_TAB_REMOVAL_POINTS, {"n": left}),
+				OutgameTheme.ACCENT_DIM if left > 0 else OutgameTheme.SURFACE_SUNK,
+				OutgameTheme.ACCENT_TEXT if left > 0 else OutgameTheme.TEXT_SUB)
+		(%RemoveConfirm as Button).disabled = _pending_total() == 0
+	else:
+		_paint_chip(%SpecChip, %SpecChipText,
+				Loc.t(L.MANAGER_TAB_SPEC_POINTS, {"used": used, "total": spec_total}),
+				OutgameTheme.SURFACE_SUNK,
+				OutgameTheme.NEGATIVE if used > spec_total else OutgameTheme.TEXT_SUB)
 
-	var tstats: Dictionary = ManagerProgress.type_stats(int((prof.get("manager", {}) as Dictionary).get("type", 0)))
-	var rm: Dictionary = ManagerProgress.removed(prof)
+	var base: Dictionary = ManagerProgress.base_stats(prof)
 	var final_stats: Dictionary = ManagerProgress.preset_stats(prof, _draft)
 	var alloc: Dictionary = _draft.get("alloc", {})
 	var editable: bool = not _is_prestige_kind()
-	for key in _rows.keys():
-		var row: Control = _rows[key]
-		var a: int = int(alloc.get(key, 0))
-		# Breakdown items joined with the symbol separator " · " (a list, not a sentence).
-		var parts: PackedStringArray = [Loc.t(L.MANAGER_TAB_PART_TYPE, {"n": int(tstats[key])})]
-		if int(rm[key]) > 0:
-			parts.append(Loc.t(L.MANAGER_TAB_PART_REMOVED,
-					{"n": int(rm[key]) * ManagerProgress.remove_stat_drop()}))
-		if a > 0:
-			parts.append(Loc.t(L.MANAGER_TAB_PART_SPEC, {"n": a}))
-		row.get_node("%Parts").text = " · ".join(parts)
-		var fl: Label = row.get_node("%Final")
-		fl.text = str(int(final_stats[key]))
-		fl.theme_type_variation = &"AccentLabel" if a > 0 else &"BodyLabel"
-		var al: Label = row.get_node("%Alloc")
-		al.text = "+%d" % a if a > 0 else "0"
-		al.theme_type_variation = &"AccentLabel" if a > 0 else &"FaintLabel"
-		(row.get_node("%Remove") as Button).disabled = ManagerProgress.can_remove(prof, key) != ""
-		(row.get_node("%Minus") as Button).disabled = not editable \
-				or ManagerProgress.can_alloc(prof, _draft, key, -1) != ""
-		(row.get_node("%Plus") as Button).disabled = not editable \
-				or ManagerProgress.can_alloc(prof, _draft, key, 1) != ""
+	for key in _cards.keys():
+		var card: Control = _cards[key]
+		(card.get_node("%Adjust") as Control).theme_type_variation = \
+				&"ManagerStatAdjustRemove" if removing else &"ManagerStatAdjust"
+		var vl: Label = card.get_node("%Value")
+		var minus: Button = card.get_node("%Minus")
+		var plus: Button = card.get_node("%Plus")
+		if removing:
+			# The base value after the placed removals (every preset), red while lowered.
+			var p: int = int(_pending.get(key, 0))
+			vl.text = str(_base_after_pending(base, key))
+			vl.theme_type_variation = &"NegativeLabel" if p > 0 else &"BodyLabel"
+			minus.visible = _can_place_removal(base, key)
+			plus.visible = p > 0
+		else:
+			# One number: the stat as this preset gives it (type − removals + specialisation).
+			var a: int = int(alloc.get(key, 0))
+			vl.text = str(int(final_stats[key]))
+			vl.theme_type_variation = &"AccentLabel" if a > 0 else &"BodyLabel"
+			minus.visible = editable and ManagerProgress.can_alloc(prof, _draft, key, -1) == ""
+			plus.visible = editable and ManagerProgress.can_alloc(prof, _draft, key, 1) == ""
+
+
+## Removal mode = the profile still has removal points to spend (after a level-up).
+func _removal_mode() -> bool:
+	return ManagerProgress.removal_points_left(_pm.profile) > 0
+
+
+func _pending_total() -> int:
+	var n: int = 0
+	for k in _pending.keys():
+		n += int(_pending[k])
+	return n
+
+
+func _base_after_pending(base: Dictionary, stat: String) -> int:
+	return int(base[stat]) - int(_pending.get(stat, 0)) * ManagerProgress.remove_stat_drop()
+
+
+## One more removal fits: a point is left and the base stays at or above `STAT_MIN`.
+func _can_place_removal(base: Dictionary, stat: String) -> bool:
+	if ManagerProgress.removal_points_left(_pm.profile) - _pending_total() <= 0:
+		return false
+	return _base_after_pending(base, stat) - ManagerProgress.remove_stat_drop() >= StaffSystem.STAT_MIN
 
 
 ## A pill whose fill / text colours are data (`OutgameTheme.add_chip` look: radius = half height).
@@ -282,75 +252,93 @@ func _paint_chip(chip: Panel, text_lbl: Label, text: String, bg: Color, fg: Colo
 
 
 # ── Actions ──────────────────────────────────────────────────────────────────
+## Preset tap = use it (saved at once). A prestige preset is only selected (its reset card shows).
 func _on_chip_pressed(idx: int) -> void:
 	if idx == _edit_idx:
 		return
-	if _dirty:
-		_host.open_confirm(Loc.t(L.MANAGER_TAB_DISCARD_TITLE),
-				Loc.t(L.MANAGER_TAB_DISCARD_BODY, {
-					"from": ManagerUi.preset_name(_edit_idx), "to": ManagerUi.preset_name(idx)}),
-				Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.MANAGER_TAB_DISCARD_CONFIRM), true,
-				_switch_preset.bind(idx))
-		return
-	_switch_preset(idx)
-
-
-func _switch_preset(idx: int) -> void:
 	Haptics.play(Haptics.Kind.SELECT)
 	_load_draft(idx)
+	if not _is_prestige_kind():
+		_pm.profile["active_preset"] = _edit_idx
+		var serr: String = _pm.save_profile()
+		if serr != "":
+			_host.show_toast(Loc.t(L.UI_ERROR_PROFILE_SAVE_FAILED, {"error": serr}), true)
 	_rebuild()
 
 
-func _on_alloc_pressed(stat: String, delta: int) -> void:
+## − / + on a stat card: places / takes back a removal in removal mode, steps the
+## specialisation otherwise.
+func _on_step_pressed(stat: String, delta: int) -> void:
+	if _removal_mode():
+		var base: Dictionary = ManagerProgress.base_stats(_pm.profile)
+		if delta < 0 and _can_place_removal(base, stat):
+			_pending[stat] = int(_pending.get(stat, 0)) + 1
+		elif delta > 0 and int(_pending.get(stat, 0)) > 0:
+			_pending[stat] = int(_pending[stat]) - 1
+		else:
+			return
+		Haptics.play(Haptics.Kind.SELECT)
+		_rebuild()
+		return
 	var err: String = ManagerProgress.alloc_step(_pm.profile, _draft, stat, delta)
 	if err != "":
 		_host.show_toast(err, true)
 		return
-	_mark_dirty()
+	Haptics.play(Haptics.Kind.SELECT)
+	_store()
 
 
-func _on_trait_pressed(trait_id: int) -> void:
+func _on_swap_requested() -> void:
 	if _is_prestige_kind():
 		_host.show_toast(Loc.t(L.MANAGER_TAB_PRESTIGE_READONLY), true)
 		return
-	var err: String = ManagerProgress.toggle_trait(_draft, trait_id, _owned())
-	if err != "":
-		_host.show_toast(err, true)
-		return
-	Haptics.play(Haptics.Kind.SELECT)
-	_mark_dirty()
-	if TraitSystem.bonus_points(_draft.get("traits", [])) < 0:
-		_host.show_toast(Loc.t(L.MANAGER_TAB_BONUS_NEGATIVE), true)
+	_traits_view.open_swap()
 
 
-func _on_remove_pressed(stat: String) -> void:
-	var prof: Dictionary = _pm.profile
-	var err: String = ManagerProgress.can_remove(prof, stat)
-	if err != "":
-		_host.show_toast(err, true)
+func _on_traits_applied(traits: Array) -> void:
+	_draft["traits"] = traits
+	if _store():
+		Haptics.play(Haptics.Kind.SUCCESS)
+		_host.show_toast(Loc.t(L.MANAGER_TAB_TOAST_SAVED, {"preset": ManagerUi.preset_name(_edit_idx)}))
+
+
+## 확정 (removal mode): danger confirm listing every lowered base value, then spends them.
+func _on_remove_confirm_pressed() -> void:
+	var n: int = _pending_total()
+	if n <= 0:
 		return
-	var label: String = StaffSystem.stat_label(stat)
-	var cur: int = int(ManagerProgress.base_stats(prof)[stat])
+	var base: Dictionary = ManagerProgress.base_stats(_pm.profile)
+	var lines: PackedStringArray = []
+	for key in StaffSystem.STATS:
+		if int(_pending.get(key, 0)) > 0:
+			lines.append(Loc.t(L.MANAGER_TAB_REMOVE_ITEM, {"stat": StaffSystem.stat_label(String(key)),
+					"from": int(base[key]), "to": _base_after_pending(base, String(key))}))
 	Haptics.play(Haptics.Kind.WARNING)
-	_host.open_confirm(Loc.t(L.MANAGER_TAB_REMOVE_TITLE, {"stat": label}),
-			Loc.t(L.MANAGER_TAB_REMOVE_BODY, {"stat": label, "from": cur,
-					"to": maxi(StaffSystem.STAT_MIN, cur - ManagerProgress.remove_stat_drop()),
-					"gain": ManagerProgress.spec_per_removal()}),
-			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.UI_BUTTON_REMOVE), true, _apply_remove.bind(stat))
+	_host.open_confirm(Loc.t(L.MANAGER_TAB_REMOVE_BATCH_TITLE),
+			Loc.t(L.MANAGER_TAB_REMOVE_BATCH_BODY, {"n": n, "list": "\n".join(lines),
+					"gain": n * ManagerProgress.spec_per_removal()}),
+			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.UI_BUTTON_REMOVE), true, _apply_pending_removals)
 
 
-func _apply_remove(stat: String) -> void:
-	var err: String = ManagerProgress.remove_stat(_pm.profile, stat)
-	if err != "":
-		_host.show_toast(err, true)
-		return
+func _apply_pending_removals() -> void:
+	var prof: Dictionary = _pm.profile
+	var spent: int = 0
+	for key in StaffSystem.STATS:
+		for i in int(_pending.get(key, 0)):
+			var err: String = ManagerProgress.remove_stat(prof, String(key))
+			if err != "":
+				_host.show_toast(err, true)
+				break
+			spent += 1
+	_pending.clear()
 	var serr: String = _pm.save_profile()
 	if serr != "":
 		_host.show_toast(Loc.t(L.UI_ERROR_PROFILE_SAVE_FAILED, {"error": serr}), true)
-	else:
+	elif spent > 0:
 		Haptics.play(Haptics.Kind.MEDIUM)
-		_host.show_toast(Loc.t(L.MANAGER_TAB_REMOVED_TOAST, {"stat": StaffSystem.stat_label(stat),
-				"drop": ManagerProgress.remove_stat_drop(), "gain": ManagerProgress.spec_per_removal()}))
+		_host.show_toast(Loc.t(L.MANAGER_TAB_REMOVED_BATCH_TOAST,
+				{"gain": spent * ManagerProgress.spec_per_removal()}))
+	_load_draft(_edit_idx)
 	_rebuild()
 
 
@@ -376,10 +364,8 @@ func _on_prestige_pressed() -> void:
 		return
 	var rw: Dictionary = {"rewards": _reward_text(),
 			"presets": maxi(1, ConstTable.int_of("PRESTIGE_NEW_PRESETS"))}
-	var body: String = Loc.t(L.MANAGER_TAB_PRESTIGE_BODY_UNSAVED, rw) if _dirty \
-			else Loc.t(L.MANAGER_TAB_PRESTIGE_BODY, rw)
 	Haptics.play(Haptics.Kind.WARNING)
-	_host.open_confirm(Loc.t(L.MANAGER_TAB_PRESTIGE_TITLE), body,
+	_host.open_confirm(Loc.t(L.MANAGER_TAB_PRESTIGE_TITLE), Loc.t(L.MANAGER_TAB_PRESTIGE_BODY, rw),
 			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.MANAGER_TAB_PICK_TYPE), false, _open_prestige_popup)
 
 
@@ -427,16 +413,16 @@ func _reward_text(rewards: Dictionary = {}) -> String:
 ## F6 단독 실행 미리보기 — 실제 프로필의 사용 중 프리셋 (`resources/UiPreview.gd`).
 ## `on_shown` 은 새 특성 표시를 지우며 프로필을 저장하므로 쓰지 않고, 같은 채움만 한다
 ## (대기 중인 새 특성은 NEW 로 보이되 지우지 않는다). 저장하는 버튼(제거 · 재설정 ·
-## 프레스티지)은 누름을 출력만 한다. 행동 바 · 토스트는 호스트(`LobbyScreen`) 몫이라 없다.
+## 프레스티지 · 제거 확정)은 누름을 출력만 한다. 프리셋 · 스탯 · 특성 교체는 곧바로 저장하므로 실제
+## 프로필이 바뀐다 — 미리보기에서는 누르지 말 것. 토스트는 호스트(`ManagerPopup`) 몫이라 없다.
 func _fill_preview() -> void:  # l10n-ignore
-	# 호스트가 하듯 탭 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
+	# 호스트가 하듯 루트를 화면 전체로 편다(씬의 1080 × n 은 에디터 미리보기 크기일 뿐).
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	UiPreview.stage(self)
 	setup(null)
 	UiPreview.mute(%Prestige, self, "프레스티지")
 	UiPreview.mute(%Reset, self, "재설정")
-	for key in _rows.keys():
-		UiPreview.mute((_rows[key] as Control).get_node("%Remove"), self, "제거 " + String(key))
+	UiPreview.mute(%RemoveConfirm, self, "제거 확정")
 	var pending: Array = (_pm.profile.get("traits", {}) as Dictionary).get("unlocked_pending", [])
 	for raw in pending:
 		_new_ids.append(int(raw))

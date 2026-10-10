@@ -1,15 +1,82 @@
-[gd_scene load_steps=3 format=3 uid="uid://gmvu0lc4cfef"]
+[gd_scene load_steps=4 format=3 uid="uid://gmvu0lc4cfef"]
 
 [ext_resource type="Script" path="res://features/meta/manager/ManagerPresetChips.gd" id="1_chips"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://dujte635y5iyp" path="res://features/meta/manager/UI_Comp_ManagerPresetChip.tscn" id="3_cell"]
 
-[node name="ManagerPresetChips" type="GridContainer"]
-editor_description = "Preset chip grid shared by the lobby 감독 tab and the run setup 감독 step: one UI_Comp_ManagerPresetChip.tscn per profile preset (5 columns, gap 12), equal column widths. fill() rebuilds the chips; chip_pressed(idx) reports a tap."
+[node name="ManagerPresetChips" type="HBoxContainer"]
+editor_description = "Preset capsule shared by the lobby 감독 modal and the run setup 감독 step — right-aligned in its row. Dark pill (%Capsule) with one UI_Comp_ManagerPresetChip.tscn cell per profile preset (I, II, …) and a white %Selector pill that slides under the chosen cell. fill() rebuilds the cells; chip_pressed(idx) reports a tap."
 offset_right = 1032.0
-offset_bottom = 104.0
+offset_bottom = 88.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-columns = 5
+alignment = 2
 script = ExtResource("1_chips")
+
+[node name="Capsule" type="Control" parent="."]
+editor_description = "[필수] 지우면 오류 — ManagerPresetChips.gd fill() (min width = cells × CELL_W + 2 × PAD, code)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(496, 88)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Back" type="Panel" parent="Capsule"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"ManagerPresetCapsule"
+
+[node name="Selector" type="Panel" parent="Capsule"]
+editor_description = "[필수] 지우면 오류 — ManagerPresetChips.gd _move_selector() (position tweened under the chosen cell)"
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 104.0
+offset_bottom = 80.0
+mouse_filter = 2
+theme_type_variation = &"ManagerPresetSelector"
+
+[node name="Cells" type="HBoxContainer" parent="Capsule"]
+editor_description = "[필수] 지우면 오류 — ManagerPresetChips.gd fill() (one cell per preset; the scene's five are the preview)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="ManagerPresetChip_0" parent="Capsule/Cells" instance=ExtResource("3_cell")]
+layout_mode = 2
+theme_type_variation = &"ManagerPresetCellOn"
+
+[node name="ManagerPresetChip_1" parent="Capsule/Cells" instance=ExtResource("3_cell")]
+layout_mode = 2
+auto_translate_mode = 2
+text = "II"
+
+[node name="ManagerPresetChip_2" parent="Capsule/Cells" instance=ExtResource("3_cell")]
+layout_mode = 2
+auto_translate_mode = 2
+text = "III"
+
+[node name="ManagerPresetChip_3" parent="Capsule/Cells" instance=ExtResource("3_cell")]
+layout_mode = 2
+auto_translate_mode = 2
+text = "IV"
+
+[node name="ManagerPresetChip_4" parent="Capsule/Cells" instance=ExtResource("3_cell")]
+layout_mode = 2
+auto_translate_mode = 2
+text = "V"

@@ -1,0 +1,124 @@
+[gd_scene load_steps=3 format=3 uid="uid://40iahlsxbsos"]
+
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="1_theme"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/manager/stat_training.svg" id="2_icon"]
+
+[node name="ManagerStatCard" type="Panel"]
+editor_description = "One 감독 능력치 card of ManagerTab's 6-column row: icon + name on top, an adjust strip at the bottom — − value + . Spec mode: value = stat incl. specialisation (amber when specialised), steppers shown only when a step is possible. Removal mode (removal points left): strip turns light green (ManagerStatAdjustRemove), value = base after the pending removals (red while lowered), − places a removal, + takes one back. ManagerTab fills everything."
+custom_minimum_size = Vector2(0, 196)
+offset_right = 154.0
+offset_bottom = 196.0
+size_flags_horizontal = 3
+mouse_filter = 2
+theme = ExtResource("1_theme")
+theme_type_variation = &"ManagerStatCard"
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready() (ManagerUi.stat_icon — white glyph, tinted by self_modulate)"
+self_modulate = Color(0.11, 0.11, 0.122, 1)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -24.0
+offset_top = 18.0
+offset_right = 24.0
+offset_bottom = 66.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = ExtResource("2_icon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Key" type="Label" parent="."]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready()"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 70.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 22
+text = "훈련"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Adjust" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats() (ManagerStatAdjust ↔ ManagerStatAdjustRemove = removal mode)"
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = -84.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"ManagerStatAdjust"
+
+[node name="Value" type="Label" parent="Adjust"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()
+Spec mode: AccentLabel when specialised, BodyLabel otherwise. Removal mode: NegativeLabel while lowered (code)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 46.0
+offset_right = -46.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 36
+text = "7"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Minus" type="Button" parent="Adjust"]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats() · ManagerTab.gd _ready()
+Shown only when the step is possible (spec: alloc −1 · removal: place one more removal)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 4.0
+offset_top = -28.0
+offset_right = 46.0
+offset_bottom = 28.0
+grow_vertical = 2
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"ManagerStatStep"
+theme_override_font_sizes/font_size = 30
+text = "−"
+
+[node name="Plus" type="Button" parent="Adjust"]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats() · ManagerTab.gd _ready()
+Shown only when the step is possible (spec: alloc +1 · removal: take a pending removal back)."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -46.0
+offset_top = -28.0
+offset_right = -4.0
+offset_bottom = 28.0
+grow_horizontal = 0
+grow_vertical = 2
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"ManagerStatStep"
+theme_override_font_sizes/font_size = 30
+text = "+"

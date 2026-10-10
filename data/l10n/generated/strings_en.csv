@@ -1046,6 +1046,27 @@ tx_JNX31TB32C,Presets: Spec Allocation + Traits
 tx_96VG8VVT6V,Prestige preset. Reset it to use it
 tx_JXE6K3B8JS,Spec allocation is cleared; traits stay as they are
 tx_BG420X1TPQ,Manager Stats
+tx_1XPPS9RH12,Swap
+tx_6SE29A9FXX,Equipped {n}
+tx_2G8T5Z3F2H,No traits equipped. Tap Swap to pick some
+tx_PEQZX6R3EF,Swap Traits
+tx_5XYT6BP0NH,Equipped Traits {n}
+tx_HSFYC5WP1K,Owned Traits {n}
+tx_YEQ9DR0FZM,Equip
+tx_MZHX5Z4AA5,Unequip
+tx_59W6QJYMYQ,Bonus points are below 0
+tx_W1ESC68E04,This set can't be saved. Discard the changes and close?
+tx_NAZXND3NGZ,Keep Editing
+tx_XD742N7FEV,Discard & Close
+tx_SJHA0NBZ03,Confirm
+tx_AXYR1029FG,Lower manager stats?
+tx_BZJAWGNJRP,"Spend {n} removal {plural:n|point|points} to permanently lower these base values (all presets).
+{list}
+You gain {gain} specialization {plural:gain|point|points} instead.
+This can't be undone until you prestige."
+tx_ABPS76TWB6,{stat} {from} → {to}
+tx_PJFP6ZV8FH,Lowered manager stats. Spec Points +{gain}
+tx_YB3D6SH2KQ,Bonus Points {n}
 tx_43FCJDADR5,Leave it to the coach
 tx_S3TMQTME0B,No mech coach. Pick each pilot's research mech yourself
 tx_9795WB8ABE,Novice

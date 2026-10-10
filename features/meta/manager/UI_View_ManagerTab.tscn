@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://gmvu0lc4cfef" path="res://features/meta/manager/UI_Comp_ManagerPresetChips.tscn" id="5_chips"]
 
 [node name="ManagerTab" type="Control"]
-editor_description = "감독 screen body, hosted by the lobby 감독 modal (ManagerPopup sets this root full rect in its %Body) — the 1080×1568 here is only the editor preview size."
+editor_description = "감독 screen body (Lv · EXP · prestige, preset capsule, stats with icons, equipped trait cards), hosted by the lobby 감독 modal (ManagerPopup sets this root full rect in its %Body) — the 1080×1568 here is only the editor preview size."
 layout_mode = 3
 anchors_preset = 0
 offset_right = 1080.0
@@ -48,7 +48,7 @@ mouse_filter = 2
 theme_override_constants/separation = 28
 
 [node name="Header" type="MarginContainer" parent="Scroll/Body/Sections"]
-custom_minimum_size = Vector2(0, 236)
+custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
 mouse_filter = 2
 
@@ -69,32 +69,15 @@ theme_override_constants/margin_bottom = 0
 layout_mode = 2
 mouse_filter = 2
 
-[node name="TypeTitle" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 22.0
-offset_right = -300.0
-offset_bottom = 70.0
-grow_horizontal = 2
-theme_type_variation = &"TitleLabel"
-text = "전략가 감독"
-
 [node name="PrestigeChip" type="Panel" parent="Scroll/Body/Sections/Header/Pad/Content"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()
 Pill (radius = half height); fill / text colour are data — amber once prestiged (code)."
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -200.0
-offset_top = 28.0
-offset_bottom = 68.0
-grow_horizontal = 0
+layout_mode = 0
+offset_left = 150.0
+offset_top = 30.0
+offset_right = 350.0
+offset_bottom = 70.0
 mouse_filter = 2
 theme_type_variation = &"SunkPanel"
 
@@ -119,9 +102,9 @@ auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
 unique_name_in_owner = true
 layout_mode = 0
-offset_top = 82.0
-offset_right = 160.0
-offset_bottom = 128.0
+offset_top = 26.0
+offset_right = 140.0
+offset_bottom = 74.0
 theme_type_variation = &"AccentLabel"
 theme_override_font_sizes/font_size = 34
 text = "Lv 8"
@@ -130,9 +113,8 @@ text = "Lv 8"
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 150.0
 offset_top = 98.0
-offset_right = -250.0
+offset_right = -260.0
 offset_bottom = 114.0
 grow_horizontal = 2
 mouse_filter = 2
@@ -156,9 +138,8 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 150.0
 offset_top = 120.0
-offset_right = -250.0
+offset_right = -260.0
 offset_bottom = 150.0
 grow_horizontal = 2
 theme_type_variation = &"CaptionLabel"
@@ -174,8 +155,8 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -230.0
-offset_top = 76.0
-offset_bottom = 148.0
+offset_top = 48.0
+offset_bottom = 120.0
 grow_horizontal = 0
 focus_mode = 0
 mouse_filter = 1
@@ -183,32 +164,10 @@ theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 26
 text = "프레스티지"
 
-[node name="Info" type="Label" parent="Scroll/Body/Sections/Header/Pad/Content"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_header()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 172.0
-offset_bottom = 202.0
-grow_horizontal = 2
-theme_type_variation = &"FaintLabel"
-theme_override_font_sizes/font_size = 20
-text = "레벨업마다 제거 포인트 1 · 스탯 하나를 영구히 낮추면 전문화 포인트 1"
-clip_text = true
-
 [node name="Presets" type="VBoxContainer" parent="Scroll/Body/Sections"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
-
-[node name="PresetsTitle" type="Label" parent="Scroll/Body/Sections/Presets"]
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 30
-text = "tx_JNX31TB32C"
 
 [node name="ManagerPresetChips_PresetChips" parent="Scroll/Body/Sections/Presets" instance=ExtResource("5_chips")]
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _preset_chips"
@@ -291,7 +250,7 @@ mouse_filter = 2
 theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_bottom = 28
 
 [node name="VBox" type="VBoxContainer" parent="Scroll/Body/Sections/Stats/Pad"]
 layout_mode = 2
@@ -299,7 +258,7 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Head" type="Control" parent="Scroll/Body/Sections/Stats/Pad/VBox"]
-custom_minimum_size = Vector2(0, 108)
+custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 mouse_filter = 2
 
@@ -315,7 +274,7 @@ text = "tx_BG420X1TPQ"
 [node name="RemoveChip" type="Panel" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()
-Pill; amber while removal points are left (code)."
+Pill; removal mode only — removal points left after the pending ones (code)."
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -347,7 +306,7 @@ vertical_alignment = 1
 [node name="SpecChip" type="Panel" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()
-Pill; red text when the draft uses more than it has (code)."
+Pill; spec mode only (hidden while removal points are left); red text when the preset uses more than it has (code)."
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -375,27 +334,34 @@ text = "전문화 포인트 2 / 3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Formula" type="Label" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — ManagerTab.gd _fill_stats()"
+[node name="RemoveConfirm" type="Button" parent="Scroll/Body/Sections/Stats/Pad/VBox/Head"]
+editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready() · ManagerTab.gd _fill_stats()
+확정 — removal mode only (top-right, where the spec chip sits otherwise); disabled until a removal is placed. Opens the danger confirm, then spends the pending removals."
 unique_name_in_owner = true
+visible = false
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 1
+anchor_left = 1.0
 anchor_right = 1.0
-offset_top = 68.0
-offset_bottom = 96.0
-grow_horizontal = 2
-theme_type_variation = &"FaintLabel"
-theme_override_font_sizes/font_size = 20
-text = "최종 = 유형 − 제거 + 전문화 · 상한 15"
+offset_left = -200.0
+offset_top = 12.0
+offset_bottom = 76.0
+grow_horizontal = 0
+focus_mode = 0
+mouse_filter = 1
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 26
+text = "tx_SJHA0NBZ03"
 
-[node name="StatRows" type="VBoxContainer" parent="Scroll/Body/Sections/Stats/Pad/VBox"]
+[node name="StatCards" type="GridContainer" parent="Scroll/Body/Sections/Stats/Pad/VBox"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _ready()
-One UI_Comp_ManagerStatRow.tscn per StaffSystem.STATS entry, instanced by code."
+6 × 1 row — one UI_Comp_ManagerStatCard.tscn per StaffSystem.STATS entry, instanced by code."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 0
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 16
+columns = 6
 
 [node name="TraitPickerView_Traits" parent="Scroll/Body/Sections" instance=ExtResource("4_traits")]
 editor_description = "[필수] 지우면 오류 — ManagerTab.gd _traits_view"

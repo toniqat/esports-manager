@@ -588,6 +588,7 @@ passive icon lookup** — same role as `CardImages` / `MechImages`.
 |---|---|---|
 | `icon_for(skill_key)` | `images/skill/skill_<English_Name>.png` via `ICON` (`pilot_skills.key` → file) | `ui/PilotDetailPanel.gd` skill block (left of the name, tinted with the name colour), `ui/SkillBadge.gd` (strip badge), `ui/SkillPopup.gd` |
 | `mech_icon_for(passive_key)` | same folder via `MECH_ICON` (`mech_passives.key` → file) | `ui/PilotDetailPanel.gd` mech tab passive plate + the passive's lasting-effect thumb |
+| `trait_icon_for(trait_id)` | same folder via `TRAIT_ICON` (`traits.id` → file — by id, since a `+` and a `−` trait share a `key`; no file shared with `ICON` / `MECH_ICON`) | `meta/manager/TraitCard.gd` (manager trait card thumb) |
 | `make_icon_tile(skill_key, px, bg, icon_color, shadow_color, shadow_px = 14)` | `icon_for` inside a `px`×`px` rounded-square `Panel` (radius `px*0.22`, fill `bg`, anti-aliased `StyleBoxFlat` soft shadow: `shadow_size = shadow_px`, offset `(0, shadow_px*0.4)`), icon inset 16% per side and tinted via `modulate` | `ui/PilotDetailPanel.gd` skill block, `meta/run_setup/DraftDetailPanel.gd` skill block |
 | `make_mech_icon_tile(passive_key, …)` | the same tile around `mech_icon_for` | `ui/PilotDetailPanel.gd` mech tab, `ban_pick/MechDetailPanel.gd`, `ban_pick/BanPickController.gd` sheet |
 | `make_texture_tile(tex, …)` | the tile around any glyph (null → empty tile) — the two above call it | — |
@@ -1114,11 +1115,17 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `CollectionCellArtMask` | SunkPanel | `CollectionCell` `ArtMask` (r12 white AA mask, clips the face + corner tabs) | — |
 | `CollectionCellLevelRibbon` · `CollectionCellRankPlate` | AccentChip · SurfaceChip | `CollectionCell` `LevelRibbon` (`ACCENT`, square but r12 top-right) · `RankPlate` (`RAIL` 78 %, r12 top-left), both flush with the face bottom | — |
 | `CollectionCellStarOn` · `CollectionCellStar` | OnFillLabel | `CollectionCell` `%Stars` children: reached rank (`ACCENT`) / unlocked by breakthrough, not reached (`TEXT_ON_FILL` 38 %), switched by rank | — |
-| `ManagerPresetChip` · `ManagerPresetChipOn` | SelectableCardButton(On) | `ManagerPresetChip` root (r16, border 2 / amber 4), switched by `ManagerPresetChips.fill` | — |
+| `ManagerPresetCapsule` · `ManagerPresetSelector` | Card | `ManagerPresetChips` `Back` (`RAIL` pill) · `%Selector` (white pill, tweened by code) | — |
+| `ManagerPresetCell` · `ManagerPresetCellOn` (Button) | Button | `UI_Comp_ManagerPresetChip` root (flat; white caption ↔ dark on the selector), switched by `ManagerPresetChips.fill` | `NEGATIVE` font (prestige preset) |
+| `ManagerStatCard` · `ManagerStatAdjust` · `ManagerStatAdjustRemove` | SunkPanel | `UI_Comp_ManagerStatCard` root (sunk, r16) · `%Adjust` (clear / light green `POSITIVE`→`SURFACE` 78 % in removal mode) | — |
+| `ManagerStatStep` (Button) | GhostButton | `UI_Comp_ManagerStatCard` `%Minus` / `%Plus` (ghost look, 2 px padding — six cards share one row) | — |
+| `TraitPickerBonusPill` · `TraitPickerBonusPillBad` | SurfaceChip | `TraitPickerView` `%BonusPill` (sunk pill / red-tint pill + `NEGATIVE` border below 0) | — |
+| `TraitCard` · `TraitCardOn` | SelectableCardButton(On) | `UI_Comp_TraitCard` root (r16 border 1 · `ACCENT_DIM` + amber 4 = equipped in the swap popup) | — |
+| `TraitCardThumb` · `TraitCardScore` | SunkPanel · SurfaceChip | `TraitCard` `%Thumb` (r22, AA) · `Score` (`RAIL` 82 %, r14 top-left / r22 bottom-right) | thumb fill = rarity colour (`variation_box` copy) |
+| `TraitTooltipCard` | PopupCard | `UI_Comp_TraitTooltip` `%Card` (white, r20, `BORDER_STRONG` 2, shadow, padding 24) | — |
+| `TraitPickerNewChip` | AccentChip | `TraitCard` `%New` (`NEGATIVE` pill) | — |
+| _(removed)_ `ManagerPresetChip` · `ManagerPresetChipOn` | — | old preset chip grid (replaced by the capsule) | — |fill` | — |
 | `TraitPickerGauge` · `TraitPickerGaugeBad` | SelectableCard · ManagerDangerCard | `TraitPickerView` `%Gauge` (r16, border 1 / red 3), switched by bonus < 0 | — |
-| `TraitPickerSlot` · `TraitPickerSlotOver` · `TraitPickerSlotEmpty` | SelectableCardButton · SunkPanel | `TraitPickerSlot` `%Frame` (r14, `BORDER_STRONG` / `NEGATIVE` past the slot count) · `%Empty` | — |
-| `TraitPickerRow` · `TraitPickerRowOn` · `TraitPickerRowLocked` | SelectableCardButton(On) | `TraitPickerRow` root (r16; border 1 / amber 3 / `BG` fill), `TraitPickerView.ROW_*` | — |
-| `TraitPickerLayerChip` · `TraitPickerNewChip` · `TraitPickerEquippedChip` | SurfaceChip · AccentChip | `TraitPickerRow` `Layer` · `%New` · `%Equipped` (pills: sunk / `NEGATIVE` / `ACCENT`) | — |
 | `RunResultSectionCard` · `RunResultSectionCardAmber` | Card | `RunResult` cards (padding 40, top 28) | — |
 | `RunResultAccentDivider` | Divider | `RunResult` amber card dividers | — |
 | `RunResultTraitCard` | Card | `RunResultTraitRow` `Card` | — |

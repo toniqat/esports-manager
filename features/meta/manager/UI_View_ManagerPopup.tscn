@@ -1,10 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://dxn25wfuxsacp"]
+[gd_scene load_steps=4 format=3 uid="uid://dxn25wfuxsacp"]
 
 [ext_resource type="Script" path="res://features/meta/manager/ManagerPopup.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingCloseButton.tscn" id="3_close"]
 
 [node name="ManagerPopup" type="Control"]
-editor_description = "Lobby 감독 modal (opened by the top-left level disc). A Control child of the lobby (not a CanvasLayer) so the lobby toast (z 5) floats over it; ConfirmPopup / ManagerTypePopup are CanvasLayers above. Hosts ManagerTab in %Body and is its host (tab contract) — own action bar %Use / %Save."
+editor_description = "Lobby 감독 modal (opened by the top-left level disc). A sheet that drops from the top edge + the floating close capsule bottom-right. A Control child of the lobby (not a CanvasLayer) so the lobby toast (z 5) floats over it; ConfirmPopup / ManagerTypePopup / the trait swap popup are CanvasLayers above. Hosts ManagerTab in %Body; every edit there saves at once (no action bar)."
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -16,7 +17,7 @@ theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
 [node name="DimRect" type="Panel" parent="."]
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (extended under the notch)"
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _fit_safe_area() (extended under the notch)"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -40,96 +41,67 @@ focus_mode = 0
 flat = true
 
 [node name="Sheet" type="Panel" parent="."]
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (slides up). Rounded-top sheet down to the screen bottom; 72 px gap above shows the dim."
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _fit_safe_area() · _slide() (drops from the top). Square top under the notch (top offset = −notch, code), rounded bottom 16 px above the floating close capsule (code)."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 72.0
+offset_bottom = -144.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"ManagerPopupSheet"
 
-[node name="Title" type="Label" parent="Sheet"]
+[node name="Content" type="Control" parent="Sheet"]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _fit_safe_area() (top offset = notch height, code — keeps the title below the notch)"
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Sheet/Content"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
 offset_top = 20.0
-offset_right = -220.0
+offset_right = -40.0
 offset_bottom = 100.0
 grow_horizontal = 2
 theme_type_variation = &"TitleLabel"
 text = "tx_PR6YFXCW5G"
 vertical_alignment = 1
 
-[node name="Close" type="Button" parent="Sheet"]
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _ready()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -192.0
-offset_top = 28.0
-offset_right = -32.0
-offset_bottom = 92.0
-grow_horizontal = 0
-focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 26
-text = "tx_R1DMEF1S3E"
-
-[node name="Body" type="Control" parent="Sheet"]
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (ManagerTab goes here, full rect). Bottom offset = above %Bar (code adds the device inset)."
+[node name="Body" type="Control" parent="Sheet/Content"]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd open() (ManagerTab goes here, full rect)"
 unique_name_in_owner = true
 clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 112.0
-offset_bottom = -152.0
+offset_top = 104.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Bar" type="HBoxContainer" parent="Sheet"]
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _fit_safe_area(). The tab's action bar: [이 프리셋 사용 (1) | 저장 (1.4)]."
+[node name="FloatingCloseButton_Close" parent="." instance=ExtResource("3_close")]
+editor_description = "[필수] 지우면 오류 — ManagerPopup.gd _ready() · _fit_safe_area() (bottom-right, lifted by the device inset)"
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 12
+anchors_preset = 3
+anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = -136.0
-offset_right = -24.0
-offset_bottom = -24.0
-grow_horizontal = 2
+offset_left = -256.0
+offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
+grow_horizontal = 0
 grow_vertical = 0
-theme_override_constants/separation = 16
-
-[node name="Use" type="Button" parent="Sheet/Bar"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd bar_buttons() (index 0)"
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-theme_type_variation = &"GhostButton"
-theme_override_font_sizes/font_size = 28
-text = "tx_6ZMPGY904G"
-
-[node name="Save" type="Button" parent="Sheet/Bar"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — ManagerPopup.gd bar_buttons() (index 1)"
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.4
-focus_mode = 0
-theme_type_variation = &"PrimaryButton"
-theme_override_font_sizes/font_size = 32
-text = "tx_VP2K42B9Z4"

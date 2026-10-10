@@ -4,9 +4,9 @@ tx_KQSXCRDMQT,manager.type.1.name,active,manager_types.csv name (id=1),,,실전�
 tx_T2Z72WAY5Q,manager.type.0.desc,active,manager_types.csv desc (id=0),,,조직 운영에 밝은 감독. {tx_SJJT6G3QTG} · {tx_3P9850FA1G} 쪽으로 조금 기운 고른 분배,A manager versed in running an organization. A balanced spread leaning slightly toward {tx_SJJT6G3QTG} and {tx_3P9850FA1G},draft,d8fce807
 tx_PVYTSHGS8N,manager.type.1.desc,active,manager_types.csv desc (id=1),,,현장 출신 감독. {tx_RYDV3SGR93} · {tx_K3FRY03EQK} 쪽으로 조금 기운 고른 분배,A manager who came up from the field. A balanced spread leaning slightly toward {tx_RYDV3SGR93} and {tx_K3FRY03EQK},draft,bb7e6d5a
 tx_BGMWN33W4F,manager.preset.name,active,ManagerUi preset name,,,프리셋 {n},Preset {n},draft,8a3adb6e
-tx_4T5M5K3V6Y,manager.preset.needs_reset,active,ManagerPresetChips status,,,재설정 필요,Reset needed,draft,8a5cf841
-tx_CQAMS06S3H,manager.preset.in_use,active,ManagerPresetChips status,,,● 사용 중,● In use,draft,3f6f2b26
-tx_VDT30HFYH5,manager.preset.trait_count,active,ManagerPresetChips status,,,특성 {n},Traits {n},draft,2d664f2c
+tx_4T5M5K3V6Y,manager.preset.needs_reset,deprecated,ManagerPresetChips status,,,재설정 필요,Reset needed,draft,8a5cf841
+tx_CQAMS06S3H,manager.preset.in_use,deprecated,ManagerPresetChips status,,,● 사용 중,● In use,draft,3f6f2b26
+tx_VDT30HFYH5,manager.preset.trait_count,deprecated,ManagerPresetChips status,,,특성 {n},Traits {n},draft,2d664f2c
 tx_3Q1VPP8XMD,manager.stat.spec_part,deprecated,ManagerUi stat cell - specialisation part,,,전문화 +{n},Spec +{n},draft,2ab67b85
 tx_S620BP20NR,manager.unlock.gacha,active,ManagerUi.unlock_text - trait unlock condition gacha,,,특성 가챠 · 제작으로 획득,Obtained from trait gacha · crafting,draft,dc65695e
 tx_S5NAQVRYNS,manager.unlock.clear,active,ManagerUi.unlock_text - trait unlock condition clear,,,런 클리어 (최종 국제전 우승),Clear a run (win the final international),draft,38b1fed5
@@ -35,57 +35,81 @@ tx_Y4C38QBE7Z,manager.progress.stat_over_cap,active,ManagerProgress error messag
 tx_SM2J7D8VWD,manager.progress.prestige_level,active,ManagerProgress error message,,,감독 Lv{level} 부터 프레스티지할 수 있습니다,Prestige unlocks at manager Lv{level},draft,0469975b
 tx_1TPBDD4JDD,manager.progress.trait_locked,active,ManagerProgress error message,,,아직 잠긴 특성입니다,This trait is still locked,draft,798c3724
 tx_HQVBRC7GPZ,manager.progress.slots_full,deprecated,ManagerProgress error message,,,장착 칸이 가득 찼습니다 ({n}칸). 하나를 빼고 고르세요,Slots full ({n} {plural:n|{tx_SBNQ8FZ5MA}|{tx_R3FWHSV8NN}}). Unequip one first,draft,2e330769
-tx_6ZMPGY904G,manager.tab.use_preset,active,ManagerTab action bar,,,이 프리셋 사용,Use This Preset,draft,ca5c9bc2
-tx_G60RQZ2M86,manager.tab.in_use,active,ManagerTab action bar,,,사용 중,In Use,draft,2394e1a2
-tx_PBX5T726N6,manager.tab.save_and_use,active,ManagerTab action bar,,,저장 후 사용,Save & Use,draft,5ae79a9e
-tx_VP2K42B9Z4,manager.tab.save,active,ManagerTab action bar,,,저장,Save,draft,1f1712ac
-tx_WM0N1FR8F2,manager.tab.saved,active,ManagerTab action bar,,,저장됨,Saved,draft,be8373be
+tx_6ZMPGY904G,manager.tab.use_preset,deprecated,ManagerTab action bar,,,이 프리셋 사용,Use This Preset,draft,ca5c9bc2
+tx_G60RQZ2M86,manager.tab.in_use,deprecated,ManagerTab action bar,,,사용 중,In Use,draft,2394e1a2
+tx_PBX5T726N6,manager.tab.save_and_use,deprecated,ManagerTab action bar,,,저장 후 사용,Save & Use,draft,5ae79a9e
+tx_VP2K42B9Z4,manager.tab.save,deprecated,ManagerTab action bar,,,저장,Save,draft,1f1712ac
+tx_WM0N1FR8F2,manager.tab.saved,deprecated,ManagerTab action bar,,,저장됨,Saved,draft,be8373be
 tx_PW7CEB3PC4,manager.tab.cannot_save,active,ManagerTab toast,,,저장할 수 없습니다: {error},Can't save: {error},draft,5732c63b
-tx_5N2ANQY6KC,manager.tab.cannot_use,active,ManagerTab toast,,,사용할 수 없습니다: {error},Can't use: {error},draft,07b139f8
-tx_2AS2JFBWZ3,manager.tab.toast_use,active,ManagerTab toast,,,{preset}: 다음 런에 사용합니다,{preset}: will be used next run,draft,53d19f2d
+tx_5N2ANQY6KC,manager.tab.cannot_use,deprecated,ManagerTab toast,,,사용할 수 없습니다: {error},Can't use: {error},draft,07b139f8
+tx_2AS2JFBWZ3,manager.tab.toast_use,deprecated,ManagerTab toast,,,{preset}: 다음 런에 사용합니다,{preset}: will be used next run,draft,53d19f2d
 tx_E078H6ENKH,manager.tab.toast_saved,active,ManagerTab toast,,,{preset} 저장됨,{preset} saved,draft,6ac31d9c
-tx_E63PYF62MR,manager.tab.type_title,active,ManagerTab header; type = manager type name,,,{type} 감독,{type} Manager,draft,df7e6bae
+tx_E63PYF62MR,manager.tab.type_title,deprecated,ManagerTab header; type = manager type name,,,{type} 감독,{type} Manager,draft,df7e6bae
 tx_JRKT78EBDX,manager.tab.prestige_count,active,ManagerTab header chip,,,프레스티지 {n}회,Prestige ×{n},draft,3d773337
 tx_N88PJGGH8P,manager.tab.prestige,active,ManagerTab prestige button,,,프레스티지,Prestige,draft,e8313375
 tx_P6CE6V2BZ8,manager.tab.prestige_at,active,ManagerTab prestige button (disabled),,,Lv{level} 프레스티지,Prestige at Lv{level},draft,06b4ace2
-tx_G63N72TB77,manager.tab.info,active,ManagerTab header info,,,레벨업마다 제거 포인트 {n} · {tx_CD7F656SAD} 하나를 영구히 낮추면 전문화 포인트 {gain},{n} removal {plural:n|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}} per level-up · Permanently lowering a manager stat gives {gain} specialization {plural:gain|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}},draft,5367f3ea
+tx_G63N72TB77,manager.tab.info,deprecated,ManagerTab header info,,,레벨업마다 제거 포인트 {n} · {tx_CD7F656SAD} 하나를 영구히 낮추면 전문화 포인트 {gain},{n} removal {plural:n|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}} per level-up · Permanently lowering a manager stat gives {gain} specialization {plural:gain|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}},draft,5367f3ea
 tx_R5JTRZW8YZ,manager.tab.removal_points,active,ManagerTab stats chip,,,제거 포인트 {n},Removal Points {n},draft,f73eac97
 tx_3D2K7Z42ST,manager.tab.spec_points,active,ManagerTab stats chip,,,전문화 포인트 {used} / {total},Spec Points {used} / {total},draft,866c02c9
-tx_W2GGDAXSS9,manager.tab.formula,active,ManagerTab stats formula,,,최종 = 유형 − 제거 + 전문화 · 상한 {cap},Final = Type − Removed + Spec · Cap {cap},draft,3a122de1
-tx_25JH8D9ZKC,manager.tab.part_type,active,ManagerTab stat row breakdown item (joined with ·),,,유형 {n},Type {n},draft,7edaa544
-tx_REG3N92165,manager.tab.part_removed,active,ManagerTab stat row breakdown item,,,제거 −{n},Removed −{n},draft,db2846b0
+tx_W2GGDAXSS9,manager.tab.formula,deprecated,ManagerTab stats formula,,,최종 = 유형 − 제거 + 전문화 · 상한 {cap},Final = Type − Removed + Spec · Cap {cap},draft,3a122de1
+tx_25JH8D9ZKC,manager.tab.part_type,deprecated,ManagerTab stat row breakdown item (joined with ·),,,유형 {n},Type {n},draft,7edaa544
+tx_REG3N92165,manager.tab.part_removed,deprecated,ManagerTab stat row breakdown item,,,제거 −{n},Removed −{n},draft,db2846b0
 tx_FSJJMA6X8A,manager.tab.part_spec,active,ManagerTab stat row breakdown item,,,전문화 +{n},Spec +{n},draft,2ab67b85
-tx_N00VCXQP2R,manager.tab.discard_title,active,ManagerTab confirm title,,,저장하지 않은 변경이 있습니다,You have unsaved changes,draft,52143b26
-tx_PC4VC518EH,manager.tab.discard_body,active,ManagerTab confirm body; from/to = preset names,,,{from} 의 변경을 버리고 {to} 로 넘어갈까요?,Discard changes to {from} and switch to {to}?,draft,2b99c7e9
-tx_KGQJMSCC5A,manager.tab.discard_confirm,active,ManagerTab confirm button,,,버리고 이동,Discard & Switch,draft,d5650283
+tx_N00VCXQP2R,manager.tab.discard_title,deprecated,ManagerTab confirm title,,,저장하지 않은 변경이 있습니다,You have unsaved changes,draft,52143b26
+tx_PC4VC518EH,manager.tab.discard_body,deprecated,ManagerTab confirm body; from/to = preset names,,,{from} 의 변경을 버리고 {to} 로 넘어갈까요?,Discard changes to {from} and switch to {to}?,draft,2b99c7e9
+tx_KGQJMSCC5A,manager.tab.discard_confirm,deprecated,ManagerTab confirm button,,,버리고 이동,Discard & Switch,draft,d5650283
 tx_RK53KKTVV9,manager.tab.prestige_readonly,active,ManagerTab toast,,,프레스티지 프리셋은 재설정한 뒤에 고칠 수 있습니다,Reset the prestige preset before editing it,draft,9c3d4082
-tx_E7VHX9Q864,manager.tab.bonus_negative,active,ManagerTab toast,,,보너스 점수가 0 미만. 이대로는 저장할 수 없습니다,Bonus points below 0. Can't save like this,draft,657a34da
-tx_VXPQ8NAT9G,manager.tab.remove_title,active,ManagerTab confirm title,,,{stat} 능력치를 낮출까요?,Lower {stat}?,draft,f6931ebb
-tx_BG6S0NCNW3,manager.tab.remove_body,active,ManagerTab confirm body,,,제거 포인트 1을 써서 {stat} 기본값을 {from} → {to} 로 영구히 낮춥니다(모든 프리셋).\n대신 전문화 포인트를 {gain} 얻습니다.\n프레스티지 전까지 되돌릴 수 없습니다.,Spend 1 removal point to permanently lower base {stat} from {from} → {to} (all presets).\nYou gain {gain} specialization {plural:gain|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}} instead.\nThis can't be undone until you prestige.,draft,1ac02284
-tx_7WYGFMVN1R,manager.tab.removed_toast,active,ManagerTab toast,,,"{stat} −{drop}, 전문화 포인트 +{gain}","{stat} −{drop}, Spec Points +{gain}",draft,254e4e41
+tx_E7VHX9Q864,manager.tab.bonus_negative,deprecated,ManagerTab toast,,,보너스 점수가 0 미만. 이대로는 저장할 수 없습니다,Bonus points below 0. Can't save like this,draft,657a34da
+tx_VXPQ8NAT9G,manager.tab.remove_title,deprecated,ManagerTab confirm title,,,{stat} 능력치를 낮출까요?,Lower {stat}?,draft,f6931ebb
+tx_BG6S0NCNW3,manager.tab.remove_body,deprecated,ManagerTab confirm body,,,제거 포인트 1을 써서 {stat} 기본값을 {from} → {to} 로 영구히 낮춥니다(모든 프리셋).\n대신 전문화 포인트를 {gain} 얻습니다.\n프레스티지 전까지 되돌릴 수 없습니다.,Spend 1 removal point to permanently lower base {stat} from {from} → {to} (all presets).\nYou gain {gain} specialization {plural:gain|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}} instead.\nThis can't be undone until you prestige.,draft,1ac02284
+tx_7WYGFMVN1R,manager.tab.removed_toast,deprecated,ManagerTab toast,,,"{stat} −{drop}, 전문화 포인트 +{gain}","{stat} −{drop}, Spec Points +{gain}",draft,254e4e41
 tx_KXJ7B4DMZ8,manager.tab.reset_toast,active,ManagerTab toast,,,{preset} 재설정됨. 전문화 포인트를 다시 나누세요,{preset} reset. Reassign your specialization points,draft,20b3f868
 tx_7521E3DYNY,manager.tab.prestige_title,active,ManagerTab confirm title,,,프레스티지할까요?,Prestige?,draft,a0f9251b
 tx_CZ8J9C4GP0,manager.tab.prestige_body,active,ManagerTab prestige confirm body,,,"Lv1 로 돌아가고 {tx_CD7F656SAD} 제거가 풀리며, 감독 유형을 다시 고릅니다.\n기존 프리셋은 재설정 후 사용 · 새 프리셋 +{presets}.\n보상: {rewards}","You return to Lv1, manager stat removals are undone, and you choose the manager type again.\nExisting presets need a reset before use · {plural:presets|New preset|New presets} +{presets}.\nRewards: {rewards}",draft,5a3c2cf5
-tx_9T0XXJTV5D,manager.tab.prestige_body_unsaved,active,ManagerTab prestige confirm body with unsaved edits,,,{tx_CZ8J9C4GP0}\n(저장하지 않은 프리셋 변경은 버려집니다),{tx_CZ8J9C4GP0}\n(Unsaved preset changes will be discarded),draft,0b3867b9
+tx_9T0XXJTV5D,manager.tab.prestige_body_unsaved,deprecated,ManagerTab prestige confirm body with unsaved edits,,,{tx_CZ8J9C4GP0}\n(저장하지 않은 프리셋 변경은 버려집니다),{tx_CZ8J9C4GP0}\n(Unsaved preset changes will be discarded),draft,0b3867b9
 tx_BMK6ZN3V5X,manager.tab.pick_type,active,ManagerTab prestige confirm button,,,유형 고르기,Choose Type,draft,8723454b
 tx_P896WEQNY0,manager.tab.prestige_done,active,ManagerTab toast,,,프레스티지 완료: {rewards},Prestige complete: {rewards},draft,e88ef07b
-tx_XHV95P4ZR7,manager.trait_picker.equipped_count,active,TraitPickerView,,,장착 {n} / {max},Equipped {n} / {max},draft,d6eab902
-tx_C89E7AZ489,manager.trait_picker.owned_title,active,TraitPickerView,,,보유 특성 {n} (눌러서 장착 / 해제),Owned Traits {n} (tap to equip / unequip),draft,6575c726
-tx_N8R29A5R8G,manager.trait_picker.locked_title,active,TraitPickerView,,,잠긴 특성 {n},Locked Traits {n},draft,51992432
-tx_Q7PEKJNA02,manager.trait_picker.gauge_note,active,TraitPickerView,,,부정 특성 제공 +{gain} · 긍정 특성 소모 −{cost},Negative traits give +{gain} · Positive traits cost −{cost},draft,d6104ebb
+tx_XHV95P4ZR7,manager.trait_picker.equipped_count,deprecated,TraitPickerView,,,장착 {n} / {max},Equipped {n} / {max},draft,d6eab902
+tx_C89E7AZ489,manager.trait_picker.owned_title,deprecated,TraitPickerView,,,보유 특성 {n} (눌러서 장착 / 해제),Owned Traits {n} (tap to equip / unequip),draft,6575c726
+tx_N8R29A5R8G,manager.trait_picker.locked_title,deprecated,TraitPickerView,,,잠긴 특성 {n},Locked Traits {n},draft,51992432
+tx_Q7PEKJNA02,manager.trait_picker.gauge_note,deprecated,TraitPickerView,,,부정 특성 제공 +{gain} · 긍정 특성 소모 −{cost},Negative traits give +{gain} · Positive traits cost −{cost},draft,d6104ebb
 tx_5BMYK6AN8W,manager.trait_picker.rule_bad,active,TraitPickerView,,,0 미만이면 저장 · 사용할 수 없습니다,Below 0 it can't be saved or used,draft,8512c129
 tx_KDW47HR37K,manager.trait_picker.rule_ok,active,TraitPickerView,,,남는 점수는 런 점수에 더해집니다,Leftover points are added to the run score,draft,9900b3f3
-tx_KXA2JT6S41,manager.trait_picker.layer_outgame,active,TraitPickerView,,,아웃게임,Outgame,draft,cee5f2e5
-tx_6F0W7MPDEQ,manager.trait_picker.layer_ingame,active,TraitPickerView,,,인게임,In-game,draft,966f4e6f
-tx_XGHFVCZ60Z,manager.trait_picker.unlock,active,TraitPickerView,,,해금 조건 · {cond},Unlock · {cond},draft,1cd52d9c
+tx_KXA2JT6S41,manager.trait_picker.layer_outgame,deprecated,TraitPickerView,,,아웃게임,Outgame,draft,cee5f2e5
+tx_6F0W7MPDEQ,manager.trait_picker.layer_ingame,deprecated,TraitPickerView,,,인게임,In-game,draft,966f4e6f
+tx_XGHFVCZ60Z,manager.trait_picker.unlock,deprecated,TraitPickerView,,,해금 조건 · {cond},Unlock · {cond},draft,1cd52d9c
 tx_N8P75GD7BK,manager.trait_picker.cost_pos,active,TraitPickerView,,,보너스 −{n},Bonus −{n},draft,ce57bec1
 tx_Q120DT4YPQ,manager.trait_picker.cost_neg,active,TraitPickerView,,,보너스 +{n},Bonus +{n},draft,cf518b12
 tx_AZE74DV2XZ,manager.trait_picker_row.new_text,active,UI_Comp_TraitPickerRow.tscn Head/ChipsPad/Chips/New/NewText text,,,NEW,NEW,draft,66aabd91
-tx_TK0RD2JPFF,manager.trait_picker_row.equipped_text,active,UI_Comp_TraitPickerRow.tscn Equipped/EquippedText text,,,장착 중,Equipped,draft,4f12a1ec
-tx_G048A7DZEH,manager.trait_picker_slot.empty_text,active,UI_Comp_TraitPickerSlot.tscn Empty/EmptyText text,,,빈 칸,Empty,draft,b6c8f2ff
+tx_TK0RD2JPFF,manager.trait_picker_row.equipped_text,deprecated,UI_Comp_TraitPickerRow.tscn Equipped/EquippedText text,,,장착 중,Equipped,draft,4f12a1ec
+tx_G048A7DZEH,manager.trait_picker_slot.empty_text,deprecated,UI_Comp_TraitPickerSlot.tscn Empty/EmptyText text,,,빈 칸,Empty,draft,b6c8f2ff
 tx_CT0XBF6ME9,manager.trait_picker_view.title,active,UI_Comp_TraitPickerView.tscn Head/Title text,,,특성,Traits,draft,93bfd478
 tx_0TVPZHMHDQ,manager.trait_picker_view.key,active,UI_Comp_TraitPickerView.tscn Gauge/Key text,,,보너스 점수,Bonus Points,draft,0719b9c2
-tx_JNX31TB32C,manager.manager_tab.presets_title,active,UI_View_ManagerTab.tscn Scroll/Body/Sections/Presets/PresetsTitle text,,,프리셋: 전문화 분배 + 특성,Presets: Spec Allocation + Traits,draft,888f2d6a
+tx_JNX31TB32C,manager.manager_tab.presets_title,deprecated,UI_View_ManagerTab.tscn Scroll/Body/Sections/Presets/PresetsTitle text,,,프리셋: 전문화 분배 + 특성,Presets: Spec Allocation + Traits,draft,888f2d6a
 tx_96VG8VVT6V,manager.manager_tab.reset_title,active,UI_View_ManagerTab.tscn Scroll/Body/Sections/Presets/ResetBox/ResetCard/ResetTitle text,,,프레스티지 프리셋. 재설정해야 쓸 수 있습니다,Prestige preset. Reset it to use it,draft,328664f3
 tx_JXE6K3B8JS,manager.manager_tab.reset_body,active,UI_View_ManagerTab.tscn Scroll/Body/Sections/Presets/ResetBox/ResetCard/ResetBody text,,,"전문화 분배가 비워지고, 특성은 그대로 남습니다",Spec allocation is cleared; traits stay as they are,draft,c55a24da
 tx_BG420X1TPQ,manager.manager_tab.stats_title,active,UI_View_ManagerTab.tscn Scroll/Body/Sections/Stats/Pad/VBox/Head/StatsTitle text,,,{tx_CD7F656SAD},Manager Stats,draft,18a0340b
+tx_1XPPS9RH12,manager.trait_picker.swap,active,TraitPickerView swap button,,,교체,Swap,draft,053d5d32
+tx_6SE29A9FXX,manager.trait_picker.equipped_n,deprecated,TraitPickerView header count,,,장착 {n},Equipped {n},draft,02b8cb18
+tx_2G8T5Z3F2H,manager.trait_picker.empty,active,"TraitPickerView, nothing equipped",,,장착한 특성이 없습니다. 교체를 눌러 고르세요,No traits equipped. Tap Swap to pick some,draft,5d9e10f0
+tx_PEQZX6R3EF,manager.trait_swap.title,active,TraitSwapPopup title,,,특성 교체,Swap Traits,draft,a86a5b9b
+tx_5XYT6BP0NH,manager.trait_swap.equipped_title,active,TraitSwapPopup section,,,장착한 특성 {n},Equipped Traits {n},draft,0c42ca94
+tx_HSFYC5WP1K,manager.trait_swap.owned_title,active,TraitSwapPopup section,,,보유 특성 {n},Owned Traits {n},draft,eae75ecd
+tx_YEQ9DR0FZM,manager.trait_swap.equip,active,TraitTooltip action in TraitSwapPopup,,,장착,Equip,draft,818a75cd
+tx_MZHX5Z4AA5,manager.trait_swap.unequip,active,TraitTooltip action in TraitSwapPopup,,,해제,Unequip,draft,a7abea5b
+tx_59W6QJYMYQ,manager.trait_swap.bad_title,active,TraitSwapPopup close confirm title,,,보너스 점수가 0 미만입니다,Bonus points are below 0,draft,98e695d1
+tx_W1ESC68E04,manager.trait_swap.bad_body,active,TraitSwapPopup close confirm body,,,이 조합은 저장할 수 없습니다. 바꾼 내용을 버리고 닫을까요?,This set can't be saved. Discard the changes and close?,draft,8acda3be
+tx_NAZXND3NGZ,manager.trait_swap.keep_editing,active,TraitSwapPopup close confirm cancel,,,계속 고르기,Keep Editing,draft,64fc562a
+tx_XD742N7FEV,manager.trait_swap.discard,active,TraitSwapPopup close confirm button,,,버리고 닫기,Discard & Close,draft,17d894e1
+tx_SJHA0NBZ03,manager.tab.remove_confirm,active,ManagerTab stats card head button in removal mode (commits the pending removals),,,확정,Confirm,draft,55536106
+tx_AXYR1029FG,manager.tab.remove_batch_title,active,ManagerTab removal confirm title,,,{tx_CD7F656SAD}를 낮출까요?,Lower {tx_CD7F656SAD}?,draft,749ebc53
+tx_BZJAWGNJRP,manager.tab.remove_batch_body,active,ManagerTab removal confirm body; list = one remove_item line per stat; n = removal points spent,,,"제거 포인트 {n}을 써서 아래 기본값을 영구히 낮춥니다(모든 프리셋).
+{list}
+대신 전문화 포인트를 {gain} 얻습니다.
+프레스티지 전까지 되돌릴 수 없습니다.","Spend {n} removal {plural:n|point|points} to permanently lower these base values (all presets).
+{list}
+You gain {gain} specialization {plural:gain|{tx_D35G0Z90KF}|{tx_ARZ9Y1M2K8}} instead.
+This can't be undone until you prestige.",draft,63c2072c
+tx_ABPS76TWB6,manager.tab.remove_item,active,ManagerTab removal confirm body line; stat = stat name,,,{stat} {from} → {to},{stat} {from} → {to},draft,bf837eb5
+tx_PJFP6ZV8FH,manager.tab.removed_batch_toast,active,ManagerTab toast after the removal confirm,,,{tx_CD7F656SAD}를 낮췄습니다. 전문화 포인트 +{gain},Lowered {tx_CD7F656SAD}. Spec Points +{gain},draft,157c66d1
+tx_YB3D6SH2KQ,manager.trait_picker.bonus_pill,active,TraitPickerView head pill beside the title; n = signed bonus points,,,보너스 점수 {n},Bonus Points {n},draft,22d15988

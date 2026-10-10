@@ -16,10 +16,11 @@ extends Control
 #
 # - The **active preset is preselected** (the M1 "nothing preselected" rule is for
 #   choice lists; a preset is a loadout you already built).
-# - Traits can be swapped in place: edits go to a draft copy of the chosen preset;
-#   whenever the draft is valid it is written back and the profile saved (= the
-#   preset itself is edited, like in the lobby `감독` tab). An invalid draft (bonus < 0,
-#   prestige preset) is never saved and `다음` stays disabled with the reason shown.
+# - Traits can be swapped in place: `교체` opens the shared swap popup
+#   (`TraitPickerView.open_swap`); a valid changed set comes back through `traits_applied` and is
+#   written to the chosen preset and saved (= the preset itself is edited, like in the lobby
+#   `감독` modal). A prestige preset can't be swapped; an invalid preset is never saved and `다음`
+#   stays disabled with the reason shown.
 # - Specialisation (stat allocation) is edited only in the lobby tab.
 
 signal back_requested
@@ -57,7 +58,9 @@ func _ready() -> void:
 	(%FloatingBarButton_Back as Button).pressed.connect(func() -> void: back_requested.emit())
 	(%FloatingBarButton_Next as Button).pressed.connect(_on_next_pressed)
 	(%ManagerPresetChips_Chips as ManagerPresetChips).chip_pressed.connect(_on_chip_pressed)
-	(%TraitPickerView_Traits as TraitPickerView).trait_pressed.connect(_on_trait_pressed)
+	var tv: TraitPickerView = %TraitPickerView_Traits
+	tv.swap_requested.connect(_on_swap_requested)
+	tv.traits_applied.connect(_on_traits_applied)
 	select_preset(ManagerProgress.active_index(_pm.profile))
 	if UiPreview.is_standalone(self):
 		_fill_preview()
@@ -82,13 +85,12 @@ func select_preset(idx: int) -> void:
 	_rebuild()
 
 
-## Toggle a trait on the chosen preset (also the tap path). "" on success.
-func toggle_trait(trait_id: int) -> String:
+## Replace the chosen preset's trait set (the swap popup's result). "" on success.
+func set_traits(traits: Array) -> String:
 	if String(_draft.get("kind", "")) == ManagerProgress.KIND_PRESTIGE:
 		return Loc.t(L.RUN_SETUP_MANAGER_PRESTIGE_LOCKED)
-	var err: String = ManagerProgress.toggle_trait(_draft, trait_id, _pm.owned_trait_ids())
-	if err != "":
-		return err
+	_draft["traits"] = traits.duplicate()
+	var err: String = ""
 	if validation_error() == "" and not _preview:
 		ManagerProgress.store_preset(_pm.profile, preset_idx, _draft)
 		var serr: String = _pm.save_profile()
@@ -159,12 +161,17 @@ func _on_chip_pressed(idx: int) -> void:
 	select_preset(idx)
 
 
-func _on_trait_pressed(trait_id: int) -> void:
-	var err: String = toggle_trait(trait_id)
-	if err != "":
+func _on_swap_requested() -> void:
+	if String(_draft.get("kind", "")) == ManagerProgress.KIND_PRESTIGE:
 		Haptics.play(Haptics.Kind.ERROR)
-	else:
-		Haptics.play(Haptics.Kind.SELECT)
+		_refresh_status(Loc.t(L.RUN_SETUP_MANAGER_PRESTIGE_LOCKED))
+		return
+	(%TraitPickerView_Traits as TraitPickerView).open_swap()
+
+
+func _on_traits_applied(traits: Array) -> void:
+	var err: String = set_traits(traits)
+	Haptics.play(Haptics.Kind.ERROR if err != "" else Haptics.Kind.SUCCESS)
 	_rebuild(err)
 
 

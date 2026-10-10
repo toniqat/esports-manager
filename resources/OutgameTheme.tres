@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=190 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=204 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -860,25 +860,193 @@ shadow_color = Color(0.11, 0.11, 0.18, 0.3)
 shadow_size = 18
 shadow_offset = Vector2(0, 6)
 
-[sub_resource type="StyleBoxFlat" id="ManagerPresetChip_disabled"]
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCapsule_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCellOn_disabled"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCellOn_focus"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCellOn_hover"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCellOn_hover_pressed"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCellOn_normal"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetCellOn_pressed"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerPresetSelector_panel"]
 bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatAdjust_panel"]
+bg_color = Color(1, 1, 1, 0)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatAdjustRemove_panel"]
+bg_color = Color(0.80859995, 0.9296, 0.8636, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatCard_panel"]
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatStep_disabled"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
 border_color = Color(0.886, 0.89, 0.906, 1)
 corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
-[sub_resource type="StyleBoxFlat" id="ManagerPresetChipOn_disabled"]
-bg_color = Color(0.996, 0.929, 0.808, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0.961, 0.651, 0.137, 1)
+[sub_resource type="StyleBoxFlat" id="ManagerStatStep_focus"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatStep_hover"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatStep_hover_pressed"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.78, 0.784, 0.808, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatStep_normal"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="ManagerStatStep_pressed"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.78, 0.784, 0.808, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
 corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
@@ -1913,8 +2081,68 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="StyleBoxFlat" id="TraitPickerEquippedChip_panel"]
-bg_color = Color(0.961, 0.651, 0.137, 1)
+[sub_resource type="StyleBoxFlat" id="TraitCard_disabled"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.886, 0.89, 0.906, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitCardOn_disabled"]
+bg_color = Color(0.996, 0.929, 0.808, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TraitCardScore_panel"]
+content_margin_left = 12.0
+content_margin_top = 2.0
+content_margin_right = 12.0
+content_margin_bottom = 2.0
+bg_color = Color(0.11, 0.11, 0.122, 0.82)
+corner_radius_top_left = 14
+corner_radius_bottom_right = 22
+
+[sub_resource type="StyleBoxFlat" id="TraitCardThumb_panel"]
+bg_color = Color(0.541, 0.541, 0.569, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerBonusPill_panel"]
+content_margin_left = 18.0
+content_margin_top = 4.0
+content_margin_right = 18.0
+content_margin_bottom = 4.0
+bg_color = Color(0.929, 0.933, 0.945, 1)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="TraitPickerBonusPillBad_panel"]
+content_margin_left = 18.0
+content_margin_top = 4.0
+content_margin_right = 18.0
+content_margin_bottom = 4.0
+bg_color = Color(0.98536, 0.91252, 0.91252, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.878, 0.271, 0.271, 1)
 corner_radius_top_left = 999
 corner_radius_top_right = 999
 corner_radius_bottom_right = 999
@@ -1944,13 +2172,6 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
-[sub_resource type="StyleBoxFlat" id="TraitPickerLayerChip_panel"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-corner_radius_top_left = 999
-corner_radius_top_right = 999
-corner_radius_bottom_right = 999
-corner_radius_bottom_left = 999
-
 [sub_resource type="StyleBoxFlat" id="TraitPickerNewChip_panel"]
 bg_color = Color(0.878, 0.271, 0.271, 1)
 corner_radius_top_left = 999
@@ -1958,84 +2179,31 @@ corner_radius_top_right = 999
 corner_radius_bottom_right = 999
 corner_radius_bottom_left = 999
 
-[sub_resource type="StyleBoxFlat" id="TraitPickerRow_disabled"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="TraitPickerRowLocked_disabled"]
-bg_color = Color(0.96, 0.96, 0.968, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="TraitPickerRowOn_disabled"]
-bg_color = Color(0.996, 0.929, 0.808, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.961, 0.651, 0.137, 1)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="TraitPickerSlot_disabled"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.78, 0.784, 0.808, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="TraitPickerSlotEmpty_panel"]
-bg_color = Color(0.929, 0.933, 0.945, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.886, 0.89, 0.906, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="TraitPickerSlotOver_disabled"]
-bg_color = Color(1, 1, 1, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.878, 0.271, 0.271, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
 [sub_resource type="StyleBoxFlat" id="TraitSwapPopupSheet_panel"]
 bg_color = Color(0.96, 0.96, 0.968, 1)
 corner_radius_bottom_right = 28
 corner_radius_bottom_left = 28
 shadow_color = Color(0.11, 0.11, 0.18, 0.3)
 shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="TraitTooltipCard_panel"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.784, 0.808, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0.11, 0.11, 0.18, 0.35)
+shadow_size = 16
 shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="VisitMenuBubble_panel"]
@@ -2449,20 +2617,51 @@ ManagerDangerCard/base_type = &"Card"
 ManagerDangerCard/styles/panel = SubResource("ManagerDangerCard_panel")
 ManagerPopupSheet/base_type = &"Card"
 ManagerPopupSheet/styles/panel = SubResource("ManagerPopupSheet_panel")
-ManagerPresetChip/base_type = &"SelectableCardButton"
-ManagerPresetChip/styles/disabled = SubResource("ManagerPresetChip_disabled")
-ManagerPresetChip/styles/focus = SubResource("ManagerPresetChip_disabled")
-ManagerPresetChip/styles/hover = SubResource("ManagerPresetChip_disabled")
-ManagerPresetChip/styles/hover_pressed = SubResource("ManagerPresetChip_disabled")
-ManagerPresetChip/styles/normal = SubResource("ManagerPresetChip_disabled")
-ManagerPresetChip/styles/pressed = SubResource("ManagerPresetChip_disabled")
-ManagerPresetChipOn/base_type = &"SelectableCardButtonOn"
-ManagerPresetChipOn/styles/disabled = SubResource("ManagerPresetChipOn_disabled")
-ManagerPresetChipOn/styles/focus = SubResource("ManagerPresetChipOn_disabled")
-ManagerPresetChipOn/styles/hover = SubResource("ManagerPresetChipOn_disabled")
-ManagerPresetChipOn/styles/hover_pressed = SubResource("ManagerPresetChipOn_disabled")
-ManagerPresetChipOn/styles/normal = SubResource("ManagerPresetChipOn_disabled")
-ManagerPresetChipOn/styles/pressed = SubResource("ManagerPresetChipOn_disabled")
+ManagerPresetCapsule/base_type = &"Card"
+ManagerPresetCapsule/styles/panel = SubResource("ManagerPresetCapsule_panel")
+ManagerPresetCell/base_type = &"Button"
+ManagerPresetCell/colors/font_color = Color(1, 1, 1, 1)
+ManagerPresetCell/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+ManagerPresetCell/colors/font_focus_color = Color(1, 1, 1, 1)
+ManagerPresetCell/colors/font_hover_color = Color(1, 1, 1, 1)
+ManagerPresetCell/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+ManagerPresetCell/colors/font_pressed_color = Color(1, 1, 1, 1)
+ManagerPresetCell/font_sizes/font_size = 26
+ManagerPresetCell/styles/disabled = SubResource("ManagerPresetCellOn_disabled")
+ManagerPresetCell/styles/focus = SubResource("ManagerPresetCellOn_focus")
+ManagerPresetCell/styles/hover = SubResource("ManagerPresetCellOn_hover")
+ManagerPresetCell/styles/hover_pressed = SubResource("ManagerPresetCellOn_hover_pressed")
+ManagerPresetCell/styles/normal = SubResource("ManagerPresetCellOn_normal")
+ManagerPresetCell/styles/pressed = SubResource("ManagerPresetCellOn_pressed")
+ManagerPresetCellOn/base_type = &"Button"
+ManagerPresetCellOn/colors/font_color = Color(0.11, 0.11, 0.122, 1)
+ManagerPresetCellOn/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+ManagerPresetCellOn/colors/font_focus_color = Color(0.11, 0.11, 0.122, 1)
+ManagerPresetCellOn/colors/font_hover_color = Color(0.11, 0.11, 0.122, 1)
+ManagerPresetCellOn/colors/font_hover_pressed_color = Color(0.11, 0.11, 0.122, 1)
+ManagerPresetCellOn/colors/font_pressed_color = Color(0.11, 0.11, 0.122, 1)
+ManagerPresetCellOn/font_sizes/font_size = 26
+ManagerPresetCellOn/styles/disabled = SubResource("ManagerPresetCellOn_disabled")
+ManagerPresetCellOn/styles/focus = SubResource("ManagerPresetCellOn_focus")
+ManagerPresetCellOn/styles/hover = SubResource("ManagerPresetCellOn_hover")
+ManagerPresetCellOn/styles/hover_pressed = SubResource("ManagerPresetCellOn_hover_pressed")
+ManagerPresetCellOn/styles/normal = SubResource("ManagerPresetCellOn_normal")
+ManagerPresetCellOn/styles/pressed = SubResource("ManagerPresetCellOn_pressed")
+ManagerPresetSelector/base_type = &"Card"
+ManagerPresetSelector/styles/panel = SubResource("ManagerPresetSelector_panel")
+ManagerStatAdjust/base_type = &"SunkPanel"
+ManagerStatAdjust/styles/panel = SubResource("ManagerStatAdjust_panel")
+ManagerStatAdjustRemove/base_type = &"SunkPanel"
+ManagerStatAdjustRemove/styles/panel = SubResource("ManagerStatAdjustRemove_panel")
+ManagerStatCard/base_type = &"SunkPanel"
+ManagerStatCard/styles/panel = SubResource("ManagerStatCard_panel")
+ManagerStatStep/base_type = &"GhostButton"
+ManagerStatStep/styles/disabled = SubResource("ManagerStatStep_disabled")
+ManagerStatStep/styles/focus = SubResource("ManagerStatStep_focus")
+ManagerStatStep/styles/hover = SubResource("ManagerStatStep_hover")
+ManagerStatStep/styles/hover_pressed = SubResource("ManagerStatStep_hover_pressed")
+ManagerStatStep/styles/normal = SubResource("ManagerStatStep_normal")
+ManagerStatStep/styles/pressed = SubResource("ManagerStatStep_pressed")
 MatchPrepCardInner/base_type = &"Card"
 MatchPrepCardInner/styles/panel = SubResource("MatchPrepCardInner_panel")
 MatchPrepMechChip/base_type = &"SunkPanel"
@@ -2658,55 +2857,38 @@ TrainingThumbExpChip/base_type = &"AccentChip"
 TrainingThumbExpChip/styles/panel = SubResource("TrainingThumbExpChip_panel")
 TrainingThumbFrame/base_type = &"Card"
 TrainingThumbFrame/styles/panel = SubResource("TrainingThumbFrame_panel")
-TraitPickerEquippedChip/base_type = &"AccentChip"
-TraitPickerEquippedChip/styles/panel = SubResource("TraitPickerEquippedChip_panel")
+TraitCard/base_type = &"SelectableCardButton"
+TraitCard/styles/disabled = SubResource("TraitCard_disabled")
+TraitCard/styles/focus = SubResource("TraitCard_disabled")
+TraitCard/styles/hover = SubResource("TraitCard_disabled")
+TraitCard/styles/hover_pressed = SubResource("TraitCard_disabled")
+TraitCard/styles/normal = SubResource("TraitCard_disabled")
+TraitCard/styles/pressed = SubResource("TraitCard_disabled")
+TraitCardOn/base_type = &"SelectableCardButtonOn"
+TraitCardOn/styles/disabled = SubResource("TraitCardOn_disabled")
+TraitCardOn/styles/focus = SubResource("TraitCardOn_disabled")
+TraitCardOn/styles/hover = SubResource("TraitCardOn_disabled")
+TraitCardOn/styles/hover_pressed = SubResource("TraitCardOn_disabled")
+TraitCardOn/styles/normal = SubResource("TraitCardOn_disabled")
+TraitCardOn/styles/pressed = SubResource("TraitCardOn_disabled")
+TraitCardScore/base_type = &"SurfaceChip"
+TraitCardScore/styles/panel = SubResource("TraitCardScore_panel")
+TraitCardThumb/base_type = &"SunkPanel"
+TraitCardThumb/styles/panel = SubResource("TraitCardThumb_panel")
+TraitPickerBonusPill/base_type = &"SurfaceChip"
+TraitPickerBonusPill/styles/panel = SubResource("TraitPickerBonusPill_panel")
+TraitPickerBonusPillBad/base_type = &"SurfaceChip"
+TraitPickerBonusPillBad/styles/panel = SubResource("TraitPickerBonusPillBad_panel")
 TraitPickerGauge/base_type = &"SelectableCard"
 TraitPickerGauge/styles/panel = SubResource("TraitPickerGauge_panel")
 TraitPickerGaugeBad/base_type = &"ManagerDangerCard"
 TraitPickerGaugeBad/styles/panel = SubResource("TraitPickerGaugeBad_panel")
-TraitPickerLayerChip/base_type = &"SurfaceChip"
-TraitPickerLayerChip/styles/panel = SubResource("TraitPickerLayerChip_panel")
 TraitPickerNewChip/base_type = &"AccentChip"
 TraitPickerNewChip/styles/panel = SubResource("TraitPickerNewChip_panel")
-TraitPickerRow/base_type = &"SelectableCardButton"
-TraitPickerRow/styles/disabled = SubResource("TraitPickerRow_disabled")
-TraitPickerRow/styles/focus = SubResource("TraitPickerRow_disabled")
-TraitPickerRow/styles/hover = SubResource("TraitPickerRow_disabled")
-TraitPickerRow/styles/hover_pressed = SubResource("TraitPickerRow_disabled")
-TraitPickerRow/styles/normal = SubResource("TraitPickerRow_disabled")
-TraitPickerRow/styles/pressed = SubResource("TraitPickerRow_disabled")
-TraitPickerRowLocked/base_type = &"SelectableCardButton"
-TraitPickerRowLocked/styles/disabled = SubResource("TraitPickerRowLocked_disabled")
-TraitPickerRowLocked/styles/focus = SubResource("TraitPickerRowLocked_disabled")
-TraitPickerRowLocked/styles/hover = SubResource("TraitPickerRowLocked_disabled")
-TraitPickerRowLocked/styles/hover_pressed = SubResource("TraitPickerRowLocked_disabled")
-TraitPickerRowLocked/styles/normal = SubResource("TraitPickerRowLocked_disabled")
-TraitPickerRowLocked/styles/pressed = SubResource("TraitPickerRowLocked_disabled")
-TraitPickerRowOn/base_type = &"SelectableCardButtonOn"
-TraitPickerRowOn/styles/disabled = SubResource("TraitPickerRowOn_disabled")
-TraitPickerRowOn/styles/focus = SubResource("TraitPickerRowOn_disabled")
-TraitPickerRowOn/styles/hover = SubResource("TraitPickerRowOn_disabled")
-TraitPickerRowOn/styles/hover_pressed = SubResource("TraitPickerRowOn_disabled")
-TraitPickerRowOn/styles/normal = SubResource("TraitPickerRowOn_disabled")
-TraitPickerRowOn/styles/pressed = SubResource("TraitPickerRowOn_disabled")
-TraitPickerSlot/base_type = &"SelectableCardButton"
-TraitPickerSlot/styles/disabled = SubResource("TraitPickerSlot_disabled")
-TraitPickerSlot/styles/focus = SubResource("TraitPickerSlot_disabled")
-TraitPickerSlot/styles/hover = SubResource("TraitPickerSlot_disabled")
-TraitPickerSlot/styles/hover_pressed = SubResource("TraitPickerSlot_disabled")
-TraitPickerSlot/styles/normal = SubResource("TraitPickerSlot_disabled")
-TraitPickerSlot/styles/pressed = SubResource("TraitPickerSlot_disabled")
-TraitPickerSlotEmpty/base_type = &"SunkPanel"
-TraitPickerSlotEmpty/styles/panel = SubResource("TraitPickerSlotEmpty_panel")
-TraitPickerSlotOver/base_type = &"SelectableCardButton"
-TraitPickerSlotOver/styles/disabled = SubResource("TraitPickerSlotOver_disabled")
-TraitPickerSlotOver/styles/focus = SubResource("TraitPickerSlotOver_disabled")
-TraitPickerSlotOver/styles/hover = SubResource("TraitPickerSlotOver_disabled")
-TraitPickerSlotOver/styles/hover_pressed = SubResource("TraitPickerSlotOver_disabled")
-TraitPickerSlotOver/styles/normal = SubResource("TraitPickerSlotOver_disabled")
-TraitPickerSlotOver/styles/pressed = SubResource("TraitPickerSlotOver_disabled")
 TraitSwapPopupSheet/base_type = &"Card"
 TraitSwapPopupSheet/styles/panel = SubResource("TraitSwapPopupSheet_panel")
+TraitTooltipCard/base_type = &"PopupCard"
+TraitTooltipCard/styles/panel = SubResource("TraitTooltipCard_panel")
 VisitMenuBubble/base_type = &"PopupCard"
 VisitMenuBubble/styles/panel = SubResource("VisitMenuBubble_panel")
 VnDialogueArtSlab/base_type = &"SunkPanel"

@@ -64,7 +64,7 @@ run + two temporary `add_mod`s, bound without a sheet.
 | Card | `감독 n/3` (manager seats used / `MANAGER_SLOTS`, `FacilitySystem.manager_slots_used`), `약점 <stat> <value>` (lowest effective), owner badge = assistant name or `감독`, alert dot while any negative `staff_mods` entry is active |
 | Sheet · 능력치 | Six rows (§16, all reads via `FacilitySystem`): effective value + 1..20 bar; lead line = the best seat (`담당 <facility> · <occupant>`, `배치된 사람 없음 — 기본값 1`, or `담당 시설 없음 — 감독 값` for `tactics`); caption = every seat of the stat (`<facility> <occupant> <value>` / `<facility> 비어 있음`; the manager's value shows its mod `6 (+2)`). Lead bar green = staff, amber = manager, faint = nobody seated |
 | Sheet · 일시 보정 | Active `staff_mods` (stat, delta, weeks left, source) |
-| Sheet · 장착 특성 | Run's equipped manager traits (`TraitSystem.run_traits`, M8): +/− chip and lead bar (green / red), name, `desc_of`, rarity chip (`TraitUi.rarity_color` fill); header = `run_setup.bonus_points` and `n/TRAIT_SLOTS`. Empty → `장착한 특성 없음` |
+| Sheet · 장착 특성 | Run's equipped manager traits (`TraitSystem.run_traits`, M8): +/− chip and lead bar (green / red), name, `desc_of`, rarity chip (`TraitUi.rarity_color` fill); header = `run_setup.bonus_points` and the equipped count `n` (no slot limit). Empty → `장착한 특성 없음` |
 | Sheet · 스태프 | Run staff list — name, job label, field value (assistant: top two stats), seat facility, weekly salary; header shows `weekly_salary_total` (hire / dismiss live in the personnel body) |
 | Sheet · 직접 해야 하는 일 | One line per stat the manager supplies (`owner == manager`, `DIRECT_TASKS`), plus interviews / outings, which always read the manager's own mental |
 

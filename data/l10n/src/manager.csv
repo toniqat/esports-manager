@@ -34,7 +34,7 @@ tx_HYK8X0Y1FR,manager.progress.spec_negative,active,ManagerProgress error messag
 tx_Y4C38QBE7Z,manager.progress.stat_over_cap,active,ManagerProgress error message,,,{stat} 능력치 상한 {cap} 초과,{stat} is over the stat cap {cap},draft,b882dfaa
 tx_SM2J7D8VWD,manager.progress.prestige_level,active,ManagerProgress error message,,,감독 Lv{level} 부터 프레스티지할 수 있습니다,Prestige unlocks at manager Lv{level},draft,0469975b
 tx_1TPBDD4JDD,manager.progress.trait_locked,active,ManagerProgress error message,,,아직 잠긴 특성입니다,This trait is still locked,draft,798c3724
-tx_HQVBRC7GPZ,manager.progress.slots_full,active,ManagerProgress error message,,,장착 칸이 가득 찼습니다 ({n}칸). 하나를 빼고 고르세요,Slots full ({n} {plural:n|{tx_SBNQ8FZ5MA}|{tx_R3FWHSV8NN}}). Unequip one first,draft,2e330769
+tx_HQVBRC7GPZ,manager.progress.slots_full,deprecated,ManagerProgress error message,,,장착 칸이 가득 찼습니다 ({n}칸). 하나를 빼고 고르세요,Slots full ({n} {plural:n|{tx_SBNQ8FZ5MA}|{tx_R3FWHSV8NN}}). Unequip one first,draft,2e330769
 tx_6ZMPGY904G,manager.tab.use_preset,active,ManagerTab action bar,,,이 프리셋 사용,Use This Preset,draft,ca5c9bc2
 tx_G60RQZ2M86,manager.tab.in_use,active,ManagerTab action bar,,,사용 중,In Use,draft,2394e1a2
 tx_PBX5T726N6,manager.tab.save_and_use,active,ManagerTab action bar,,,저장 후 사용,Save & Use,draft,5ae79a9e

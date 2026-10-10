@@ -199,7 +199,7 @@ func _fill_mods(state: Dictionary) -> void:
 func _fill_traits(state: Dictionary) -> void:
 	%TraitsSub.text = Loc.t(L.STAFF_PANEL_TRAITS_SUB, {
 			"points": int((state.get("run_setup", {}) as Dictionary).get("bonus_points", 0)),
-			"n": TraitSystem.run_traits(state).size(), "max": TraitSystem.slot_count()})
+			"n": TraitSystem.run_traits(state).size()})
 	var ids: Array = []
 	for raw in TraitSystem.run_traits(state):
 		if not TraitSystem.row(int(raw)).is_empty():

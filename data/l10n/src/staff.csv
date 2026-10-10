@@ -28,7 +28,7 @@ tx_XMXNN0N5GX,staff.panel.compare_manager,active,능력치 행 비교 조각 (·
 tx_RDDPK9RCAW,staff.panel.compare_assistant,deprecated,능력치 행 비교 조각 — 어시스턴트 매니저 약칭,,,어시 {value},Asst {value},draft,9199d634
 tx_HKMY6VMYNW,staff.panel.mod_line,active,일시 보정 줄,,,{stat} {delta} · 남은 {weeks}주,{stat} {delta} · {weeks} {plural:weeks|{tx_HZJA6JHW21}|{tx_RE3J5S0400}} left,draft,03631637
 tx_QF5YDBZ2X4,staff.panel.mod_line_source,active,일시 보정 줄 — {source} = 보정 출처 이름,,,{stat} {delta} · 남은 {weeks}주 · {source},{stat} {delta} · {weeks} {plural:weeks|{tx_HZJA6JHW21}|{tx_RE3J5S0400}} left · {source},draft,cf40bc88
-tx_TZARXTP3WC,staff.panel.traits_sub,active,장착 특성 섹션 보조 줄,,,보너스 점수 {points} · 장착 {n}/{max},Bonus points {points} · Equipped {n}/{max},draft,acbd4ec7
+tx_TZARXTP3WC,staff.panel.traits_sub,active,장착 특성 섹션 보조 줄,,,보너스 점수 {points} · 장착 {n},Bonus points {points} · Equipped {n},draft,3ca87c85
 tx_XS9W0R9CKV,staff.panel.staff_sub,active,스태프 섹션 보조 줄,,,주급 합계 {amount},Total weekly pay {amount},draft,50b56d1a
 tx_SXR6V4JTZA,staff.panel.salary,active,스태프 행 주급,,,주급 {amount},Weekly pay {amount},draft,9a370297
 tx_ZVYS7H40JE,staff.panel.direct_line,active,직접 해야 하는 일 줄 — {task} = staff.direct.*,,,· {stat}: {task} (감독 {value}),· {stat}: {task} (Manager {value}),draft,a43f6223

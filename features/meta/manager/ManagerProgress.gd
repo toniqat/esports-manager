@@ -331,8 +331,6 @@ static func toggle_trait(preset: Dictionary, trait_id: int, owned_traits: Array)
 	else:
 		if not owned_traits.has(trait_id):
 			return Loc.t(L.MANAGER_PROGRESS_TRAIT_LOCKED)
-		if cur.size() >= TraitSystem.slot_count():
-			return Loc.t(L.MANAGER_PROGRESS_SLOTS_FULL, {"n": TraitSystem.slot_count()})
 		cur.append(trait_id)
 	preset["traits"] = cur
 	return ""

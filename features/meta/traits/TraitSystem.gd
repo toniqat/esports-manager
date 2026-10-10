@@ -5,7 +5,7 @@ extends RefCounted
 # Contract: `docs/outgame_dev_plan.md` §12. Table: `traits.csv` (cached on first read).
 #
 # - **Bonus points** = Σ(bonus_cost of "-" traits) − Σ(bonus_cost of "+" traits).
-#   A set with bonus < 0, more than `TRAIT_SLOTS` traits, duplicates or traits the
+#   A set with bonus < 0, duplicates or traits the (no count limit — bonus points cap it)
 #   profile does not own is not equippable (`validate_equip`).
 # - Inside a run the equipped set is frozen in `season_state.run_setup.traits`
 #   (Array[int]) and `.bonus_points`. Season systems read effects with
@@ -73,10 +73,6 @@ static func rarity_name(rarity: int) -> String:
 	return GameEnums.rarity_label(rarity)
 
 
-static func slot_count() -> int:
-	return maxi(1, ConstTable.int_of("TRAIT_SLOTS"))
-
-
 # ── Bonus points / validation ────────────────────────────────────────────────
 ## Σ provided by "-" traits − Σ consumed by "+" traits. Unknown ids count 0.
 static func bonus_points(trait_ids: Array) -> int:
@@ -92,8 +88,6 @@ static func bonus_points(trait_ids: Array) -> int:
 
 ## "" when `trait_ids` can be equipped with `owned` (Array[int] of owned trait ids).
 static func validate_equip(trait_ids: Array, owned: Array) -> String:
-	if trait_ids.size() > slot_count():
-		return Loc.t(L.TRAIT_EQUIP_TOO_MANY, {"n": slot_count()})
 	var seen: Dictionary = {}
 	for raw in trait_ids:
 		var tid: int = int(raw)

@@ -36,8 +36,9 @@ Unknown condition → `push_warning`, not unlocked. Test runs pass an empty prof
 conditions can be met (`runs:N` sees 1) — and nothing is granted.
 
 ## Rules
-- Bonus points = Σ `bonus_cost` of `-` traits − Σ of `+` traits; a set with bonus < 0, more than
-  `TRAIT_SLOTS`, duplicates or unowned traits is not equippable (`validate_equip`).
+- Bonus points = Σ `bonus_cost` of `-` traits − Σ of `+` traits; a set with bonus < 0, duplicates or unowned
+  traits is not equippable (`validate_equip`). **No equip-count limit** — bonus points are the only cap
+  (`TRAIT_SLOTS` const and `slot_count()` removed, `trait.equip.too_many` deprecated).
 - Run: `season_state.run_setup.traits` / `.bonus_points` (snapshot by `GameManager.start_run`).
   Outgame systems read `TraitSystem.run_mod(state, key)` (Σ p1, 0 when none).
 - In-game traits go to BattleSim as `match_ctx.traits` (`features/battle_sim/trait/`).

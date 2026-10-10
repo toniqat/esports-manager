@@ -2479,7 +2479,7 @@ tx_XMXNN0N5GX,감독 {value}
 tx_RDDPK9RCAW,어시 {value}
 tx_HKMY6VMYNW,{stat} {delta} · 남은 {weeks}주
 tx_QF5YDBZ2X4,{stat} {delta} · 남은 {weeks}주 · {source}
-tx_TZARXTP3WC,보너스 점수 {points} · 장착 {n}/{max}
+tx_TZARXTP3WC,보너스 점수 {points} · 장착 {n}
 tx_XS9W0R9CKV,주급 합계 {amount}
 tx_SXR6V4JTZA,주급 {amount}
 tx_ZVYS7H40JE,· {stat}: {task} (감독 {value})

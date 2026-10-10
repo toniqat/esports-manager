@@ -2479,7 +2479,7 @@ tx_XMXNN0N5GX,Manager {value}
 tx_RDDPK9RCAW,Asst {value}
 tx_HKMY6VMYNW,{stat} {delta} · {weeks} {plural:weeks|week|weeks} left
 tx_QF5YDBZ2X4,{stat} {delta} · {weeks} {plural:weeks|week|weeks} left · {source}
-tx_TZARXTP3WC,Bonus points {points} · Equipped {n}/{max}
+tx_TZARXTP3WC,Bonus points {points} · Equipped {n}
 tx_XS9W0R9CKV,Total weekly pay {amount}
 tx_SXR6V4JTZA,Weekly pay {amount}
 tx_ZVYS7H40JE,· {stat}: {task} (Manager {value})

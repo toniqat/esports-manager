@@ -1,21 +1,24 @@
 class_name HomeTab
 extends Control
 
-# 로비의 홈 탭 — 진행 중인 런 카드와 `게임 시작`(1) / `이어하기`(2) 행동 바.
-# 런이 없으면 빈 상태 카드와 `게임 시작` 하나. 탭 계약은 `LobbyScreen.gd` 머리말.
-# The bar is half the usual width and 10 % taller, centred (`bar_scale`, applied by the host).
+# 로비의 홈 탭 — 진행 중인 런 카드와 행동 바: 런이 있으면 가운데 `이어하기` + 그 왼쪽의 둥근 X
+# 버튼(새 게임 = 런 포기 모달), 없으면 빈 상태 카드와 `게임 시작` 하나. 탭 계약은 `LobbyScreen.gd` 머리말.
+# The capsule is half the usual row width and 10 % taller, centred (`bar_scale`, applied by the
+# host); the round X slot hangs left of it (`LobbyScreen._lift_bar`).
 #
 # **레이아웃 · 스타일의 정본은 `UI_View_HomeTab.tscn`** — 이 스크립트는 `%노드` 에 글을 넣고
 # 런 카드 / 빈 카드 중 하나를 보일 뿐이다. 생성은 `HomeTab.create()`.
 #
 # `게임 시작` 을 누를 때 런이 없으면 host 의 시나리오 선택 모드(`open_scenario_select`)를
-# 연다. 런이 이미 있으면 **포기 확인 모달**을 띄운다 — 확인하면 그 런을
+# 연다. 런이 있을 때 X 는 **런 포기 모달**(`AbandonRunPopup`: 런 요약 + 경고)을 띄운다 — 확인하면 그 런을
 # **포기로 정산**(`RunResult.settle_current_run("abandon")`, 실패 정산이지만 보상은
 # 준다)하고 정산 화면으로 간다. 그 화면의 `새 런` 이 런 준비로 잇는다.
 
 ## Action bar font (32 before the home bar grew 10 %).
 const BAR_FONT: int = 35
 const SCENE_PATH: String = "res://features/meta/lobby/UI_View_HomeTab.tscn"
+## Round "new game" (abandon) slot icon.
+const NEW_GAME_ICON: String = "res://resources/images/ui/lobby/icon_close.svg"
 
 var _host: LobbyScreen
 var _gm: Node
@@ -35,11 +38,11 @@ func _ready() -> void:
 
 
 func bar_specs() -> Array:
-	# 런이 있으면 1:2 — 이어하기가 주 행동이라 오른쪽 3분의 2. 없으면 게임 시작 하나.
+	# 런이 있으면 둥근 X(새 게임 = 포기 모달) + 가운데 이어하기. 없으면 게임 시작 하나.
 	if SaveSystem.has_run():
 		return [
-			{"text": Loc.t(L.LOBBY_HOME_START),    "style": "ghost",   "font": BAR_FONT, "weight": 1.0},
-			{"text": Loc.t(L.LOBBY_HOME_CONTINUE), "style": "primary", "font": BAR_FONT, "weight": 2.0},
+			{"text": "", "icon": NEW_GAME_ICON, "round": true, "style": "ghost"},
+			{"text": Loc.t(L.LOBBY_HOME_CONTINUE), "style": "primary", "font": BAR_FONT, "weight": 1.0},
 		]
 	return [{"text": Loc.t(L.LOBBY_HOME_START), "style": "primary", "font": BAR_FONT, "weight": 1.0}]
 
@@ -87,23 +90,37 @@ func _fill() -> void:
 func _show_run(meta: Dictionary) -> void:
 	%EmptyCard.visible = false
 	%RunCard.visible = true
-	%Phase.text = GameEnums.phase_label(int(meta.get("phase", 0)))
+	var tx: Dictionary = run_texts(meta, _gm)
+	%Phase.text = tx["phase"]
 	%LiveChip.visible = bool(meta.get("match_in_progress", false))
-	%Date.text = Loc.t(L.LOBBY_HOME_DATE, {
-			"year": int(meta.get("year", 1)), "month": int(meta.get("month", 12)),
-			"day": int(meta.get("day", 1)), "weekday": _weekday_name(int(meta.get("weekday", 0)))})
-	%Team.text = String(_gm.team_name(int(meta.get("team_id", 0))))
-	%Trophies.text = Loc.t(L.LOBBY_HOME_TROPHIES, {"n": int(meta.get("trophies", 0))})
+	%Date.text = tx["date"]
+	%Team.text = tx["team"]
+	%Trophies.text = tx["trophies"]
+	%Record.text = tx["record"]
+	%SavedAt.text = tx["saved_at"]
+
+
+## The run card's lines for `meta` (`SaveSystem.read_run_meta()`) — shared with `AbandonRunPopup`.
+## Keys: phase · date · team · trophies · record · saved_at. `gm` = the GameManager autoload.
+static func run_texts(meta: Dictionary, gm: Node) -> Dictionary:
 	var rank: int = int(meta.get("rank", 0))
 	var record: String = Loc.t(L.LOBBY_HOME_LEAGUE_NOT_STARTED)
 	if rank > 0:
 		record = Loc.t(L.LOBBY_HOME_LEAGUE_RANK, {"rank": rank,
 				"win": int(meta.get("wins", 0)), "loss": int(meta.get("losses", 0))})
-	%Record.text = record
-	%SavedAt.text = Loc.t(L.LOBBY_HOME_SAVED_AT, {"time": String(meta.get("saved_at", ""))})
+	return {
+		"phase": GameEnums.phase_label(int(meta.get("phase", 0))),
+		"date": Loc.t(L.LOBBY_HOME_DATE, {
+				"year": int(meta.get("year", 1)), "month": int(meta.get("month", 12)),
+				"day": int(meta.get("day", 1)), "weekday": _weekday_name(int(meta.get("weekday", 0)))}),
+		"team": String(gm.team_name(int(meta.get("team_id", 0)))),
+		"trophies": Loc.t(L.LOBBY_HOME_TROPHIES, {"n": int(meta.get("trophies", 0))}),
+		"record": record,
+		"saved_at": Loc.t(L.LOBBY_HOME_SAVED_AT, {"time": String(meta.get("saved_at", ""))}),
+	}
 
 
-func _weekday_name(wd: int) -> String:
+static func _weekday_name(wd: int) -> String:
 	if wd >= 0 and wd < OutgameTheme.DAY_LETTERS.size():
 		return OutgameTheme.day_letter(wd)
 	return "?"
@@ -128,9 +145,7 @@ func _on_start_pressed() -> void:
 		_host.open_scenario_select(true)
 		return
 	Haptics.play(Haptics.Kind.WARNING)
-	_host.open_confirm(Loc.t(L.LOBBY_HOME_ABANDON_TITLE), Loc.t(L.LOBBY_HOME_ABANDON_BODY),
-			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.LOBBY_HOME_ABANDON_CONFIRM), true,
-			_on_abandon_confirmed)
+	_host.open_abandon_run(_meta, _on_abandon_confirmed)
 
 
 func _on_abandon_confirmed() -> void:

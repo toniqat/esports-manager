@@ -353,6 +353,8 @@ const BOTTOM_BAR_LIFT: float = 32.0
 const BOTTOM_BAR_SIDE: float = 40.0
 ## Gap between two capsules in one row.
 const BOTTOM_BAR_GAP: float = 16.0
+## Icon size inside a `round` (icon-only circle) bar slot.
+const BAR_ROUND_ICON: float = 44.0
 ## Height the row reserves above the safe line (capsule + lift). The device inset is not in it.
 const BOTTOM_BAR_H: float = BOTTOM_PILL_H + BOTTOM_BAR_LIFT
 
@@ -366,7 +368,9 @@ static func bottom_bar_top() -> float:
 ## Builds one bottom row in code from `UI_Comp_FloatingBarButton` instances. `specs` lists the slots from the left, each
 ## `{text, style, weight, font}` — `style` `"primary"` (default) / `"ghost"` · `"dark"`
 ## (both = the dark secondary capsule) / `"danger"`, `weight` = width ratio (default 1),
-## `font` = font size.
+## `font` = font size. `icon` (texture path) + `round: true` = an icon-only circle: width = the
+## capsule height (the theme's full radius makes it round), `weight` ignored, icon centred at
+## `BAR_ROUND_ICON` px; the button carries meta `bar_round` for hosts that re-lay the row.
 ##
 ## Returns the created `Button`s. A screen that folds a slot away hides it (`visible`) and
 ## calls `layout_bottom_bar` again.
@@ -386,37 +390,50 @@ static func add_bottom_bar(parent: Control, specs: Array) -> Array:
 			b.theme_type_variation = &"BarDarkButton" if style in ["ghost", "dark"] 					else &"BarPrimaryButton"
 			b.add_theme_font_size_override("font_size", int(s.get("font", 34)))
 		b.text = String(s.get("text", ""))
+		var icon_path: String = String(s.get("icon", ""))
+		if icon_path != "":
+			b.icon = load(icon_path) as Texture2D
+			b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			b.add_theme_constant_override("icon_max_width", int(BAR_ROUND_ICON))
+		if bool(s.get("round", false)):
+			b.set_meta(&"bar_round", true)
 		parent.add_child(b)
 		out.append(b)
 	layout_bottom_bar(out, specs)
 	return out
 
 
-## Lays the visible slots out by weight between the side insets, `BOTTOM_BAR_GAP` apart.
-## The last slot's right edge lands exactly on the inset (no rounding remainder).
+## Lays the visible slots out by weight between the side insets, `BOTTOM_BAR_GAP` apart
+## (`round` slots are a fixed circle, the rest share what is left). The last slot's right edge
+## lands exactly on the inset (no rounding remainder).
 static func layout_bottom_bar(buttons: Array, specs: Array) -> void:
 	var left: float = BOTTOM_BAR_SIDE
 	var right: float = ScreenMetrics.vp_w() - BOTTOM_BAR_SIDE
 	var top: float = bottom_bar_top()
 	var total: float = 0.0
+	var fixed: float = 0.0
 	var shown: int = 0
 	var last: int = -1
 	for i in buttons.size():
-		if (buttons[i] as Button).visible:
-			total += _bar_weight(specs, i)
+		var bi: Button = buttons[i]
+		if bi.visible:
+			if bi.has_meta(&"bar_round"):
+				fixed += BOTTOM_PILL_H
+			else:
+				total += _bar_weight(specs, i)
 			shown += 1
 			last = i
-	if total <= 0.0:
+	if shown == 0:
 		return
 
-	var avail: float = right - left - BOTTOM_BAR_GAP * float(shown - 1)
+	var avail: float = right - left - fixed - BOTTOM_BAR_GAP * float(shown - 1)
 	var x: float = left
 	for i in buttons.size():
 		var b: Button = buttons[i]
 		if not b.visible:
 			continue
-		var w: float = right - x if i == last \
-				else floorf(avail * _bar_weight(specs, i) / total)
+		var w: float = BOTTOM_PILL_H if b.has_meta(&"bar_round") \
+				else (right - x if i == last else floorf(avail * _bar_weight(specs, i) / maxf(total, 0.01)))
 		b.position = Vector2(x, top)
 		b.size     = Vector2(w, BOTTOM_PILL_H)
 		x += w + BOTTOM_BAR_GAP
@@ -1199,8 +1216,9 @@ static func _add_screen_variations(th: Theme) -> void:
 
 	# --- ScenarioSelect (meta/run_setup `UI_View_ScenarioSelectView.tscn`) ---
 	# Giant dark slab under the scenario info, rotated by code so its top edge reads as a diagonal
-	# (every other edge is off-screen); the soft shadow lifts that edge off the art.
-	var slab := flat_style(Color(RAIL, 0.93), 0)
+	# (every other edge is off-screen); the soft shadow lifts that edge off the art. Opaque: the
+	# zoomed-out art tucks its top / bottom edges under the slabs, which must not show through.
+	var slab := flat_style(Color(RAIL, 1.0), 0)
 	slab.shadow_color = Color(0, 0, 0, 0.35)
 	slab.shadow_size = 36
 	_add_derived(th, "ScenarioSelectSlab", &"SunkPanel", slab)

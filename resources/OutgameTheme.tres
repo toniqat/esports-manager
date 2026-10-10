@@ -1579,7 +1579,7 @@ corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
 
 [sub_resource type="StyleBoxFlat" id="ScenarioSelectSlab_panel"]
-bg_color = Color(0.11, 0.11, 0.122, 0.93)
+bg_color = Color(0.11, 0.11, 0.122, 1)
 shadow_color = Color(0, 0, 0, 0.35)
 shadow_size = 36
 

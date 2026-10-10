@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://blxx2cd78eep2"]
+[gd_scene load_steps=16 format=3 uid="uid://blxx2cd78eep2"]
 
 [ext_resource type="Script" uid="uid://c7pdh0snlctjj" path="res://features/meta/run_setup/ScenarioSelectView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
@@ -11,6 +11,18 @@
 [ext_resource type="Shader" path="res://features/meta/run_setup/ScenarioWipe.gdshader" id="11_wipe_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wipe"]
+shader = ExtResource("11_wipe_shader")
+shader_parameter/progress = 0.0
+shader_parameter/direction = 1.0
+shader_parameter/via_black = true
+shader_parameter/soft = 0.2
+shader_parameter/scale = 3.0
+shader_parameter/stretch = 8.0
+shader_parameter/speed = 1.0
+shader_parameter/aspect = 0.5625
+shader_parameter/tint = Color(0, 0, 0, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_art_wipe"]
 shader = ExtResource("11_wipe_shader")
 shader_parameter/progress = 0.0
 shader_parameter/direction = 1.0
@@ -109,6 +121,21 @@ mouse_filter = 2
 texture = SubResource("GradientTexture2D_top")
 expand_mode = 1
 
+[node name="ArtWipe" type="ColorRect" parent="ArtLayer"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_art_wipe")
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _swap_to / _fit_viewport (league change: the same black brush wipe as %Wipe, but only over the art — it sits under the slabs, so the slabs / logo / bar stay in view; own material so its parameters are independent of %Wipe)"
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+script = ExtResource("9_wipe")
+
 [node name="Sheet" type="Control" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd. Holds the giant rotated slab (SlabPivot / Slab) and the un-rotated contents (Content: info row + bottom bar)."
@@ -133,6 +160,25 @@ mouse_filter = 2
 [node name="Slab" type="Panel" parent="Sheet/SlabPivot"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _place_slab (giant plain dark rectangle, much larger than any screen; code rotates it so its top edge reads as the diagonal — every other edge stays off-screen)"
+layout_mode = 0
+offset_right = 5200.0
+offset_bottom = 3600.0
+mouse_filter = 2
+theme_type_variation = &"ScenarioSelectSlab"
+
+[node name="TopSlabPivot" type="Control" parent="Sheet"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _place_slab / _set_swing (zero-size pivot off the TOP-RIGHT screen corner — the bottom slab's pivot mirrored through the screen centre; the swing raises and rotates it clockwise)"
+layout_mode = 0
+offset_left = 1680.0
+offset_top = -600.0
+offset_right = 1680.0
+offset_bottom = -600.0
+mouse_filter = 2
+
+[node name="TopSlab" type="Panel" parent="Sheet/TopSlabPivot"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _place_slab (top slab: the same giant dark rectangle turned 180° — its lower edge is parallel to the bottom slab's edge (same slope), thick end on the left, about half the bottom slab's visible height)"
 layout_mode = 0
 offset_right = 5200.0
 offset_bottom = 3600.0

@@ -6,19 +6,22 @@ extends Control
 # it is open. **Layout / look live in `UI_View_ScenarioSelectView.tscn`**; this script fills data,
 # places the art and runs the animations.
 #
-#   art (height = the whole viewport incl. notch band + bottom inset, cover-cropped so the main
-#        character's face sits mid-screen)
+#   art (enters at the whole viewport height incl. notch band + bottom inset, cover-cropped so the
+#        main character's face sits mid-screen; once the slabs are in it zooms out to the band
+#        between them, its top / bottom edges tucked ART_TUCK under the slabs — `_set_zoom`)
 #   giant dark slab (`%Slab`, a plain rectangle far larger than the screen) rotated so its top edge
-#   reads as a diagonal; it swings in counter-clockwise. The contents do NOT rotate — they sit
-#   at their final place and fade in as the slab arrives:
+#   reads as a diagonal; it swings in counter-clockwise. A second one (`%TopSlab`) is the same
+#   slab turned 180° along the top — parallel edge, about half as tall — and swings in with it.
+#   The contents do NOT rotate — they sit at their final place and fade in as the slab arrives:
 #       [salary-cap card]              [‹]  league logo  [›]
 #                                           league name
 #                                           • ━ •  (index pills)
 #       bar: 뒤로 (1) / 시나리오 선택 (2)
 #   black wipe (`ScenarioWipe`, last child — over all of this view's UI, under the lobby top bar so
 #   its level / settings discs stay visible): black grows from one edge until the screen is black,
-#   holds, the content swaps, black recedes off the opposite edge. Used for open, close and every
-#   league change. The logo sits half over the slab edge (`_place_league`).
+#   holds, the content swaps, black recedes off the opposite edge. Used for open and close; a
+#   league change runs the same wipe on `%ArtWipe`, which covers the art only (under the slabs).
+#   The logo sits half over the slab edge (`_place_league`).
 #
 # One scenario is shown at a time; ‹ / › (or a horizontal swipe on the art) step through
 # `RunRules.scenarios()` (first row: no ‹, last row: no ›). Art, logo and focus come from
@@ -35,6 +38,7 @@ const WIPE_IN_SEC: float = 0.32     # black sweeps in until the screen is black 
 const WIPE_HOLD_SEC: float = 0.10   # fully black beat (the swap happens at its start)
 const WIPE_OUT_SEC: float = 0.32    # black keeps travelling and leaves off the far edge
 const SWING_SEC: float = 0.60       # slab swing in (open)
+const CLOSE_SEC: float = 0.55       # close: slabs out, art zoom in and wipe in — all together
 const SWING_DELAY: float = 0.14     # open: the swing starts this far into the wipe-out (seen, not under black)
 const SWING_ANGLE: float = 0.55     # rad, extra clockwise angle of the slab while swung out
 const SWING_DROP: float = 260.0     # px the pivot also drops while swung out
@@ -42,8 +46,16 @@ const SWING_PIVOT := Vector2(-600.0, 600.0)  # pivot: left of the screen / below
 const CONTENT_FADE_AT: float = 0.72 # content fade-in starts at this fraction of the swing
 const CONTENT_FADE_SEC: float = 0.22
 const CONTENT_OUT_SEC: float = 0.16
-const SLAB_EDGE_LEFT: float = 190.0   # slab top edge height above the safe bottom at the left screen edge
-const SLAB_SLOPE: float = 200.0 / 1080.0  # edge rise per px to the right (fixed angle on every width)
+const SLAB_EDGE_LEFT: float = 260.0   # slab top edge height above the safe bottom at the left screen edge
+const SLAB_SLOPE: float = 130.0 / 1080.0  # edge rise per px to the right (fixed angle on every width)
+const TOP_EDGE_RIGHT: float = 100.0 # top slab: lower edge this far below the safe top at the RIGHT edge,
+									# falling SLAB_SLOPE per px to the left (parallel to the bottom edge)
+const ART_TUCK: float = 10.0        # zoomed-out art: its top / bottom edges sit this far past the slabs'
+									# notches (top slab's right end, bottom slab's left end)
+const ZOOM_AT: float = 0.25         # open: art zoom-out starts at this fraction of the slab swing ...
+const ZOOM_SEC: float = 0.50        # ... and runs this long (cubic in-out — trails the slabs, ease-out)
+const LEAGUE_SLIDE: float = 90.0    # league change: logo / name slide this far while fading
+const DOT_SEC: float = 0.40         # league change: the current-pill highlight glides to the next pill
 const TIP_GAP: float = 14.0         # salary-cap tooltip sits this far above the pill
 const TIP_EDGE: float = 16.0        # ... and at least this far inside the safe area
 const SLAB_LEAD: float = 500.0      # slab corner sits this far before the left screen edge (along the edge)
@@ -59,8 +71,13 @@ var _index: int = 0                 # position of selected_id in _rows
 var _busy: bool = false             # open / close / swap animation running — input ignored
 var _tween: Tween
 var _pivot_home := Vector2.ZERO    # %SlabPivot position in its final pose (_place_slab)
+var _top_pivot_home := Vector2.ZERO  # %TopSlabPivot position in its final pose
+var _zoom: float = 0.0              # art: 0 = full viewport height, 1 = framed between the slabs
+var _view_top: float = 0.0          # this view's top in the viewport (the lobby indents it)
 var _swing: float = 0.0             # current slab swing (0 = in place, 1 = swung out)
 var _drag_from: Variant = null      # swipe start (Vector2) or null
+var _ui_tween: Tween                # league change: logo / name slide-out + pill glide
+var _league_home: Dictionary = {}   # %Logo / %LogoShadow / %LeagueName → scene x
 
 
 static func create() -> ScenarioSelectView:
@@ -79,6 +96,8 @@ func _ready() -> void:
 	pill.pressed.connect(_show_cap_tip)
 	(%TipCatcher as Button).pressed.connect(_hide_cap_tip)
 	_build_dots()
+	for n in [%Logo, %LogoShadow, %LeagueName]:
+		_league_home[n] = (n as Control).position.x
 	resized.connect(_fit_viewport)
 	get_viewport().size_changed.connect(_fit_viewport)
 	(%ArtClip as Control).resized.connect(_layout_art)
@@ -104,26 +123,32 @@ func open(scenario_id: int = 0, animate: bool = true) -> void:
 	if not animate:
 		_set_art_shown(true)
 		_set_swing(0.0)
+		_set_zoom(1.0)
 		_set_content(1.0)
 		_busy = false
 		return
 	_busy = true
 	_set_art_shown(false)
 	_set_swing(1.0)
+	_set_zoom(0.0)
 	_set_content(0.0)
 	_tween = _wipe(true, func() -> void: _set_art_shown(true))
-	# Runs alongside the wipe-out: slab swings in, contents fade in place near its end.
+	# Runs alongside the wipe-out: slabs swing in, contents fade in place near its end; the art
+	# zooms out behind the arriving slabs (starts ZOOM_AT into the swing, trails its ease-out).
 	_tween.tween_method(_set_swing, 1.0, 0.0, SWING_SEC).set_delay(SWING_DELAY) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_tween.tween_method(_set_content, 0.0, 1.0, CONTENT_FADE_SEC) \
 			.set_delay(SWING_DELAY + SWING_SEC * CONTENT_FADE_AT)
+	_tween.tween_method(_set_zoom, 0.0, 1.0, ZOOM_SEC).set_delay(SWING_DELAY + SWING_SEC * ZOOM_AT) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_tween.chain().tween_callback(func() -> void: _busy = false)
 
 
-## Mirror of `open`: contents fade out first, then the slab swings out CLOCKWISE along the same
-## path (same pivot, `SWING_SEC`, the open curve reversed in time = cubic ease-in); the black wipe
-## grows over the last part of the swing exactly as the open's wipe-out overlapped its start, holds,
-## the art goes, and the wipe recedes onto the lobby. Hides itself and emits `closed` at the very end.
+## Everything starts at once: the contents fade out (`CONTENT_OUT_SEC`) while, for `CLOSE_SEC`, the
+## slabs swing out CLOCKWISE along the open path (cubic ease-in), the art zooms back in to the full
+## viewport height (cubic ease-out — always ahead of the slabs, so no margin shows as they leave)
+## and the black wipe sweeps in from the left. Hold, the art goes, the wipe recedes onto the lobby.
+## Hides itself and emits `closed` at the very end.
 func close(animate: bool = true) -> void:
 	_kill_tween()
 	if not animate or not visible:
@@ -135,12 +160,11 @@ func close(animate: bool = true) -> void:
 	var t := create_tween()
 	_tween = t
 	t.tween_method(_set_content, 1.0, 0.0, CONTENT_OUT_SEC)
-	t.tween_method(_set_swing, 0.0, 1.0, SWING_SEC).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	# Open: the swing starts SWING_DELAY into the wipe-out. Mirror: the wipe-in ends SWING_DELAY
-	# after the swing ends.
-	t.parallel().tween_method(_set_wipe.bind(false), 0.0, 1.0, WIPE_IN_SEC) \
-			.set_trans(Tween.TRANS_LINEAR) \
-			.set_delay(maxf(0.0, SWING_SEC + SWING_DELAY - WIPE_IN_SEC))
+	t.parallel().tween_method(_set_swing, _swing, 1.0, CLOSE_SEC) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t.parallel().tween_method(_set_zoom, _zoom, 0.0, CLOSE_SEC) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_method(_set_wipe.bind(false), 0.0, 1.0, CLOSE_SEC).set_trans(Tween.TRANS_LINEAR)
 	t.tween_callback(func() -> void: _set_art_shown(false))
 	t.tween_interval(WIPE_HOLD_SEC)
 	t.tween_method(_set_wipe.bind(false), 1.0, 2.0, WIPE_OUT_SEC) \
@@ -169,8 +193,9 @@ func _row(i: int) -> Dictionary:
 	return _rows[i] if i >= 0 and i < _rows.size() else {}
 
 
-## Fills art, logo, name, cap card, pills and arrows for row `i` — no animation.
-func _show_row(i: int) -> void:
+## Fills art, logo, name, cap card, pills and arrows for row `i` — no animation (`dots = false`:
+## leave the pills to a running glide, `_glide_dots`).
+func _show_row(i: int, dots: bool = true) -> void:
 	var row: Dictionary = _row(i)
 	var art: TextureRect = %Art
 	art.texture = _load_tex(String(row.get("art", "")))
@@ -183,7 +208,8 @@ func _show_row(i: int) -> void:
 	var cap: int = int(row.get("salary_cap", 0))
 	(%CapValue as Label).text = Loc.grouped(cap)
 	_fit_pill.call_deferred()
-	_refresh_dots()
+	if dots:
+		_refresh_dots()
 	_refresh_arrows()
 
 
@@ -203,6 +229,31 @@ func _refresh_dots() -> void:
 		var on: bool = i == _index
 		d.theme_type_variation = &"ScenarioSelectDotOn" if on else &"ScenarioSelectDot"
 		d.custom_minimum_size.x = DOT_ON_W if on else DOT_W
+
+
+## Pill glide `from` → `to` at progress p (0 → 1): the long pill shrinks while the next one grows
+## (the centred row keeps its width, so the highlight reads as sliding over); the accent colour
+## hands over at the halfway point.
+func _glide_dots(p: float, from: int, to: int) -> void:
+	var dots: Control = %Dots
+	for i in dots.get_child_count():
+		var d: Control = dots.get_child(i) as Control
+		var w: float = DOT_W
+		if i == from:
+			w = lerpf(DOT_ON_W, DOT_W, p)
+		elif i == to:
+			w = lerpf(DOT_W, DOT_ON_W, p)
+		d.custom_minimum_size.x = w
+		var on: bool = i == (to if p >= 0.5 else from)
+		d.theme_type_variation = &"ScenarioSelectDotOn" if on else &"ScenarioSelectDot"
+
+
+## League block slide: v = 0 home, ±1 = LEAGUE_SLIDE to the right / left and fully transparent.
+func _set_league_shift(v: float) -> void:
+	for n in _league_home:
+		var c: Control = n
+		c.position.x = float(_league_home[n]) + v * LEAGUE_SLIDE
+		c.modulate.a = 1.0 - absf(v)
 
 
 func _refresh_arrows() -> void:
@@ -230,8 +281,9 @@ static func _load_tex(path: String) -> Texture2D:
 func _fit_viewport() -> void:
 	var vp: Vector2 = get_viewport_rect().size
 	var top: float = get_global_rect().position.y
+	_view_top = top
 	var below: float = vp.y - (top + size.y)
-	for n in [%Backdrop, %ArtClip, %Wipe, %CapTip]:
+	for n in [%Backdrop, %ArtClip, %ArtWipe, %Wipe, %CapTip]:
 		var c: Control = n
 		c.offset_top = -top
 		c.offset_bottom = below
@@ -248,11 +300,18 @@ func _edge_h(x: float) -> float:
 	return SLAB_EDGE_LEFT + x * SLAB_SLOPE
 
 
-## Final pose of the slab: its top edge rises from SLAB_EDGE_LEFT above the safe bottom at the left
-## screen edge at a fixed angle (SLAB_SLOPE); the rectangle (scene size, far larger than the
-## screen) hangs below that edge, its corner SLAB_LEAD before the left edge — all other edges are
-## off-screen. The slab is placed under %SlabPivot (off the bottom-left corner), which the swing
-## rotates.
+## Top slab: its lower edge's distance below the view top (= safe top) at view x (final pose).
+func _top_edge_h(x: float) -> float:
+	return TOP_EDGE_RIGHT + (size.x - x) * SLAB_SLOPE
+
+
+## Final pose of the slabs. Bottom: its top edge rises from SLAB_EDGE_LEFT above the safe bottom at
+## the left screen edge at a fixed angle (SLAB_SLOPE); the rectangle (scene size, far larger than
+## the screen) hangs below that edge, its corner SLAB_LEAD before the left edge — all other edges
+## are off-screen. Placed under %SlabPivot (off the bottom-left corner), which the swing rotates.
+## Top: the same rectangle turned 180° — it hangs ABOVE a parallel edge `_top_edge_h` below the
+## safe top, its corner SLAB_LEAD past the right edge, under %TopSlabPivot (off the top-right
+## corner = the bottom pivot mirrored through the screen centre).
 func _place_slab() -> void:
 	var w: float = size.x
 	var safe_bottom: float = size.y - OutgameTheme.bottom_inset()
@@ -265,9 +324,13 @@ func _place_slab() -> void:
 	slab.pivot_offset = Vector2.ZERO
 	slab.rotation = dir.angle()
 	slab.position = corner - _pivot_home
-	var pivot: Control = %SlabPivot
-	pivot.position = _pivot_home + Vector2(0.0, SWING_DROP * _swing)
-	pivot.rotation = SWING_ANGLE * _swing
+	var top_right := Vector2(w, _top_edge_h(w))
+	_top_pivot_home = Vector2(w - SWING_PIVOT.x, -SWING_PIVOT.y)
+	var top_slab: Control = %TopSlab
+	top_slab.pivot_offset = Vector2.ZERO
+	top_slab.rotation = dir.angle() + PI
+	top_slab.position = top_right + dir * SLAB_LEAD - _top_pivot_home
+	_set_swing(_swing)
 
 
 ## Puts the league block so the logo's centre sits ON the slab edge at the logo's x (half over the
@@ -322,19 +385,42 @@ func _hide_cap_tip() -> void:
 	(%CapTip as Control).visible = false
 
 
-## Cover-fit: art height = `%ArtClip` height (= viewport height), width by aspect (wider only if
-## the screen is wider than the art), x so the focus point sits mid-screen, clamped so no side gap.
+## Cover-fit between two framings, blended by `_zoom`: 0 = art height = `%ArtClip` height
+## (= viewport height); 1 = the band between the slabs — from ART_TUCK above the top slab's highest
+## edge point (its right end) to ART_TUCK below the bottom slab's lowest (its left end), so the
+## art's top / bottom edges always sit under a slab. Width by aspect (wider only if the screen is
+## wider than the art), x so the focus point sits mid-screen, clamped so no side gap. Both framings
+## cover the screen sides and the band, so every blend between them does too.
 func _layout_art() -> void:
 	var art: TextureRect = %Art
 	var clip: Vector2 = (%ArtClip as Control).size
 	if art.texture == null or clip.y <= 0.0:
 		return
+	var full: Rect2 = _art_rect(0.0, clip.y)
+	var safe_bottom: float = size.y - OutgameTheme.bottom_inset()
+	# Band in %ArtClip coords (the clip starts _view_top above this view).
+	var band_top: float = _view_top + TOP_EDGE_RIGHT - ART_TUCK
+	var band_bottom: float = _view_top + safe_bottom - SLAB_EDGE_LEFT + ART_TUCK
+	var framed: Rect2 = _art_rect(band_top, band_bottom)
+	art.size = full.size.lerp(framed.size, _zoom)
+	art.position = full.position.lerp(framed.position, _zoom)
+
+
+## Cover-fit rect of the art for the vertical span y0 .. y1 of `%ArtClip` (centred on it).
+func _art_rect(y0: float, y1: float) -> Rect2:
+	var art: TextureRect = %Art
+	var clip: Vector2 = (%ArtClip as Control).size
 	var tex: Vector2 = art.texture.get_size()
-	var s: float = maxf(clip.y / tex.y, clip.x / tex.x)
+	var s: float = maxf((y1 - y0) / tex.y, clip.x / tex.x)
 	var sz: Vector2 = tex * s
 	var focus: float = float(art.get_meta(&"focus_x", 0.5))
-	art.size = sz
-	art.position = Vector2(clampf(clip.x * 0.5 - focus * sz.x, clip.x - sz.x, 0.0), (clip.y - sz.y) * 0.5)
+	var x: float = clampf(clip.x * 0.5 - focus * sz.x, clip.x - sz.x, 0.0)
+	return Rect2(Vector2(x, (y0 + y1 - sz.y) * 0.5), sz)
+
+
+func _set_zoom(z: float) -> void:
+	_zoom = z
+	_layout_art()
 
 
 func _set_art_shown(on: bool) -> void:
@@ -352,14 +438,29 @@ func _step(d: int) -> void:
 	_swap_to(to, d)
 
 
-## League change: the black band sweeps in from the side we are heading to (› = from the right),
-## the row swaps while the screen is covered, the band leaves on the far side.
+## League change: the black band sweeps in over the ART only (`%ArtWipe`, under the slabs) from the
+## side we are heading to (› = from the right), the row swaps while the art is covered, the band
+## leaves on the far side. Slabs and bar stay in view. Meanwhile the logo + name slide out the way
+## we are heading (› = to the left) and fade (during the wipe-in), the new ones slide in from the
+## other side and fade in (during the wipe-out), and the index highlight glides to the next pill.
 func _swap_to(i: int, d: int) -> void:
 	_kill_tween()
 	_busy = true
+	var from: int = _index
 	_index = i
 	selected_id = _row_id(i)
-	_tween = _wipe(d > 0, _show_row.bind(i))
+	var dir: float = signf(float(d))
+	_ui_tween = create_tween().set_parallel(true)
+	_ui_tween.tween_method(_set_league_shift, 0.0, -dir, WIPE_IN_SEC) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_ui_tween.tween_method(_glide_dots.bind(from, i), 0.0, 1.0, DOT_SEC) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	var on_covered := func() -> void:
+		_show_row(i, false)
+		_set_league_shift(dir)
+	_tween = _wipe(d > 0, on_covered, %ArtWipe)
+	_tween.tween_method(_set_league_shift, dir, 0.0, WIPE_OUT_SEC) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_tween.chain().tween_callback(func() -> void: _busy = false)
 
 
@@ -401,39 +502,42 @@ func _on_choose_pressed() -> void:
 
 # ── Animation helpers ────────────────────────────────────────────────────────
 ## Wipe in (0 → 1: black grows from the start edge), `on_covered`, hold, wipe out (1 → 2: black
-## recedes off the far edge). Returns the tween in parallel mode — steps added right after this
-## call run alongside the wipe-out; `.chain()` to run after it.
-func _wipe(from_right: bool, on_covered: Callable) -> Tween:
+## recedes off the far edge) on `node` (null = `%Wipe`, the whole view; `%ArtWipe` = art only).
+## Returns the tween in parallel mode — steps added right after this call run alongside the
+## wipe-out; `.chain()` to run after it.
+func _wipe(from_right: bool, on_covered: Callable, node: ScenarioWipe = null) -> Tween:
 	var t := create_tween()
-	_append_wipe(t, from_right, on_covered)
+	t.tween_method(_set_wipe.bind(from_right, node), 0.0, 1.0, WIPE_IN_SEC) \
+			.set_trans(Tween.TRANS_LINEAR)
+	t.tween_callback(on_covered)
+	t.tween_interval(WIPE_HOLD_SEC)
+	t.tween_method(_set_wipe.bind(from_right, node), 1.0, 2.0, WIPE_OUT_SEC) \
+			.set_trans(Tween.TRANS_LINEAR)
 	t.set_parallel(true)
 	return t
 
 
-func _append_wipe(t: Tween, from_right: bool, on_covered: Callable) -> void:
-	t.tween_method(_set_wipe.bind(from_right), 0.0, 1.0, WIPE_IN_SEC) \
-			.set_trans(Tween.TRANS_LINEAR)
-	t.tween_callback(on_covered)
-	t.tween_interval(WIPE_HOLD_SEC)
-	t.tween_method(_set_wipe.bind(from_right), 1.0, 2.0, WIPE_OUT_SEC) \
-			.set_trans(Tween.TRANS_LINEAR)
-
-
-func _set_wipe(p: float, from_right: bool) -> void:
-	var w: ScenarioWipe = %Wipe
+func _set_wipe(p: float, from_right: bool, node: ScenarioWipe = null) -> void:
+	var w: ScenarioWipe = node if node != null else %Wipe
 	w.from_right = from_right
 	w.progress = p
 
 
-## Slab swing: 0 = final tilted pose, 1 = swung out (rotated SWING_ANGLE further clockwise around
-## %SlabPivot and dropped SWING_DROP — below the screen). 1 → 0 reads as a counter-clockwise swing
-## into place. Only the slab moves; the contents never rotate (`_set_content` fades them).
+## Slab swing: 0 = final tilted pose, 1 = swung out — the bottom slab rotated SWING_ANGLE further
+## clockwise around %SlabPivot and dropped SWING_DROP (below the screen), the top slab the mirror
+## (same clockwise turn around %TopSlabPivot, raised SWING_DROP — above the screen). 1 → 0 reads
+## as both swinging counter-clockwise into place. Only the slabs move; the contents never rotate
+## (`_set_content` fades them).
 func _set_swing(t: float) -> void:
 	_swing = t
 	var pivot: Control = %SlabPivot
 	pivot.position = _pivot_home + Vector2(0.0, SWING_DROP * t)
 	pivot.rotation = SWING_ANGLE * t
 	pivot.visible = t < 0.999
+	var top: Control = %TopSlabPivot
+	top.position = _top_pivot_home - Vector2(0.0, SWING_DROP * t)
+	top.rotation = SWING_ANGLE * t
+	top.visible = t < 0.999
 
 
 ## Contents (info row + bottom bar) opacity, in place; hidden (no taps) at 0.
@@ -448,7 +552,13 @@ func _kill_tween() -> void:
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	_tween = null
+	if _ui_tween != null and _ui_tween.is_valid():
+		_ui_tween.kill()
+	_ui_tween = null
 	_set_wipe(0.0, true)
+	_set_wipe(0.0, true, %ArtWipe)
+	if not _league_home.is_empty():
+		_set_league_shift(0.0)
 
 
 ## F6 standalone preview (`resources/UiPreview.gd`) — lobby-like indent, opens scenario 0

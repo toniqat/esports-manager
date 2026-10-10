@@ -43,5 +43,5 @@ tx_B0NGFXJ0F2,run_setup.slot.rank_level,active,편성 칸 일러스트 아래 �
 tx_E2KQV3KWYX,run_setup.lineup.cap_label,active,편성 샐러리 게이지 왼쪽 라벨,,,샐러리캡,Salary Cap,draft,ba33d61b
 tx_WJSXREH223,run_setup.slot.overall_caption,active,편성 칸: 큰 종합 숫자 위 작은 캡션,,,OVERALL,OVERALL,draft,16a800f6
 tx_76VC17EP92,run_setup.level_n,active,런 준비 레벨 표기: 편성 초상화 좌하단 · 감독 카드 · 팀 시설 카드,,,Lv {n},Lv {n},draft,1e4d3a52
-tx_3PMG907FZ1,run_setup.scenario.choose,active,시나리오 선택 화면 하단 주 버튼 (리그를 골라 런 준비로),,,시나리오 선택,Select Scenario,draft,ce75e693
+tx_3PMG907FZ1,run_setup.scenario.choose,active,리그 선택 화면 하단 주 버튼 (고른 리그로 런 준비 시작),,,게임 시작,Start Game,draft,62d82d76
 tx_BBWCK9NDMS,run_setup.scenario.cap_tip,active,시나리오 선택 화면: 왼쪽 아래 샐러리캡 알약을 누르면 뜨는 툴팁,,,리그에서 사용할 수 있는 파일럿의 샐러리 총합의 제한입니다.,The limit on the total salary of the pilots you can field in this league.,draft,3b554aae

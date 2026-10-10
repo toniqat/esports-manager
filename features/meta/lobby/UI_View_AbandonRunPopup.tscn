@@ -1,0 +1,196 @@
+[gd_scene load_steps=3 format=3 uid="uid://bcr6c2iomfskd"]
+
+[ext_resource type="Script" path="res://features/meta/lobby/AbandonRunPopup.gd" id="1_popup"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+
+[node name="AbandonRunPopup" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_popup")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="Button" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd _ready() (tap outside the card = cancel)"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="DimRect" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"DimPanel"
+
+[node name="SafeArea" type="CenterContainer" parent="Root"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd _fit_safe_area()"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Root/SafeArea"]
+custom_minimum_size = Vector2(920, 0)
+layout_mode = 2
+theme_type_variation = &"PopupCard"
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "tx_NZS1Y08KJK"
+
+[node name="Gap1" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Info" type="PanelContainer" parent="Root/SafeArea/Card/VBox"]
+editor_description = "The run being abandoned — the same lines as the home tab's run card (HomeTab.run_texts)."
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"SunkPanel"
+
+[node name="Margin" type="MarginContainer" parent="Root/SafeArea/Card/VBox/Info"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 26
+
+[node name="VBox" type="VBoxContainer" parent="Root/SafeArea/Card/VBox/Info/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Header" type="HBoxContainer" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Phase" type="Label" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox/Header"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd open() (phase name)"
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "미드시즌"
+
+[node name="Date" type="Label" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox/Header"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd open() (in-game date + weekday)"
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 22
+text = "2년 3월 14일 (토)"
+
+[node name="Gap" type="Control" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Team" type="Label" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd open() (team name)"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 28
+text = "팀 이름"
+
+[node name="Trophies" type="Label" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd open()"
+layout_mode = 2
+theme_type_variation = &"AccentLabel"
+theme_override_font_sizes/font_size = 22
+text = "우승 트로피 0개"
+
+[node name="Record" type="Label" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd open() (league rank · W-L, or not started)"
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 22
+text = "현재 리그 1위 (0승 0패)"
+
+[node name="SavedAt" type="Label" parent="Root/SafeArea/Card/VBox/Info/Margin/VBox"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd open()"
+layout_mode = 2
+theme_type_variation = &"FaintLabel"
+theme_override_font_sizes/font_size = 20
+text = "마지막 저장 2026-10-07 12:34"
+horizontal_alignment = 2
+
+[node name="Gap2" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="Root/SafeArea/Card/VBox"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+text = "tx_Y3AD9RSE4W"
+autowrap_mode = 3
+
+[node name="Gap3" type="Control" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Root/SafeArea/Card/VBox"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Cancel" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd _ready() (= cancel)"
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"GhostButton"
+text = "tx_GS4FN31BK4"
+
+[node name="Confirm" type="Button" parent="Root/SafeArea/Card/VBox/Buttons"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — AbandonRunPopup.gd _ready() (abandon → confirmed; the caller plays ERROR)"
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+focus_mode = 0
+theme_type_variation = &"DangerButton"
+theme_override_font_sizes/font_size = 30
+text = "tx_58RJZ7FA5S"

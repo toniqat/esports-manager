@@ -31,7 +31,7 @@ extends Control
 #   둘 다 로비의 자식 Control 이라 `%Toast`(z 5) 가 그 위에 뜬다.
 # - host 가 주는 것: `show_toast(msg, is_error)`, `refresh_currency()`(재화 + 레벨 원),
 #   `rebuild_bar()` (글자 · 활성 상태가 바뀌면), `bar_buttons()`, `switch_tab(id)`,
-#   `set_tab_badge(id, on)`, `refresh_badges()`, `open_confirm(...)`, `open_scenario_select(animate)`.
+#   `set_tab_badge(id, on)`, `refresh_badges()`, `open_confirm(...)`, `open_abandon_run(meta, cb)`, `open_scenario_select(animate)`.
 # - 탭이 선택적으로 주는 것: `bar_scale() -> Vector2` — 행동 바 전체 폭 × x(가운데 정렬),
 #   캡슐 높이 × y(아래끝 고정). 없으면 (1, 1).
 # - **Scenario mode** (`open_scenario_select`): the home tab's `게임 시작` without a run. The
@@ -94,6 +94,7 @@ var _toast_tween: Tween
 var _toast_style: StyleBox           # %Toast's scene style (normal look)
 var _toast_error_style: StyleBox     # the same pill, recoloured NEGATIVE
 var _confirm: ConfirmPopup
+var _abandon: AbandonRunPopup
 var _confirm_cb: Callable = Callable()
 var _manager_popup: ManagerTypePopup = null
 var _manager_sheet: ManagerPopup = null
@@ -145,6 +146,9 @@ func _build() -> void:
 	_confirm = ConfirmPopup.create()
 	add_child(_confirm)
 	_confirm.confirmed.connect(_on_confirmed)
+	_abandon = AbandonRunPopup.create()
+	add_child(_abandon)
+	_abandon.confirmed.connect(_on_confirmed)
 
 	switch_tab("home")
 	refresh_badges()
@@ -388,30 +392,56 @@ func _lift_bar() -> void:
 	if tab != null and tab.has_method("bar_scale"):
 		scale_xy = tab.call("bar_scale")
 	var h: float = roundf(slot_h * scale_xy.y)
+	var main: Array = []        # visible capsules (round icon slots excluded)
 	var shown: Array = []
 	var total_w: float = 0.0
 	for raw in _bar:
 		var b: Button = raw
 		b.position.y = slot_h - h
 		b.size.y = h
-		if b.visible:
-			shown.append(b)
+		if b.has_meta(&"bar_round"):
+			b.size.x = h
+		if not b.visible:
+			continue
+		shown.append(b)
+		if not b.has_meta(&"bar_round"):
+			main.append(b)
 			total_w += b.size.x
-	if is_equal_approx(scale_xy.x, 1.0) or shown.is_empty():
+	if main.is_empty() or (is_equal_approx(scale_xy.x, 1.0) and main.size() == shown.size()):
 		return
 	var gap: float = OutgameTheme.BOTTOM_BAR_GAP
-	var gaps: float = gap * float(shown.size() - 1)
-	var new_row: float = roundf((total_w + gaps) * scale_xy.x)
-	var avail: float = new_row - gaps
-	var x: float = roundf((ScreenMetrics.vp_w() - new_row) * 0.5)
-	var right: float = x + new_row
-	for i in shown.size():
-		var b: Button = shown[i]
-		var w: float = right - x if i == shown.size() - 1 \
-				else floorf(avail * b.size.x / total_w)
+	var gaps: float = gap * float(main.size() - 1)
+	# The capsules (round slots aside) fill x × the full row, centred — so a round slot never
+	# moves the main button off the centre; it hangs beside the row.
+	var full: float = ScreenMetrics.vp_w() - OutgameTheme.BOTTOM_BAR_SIDE * 2.0
+	var avail: float = roundf(full * scale_xy.x) - gaps
+	# A capsule never goes under its own minimum width (text + padding) — a Control would grow
+	# past its slot on its own and cover its neighbour; the row widens instead, still centred.
+	var widths: Array = []
+	var row: float = gaps
+	for raw in main:
+		var b: Button = raw
+		var w: float = maxf(floorf(avail * b.size.x / total_w), ceilf(b.get_combined_minimum_size().x))
+		widths.append(w)
+		row += w
+	var x: float = roundf((ScreenMetrics.vp_w() - row) * 0.5)
+	for i in main.size():
+		var b: Button = main[i]
 		b.position.x = x
-		b.size.x = w
-		x += w + gap
+		b.size.x = widths[i]
+		x += float(widths[i]) + gap
+	# Round slots before the first capsule hang to its left, the ones after the last to its right.
+	var first: int = shown.find(main[0])
+	var left: float = (main[0] as Button).position.x
+	for i in range(first - 1, -1, -1):
+		var r: Button = shown[i]
+		left -= gap + h
+		r.position.x = left
+	var right: float = x - gap
+	for i in range(shown.find(main[main.size() - 1]) + 1, shown.size()):
+		var r: Button = shown[i]
+		r.position.x = right + gap
+		right += gap + h
 
 
 func _on_bar_pressed(i: int) -> void:
@@ -587,6 +617,13 @@ func _apply_chrome(t: float) -> void:
 		c.offset_top = base.x + dy * t
 		c.offset_bottom = base.y + dy * t
 		c.visible = t < 1.0
+
+
+## Run-abandon modal (`AbandonRunPopup`): the run summary from `meta` (`SaveSystem.read_run_meta()`)
+## + the warning; `on_confirm` runs when the player abandons.
+func open_abandon_run(meta: Dictionary, on_confirm: Callable) -> void:
+	_confirm_cb = on_confirm
+	_abandon.open(meta)
 
 
 ## Modal confirm; `on_confirm` runs when confirmed.

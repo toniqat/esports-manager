@@ -1358,8 +1358,9 @@ OutgameTheme.fit_bar_button(btn)
 
 #### Code-built bars — `add_bottom_bar` / `layout_bottom_bar` / `style_bottom_button`
 Kept for the lobby's action bar, whose slots come from each tab's `bar_specs()` (`style` `"primary"` /
-`"ghost"` · `"dark"` (both = dark capsule) / `"danger"`). `layout_bottom_bar` places the visible slots on
-the safe line with the side insets and gaps; `style_bottom_button(b, style, font)` = the `style_<kind>_button`
+`"ghost"` · `"dark"` (both = dark capsule) / `"danger"`; `icon` (texture path) + `round: true` = an icon-only
+circle — width = `BOTTOM_PILL_H`, icon `BAR_ROUND_ICON` px, meta `bar_round`). `layout_bottom_bar` places the visible
+slots on the safe line with the side insets and gaps (round slots fixed, the rest share the remainder by weight); `style_bottom_button(b, style, font)` = the `style_<kind>_button`
 colours + `bar_button_styles(kind)` (the same boxes as the `Bar*` variations).
 
 **`add_round_portrait` is not built with `clip_contents`.** That clips by the Control's

@@ -56,7 +56,7 @@ bottom of each script (`resources/UiPreview.gd`). Nothing is saved.
   (game.db pool + real owned collection, first scenario, team 3 for the banner), then seats the strongest five within the cap.
 - `DraftDetailPanel` — opens the top-rated non-mob pilot with a skill (game.db), Lv 3.
 - `ScenarioSelectView` — indents itself to the safe top (as the lobby does), opens scenario 0 animated; 뒤로 closes,
-  `closed` re-opens, 시나리오 선택 only prints.
+  `closed` re-opens, 게임 시작 only prints.
 
 ## Scenario select (lobby) — `ScenarioSelectView`
 One scenario at a time, full screen, inside the lobby (the lobby's level / settings discs stay above it,
@@ -67,18 +67,22 @@ ScenarioSelectView (full rect, theme, STOP — blocks the lobby underneath)
 ├ %Backdrop   ColorRect black               ┐ code (_fit_viewport): span the WHOLE viewport — notch band and
 ├ %ArtLayer                                  │ bottom inset included — wherever the host placed the view
 │ ├ %ArtClip  clip → %Art                    │ (art placed by code; horizontal swipe here = ‹ / ›)
-│ └ %TopShade top gradient (lobby discs read) ┘
+│ ├ %TopShade top gradient (lobby discs read) │
+│ └ %ArtWipe  ScenarioWipe, art only (league change) ┘ own ShaderMaterial; under the slabs
 ├ %Sheet
 │ ├ %SlabPivot  zero-size pivot off the bottom-left corner (code) — the swing rotates it
-│ │ └ %Slab     Panel `ScenarioSelectSlab` 5200×3600 — a plain giant rectangle, rotated by code (_place_slab):
-│ │             top edge SLAB_EDGE_LEFT (190) above the safe bottom at the left screen edge, rising SLAB_SLOPE
-│ │             (200 / 1080) per px — the same angle on every width (`_edge_h(x)`)
+│ │ └ %Slab     Panel `ScenarioSelectSlab` (opaque) 5200×3600 — a plain giant rectangle, rotated by code (_place_slab):
+│ │             top edge SLAB_EDGE_LEFT (260) above the safe bottom at the left screen edge, rising SLAB_SLOPE
+│ │             (130 / 1080) per px — the same angle on every width (`_edge_h(x)`)
+│ ├ %TopSlabPivot  the bottom pivot mirrored through the screen centre (off the top-right corner)
+│ │ └ %TopSlab  the same rectangle turned 180°: lower edge parallel to the bottom one, TOP_EDGE_RIGHT (100) below the
+│ │             safe top at the right edge, falling SLAB_SLOPE to the left (`_top_edge_h(x)`) — ~half the bottom's height
 │ └ %Content  never rotates; fades in place
 │   ├ %Safe   offset_bottom = -inset (fit_bottom_bar)
 │   │ └ %League bottom-right, 480×271, vertical offsets by code (`_place_league`: the logo's centre ON the
 │   │         slab edge at the logo's x): %LogoShadow + %Logo 177 / [%PrevButton ‹ · %LeagueName · %NextButton ›] /
 │   │         %Dots (index pills) — on 9:16 / 9:19.5 the pills end ~27 px above the bar
-│   ├ %Bar    FloatingBarButton_Back (뒤로) / _Choose (시나리오 선택), both 328 wide, packed RIGHT (alignment end) —
+│   ├ %Bar    FloatingBarButton_Back (뒤로) / _Choose (게임 시작 — key `run_setup.scenario.choose`), both 328 wide, packed RIGHT (alignment end) —
 │   │         fit_bottom_bar
 │   └ %CapPill bottom-left on the bar row (code centres it on %Bar): `ScenarioSelectCapPill` Button, salary icon 40 +
 │             %CapValue (`Loc.grouped(cap)`), width follows the content (`_fit_pill`); tap = %CapTip
@@ -88,10 +92,14 @@ ScenarioSelectView (full rect, theme, STOP — blocks the lobby underneath)
 └ %Wipe       ScenarioWipe (ColorRect + ScenarioWipe.gdshader) — LAST child: over all of this view's UI, but the lobby's %TopBar (level /
               settings discs) is a later sibling of the view, so the discs stay visible over the black
 ```
-- **Art**: height = the viewport height on every aspect (9:16, 9:19.5, 9:20, tablets — checked with
-  `ESM_SAFE_AREA`), width by aspect, x so `art_focus_x` (the main character's face, fraction of the art width) sits at
-  screen centre, clamped so no side gap shows (`_layout_art`). Tuned by screenshot: rookie 0.18, super 0.57.
-- **Wipe** (`_wipe` / `_append_wipe`, every art change — open, close, league change): a black brush / wind sweep —
+- **Art**: two cover-fit framings blended by `_zoom` (`_set_zoom` → `_layout_art` / `_art_rect`). 0 = height = the
+  viewport height on every aspect (9:16, 9:19.5, 9:20, tablets — checked with `ESM_SAFE_AREA`); 1 = the band between
+  the slabs, from `ART_TUCK` (10) above the top slab's notch (its right end, the highest edge point) to `ART_TUCK`
+  below the bottom slab's notch (its left end, the lowest) — its top / bottom edges always sit under an (opaque) slab. Width by aspect, x so
+  `art_focus_x` (the main character's face, fraction of the art width) sits at screen centre, clamped so no side gap
+  shows. Both framings cover the sides and the band, so every blend does. Tuned by screenshot: rookie 0.18, super 0.57.
+- **Wipe** (`_wipe(from_right, on_covered, node)`: open / close on `%Wipe`, league change on `%ArtWipe` — the art
+  only, under the slabs, so slabs / logo / bar stay in view; the row swaps while the art is black): a black brush / wind sweep —
   the boundary is coarse horizontal streaks with a short gradient tail, flowing along the travel. Black sweeps in
   (`WIPE_IN_SEC`) until the whole view is black — art, slab, contents, bar (the lobby's two top discs stay above
   it) — holds `WIPE_HOLD_SEC` (the swap happens at its start, while every pixel is black), then keeps travelling
@@ -99,22 +107,29 @@ ScenarioSelectView (full rect, theme, STOP — blocks the lobby underneath)
   Direction follows navigation: › / swipe left = from the right edge, ‹ / swipe right = from the left.
   No opacity transitions on the art.
 - **Slab swing** (`_set_swing`): 0 = final tilted pose, 1 = rotated `SWING_ANGLE` further clockwise around
-  `%SlabPivot` and dropped `SWING_DROP` (off-screen). Only the slab moves — the contents keep their final,
+  `%SlabPivot` and dropped `SWING_DROP` (off-screen); the top slab is the mirror (same clockwise turn around
+  `%TopSlabPivot`, raised `SWING_DROP`). Only the slabs move — the contents keep their final,
   un-rotated places and fade (`_set_content`; hidden = no taps).
-- **Open**: wipe from the right covers the lobby → art + backdrop on → wipe recedes to the left; `SWING_DELAY` into the
-  wipe-out the slab swings in counter-clockwise (`SWING_SEC`, cubic out); the contents fade in from
-  `CONTENT_FADE_AT` (72 %) of the swing. **Close** = the mirror: contents fade out first (`CONTENT_OUT_SEC`) → slab
-  swings out CLOCKWISE on the same path (same pivot, `SWING_SEC`, cubic ease-in = the open curve reversed in time);
-  the wipe from the left sweeps in over the end of the swing (it ends `SWING_DELAY` after the swing, as the open's
-  wipe-out began `SWING_DELAY` before it) → hold → art off → wipe recedes onto the lobby → hidden + `closed` (the
-  lobby slides its chrome back only then). `animate = false` = instant. Input is ignored while any of this runs (`_busy`).
+- **Open**: wipe from the right covers the lobby → art + backdrop on (full height, `_zoom` 0) → wipe recedes to the
+  left; `SWING_DELAY` into the wipe-out both slabs swing in counter-clockwise (`SWING_SEC`, cubic out); the contents
+  fade in from `CONTENT_FADE_AT` (72 %) of the swing; the art zooms out to the band behind the arriving slabs —
+  from `ZOOM_AT` (25 %) of the swing for `ZOOM_SEC` (cubic in-out, trails the slabs' ease-out, so no backdrop shows;
+  checked by pixel scan). **Close**: all at once — contents fade out (`CONTENT_OUT_SEC`) while, for `CLOSE_SEC`,
+  slabs swing out CLOCKWISE on the open path (cubic ease-in), art zooms back to full height (cubic ease-out — always
+  ahead of the slabs, no margin shows) and the wipe from the left sweeps in → hold → art off → wipe recedes onto the
+  lobby → hidden + `closed` (the lobby slides its chrome back only then). `animate = false` = instant. Input is ignored while any of this runs (`_busy`).
+- **League change** (`_swap_to`): besides the art-only wipe, the logo + shadow + name slide `LEAGUE_SLIDE` the way
+  we are heading (› = left) and fade out during the wipe-in (`_set_league_shift`, cubic in), the new ones start
+  `LEAGUE_SLIDE` on the other side and slide / fade in during the wipe-out (cubic out); the index highlight glides
+  (`_glide_dots`, `DOT_SEC`): the current pill shrinks while the next grows, accent colour handed over halfway.
+  `_ui_tween` runs the slide-out + glide; `_kill_tween` resets the shift.
 - **Logo** (177, `%LogoShadow` = blurred dark copy, 24 px larger per side, dropped 10 px) sits half over the art,
   half over the slab; the name (with ‹ › either side of it) and the pills hang under it on the slab.
 - ‹ / › are glyphs only (variation `ScenarioSelectArrow` = empty boxes, 112 px tap area); the first row's ‹ and the
   last row's › are hidden by `modulate` (the row never shifts) and ignore input. Index pills sit under the name.
 - Salary cap = the pill's number only (no caption / ring); its meaning is the tooltip. League name = `Loc.t(name_key)`.
   A missing logo file leaves `%Logo` empty (no crash).
-- One league is always shown, so `시나리오 선택` is always enabled (no "nothing preselected" rule here).
+- One league is always shown, so `게임 시작` is always enabled (no "nothing preselected" rule here).
 - The old description line (`scenario.*.desc`) and step hint (`run_setup.scenario.hint`) are gone (deprecated).
 - Variations: `ScenarioSelectSlab` · `ScenarioSelectCapPill` · `ScenarioSelectArrow` · `ScenarioSelectDot` / `…On` ·
   `ScenarioSelectLeagueName` · `ScenarioSelectCapValue`; tooltip card reuses `TraitTooltipCard` (manager trait tooltip).

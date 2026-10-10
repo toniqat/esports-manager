@@ -132,13 +132,13 @@ tx_PJXWJ5R6J6,season.pilot_detail.research_title,active,SeasonPilotDetail sheet 
 tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research mech, its mastery tier and value",,,{mech} · {tier} ({value} / {max}),{mech} · {tier} ({value} / {max}),draft,979471d5
 tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,연구소 연구 메크 없음,No mech lab research,draft,25e8911b
 tx_DY69B79HB4,season.week.stage.evening,active,"WeekProgressView bottom bar stage slot (training day, evening incident)",,,저녁,Evening,draft,05a95a7c
-tx_114TEDYXKT,season.week.talk_card.head,active,"Morning talk card head (scene text, UI_Comp_WeekTalkCard)",,,오전 만남,Morning talk,draft,73b4f33e
-tx_1SN8VDP0S4,season.week.talk_none,active,"Morning talk card hint, nobody can be met",,,오늘 오전에는 만날 수 있는 선수가 없습니다,No one to talk to this morning,draft,2e6f3cac
-tx_G18Q9X83C8,season.week.talk_button,active,Morning talk card button,,,만남,Talk,draft,2036fe09
-tx_7FRMF2A3ZK,season.week.talk_with,active,Morning talk card line under the picked pilot: who trained with them (both come to the talk),,,합동 훈련 · {name}{wa} 함께,Joint training · with {name},draft,edd6560f
-tx_0ZK5QSV26D,season.week.talk_solo,active,Morning talk card line under the picked pilot (no joint training),,,신뢰 Lv.{trust},Trust Lv.{trust},draft,b9338b10
-tx_Y30YG2P1AK,season.week.talk_done,active,Morning talk done card head,,,오전: {name} 만남,Morning: Talk with {name},draft,b1c5af30
-tx_5Y82DHJ5DX,season.week.talk_done_pair,active,"Morning talk done card head, joint training pair",,,오전: {name} · {name2} 만남,Morning: Talk with {name} and {name2},draft,2e303f79
+tx_114TEDYXKT,season.week.talk_card.head,active,Morning talk bubble caption over the picked pilot (VisitMenu talk page),,,오전 만남,Morning talk,draft,73b4f33e
+tx_1SN8VDP0S4,season.week.talk_none,deprecated,"Morning talk card hint, nobody can be met",,,오늘 오전에는 만날 수 있는 선수가 없습니다,No one to talk to this morning,draft,2e6f3cac
+tx_G18Q9X83C8,season.week.talk_button,active,Morning talk bubble button (VisitMenu talk page),,,만남,Talk,draft,2036fe09
+tx_7FRMF2A3ZK,season.week.talk_with,deprecated,Morning talk card line under the picked pilot: who trained with them (both come to the talk),,,합동 훈련 · {name}{wa} 함께,Joint training · with {name},draft,edd6560f
+tx_0ZK5QSV26D,season.week.talk_solo,deprecated,Morning talk card line under the picked pilot (no joint training),,,신뢰 Lv.{trust},Trust Lv.{trust},draft,b9338b10
+tx_Y30YG2P1AK,season.week.talk_done,deprecated,Morning talk done card head,,,오전: {name} 만남,Morning: Talk with {name},draft,b1c5af30
+tx_5Y82DHJ5DX,season.week.talk_done_pair,deprecated,"Morning talk done card head, joint training pair",,,오전: {name} · {name2} 만남,Morning: Talk with {name} and {name2},draft,2e303f79
 tx_444WVNHT09,season.week.sub_talk,active,"Dialogue overlay subtitle, morning talk",,,{day} 오전 · 훈련 소감,{day} morning · After training,draft,399ad258
 tx_V0SAHDNET7,season.week.skip_talk.title,active,Confirm popup title: Next pressed while a morning talk is still possible,,,오전 만남을 건너뛸까요?,Skip the morning talk?,draft,a8cb8bb3
 tx_H3RGAX8ZG6,season.week.skip_talk.body,active,Confirm popup body: Next pressed while a morning talk is still possible,,,아직 선수를 만나 훈련 소감을 들을 수 있습니다. 이대로 오후로 넘어갈까요?,You can still meet a player about today's training. Move on to the afternoon anyway?,draft,0aac4ef9

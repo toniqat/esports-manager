@@ -1226,10 +1226,15 @@ const SEASON_WEEK_SUB_TALK := "tx_444WVNHT09"
 const SEASON_WEEK_TAG_LEAGUE := "tx_5MEB8RS07D"
 const SEASON_WEEK_TALK_BUTTON := "tx_G18Q9X83C8"
 const SEASON_WEEK_TALK_CARD_HEAD := "tx_114TEDYXKT"
+## @deprecated
 const SEASON_WEEK_TALK_DONE := "tx_Y30YG2P1AK"
+## @deprecated
 const SEASON_WEEK_TALK_DONE_PAIR := "tx_5Y82DHJ5DX"
+## @deprecated
 const SEASON_WEEK_TALK_NONE := "tx_1SN8VDP0S4"
+## @deprecated
 const SEASON_WEEK_TALK_SOLO := "tx_0ZK5QSV26D"
+## @deprecated
 const SEASON_WEEK_TALK_WITH := "tx_7FRMF2A3ZK"
 const SEASON_WEEK_TEAM_WIN := "tx_34Y51VRWE3"
 ## @deprecated

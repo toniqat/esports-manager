@@ -14,12 +14,17 @@ extends CanvasLayer
 #            `course_picked(id)`; Back → the bubble menu
 #   result   the same modal: the focus training notes in an `EventResultPanel` (pilot portrait
 #            on the card's top edge, bars + chips; no caption); Confirm → `closed`
+#   talk     the morning talk bubble (`open_talk`): the same bubble with only 만남 →
+#            `talk_picked`; nothing is recorded yet, so a tap outside the bubble closes it →
+#            `dismissed(at)` (screen position, the owner may pick the pilot tapped there)
 # The owner (`WeekProgressView`) applies everything — this popup only draws and emits.
 # Create with `create()`, add it, `point_at` the token, then `open_menu`.
 
 signal option_picked(option: String)
 signal course_picked(id: String)
 signal closed
+signal talk_picked
+signal dismissed(at: Vector2)
 
 const SCENE_PATH: String = "res://features/season/week/UI_View_VisitMenu.tscn"
 const COURSE_ROW_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_VisitCourseRow.tscn")
@@ -28,7 +33,7 @@ const OPTION_FOCUS: String = "focus"
 const OPTION_STORY: String = "story"
 const OPTION_OUTING: String = "outing"
 
-enum Page { MENU, COURSES, RESULT }
+enum Page { MENU, COURSES, RESULT, TALK }
 
 const HEADER_PORTRAIT_D: float = 80.0
 ## Bubble placement: gap to the safe-area edges, tail height (tip → bubble edge) and the
@@ -59,6 +64,8 @@ func _ready() -> void:
 	(%Focus as Button).pressed.connect(func(): option_picked.emit(OPTION_FOCUS))
 	(%Story as Button).pressed.connect(func(): option_picked.emit(OPTION_STORY))
 	(%Outing as Button).pressed.connect(func(): option_picked.emit(OPTION_OUTING))
+	(%Talk as Button).pressed.connect(func(): talk_picked.emit())
+	($Root as Control).gui_input.connect(_on_root_input)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
@@ -74,8 +81,32 @@ func point_at(head: Control, foot: Control) -> void:
 
 
 func _process(_delta: float) -> void:
-	if visible and _page == Page.MENU:
+	if visible and (_page == Page.MENU or _page == Page.TALK):
 		_place_bubble()
+
+
+## Morning talk bubble for `pid`: header (no coach points), caption 오전 만남, one button 만남.
+func open_talk(state: Dictionary, pid: int) -> void:
+	_pid = pid
+	_fill_header(state)
+	(%TalkTitle as Label).text = Loc.t(L.SEASON_WEEK_TALK_BUTTON)
+	_show_page(Page.TALK)
+
+
+## Talk page: a tap that lands on `Root` (outside the bubble) closes it.
+func _on_root_input(event: InputEvent) -> void:
+	if _page != Page.TALK or not visible:
+		return
+	var at: Vector2 = Vector2(-1.0, -1.0)
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		at = (event as InputEventMouseButton).global_position
+	elif event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		at = (event as InputEventScreenTouch).position
+	if at.x < 0.0:
+		return
+	($Root as Control).accept_event()
+	visible = false
+	dismissed.emit(at)
 
 
 ## Menu page for the visited pilot `pid` on weekday `day`.
@@ -112,17 +143,22 @@ func is_open() -> bool:
 
 
 # ── Pages ────────────────────────────────────────────────────────────────────
-## MENU = the bubble over the token; COURSES / RESULT = the centred modal (bubble hidden).
+## MENU / TALK = the bubble over the token; COURSES / RESULT = the centred modal (bubble hidden).
 func _show_page(page: int) -> void:
 	_page = page
-	var in_modal: bool = page != Page.MENU
+	var talk: bool = page == Page.TALK
+	var in_modal: bool = page != Page.MENU and not talk
+	for opt in [%Focus, %Story, %Outing]:
+		(opt as Control).visible = not talk
+	(%Talk as Control).visible = talk
+	(%Coach as Control).visible = not talk
 	(%Bubble as Control).visible = not in_modal
 	(%Tail as Node2D).visible = not in_modal
 	(%Modal as Control).visible = in_modal
 	(%ModalHeader as Control).visible = page == Page.COURSES
 	(%Courses as Control).visible = page == Page.COURSES
 	(%EventResultPanel_Result as Control).visible = page == Page.RESULT
-	(%Caption as Label).text = Loc.t(L.MENTAL_UI_VISIT_TITLE_MENU)
+	(%Caption as Label).text = Loc.t(L.SEASON_WEEK_TALK_CARD_HEAD if talk else L.MENTAL_UI_VISIT_TITLE_MENU)
 	# Result page: no caption — the result panel comes first, its pilot portrait on the card's
 	# top edge.
 	(%ModalCaption as Label).visible = page == Page.COURSES

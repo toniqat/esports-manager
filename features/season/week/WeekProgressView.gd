@@ -11,14 +11,15 @@ extends Control
 #   │  MON TUE   WED   THU FRI SAT SUN       │    (CalendarSystem.day_in_phase) · 요일 영문 약칭
 #   └──────────────────────────────────────┘
 #                  프리시즌                    ← 페이즈 이름 (가운데)
-#    ─────────────────────────────────────
-#   [ 팀 부지 맵 + 선수 토큰 (1200 폭, 좌우 60 잘림) ] ← 고정 (%MapPin)
+#           오전     오후     저녁             ← time row: previous · NOW · next (%TimeRow)
+#     [ 사건 · 오후 카드 ]                     ← 세로 스크롤 (%Scroll, 맵 위)
+#   [ 팀 부지 맵 + 선수 토큰 (1200 폭, 좌우 60 잘림) ] ← 화면 높이 가운데 (%MapPin)
 #     [선수][선수][선수][선수][선수]           ← 항상, 맵 바로 아래 (%PilotRow, 스트레스 링에 오늘 증감)
-#     [ 사건 · 오후 카드 ]                     ← 세로 스크롤 (%Scroll, 하단 바까지)
 #    [ 오전 / 오후 ][        다음        ]    ← 하단 바
 #
-# 레일의 **지금 요일 한 칸만 앰버로 채워진다** — 지나온 날은 흰 글자, 남은 날은
-# 흐린 글자다.
+# 레일의 **지금 요일 한 칸만 앰버 알약(%DayHighlight)이 깔린다** — 지나온 날은 흰 글자,
+# 남은 날은 흐린 글자다. 날이 바뀌면 알약이 미끄러져 온다.
+# A finished half moves on by itself through black (`_next_auto`, `WeekFade`); "다음" skips.
 #
 # ── 훈련일 (월~금) = 오전 → 오후 → 저녁 ───────────────────────────────────────
 # 훈련일은 다섯 단계(`_stage`)로 흐르고, 단계는 **기록에서 읽는다** (따로 저장하지 않는다):
@@ -28,9 +29,9 @@ extends Control
 #   RESULT    정산됐고 오전 만남이 아직 열리지 않았다. 그날 결과(능력치 · 스트레스 · 숙련 · 기벽)가
 #             초상화 위에서 떠올라 흐려진다(`_play_result_fx`). 연출이 끝나면 스스로
 #             `MentalSystem.begin_morning` → 오전 만남. "다음" = 연출을 건너뛴다.
-#   TALK      오전 만남(훈련 소감): 선수 하나를 눌러 만난다 (외출 없음). 합동 훈련(같은 타일)이면
-#             함께 훈련한 선수도 같이 온다. "다음" = 오후 (`AfternoonAway.begin`; 아직 만날 수
-#             있으면 경고 팝업).
+#   TALK      오전 만남(훈련 소감): 선수 하나를 누르면 그 위에 말풍선(`VisitMenu.open_talk`) →
+#             만남 → 대화 (그 선수만). 끝나면 스스로 오후로. "다음" = 오후 (`AfternoonAway.begin`;
+#             아직 만날 수 있으면 경고 팝업).
 #   AFTERNOON the afternoon record exists. Pilots who can be visited are lit; a tap = visit (`VisitMenu`, §15 D).
 #             "다음" = 저녁 (아직 할 수 있으면 경고 → 패스로 기록) — `MentalSystem.begin_dusk` 가
 #             사건을 굴리고, 사건이 없으면 바로 다음 날.
@@ -64,7 +65,6 @@ const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Com
 const NOTE_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekNoteCard.tscn")
 const AFTERNOON_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekAfternoonCard.tscn")
 const AFTERNOON_DONE_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekAfternoonDoneCard.tscn")
-const TALK_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekTalkCard.tscn")
 const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekIncidentCard.tscn")
 const MAP_SECTION_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapSection.tscn")
 const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapPilot.tscn")
@@ -97,6 +97,28 @@ const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # afternoon summary without a pilo
 ## around its centre. A token that cannot be picked gets the black mask instead
 ## (`_token_dimmed`; `%Mask`).
 const MAP_PICKED_SCALE: float = 1.2
+## Map time-of-day change between two stages of a day (sun + pilots walking), and from one
+## day's evening to the next morning (through the night; the pilots walk in its second
+## half, `NIGHT_WALK_DELAY`).
+const STAGE_TIME: float = 1.4
+const NIGHT_TIME: float = 2.8
+const NIGHT_WALK_DELAY: float = 0.45
+## Rail: the amber pill slides from the last shown weekday to today over `RAIL_SLIDE`; the
+## "DAY" tag of today grows in (width + alpha) meanwhile, the old one fades over `TAG_FADE`.
+const RAIL_SLIDE: float = 0.45
+const TAG_FADE: float = 0.25
+## Time row (`%TimePrev` · `%TimeNow` · `%TimeNext`): slot spacing (matches the scene's
+## authored offsets), the small sides' scale and alpha, and the shift time.
+const TIME_SLOT_DX: float = 300.0
+const TIME_SIDE_SCALE: float = 0.55
+const TIME_SIDE_ALPHA: float = 0.45
+const TIME_SHIFT: float = 0.5
+## Half of the day → its label key (오전 · 오후 · 저녁), see `_stage_half`.
+const HALF_KEYS: Array = [  # l10n-keys: season.week.stage.*
+	L.SEASON_WEEK_STAGE_MORNING, L.SEASON_WEEK_STAGE_AFTERNOON, L.SEASON_WEEK_STAGE_EVENING,
+]
+## What the day moves on to by itself once its half is done (`_next_auto`).
+enum Auto { NONE, AFTERNOON, EVENING, NEXT_DAY }
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -107,10 +129,11 @@ const MAP_PICKED_SCALE: float = 1.2
 @onready var _list_end: Control = %ListEnd
 @onready var _map_pin: Control = %MapPin
 @onready var _pilot_row: Control = %PilotRow
-## `%PilotRow`'s authored height and its gap to the map above / the list below
-## (`_place_under_map` keeps both when the map is hidden).
-@onready var _pilot_row_h: float = _pilot_row.offset_bottom - _pilot_row.offset_top
-@onready var _under_map_gap: float = _pilot_row.offset_top - _map_pin.offset_bottom
+@onready var _day_highlight: Control = %DayHighlight
+@onready var _time_row: Control = %TimeRow
+@onready var _time_prev: Label = %TimePrev
+@onready var _time_now: Label = %TimeNow
+@onready var _time_next: Label = %TimeNext
 @onready var _stage_btn: Button = %FloatingBarButton_Stage
 @onready var _action_btn: Button = %FloatingBarButton_Action
 
@@ -136,6 +159,17 @@ var _skip_popup: ConfirmPopup = null  # "skip the morning talk / afternoon?" war
 var _pilot_cards: Array = []          # SeasonPilotCard x5 (scene %PilotRow, seat order)
 var _tokens: Dictionary = {}          # pilot id -> map token of the current list build
 var _fx_day: int = -1                 # weekday whose result FX is playing (-1 = none)
+var _map: BaseMap = null              # map of the current list build (null = none)
+var _rail_tween: Tween = null         # highlight slide + chip text colours
+var _time_tween: Tween = null         # time row shift
+var _time_ghost: Label = null         # incoming "next" label during the time row shift
+## The last drawn map, across rebuilds and screens (the view is re-made per day):
+## `{scene, day, stage, hour, tokens}` — the next draw animates from it (`_animate_map`).
+static var _map_memory: Dictionary = {}
+## The rail's last shown `{week, day}` (the highlight slides from it) and the time row's
+## last `{day, half}` (it shifts on from it) — static for the same reason.
+static var _rail_memory: Dictionary = {}
+static var _half_memory: Dictionary = {}
 
 
 ## Instantiates the scene. `WeekProgressView.new()` is an empty Control — don't use it.
@@ -192,6 +226,7 @@ func refresh() -> void:
 	_advance_weekend()
 	_refresh_rail()
 	_refresh_header()
+	_refresh_time_row()
 	_rebuild_list()
 	_refresh_pilot_row()
 	_refresh_action_button()
@@ -221,6 +256,49 @@ func _open_pending() -> void:
 		_open_limit_break(LimitBreak.pending_event(s, _day))
 	elif MentalSystem.incident_pending(s, _day):
 		_open_incident()
+	elif _next_auto() != Auto.NONE:
+		WeekFade.through(_run_auto)
+
+
+## What the day moves on to by itself now that its half is done — nothing while anything is
+## still open or queued (a dialog, the visit popup, the result FX, an awakening, the limit-break
+## event, an incident): the morning talk answered → afternoon; the visit settled → evening; the
+## evening's events settled → next day (not the Sunday — "주 마감 →" stays a button, and not
+## without the hub (F6 preview), which cannot move the day).
+func _next_auto() -> int:
+	if _busy() or _fx_day == _day:
+		return Auto.NONE
+	var s: Dictionary = _gm.season_state
+	if Awakening.next_pending(s) >= 0:
+		return Auto.NONE
+	match _stage():
+		Stage.TALK:
+			if MentalSystem.talk_done(s, _day):
+				return Auto.AFTERNOON
+		Stage.AFTERNOON:
+			if MentalSystem.evening_done(s, _day) and MentalSystem.visit_open(s, _day) < 0 \
+					and not _evening_open():
+				return Auto.EVENING
+		Stage.EVENING:
+			if _hub != null and _day < CalendarSystem.DAYS_PER_WEEK - 1 \
+					and not MentalSystem.incident_pending(s, _day) \
+					and LimitBreak.pending_event(s, _day) < 0:
+				return Auto.NEXT_DAY
+	return Auto.NONE
+
+
+## Moves the day on (`_next_auto`), else just redraws. Runs while the screen is black.
+func _run_auto() -> void:
+	match _next_auto():
+		Auto.AFTERNOON:
+			_begin_afternoon()
+			refresh()
+		Auto.EVENING:
+			_begin_evening()
+		Auto.NEXT_DAY:
+			_leave_day()
+		_:
+			refresh()
 
 
 ## A dialog, the visit popup or an awakening is on screen (taps on the screen wait).
@@ -340,29 +418,226 @@ func _week_log() -> Dictionary:
 
 ## Each chip = that weekday's day number inside the phase (`CalendarSystem.day_in_phase`
 ## counted from this week's Monday) over its abbreviation (MON … SUN); today's chip adds
-## the small "DAY" tag left of the number.
+## the small "DAY" tag left of the number. Today is marked by the amber pill `%DayHighlight`
+## behind the (transparent) chips: on a new day of the same week (`_rail_memory`) it slides
+## from the last shown weekday, the new "DAY" tag grows in from the left while fading in (the
+## number moves right to make room) and the old one fades out.
 func _refresh_rail() -> void:
-	var monday: int = CalendarSystem.day_in_phase(_gm.season_state) - _day
+	var s: Dictionary = _gm.season_state
+	var monday: int = CalendarSystem.day_in_phase(s) - _day
+	var week_id: int = int(s.get("current_phase", 0)) * 1000 + monday
+	var was: Dictionary = _rail_memory
+	_rail_memory = {"week": week_id, "day": _day}
+	var from_day: int = int(was.get("day", -1)) if int(was.get("week", -1)) == week_id else -1
+	var animate: bool = from_day >= 0 and from_day != _day
+	if _rail_tween != null and _rail_tween.is_valid():
+		_rail_tween.kill()
+	_rail_tween = null
+	var delay: float = WeekFade.clear_delay()
 	for d in _chip_panels.size():
-		var chip: Panel = _chip_panels[d]
 		var num: Label = _chip_nums[d]
 		var abbr: Label = _chip_abbrs[d]
+		var tag: Label = _chip_tags[d]
 		num.text = str(monday + d)
 		abbr.text = day_abbr(d)
-		(_chip_tags[d] as Label).visible = d == _day
-		# 오늘 = `WeekDayChipToday`(앰버 칩), 나머지 = `WeekDayChip`(투명) — 변형 이름만 바꾼다.
-		chip.theme_type_variation = &"WeekDayChipToday" if d == _day else &"WeekDayChip"
-		# 지나온 날은 흰 글자로 남는다 — 남은 날과 구분되어야 "며칠 남았나"가
-		# 레일만 보고 읽힌다.
-		var col: Color = OutgameTheme.RAIL
-		if d != _day:
-			col = OutgameTheme.TEXT_ON_FILL if d < _day else OutgameTheme.RAIL_TEXT
-		num.add_theme_color_override("font_color", col)
-		abbr.add_theme_color_override("font_color", col)
+		var col: Color = _rail_text_color(d, _day)
+		if animate and (d == from_day or d == _day):
+			var col_from: Color = _rail_text_color(d, from_day)
+			_tween_rail_color(num, col_from, col, delay)
+			_tween_rail_color(abbr, col_from, col, delay)
+			if d == _day:
+				_tag_in(tag, delay)
+			else:
+				_tag_out(tag, delay)
+		else:
+			num.add_theme_color_override("font_color", col)
+			abbr.add_theme_color_override("font_color", col)
+			_set_tag(tag, d == _day)
+	_move_highlight(from_day if animate else _day, _day, delay)
+
+
+## Chip text colour of weekday `d` while `today` is lit: dark on the amber pill; past days
+## stay white, remaining days dim — that contrast reads "how many days left" from the rail.
+static func _rail_text_color(d: int, today: int) -> Color:
+	if d == today:
+		return OutgameTheme.RAIL
+	return OutgameTheme.TEXT_ON_FILL if d < today else OutgameTheme.RAIL_TEXT
+
+
+func _tween_rail_color(lbl: Label, from: Color, to: Color, delay: float) -> void:
+	lbl.add_theme_color_override("font_color", from)
+	var paint: Callable = func(c: Color) -> void:
+		lbl.add_theme_color_override("font_color", c)
+	var tw: Tween = lbl.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_method(paint, from, to, RAIL_SLIDE).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+## Full width of a "DAY" tag (its translated text at its font size).
+static func _tag_width(tag: Label) -> float:
+	var font: Font = tag.get_theme_font("font")
+	var fs: int = tag.get_theme_font_size("font_size")
+	return ceilf(font.get_string_size(tag.atr(tag.text), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+
+
+func _set_tag(tag: Label, on: bool) -> void:
+	tag.visible = on
+	tag.modulate.a = 1.0
+	tag.custom_minimum_size.x = _tag_width(tag) if on else 0.0
+
+
+## Today's tag grows from zero width (right-aligned and clipped: the text slides in from the
+## left while the centred row pushes the number right) and fades in.
+func _tag_in(tag: Label, delay: float) -> void:
+	tag.visible = true
+	tag.custom_minimum_size.x = 0.0
+	tag.modulate.a = 0.0
+	var tw: Tween = tag.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(tag, "custom_minimum_size:x", _tag_width(tag), RAIL_SLIDE) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(tag, "modulate:a", 1.0, RAIL_SLIDE)
+
+
+## The old day's tag fades out, then gives its width back.
+func _tag_out(tag: Label, delay: float) -> void:
+	tag.visible = true
+	tag.custom_minimum_size.x = _tag_width(tag)
+	tag.modulate.a = 1.0
+	var tw: Tween = tag.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(tag, "modulate:a", 0.0, TAG_FADE)
+	tw.tween_property(tag, "custom_minimum_size:x", 0.0, RAIL_SLIDE - TAG_FADE)
+	tw.tween_callback(func() -> void: tag.visible = false)
+
+
+## Puts `%DayHighlight` behind chip `from_d`, then slides it to chip `to_d` (same = no slide).
+## Waits a frame: the chips' positions are only known once the rail is laid out.
+func _move_highlight(from_d: int, to_d: int, delay: float) -> void:
+	await get_tree().process_frame
+	if not is_inside_tree() or to_d < 0 or to_d >= _chip_panels.size():
+		return
+	var to_x: float = _chip_x(to_d)
+	if from_d == to_d or from_d < 0 or from_d >= _chip_panels.size():
+		_day_highlight.position.x = to_x
+		return
+	_day_highlight.position.x = _chip_x(from_d)
+	_rail_tween = _day_highlight.create_tween()
+	_rail_tween.tween_interval(delay)
+	_rail_tween.tween_property(_day_highlight, "position:x", to_x, RAIL_SLIDE) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+
+
+## x of chip `d` in the highlight's parent (the rail).
+func _chip_x(d: int) -> float:
+	var parent: Control = _day_highlight.get_parent() as Control
+	return (_chip_panels[d] as Control).global_position.x - parent.global_position.x
 
 
 func _refresh_header() -> void:
 	_phase_lbl.text = GameEnums.phase_label(int(_gm.season_state["current_phase"]))
+
+
+# ── Time row (오전 · 오후 · 저녁) ────────────────────────────────────────────
+## Half of the day a stage belongs to: 0 오전 (morning stages, the Saturday / Sunday stadium),
+## 1 오후 (afternoon, the Sunday press), 2 저녁 (evening); -1 = no stage.
+static func _stage_half(stage: int) -> int:
+	match stage:
+		Stage.OFF:
+			return -1
+		Stage.AFTERNOON, Stage.PRESS:
+			return 1
+		Stage.EVENING:
+			return 2
+	return 0
+
+
+## `%TimeNow` = the current half (big), `%TimePrev` = the one before (none in the morning),
+## `%TimeNext` = the one after (after 저녁 the next morning), both small and faint. When the
+## day moved one half on since the last draw (`_half_memory`, the next day's morning after an
+## evening included) the row shifts left: the old previous slides out left and fades, the old
+## current shrinks into the previous slot, the next grows into the centre and a new next fades
+## in from the right.
+func _refresh_time_row() -> void:
+	var half: int = _stage_half(_stage())
+	_time_row.visible = half >= 0
+	var s: Dictionary = _gm.season_state
+	var day_id: int = int(s.get("current_phase", 0)) * 1000 + CalendarSystem.day_in_phase(s)
+	var was: Dictionary = _half_memory
+	_half_memory = {"day": day_id, "half": half}
+	if half < 0:
+		return
+	var old_half: int = int(was.get("half", -1))
+	var old_day: int = int(was.get("day", -1))
+	var forward: bool = (old_day == day_id and half == old_half + 1) \
+			or (old_day >= 0 and old_day != day_id and old_half == 2 and half == 0)
+	if forward:
+		_shift_time_row(old_half, half)
+	else:
+		_set_time_row(half)
+
+
+static func _half_text(half: int) -> String:
+	return Loc.t(String(HALF_KEYS[posmod(half, HALF_KEYS.size())]))  # l10n-dynamic: season.week.stage.*
+
+
+## The three labels on their slots for `half`, no animation.
+func _set_time_row(half: int) -> void:
+	_stop_time_shift()
+	_time_prev.text = _half_text(half - 1)
+	_time_now.text = _half_text(half)
+	_time_next.text = _half_text(half + 1)
+	_place_time_label(_time_prev, -1.0)
+	_place_time_label(_time_now, 0.0)
+	_place_time_label(_time_next, 1.0)
+	_time_prev.visible = half > 0
+
+
+## Label on slot `slot` (0 = centre, ±1 = the sides, ±2 = off the row): x offset, scale and alpha
+## blend between the slots, so a float slot is an in-between.
+func _place_time_label(lbl: Label, slot: float) -> void:
+	var half_w: float = lbl.pivot_offset.x
+	lbl.offset_left = -half_w + slot * TIME_SLOT_DX
+	lbl.offset_right = half_w + slot * TIME_SLOT_DX
+	var side: float = clampf(absf(slot), 0.0, 1.0)
+	lbl.scale = Vector2.ONE * lerpf(1.0, TIME_SIDE_SCALE, side)
+	var a: float = lerpf(1.0, TIME_SIDE_ALPHA, side)
+	if absf(slot) > 1.0:
+		a *= clampf(2.0 - absf(slot), 0.0, 1.0)
+	lbl.modulate.a = a
+
+
+func _shift_time_row(old_half: int, half: int) -> void:
+	_set_time_row(old_half)
+	_time_ghost = _time_next.duplicate() as Label
+	_time_ghost.text = _half_text(half + 1)
+	_time_row.add_child(_time_ghost)
+	_place_time_label(_time_ghost, 2.0)
+	var ghost: Label = _time_ghost
+	var step: Callable = func(f: float) -> void:
+		if old_half > 0:
+			_place_time_label(_time_prev, -1.0 - f)
+		_place_time_label(_time_now, -f)
+		# Into a morning there is no previous half: the old evening fades as it moves left.
+		if half == 0:
+			_time_now.modulate.a *= 1.0 - f
+		_place_time_label(_time_next, 1.0 - f)
+		if is_instance_valid(ghost):
+			_place_time_label(ghost, 2.0 - f)
+	_time_tween = _time_row.create_tween()
+	_time_tween.tween_interval(WeekFade.clear_delay())
+	_time_tween.tween_method(step, 0.0, 1.0, TIME_SHIFT) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_time_tween.tween_callback(_set_time_row.bind(half))
+
+
+func _stop_time_shift() -> void:
+	if _time_tween != null and _time_tween.is_valid():
+		_time_tween.kill()
+	_time_tween = null
+	if _time_ghost != null and is_instance_valid(_time_ghost):
+		_time_ghost.queue_free()
+	_time_ghost = null
 
 
 ## Weekday `i` (Mon 0 … Sun 6) as its English abbreviation (MON … SUN). Out of range = "".
@@ -382,9 +657,8 @@ func _rebuild_list() -> void:
 	for c in _map_pin.get_children():
 		_map_pin.remove_child(c)
 		c.queue_free()
-	# No map (no stage): the pilot row and the list move up to the map's slot.
+	_map = null
 	_map_pin.visible = false
-	_place_under_map(false)
 	# The cards keep the scroll's anchored width (as the code-built list did) — the VBox
 	# would otherwise shrink by the bar's width. Measured from the anchors, not from
 	# `size`: an overflowing scroll grows by its bar, and reading that back would widen
@@ -397,9 +671,7 @@ func _rebuild_list() -> void:
 		# Base map (pinned), then what the player still has to decide: the afternoon
 		# card first (its buttons must not fall below the fold), then the incident.
 		_add_map_section(stage)
-		if stage == Stage.TALK:
-			_add_talk_card()
-		elif stage == Stage.AFTERNOON:
+		if stage == Stage.AFTERNOON:
 			_add_afternoon_card()
 		_add_incident_card()
 		# The day's training results are shown on the map (rising texts) and in the
@@ -423,15 +695,6 @@ func _rebuild_list() -> void:
 		_list_scroll.scroll_vertical = 0
 
 
-## `%PilotRow` directly under the map (`%MapPin` bottom + the authored gap) and the card
-## list under it, down to the bar. Without a map both move up to the map's top.
-func _place_under_map(has_map: bool) -> void:
-	var top: float = _map_pin.offset_bottom + _under_map_gap if has_map else _map_pin.offset_top
-	_pilot_row.offset_top = top
-	_pilot_row.offset_bottom = top + _pilot_row_h
-	_list_scroll.offset_top = _pilot_row.offset_bottom + _under_map_gap
-
-
 ## Adds an item scene to the list and returns it (the end marker is moved last afterwards).
 func _add_item(scene: PackedScene) -> Control:
 	var item: Control = scene.instantiate() as Control
@@ -446,17 +709,17 @@ func _add_item(scene: PackedScene) -> Control:
 ## pilot that cannot be asked any more is dimmed on its spot.
 func _add_map_section(stage: int) -> void:
 	var s: Dictionary = _gm.season_state
-	# Pinned (`%MapPin`), so the map stays while the cards scroll; the pilot row and
-	# the list stand under it.
+	# Pinned (`%MapPin`, centred on the screen's height): the card list stands above it,
+	# the pilot row under it.
 	var section: Control = MAP_SECTION_SCENE.instantiate() as Control
 	_map_pin.add_child(section)
 	_map_pin.visible = true
-	_place_under_map(true)
 
 	var stadium: bool = stage == Stage.STADIUM or stage == Stage.PRESS
 	var map: BaseMap = BaseMap.create_stadium() if stadium \
 			else BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
 	map.name = "BaseMap_Stadium" if stadium else "BaseMap_Team"
+	_map = map
 	# 1200-wide map centred on the full-width holder; the screen crops 60 px each side.
 	BaseMap.mount(map, section.get_node("%MapHolder") as Control)
 
@@ -507,6 +770,69 @@ func _add_map_section(stage: int) -> void:
 				"anchor": hold.position + hold.size * 0.5, "portrait": PilotImages.circle_for(pid),
 				"ring": OutgameTheme.ACCENT if _token_picked(stage, pid) else Color.BLACK})
 	map.place_tokens(entries)
+	_animate_map(map, stage)
+
+
+## Time of day on the map for a stage (`BaseMapLighting` hour).
+func _stage_hour(stage: int) -> float:
+	match stage:
+		Stage.MORNING:
+			return 8.0
+		Stage.RESULT:
+			return 9.5
+		Stage.TALK:
+			return 11.0
+		Stage.AFTERNOON:
+			return 15.0
+		Stage.EVENING:
+			return 18.5
+		Stage.STADIUM:
+			return 10.0 if _day == CalendarSystem.PREP_DAY else 13.0
+		Stage.PRESS:
+			return 16.5
+	return 12.0
+
+
+## Time passing on the map: when the day or the stage changed since the last draw
+## (`_map_memory`), the clock runs from the old hour to this stage's (a new day = through
+## the night) and, on the same map, my pilots walk the roads from where they stood.
+## A redraw of the same stage only sets the hour (a running animation restarts settled).
+func _animate_map(map: BaseMap, stage: int) -> void:
+	var s: Dictionary = _gm.season_state
+	var day_id: int = int(s.get("current_phase", 0)) * 1000 + CalendarSystem.day_in_phase(s)
+	var hour: float = _stage_hour(stage)
+	var was: Dictionary = _map_memory
+	_map_memory = {"scene": map.scene_file_path, "day": day_id, "stage": stage, "hour": hour,
+			"tokens": map.token_state()}
+	if was.is_empty() or (int(was["day"]) == day_id and int(was["stage"]) == stage):
+		map.set_hour(hour)
+		return
+	var next_day: bool = int(was["day"]) != day_id
+	var from_h: float = float(was["hour"])
+	var to_h: float = hour
+	if next_day:
+		while to_h <= from_h:
+			to_h += 24.0
+	var time: float = NIGHT_TIME if next_day else STAGE_TIME
+	map.play_hour(from_h, to_h, time)
+	if String(was["scene"]) == map.scene_file_path:
+		var delay: float = time * NIGHT_WALK_DELAY if next_day else 0.0
+		map.walk_from(was["tokens"], time - delay, delay)
+
+
+## A tap on the map while time passes skips to the end.
+func _input(event: InputEvent) -> void:
+	if _map == null or not is_instance_valid(_map) or not _map.is_animating():
+		return
+	var pressed: bool = (event is InputEventMouseButton and (event as InputEventMouseButton).pressed) \
+			or (event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed)
+	if not pressed:
+		return
+	var at: Vector2 = (event as InputEventMouseButton).position if event is InputEventMouseButton \
+			else (event as InputEventScreenTouch).position
+	if _map_pin.get_global_rect().has_point(at):
+		_map.finish_animation()
+		get_viewport().set_input_as_handled()
 
 
 ## Where my pilots stand on the stadium map: the team room on Saturday (analysis and
@@ -752,6 +1078,34 @@ func _on_map_pilot_picked(pid: int) -> void:
 	_sel_pid = pid
 	_sel_day = _day
 	_sel_stage = _stage()
+	_rebuild_list()
+	_open_talk_bubble(pid)
+
+
+## Morning talk: the bubble over the picked pilot's token (`VisitMenu.open_talk`) — the
+## pilot's line and one button, 만남. A tap outside closes it (`_on_talk_dismissed`).
+func _open_talk_bubble(pid: int) -> void:
+	if _visit_menu == null:
+		_visit_menu = _make_visit_menu()
+	var token: Control = _tokens.get(pid, null)
+	if token != null:
+		_visit_menu.point_at(token.get_node("%Portrait"), token)
+	_visit_menu.open_talk(_gm.season_state, pid)
+
+
+## Tap outside the talk bubble: closed, the pick dropped — a tap on another pilot that can be
+## met picks that one instead.
+func _on_talk_dismissed(at: Vector2) -> void:
+	_close_visit_menu()
+	var other: int = -1
+	for pid in _tokens:
+		var hit: Control = (_tokens[pid] as Control).get_node("%Hit")
+		if int(pid) != _sel_pid and hit.get_global_rect().has_point(at):
+			other = int(pid)
+	if other >= 0 and _can_pick(Stage.TALK, other):
+		_on_map_pilot_picked(other)
+		return
+	_sel_pid = -1
 	_rebuild_list()
 
 
@@ -1013,8 +1367,7 @@ func _on_action_pressed() -> void:
 			if _any_talk():
 				_open_skip_popup(Stage.TALK)
 				return
-			_begin_afternoon()
-			refresh()
+			WeekFade.through(_to_afternoon)
 			return
 		Stage.AFTERNOON:
 			# Moving on while an interview / outing is still possible asks first.
@@ -1022,9 +1375,14 @@ func _on_action_pressed() -> void:
 					and AfternoonAway.any_request(_gm.season_state, _day):
 				_open_skip_popup(Stage.AFTERNOON)
 				return
-			_begin_evening()
+			WeekFade.through(_begin_evening)
 			return
-	_leave_day()
+	WeekFade.through(_leave_day)
+
+
+func _to_afternoon() -> void:
+	_begin_afternoon()
+	refresh()
 
 
 ## Some pilot can still be met this morning (the skip warning).
@@ -1065,10 +1423,9 @@ func _open_skip_popup(stage: int) -> void:
 func _on_skip_confirmed() -> void:
 	match _stage():
 		Stage.TALK:
-			_begin_afternoon()
-			refresh()
+			WeekFade.through(_to_afternoon)
 		Stage.AFTERNOON:
-			_begin_evening()
+			WeekFade.through(_begin_evening)
 
 
 # ── 오후 · 사건 (M7) ──────────────────────────────────────────────────────────
@@ -1144,54 +1501,8 @@ func _talk_open() -> bool:
 	return String(t.get("action", "")) == MentalSystem.ACTION_TALK and int(t.get("choice", -1)) < 0
 
 
-func _add_talk_card() -> void:
-	var s: Dictionary = _gm.season_state
-	var t: Dictionary = MentalSystem.talk(s, _day)
-	if MentalSystem.talk_done(s, _day):
-		_add_talk_done_card(t)
-		return
-	var card: Control = _add_item(TALK_CARD_SCENE)
-	var picked: bool = _sel_day == _day and _sel_pid >= 0
-	var pilot: Control = card.get_node("%Pilot")
-	var hint: Label = card.get_node("%Hint")
-	pilot.visible = picked
-	# Only "nobody can be met" — the "tap a pilot on the map" instruction was removed.
-	hint.visible = not picked and not _any_talk()
-	hint.text = Loc.t(L.SEASON_WEEK_TALK_NONE)
-	if picked:
-		OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(_sel_pid),
-				Vector2.ZERO, EVE_PORTRAIT_D, OutgameTheme.ACCENT)
-		(card.get_node("%Name") as Label).text = MentalEvents.pilot_name(s, _sel_pid)
-		var with_lbl: Label = card.get_node("%With")
-		var partner: int = MentalSystem.talk_partner(s, _day, _sel_pid)
-		if partner >= 0:
-			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_WITH, {"name": MentalEvents.pilot_name(s, partner)})
-			with_lbl.theme_type_variation = &"AccentLabel"
-		else:
-			with_lbl.text = Loc.t(L.SEASON_WEEK_TALK_SOLO, {"trust": MentalSystem.trust_level(s, _sel_pid)})
-	var btn: Button = card.get_node("%Talk")
-	btn.disabled = not picked
-	btn.pressed.connect(_on_talk_pressed)
-
-
-func _add_talk_done_card(t: Dictionary) -> void:
-	var s: Dictionary = _gm.season_state
-	var pid: int = int(t.get("pilot_id", -1))
-	var partner: int = int(t.get("partner_id", -1))
-	var card: Control = _add_item(AFTERNOON_DONE_SCENE)
-	OutgameTheme.add_round_portrait(card.get_node("%Portrait"), PilotImages.circle_for(pid),
-			Vector2.ZERO, EVE_PORTRAIT_D)
-	var head: String = Loc.t(L.SEASON_WEEK_TALK_DONE, {"name": MentalEvents.pilot_name(s, pid)})
-	if partner >= 0:
-		head = Loc.t(L.SEASON_WEEK_TALK_DONE_PAIR, {"name": MentalEvents.pilot_name(s, pid),
-				"name2": MentalEvents.pilot_name(s, partner)})
-	(card.get_node("%Head") as Label).text = head
-	var notes: Array = MentalEvents.note_texts(s, (t.get("outcome", {}) as Dictionary).get("notes", []))
-	(card.get_node("%Line") as Label).text = " · ".join(PackedStringArray(notes)) if not notes.is_empty() \
-			else Loc.t(L.SEASON_WEEK_NO_CHANGE)
-
-
 func _on_talk_pressed() -> void:
+	_close_visit_menu()
 	if _busy() or _sel_pid < 0:
 		return
 	var session: Dictionary = MentalSystem.begin_talk(_gm.season_state, _day, _sel_pid)
@@ -1265,6 +1576,8 @@ func _make_visit_menu() -> VisitMenu:
 	menu.option_picked.connect(_on_visit_option)
 	menu.course_picked.connect(_on_visit_course)
 	menu.closed.connect(_on_visit_closed)
+	menu.talk_picked.connect(_on_talk_pressed)
+	menu.dismissed.connect(_on_talk_dismissed)
 	return menu
 
 
@@ -1330,8 +1643,9 @@ func _on_visit_course(id: String) -> void:
 
 ## The focus result confirmed.
 func _on_visit_closed() -> void:
-	_close_visit_menu()
-	refresh()
+	WeekFade.through(func() -> void:
+		_close_visit_menu()
+		_run_auto())
 
 
 func _open_evening_session(session: Dictionary) -> void:
@@ -1369,14 +1683,19 @@ func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dic
 	_overlay_kind = kind
 	_overlay_pid = pid
 	# Interviews / outings / incidents = visual-novel dialogue (`mental/VnDialogueView`).
+	# Opens through black (`WeekFade`); `_overlay` is set at once, so the screen is busy meanwhile.
 	var vn := VnDialogueView.create()
 	_overlay = vn
-	add_child(vn)
 	vn.choice_picked.connect(_on_overlay_choice)
 	vn.closed.connect(_on_overlay_closed)
 	var partner: int = int(view.get("partner_id", -1))
-	vn.open(sub, title, pid, view["lines"], view["choices"], speaker, view.get("previews", []),
-			partner, MentalEvents.pilot_name(_gm.season_state, partner) if partner >= 0 else "")
+	var partner_name: String = MentalEvents.pilot_name(_gm.season_state, partner) if partner >= 0 else ""
+	WeekFade.through(func() -> void:
+		if _overlay != vn or not is_inside_tree():
+			return
+		add_child(vn)
+		vn.open(sub, title, pid, view["lines"], view["choices"], speaker, view.get("previews", []),
+				partner, partner_name))
 
 
 func _on_overlay_choice(idx: int) -> void:
@@ -1400,13 +1719,16 @@ func _on_overlay_choice(idx: int) -> void:
 		_overlay.show_result(MentalEvents.outcome_view(s, out))
 
 
+## Closes through black; once the screen is black the day moves on by itself when its half
+## is done (`_run_auto`), else it redraws.
 func _on_overlay_closed() -> void:
-	if _overlay != null:
-		_overlay.queue_free()
-		_overlay = null
-	_overlay_kind = ""
-	_overlay_pid = -1
-	refresh()
+	WeekFade.through(func() -> void:
+		if _overlay != null:
+			_overlay.queue_free()
+			_overlay = null
+		_overlay_kind = ""
+		_overlay_pid = -1
+		_run_auto())
 
 
 # ── Limit break (한계돌파, §15 B) — evening, before the incident ──────────────
@@ -1441,9 +1763,13 @@ func _open_awakening() -> bool:
 	if not (view is Node):
 		return false
 	_awaken_view = view
-	add_child(_awaken_view)
 	_awaken_view.connect("closed", _on_awakening_closed, CONNECT_ONE_SHOT)
-	_awaken_view.call("open", pid)
+	var node: Node = _awaken_view
+	WeekFade.through(func() -> void:
+		if _awaken_view != node or not is_inside_tree():
+			return
+		add_child(node)
+		node.call("open", pid))
 	return true
 
 
@@ -1455,11 +1781,13 @@ static func _awakening_view_script() -> Script:
 
 
 func _on_awakening_closed() -> void:
-	if _awaken_view != null and is_instance_valid(_awaken_view) and not _awaken_view.is_queued_for_deletion():
-		_awaken_view.queue_free()
-	_awaken_view = null
 	_save("awakening")
-	refresh()
+	WeekFade.through(func() -> void:
+		if _awaken_view != null and is_instance_valid(_awaken_view) \
+				and not _awaken_view.is_queued_for_deletion():
+			_awaken_view.queue_free()
+		_awaken_view = null
+		_run_auto())
 
 
 ## F6 단독 실행 미리보기 — 메모리 런의 **수요일 오후**(`resources/UiPreview.gd`). 미리보기 전용

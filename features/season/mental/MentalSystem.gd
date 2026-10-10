@@ -319,9 +319,8 @@ static func outing_row(state: Dictionary, pilot_id: int) -> Dictionary:
 
 # ── Morning talk (훈련 소감, one per Mon–Fri morning) ─────────────────────────
 # Right after the morning training is settled the manager may meet one pilot (no
-# outing). A pilot who trained in the same placed tile as others (joint training,
-# `week_day_log` row `group`) brings one of them along: a `talk_pair` row is drawn
-# first, both appear and both receive the single-pilot clauses.
+# outing). Only the picked pilot comes — joint training no longer brings a partner
+# (the `talk_pair` talk was removed 2026-10).
 # Record `days["<day>"].talk`: `{}` = the morning is open (nothing chosen yet),
 # `{action: talk|pass, pilot_id, partner_id, event, choice(-1 = open), outcome{}}`.
 
@@ -357,50 +356,20 @@ static func can_talk(state: Dictionary, day: int, pilot_id: int) -> bool:
 			and talk(state, day).is_empty() and my_pilot_ids(state).has(pilot_id)
 
 
-## Who trained in the same tile as `pilot_id` on `day` (joint training), or -1.
-## With several mates one is drawn (seeded per pilot, so it never changes).
-static func talk_partner(state: Dictionary, day: int, pilot_id: int) -> int:
-	var log: Dictionary = state.get("week_day_log", {})
-	var rows: Variant = log.get(day, log.get(str(day), []))
-	if not (rows is Array):
-		return -1
-	var group: int = -1
-	for raw in (rows as Array):
-		if raw is Dictionary and int((raw as Dictionary).get("pilot_id", -1)) == pilot_id:
-			group = int((raw as Dictionary).get("group", -1))
-	if group < 0:
-		return -1
-	var mates: Array = []
-	for raw in (rows as Array):
-		var r: Dictionary = raw
-		var pid: int = int(r.get("pilot_id", -1))
-		if pid != pilot_id and int(r.get("group", -1)) == group:
-			mates.append(pid)
-	if mates.is_empty():
-		return -1
-	var rng := RandomNumberGenerator.new()
-	rng.seed = _seed(state, day, "talk_partner", pilot_id)
-	return int(mates[rng.randi_range(0, mates.size() - 1)])
-
-
 ## Meet `pilot_id` this morning. Returns a session (`session_view` draws it) or {}.
-## Re-calling while the dialog is open returns the same session.
+## Re-calling while the dialog is open returns the same session. Always one pilot: the
+## joint-training pair talk (`talk_pair`) was removed 2026-10 — new records keep
+## `partner_id = -1`; an old record with a partner still settles both (`finish_talk`).
 static func begin_talk(state: Dictionary, day: int, pilot_id: int) -> Dictionary:
 	var t: Dictionary = talk(state, day)
 	if String(t.get("action", "")) == ACTION_TALK and int(t.get("choice", -1)) < 0:
 		return _talk_session(t)
 	if not can_talk(state, day, pilot_id):
 		return {}
-	var partner: int = talk_partner(state, day, pilot_id)
-	var r: Dictionary = {}
-	if partner >= 0:
-		r = _draw(state, MentalEvents.KIND_TALK_PAIR, pilot_id, _seed(state, day, "talk_pair", pilot_id))
-	if r.is_empty():
-		partner = -1
-		r = _draw(state, MentalEvents.KIND_TALK, pilot_id, _seed(state, day, "talk", pilot_id))
+	var r: Dictionary = _draw(state, MentalEvents.KIND_TALK, pilot_id, _seed(state, day, "talk", pilot_id))
 	if r.is_empty():
 		return {}
-	t = {"action": ACTION_TALK, "pilot_id": pilot_id, "partner_id": partner,
+	t = {"action": ACTION_TALK, "pilot_id": pilot_id, "partner_id": -1,
 			"event": String(r["id"]), "choice": -1, "outcome": {}}
 	_day(state, day)["talk"] = t
 	return _talk_session(t)

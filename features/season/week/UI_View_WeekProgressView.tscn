@@ -53,6 +53,18 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"WeekRail"
 
+[node name="DayHighlight" type="Panel" parent="SafeArea/Rail"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _move_highlight()
+Amber pill behind today's chip (WeekDayChipToday; every chip itself is the transparent WeekDayChip). Code sets its x to today's chip and slides it there from the weekday shown last in the same week; y and size = one chip (124 x 80, centred in the rail)."
+layout_mode = 0
+offset_left = 300.0
+offset_top = 8.0
+offset_right = 424.0
+offset_bottom = 88.0
+mouse_filter = 2
+theme_type_variation = &"WeekDayChipToday"
+
 [node name="Row" type="HBoxContainer" parent="SafeArea/Rail"]
 layout_mode = 1
 anchors_preset = 15
@@ -111,7 +123,9 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day0/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -164,7 +178,9 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day1/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -192,7 +208,7 @@ mouse_filter = 2
 custom_minimum_size = Vector2(124, 80)
 layout_mode = 2
 mouse_filter = 2
-theme_type_variation = &"WeekDayChipToday"
+theme_type_variation = &"WeekDayChip"
 
 [node name="Box" type="VBoxContainer" parent="SafeArea/Rail/Row/Days/Day2/Chip"]
 layout_mode = 1
@@ -212,11 +228,14 @@ theme_override_constants/separation = 5
 alignment = 1
 
 [node name="DayTag" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip/Box/NumRow"]
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day2/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -269,7 +288,9 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day3/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -322,7 +343,9 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day4/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -375,7 +398,9 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day5/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -428,7 +453,9 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
 theme_override_font_sizes/font_size = 16
 text = "tx_5BX30JQVX7"
+horizontal_alignment = 2
 vertical_alignment = 1
+clip_text = true
 
 [node name="Num" type="Label" parent="SafeArea/Rail/Row/Days/Day6/Chip/Box/NumRow"]
 auto_translate_mode = 2
@@ -472,17 +499,86 @@ horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
 
-[node name="Divider" type="HSeparator" parent="SafeArea"]
+[node name="TimeRow" type="Control" parent="SafeArea"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _refresh_time_row()
+Half of the day under the phase name: %TimePrev (small, faint) · %TimeNow (big) · %TimeNext (small, faint), 300 px apart. Hidden on a day without stages. Clips the labels sliding out."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 40.0
-offset_top = 182.0
+offset_top = 172.0
 offset_right = -40.0
-offset_bottom = 183.0
+offset_bottom = 244.0
 grow_horizontal = 2
+clip_contents = true
 mouse_filter = 2
-theme_type_variation = &"Divider"
+
+[node name="TimePrev" type="Label" parent="SafeArea/TimeRow"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _refresh_time_row()
+Previous half of the day (none in the morning), small and faint on the left. Code moves the three along their slots when the half changes (offsets, scale, alpha)."
+modulate = Color(1, 1, 1, 0.45)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -460.0
+offset_right = -140.0
+offset_bottom = 72.0
+grow_horizontal = 2
+scale = Vector2(0.55, 0.55)
+pivot_offset = Vector2(160, 36)
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 52
+text = "오전"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeNow" type="Label" parent="SafeArea/TimeRow"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _refresh_time_row()
+Current half of the day (오전 / 오후 / 저녁), big, centred. Code moves the three along their slots when the half changes (offsets, scale, alpha)."
+modulate = Color(1, 1, 1, 1)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -160.0
+offset_right = 160.0
+offset_bottom = 72.0
+grow_horizontal = 2
+scale = Vector2(1, 1)
+pivot_offset = Vector2(160, 36)
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 52
+text = "오후"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeNext" type="Label" parent="SafeArea/TimeRow"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _refresh_time_row()
+Next half (after 저녁: the next morning), small and faint on the right. Code moves the three along their slots when the half changes (offsets, scale, alpha)."
+modulate = Color(1, 1, 1, 0.45)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 140.0
+offset_right = 460.0
+offset_bottom = 72.0
+grow_horizontal = 2
+scale = Vector2(0.55, 0.55)
+pivot_offset = Vector2(160, 36)
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 52
+text = "저녁"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="MapPin" type="Control" parent="SafeArea"]
 unique_name_in_owner = true
@@ -490,11 +586,14 @@ editor_description = "[필수] 지우면 오류: WeekProgressView.gd _rebuild_li
 Fixed full-width slot for the base map (WeekMapSection, map BaseMap.DESIGN_SIZE 1200 x 761, centred: 60 px cropped each side on a 1080 screen) so it does not scroll. %PilotRow and %Scroll stand under it (_place_under_map); with no map (hidden) they move up to this slot's top."
 visible = false
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = -1
+anchor_top = 0.5
 anchor_right = 1.0
-offset_top = 194.0
-offset_bottom = 955.0
+anchor_bottom = 0.5
+offset_top = -380.0
+offset_bottom = 381.0
 grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
 [node name="Scroll" type="ScrollContainer" parent="SafeArea"]
@@ -504,11 +603,11 @@ Day card list under %PilotRow (top = %PilotRow bottom + 14, set by _place_under_
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
-anchor_bottom = 1.0
+anchor_bottom = 0.5
 offset_left = 40.0
-offset_top = 1227.0
+offset_top = 258.0
 offset_right = -40.0
-offset_bottom = -142.0
+offset_bottom = -394.0
 grow_vertical = 2
 horizontal_scroll_mode = 0
 
@@ -533,12 +632,14 @@ unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _ready() · _refresh_pilot_row() · _place_under_map()
 Always visible directly under the map (%MapPin bottom + 14; every day, morning and afternoon): my five pilots as SeasonPilotCard in seat order (GameEnums.ROLE_DISPLAY_ORDER), 244 tall, no card background. The stress gauge shows that day's change (ring segment + (+N) under the value). Tap = pilot detail sheet."
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = -1
+anchor_top = 0.5
 anchor_right = 1.0
+anchor_bottom = 0.5
 offset_left = 40.0
-offset_top = 969.0
+offset_top = 395.0
 offset_right = -40.0
-offset_bottom = 1213.0
+offset_bottom = 669.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 12

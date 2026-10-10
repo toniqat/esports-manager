@@ -42,10 +42,10 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   (`CalendarSystem.is_week_day`); the morning talk stays Mon–Fri.
 - **Morning talk** (훈련 소감, one per morning, record `days["<day>"].talk`): opened by `begin_morning` when the
   training result FX ends; `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` (Next
-  without a talk). A pilot who trained in the **same placed tile** that day (week log row `group`, joint training)
-  comes along (`talk_partner`, one mate drawn when several): a `talk_pair` row is drawn first (cond on the picked
-  pilot), else a `talk` row. In a pair talk every single-pilot clause (`trust` · `stress` · `pmod`,
-  `MentalEvents.SINGLE_CLAUSES`) hits **both** pilots, and both get `STRESS_TALK_RELIEF`. Checks use the manager's
+  without a talk). **Only the picked pilot** is met: a `talk` row is drawn. The joint-training pair talk
+  (`talk_partner` + `talk_pair` rows) was **removed 2026-10** — new records keep `partner_id = -1`; the `talk_pair`
+  rows stay in the data unused, and an old save's open pair talk still settles both pilots (`finish_talk` keeps the
+  partner branch: every single-pilot clause and `STRESS_TALK_RELIEF` hit both). Checks use the manager's
   own mental. `can_talk`: the morning is open, the afternoon has not started, no talk yet.
 - **Afternoon = visit (방문, §15 D)** (every day that has an afternoon, one action per day; the record keeps
   its old name `evening`): see "Afternoon visit (방문)" below — visit one pilot, then 집중 훈련 / 이야기 / 외출.
@@ -278,7 +278,7 @@ out. The press conference shows the same line under its answers (`MessengerView.
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `trust_level` · `trust_progress` · `outings` · `add_trust` ·
 `true_ending_pilots` · `my_pilot_ids` · `outing_unlocked` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
 `finish_evening(state, day, choice)` · `begin_morning` / `morning_started` / `talk` / `talk_done` / `can_talk` /
-`talk_partner` / `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` ·
+`begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` ·
 `begin_visit(state, day, pid)` / `visit_open` / `finish_focus(state, day, course)` / `story_kinds_for(state, day)` ·
 `record_match(state, pending_match)` / `last_match_of` / `match_line(state, pid)` · `begin_dusk` /
 `dusk_started` · `ensure_incident` / `incident_pending` / `incident_session` /

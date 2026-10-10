@@ -97,10 +97,38 @@ text = "무엇을 함께할까요?"
 [node name="Options" type="VBoxContainer" parent="Root/Bubble/VBox"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: VisitMenu.gd _fill_options()
-Menu page: the three visit options."
+Menu page: the three visit options. Talk page: only %Talk."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 14
+
+[node name="Talk" type="Button" parent="Root/Bubble/VBox/Options"]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _ready() · _show_page()
+Talk page only (morning talk bubble): 만남 → talk_picked."
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"SelectableCardButton"
+
+[node name="TalkTitle" type="Label" parent="Root/Bubble/VBox/Options/Talk"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류: VisitMenu.gd open_talk()"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_right = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 32
+text = "만남"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Focus" type="Button" parent="Root/Bubble/VBox/Options"]
 unique_name_in_owner = true

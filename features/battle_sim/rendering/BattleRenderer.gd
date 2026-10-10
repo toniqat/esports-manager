@@ -166,6 +166,9 @@ var _hp_chips: Array = []
 const HP_CHIP_DUR: float = 0.45
 ## 끝날 때 조각의 두께 · 호 길이 배율(조각 가운데 기준).
 const HP_CHIP_SCALE: float = 1.45
+## 끝날 때 조각이 바깥으로 밀려난 거리 — 초상 반지름 배율(교전 무대 초상처럼
+## 큰 초상에서도 같은 비율로 날아간다).
+const HP_CHIP_FLY: float = 0.45
 
 
 # ─── 초상 누르기 (커지고 맨 위로) ───────────────────────────────────────────
@@ -942,7 +945,7 @@ func _draw_pilot_groups() -> void:
 		var p := raw as PilotData
 		var lifted: bool = p == _top_pilot or p == _pick_top
 		_draw_marker_shadow(p, radius,
-				ShadowPart.TAIL if lifted else ShadowPart.FULL)
+				PilotMarker.ShadowPart.TAIL if lifted else PilotMarker.ShadowPart.FULL)
 	for raw in all:
 		_draw_pilot_tail(raw as PilotData, radius)
 	for raw in all:
@@ -953,7 +956,7 @@ func _draw_pilot_groups() -> void:
 	var top := _top_pilot
 	if top != null and top != _pick_top and _is_renderable(top) \
 			and not _hidden_during_jungle_pick(top):
-		_draw_marker_shadow(top, radius, ShadowPart.DISC)
+		_draw_marker_shadow(top, radius, PilotMarker.ShadowPart.DISC)
 		_draw_pilot_marker(top, radius)
 
 
@@ -1140,59 +1143,21 @@ func _solve_slots_fresh() -> Dictionary:
 ## 없어서, 양옆 2차 타워보다 반 줄 낮은 중앙 2차 타워의 초상이 양옆 꼬리에 살짝
 ## 닿는다는 이유만으로 ring 2(타일에서 지름 × 3)까지 밀려났다.
 func _repair_arrow_overlaps(entries: Array, r: float) -> void:
-	var outer: float = marker_outer_radius(r)
-	for i in range(entries.size()):
-		var e: Dictionary = entries[i]
-		if not bool(e["row"]):
-			continue
-		var others_disc: Array = []
-		var others_arrow: Array = []
-		for j in range(entries.size()):
-			if j != i:
-				_collect_block_shapes(entries[j], r, others_disc, others_arrow)
-		var tc: Vector2 = e["center"] as Vector2
-		var hit: bool = false
-		for raw_seat in e["seats"] as Array:
-			if _disc_hits_arrows(tc + ((raw_seat as Dictionary)["vec"] as Vector2),
-					outer, others_arrow):
-				hit = true
-				break
-		if not hit:
-			continue
-		var ring0: int = int(((e["seats"] as Array)[0] as Dictionary)["ring"])
-		var seats: Array = _pick_row_seats(tc, (e["pilots"] as Array).size(), float(e["v"]),
-				int(e["cap"]), int(e["bias"]), r, others_disc, others_arrow, true, ring0 + 1)
-		if not seats.is_empty():
-			e["seats"] = seats
+	PilotMarker.repair_arrow_overlaps(entries, r)
 
 
 ## 블록의 초상 중심과 꼬리 외곽 다각형(강조 이전, 배율 1)을 두 배열에 덧붙인다.
 func _collect_block_shapes(e: Dictionary, r: float, discs: Array, arrows: Array) -> void:
-	var tc: Vector2 = e["center"] as Vector2
-	for raw_seat in e["seats"] as Array:
-		var pos: Vector2 = tc + ((raw_seat as Dictionary)["vec"] as Vector2)
-		discs.append(pos)
-		var arrow := _arrow_outline_polygon(pos, tc, r, 1.0)
-		if not arrow.is_empty():
-			arrows.append(arrow)
+	PilotMarker.collect_block_shapes(e, r, discs, arrows)
 
 
 func _disc_hits_arrows(pos: Vector2, outer: float, arrows: Array) -> bool:
-	for raw in arrows:
-		if _point_polygon_distance(pos, raw as PackedVector2Array) < outer:
-			return true
-	return false
+	return PilotMarker.disc_hits_arrows(pos, outer, arrows)
 
 
 ## 점에서 볼록 다각형까지의 거리 — 안에 있으면 0.
 func _point_polygon_distance(pt: Vector2, poly: PackedVector2Array) -> float:
-	if Geometry2D.is_point_in_polygon(pt, poly):
-		return 0.0
-	var best: float = INF
-	for k in range(poly.size()):
-		var q := Geometry2D.get_closest_point_to_segment(pt, poly[k], poly[(k + 1) % poly.size()])
-		best = minf(best, pt.distance_to(q))
-	return best
+	return PilotMarker.point_polygon_distance(pt, poly)
 
 
 ## 한 칸의 블록을 **가로 줄 배치 단위**로 나눈다. 각 항목은
@@ -1226,52 +1191,15 @@ func _row_blocks(pilots: Array) -> Array:
 func _pick_row_seats(tile_center: Vector2, n: int, v: float, cap: int, bias: int,
 		r: float, placed: Array, arrows: Array = [], strict: bool = false,
 		ring_limit: int = SLOT_RINGS) -> Array:
-	var counts: Array = []
-	var left: int = n
-	while left > 0:
-		var c: int = mini(left, cap)
-		counts.append(c)
-		left -= c
-	var step: float = r * 2.0 + MARKER_GAP
-	var side: float = 1.0 if bias > 0 else -1.0
-	var shifts: Array = [0.0, 0.5 * side, -0.5 * side, side, -side]
-	for o in range(mini(ring_limit, SLOT_RINGS)):
-		for raw_s in shifts:
-			var s: float = float(raw_s)
-			var cand: Array = []
-			var ok: bool = true
-			for ri in range(counts.size()):
-				var c: int = int(counts[ri])
-				var y: float = v * step * float(o + ri + 1)
-				for k in range(c):
-					var vec := Vector2((float(k) - float(c - 1) * 0.5 + s) * step, y)
-					if _slot_collides(tile_center + vec, r, placed) or (strict
-							and _seat_crosses_arrows(tile_center, vec, r, placed, arrows)):
-						ok = false
-						break
-					cand.append({"vec": vec, "ring": o + ri, "row": ri})
-				if not ok:
-					break
-			if ok:
-				return cand
-	return []
+	return PilotMarker.pick_row_seats(tile_center, n, v, cap, bias, r, placed, arrows,
+			strict, ring_limit)
 
 
 ## 이 자리의 초상이 남의 꼬리에 닿거나, 이 자리에서 뻗을 꼬리가 남의 초상에
 ## 닿는가. 초상은 HP 링 · 외곽선까지 친 바깥 반지름으로 잰다.
 func _seat_crosses_arrows(tile_center: Vector2, vec: Vector2, r: float,
 		placed: Array, arrows: Array) -> bool:
-	var outer: float = marker_outer_radius(r)
-	var pos: Vector2 = tile_center + vec
-	if _disc_hits_arrows(pos, outer, arrows):
-		return true
-	var mine := _arrow_outline_polygon(pos, tile_center, r, 1.0)
-	if mine.is_empty():
-		return false
-	for raw in placed:
-		if _point_polygon_distance(raw as Vector2, mine) < outer:
-			return true
-	return false
+	return PilotMarker.seat_crosses_arrows(tile_center, vec, r, placed, arrows)
 
 
 ## 한 칸의 파일럿을 **기본 방향이 같은 블록**으로 묶는다. 블록은 한 덩어리로
@@ -1686,25 +1614,25 @@ const PILOT_RADIUS_BASE := 31.5
 
 ## 마커(초상 + HP 링 + 꼬리)의 외곽 — 전부 px, 강조 배율은 타지 않는다.
 ## HP 링 두께와 초상 가장자리에서 링까지의 틈.
-const HP_RING_W := 8.0
-const HP_RING_GAP := 1.0
+const HP_RING_W = PilotMarker.HP_RING_W
+const HP_RING_GAP = PilotMarker.HP_RING_GAP
 ## 굵은 검은 외곽선 — HP 링 바깥과 화살표 둘레가 **같은 두께**를 쓴다.
-const MARKER_OUTLINE_W := 5.0
+const MARKER_OUTLINE_W = PilotMarker.MARKER_OUTLINE_W
 ## HP 링 25 단위 구분선 — 외곽선 두께의 절반.
-const HP_TICK_W := MARKER_OUTLINE_W * 0.5
+const HP_TICK_W = PilotMarker.HP_TICK_W
 ## 마커 팀색(HP 링 · 꼬리) — 교전 무대 초상의 HP 링도 이 색을 쓴다.
-const TEAM_RING_COLORS := [Color(0.2, 0.5, 0.9), Color(0.9, 0.2, 0.2)]
+const TEAM_RING_COLORS = PilotMarker.TEAM_RING_COLORS
 ## HP 링 구분선 간격(HP).
-const HP_TICK_STEP: int = 25
+const HP_TICK_STEP = PilotMarker.HP_TICK_STEP
 ## 보호막 — HP 링 위에 **추가 체력처럼** 이어 붙는 밝은 회색 구간.
-const SHIELD_RING_COLOR := Color(0.82, 0.83, 0.86)
+const SHIELD_RING_COLOR = PilotMarker.SHIELD_RING_COLOR
 ## 화살표 폭 배율 — 예전 폭(`clamp(반지름 × 0.9, 10, 18)`)의 90%.
-const ARROW_WIDTH_SCALE := 0.9
+const ARROW_WIDTH_SCALE = PilotMarker.ARROW_WIDTH_SCALE
 ## 뾰족한 외곽선 끝이 채움 끝보다 앞으로 나가는 최대 거리(px).
-const ARROW_TIP_MITER_MAX := 10.0
+const ARROW_TIP_MITER_MAX = PilotMarker.ARROW_TIP_MITER_MAX
 ## 초상 + 화살표 아래로 떨어지는 그림자.
-const MARKER_SHADOW_OFFSET := Vector2(0.0, 8.0)
-const MARKER_SHADOW_COLOR := Color(0.0, 0.0, 0.0, 0.45)
+const MARKER_SHADOW_OFFSET = PilotMarker.MARKER_SHADOW_OFFSET
+const MARKER_SHADOW_COLOR = PilotMarker.MARKER_SHADOW_COLOR
 
 ## 초상화가 앉을 수 있는 6방향 — 육각 이웃과 정확히 같은 방향이고, 배열 순서가
 ## **시계방향**(화면 기준 y 아래)이다.
@@ -1747,14 +1675,14 @@ const SEAT_HALF_MAX := 3
 
 ## 초상화 사이에 남기는 최소 여백(px). 링 반지름과 충돌 판정이 같은 값에서
 ## 나오므로 둘이 어긋날 수 없다.
-const MARKER_GAP := 6.0
+const MARKER_GAP = PilotMarker.MARKER_GAP
 
 ## 몇 겹까지 링을 만들 것인가. 한 링이 6자리이므로 3겹 = 18자리 — 5v5 전원이 한
 ## 칸에 몰려도(10명) 남는다. 이 위로는 겹치더라도 자리를 준다.
-const SLOT_RINGS := 3
+const SLOT_RINGS = PilotMarker.SLOT_RINGS
 
 ## 가로 줄 배치(`_pick_row_seats`)에서 보통 칸의 한 줄 정원. 넷부터는 다음 줄.
-const ROW_CAP := 3
+const ROW_CAP = PilotMarker.ROW_CAP
 
 
 
@@ -1842,14 +1770,7 @@ func _pick_slot(tile_center: Vector2, base_dir: int, bias: int, r: float,
 
 
 func _slot_collides(pos: Vector2, r: float, placed: Array) -> bool:
-	# 링 간격(지름 + MARKER_GAP)보다 살짝 관대하게 잡는다 — 같은 링의 이웃 슬롯이
-	# 정확히 그 거리라, 판정을 같은 값으로 두면 부동소수 오차 하나로 멀쩡한 자리가
-	# 반려된다.
-	var min_d: float = r * 2.0 + MARKER_GAP * 0.5
-	for raw in placed:
-		if pos.distance_to(raw as Vector2) < min_d:
-			return true
-	return false
+	return PilotMarker.slot_collides(pos, r, placed)
 
 
 # ─── 초상화가 앉는 기본 방향 ─────────────────────────────────────────────────
@@ -1958,7 +1879,7 @@ func _draw_pilot_marker(pilot: PilotData, radius: float) -> void:
 	_draw_hp_chips(pilot, pos, radius * _pilot_draw_scale(pilot), marker_color, alpha)
 
 
-# 방금 잃은 HP · 보호막 구간 — 링의 빈자리에서 제자리 확대 + 페이드(`draw_hp_chip`).
+# 방금 잃은 HP · 보호막 구간 — 링의 빈자리에서 바깥으로 튀어 나가며 확대 + 페이드(`draw_hp_chip`).
 func _draw_hp_chips(pilot: PilotData, pos: Vector2, draw_radius: float,
 		color: Color, alpha: float) -> void:
 	for raw in _hp_chips:
@@ -1973,14 +1894,13 @@ func _draw_hp_chips(pilot: PilotData, pos: Vector2, draw_radius: float,
 ## 그림자 가장자리의 흐림 폭(px)과 겹 수. 실루엣을 `-폭/2 … +폭/2` 로 깎고
 ## 부풀린 겹을 같은 알파로 포개면 안쪽일수록 겹이 많이 쌓여 진하고 바깥으로
 ## 갈수록 옅어진다 — 셰이더 없이 만드는 그라데이션 테두리다.
-const MARKER_SHADOW_BLUR: float = 16.0
-const MARKER_SHADOW_LAYERS: int = 7
+const MARKER_SHADOW_BLUR = PilotMarker.MARKER_SHADOW_BLUR
+const MARKER_SHADOW_LAYERS = PilotMarker.MARKER_SHADOW_LAYERS
 
-## 그림자의 어느 부분을 까는가. 위로 올라오는 초상(맨 위 · 대상 지정)은 꼬리가
-## 다른 초상 밑에 깔리므로 그림자도 둘로 나눈다 — 꼬리 몫(TAIL, 원판과 겹치는
-## 밑동은 뺀다)은 꼬리 패스 앞에서, 원판 몫(DISC)은 초상과 함께 위에서.
-enum ShadowPart { FULL, TAIL, DISC }
-
+## Marker geometry · drawing · seating live in `PilotMarker` (resources/), shared with the
+## team base map; the functions below keep their old names and delegate to it.
+## `PilotMarker.ShadowPart`: a lifted portrait lays its tail part (TAIL) with the tails
+## and its disc part (DISC) later with itself.
 
 # 초상 + 화살표 실루엣을 합친 한 덩어리를 아래로 밀어 반투명 검정으로 깐다.
 # 둘을 따로 깔면 겹친 부분만 두 배로 진해지므로 `merge_polygons` 로 합친다.
@@ -1988,7 +1908,7 @@ enum ShadowPart { FULL, TAIL, DISC }
 # 가장자리는 `MARKER_SHADOW_LAYERS` 겹으로 흐린다 — 한가운데가 겹 전부가 쌓인
 # 자리라 그 합이 `MARKER_SHADOW_COLOR.a` 가 되도록 겹 하나의 알파를 역산한다.
 func _draw_marker_shadow(pilot: PilotData, radius: float,
-		part: ShadowPart = ShadowPart.FULL) -> void:
+		part: PilotMarker.ShadowPart = PilotMarker.ShadowPart.FULL) -> void:
 	var anim_off := _pilot_anim_offset(pilot)
 	var pos := _pilot_marker_pos(pilot) + anim_off
 	var alpha := _pilot_anim_alpha(pilot)
@@ -1999,34 +1919,8 @@ func _draw_marker_shadow(pilot: PilotData, radius: float,
 		pos = jp.marker_pos(pos)
 	else:
 		arrow = _arrow_outline_polygon(pos, _marker_center(pilot) + anim_off, radius, em)
-	var disc := _circle_polygon(pos, marker_outer_radius(radius * em), 40)
-	var shapes: Array = [disc]
-	match part:
-		ShadowPart.TAIL:
-			shapes = [] if arrow.is_empty() else Geometry2D.clip_polygons(arrow, disc)
-		ShadowPart.FULL:
-			if not arrow.is_empty():
-				shapes = Geometry2D.merge_polygons(disc, arrow)
-	var disc_cw: bool = Geometry2D.is_polygon_clockwise(disc)
-	var core_a: float = MARKER_SHADOW_COLOR.a * alpha
-	var layer_a: float = 1.0 - pow(1.0 - core_a, 1.0 / float(MARKER_SHADOW_LAYERS))
-	var col := Color(MARKER_SHADOW_COLOR.r, MARKER_SHADOW_COLOR.g,
-			MARKER_SHADOW_COLOR.b, layer_a)
-	for raw in shapes:
-		var poly := raw as PackedVector2Array
-		if Geometry2D.is_polygon_clockwise(poly) != Geometry2D.is_polygon_clockwise(disc):
-			continue   # 구멍 — 초상과 꼬리 사이에 생길 일은 없지만 칠하지 않는다
-		var moved := PackedVector2Array()
-		for v in poly:
-			moved.append(v + MARKER_SHADOW_OFFSET)
-		for i in MARKER_SHADOW_LAYERS:
-			var f: float = float(i) / float(MARKER_SHADOW_LAYERS - 1) - 0.5
-			for layer in Geometry2D.offset_polygon(moved, f * MARKER_SHADOW_BLUR,
-					Geometry2D.JOIN_ROUND):
-				var lp := layer as PackedVector2Array
-				if Geometry2D.is_polygon_clockwise(lp) != disc_cw:
-					continue   # offset 결과의 구멍
-				draw_colored_polygon(lp, col)
+	PilotMarker.draw_shadow(self, pos, radius * em, arrow, alpha, part)
+
 
 
 # ─── Animation helpers ───────────────────────────────────────────────────────
@@ -2166,7 +2060,7 @@ func _draw_pending_pick_highlight() -> void:
 				Color(0.30, 0.95, 1.0, 0.95), 5.0, true)
 	if _pick_top != null and not _hidden_during_jungle_pick(_pick_top):
 		var base_r: float = PILOT_RADIUS_BASE * HexGrid.DISPLAY_SCALE
-		_draw_marker_shadow(_pick_top, base_r, ShadowPart.DISC)
+		_draw_marker_shadow(_pick_top, base_r, PilotMarker.ShadowPart.DISC)
 		_draw_pilot_marker(_pick_top, base_r)
 	if to.mode == CardTargetingOverlay.Mode.PILOT:
 		var picked := to.pending_pick as PilotData
@@ -2292,7 +2186,7 @@ func pilot_marker_radius(p: PilotData) -> float:
 ## 초상 반지름 → 마커 맨 바깥(HP 링 바깥의 검은 외곽선 끝) 반지름. 뒤 원판 ·
 ## 그림자 · 딤 원판이 전부 이 값을 쓴다.
 static func marker_outer_radius(draw_radius: float) -> float:
-	return draw_radius + HP_RING_GAP + HP_RING_W + MARKER_OUTLINE_W
+	return PilotMarker.outer_radius(draw_radius)
 
 
 # 지금 프레임의 강조 배율 — `_advance_emphasis` 가 목표값으로 밀고 있는 값이다.
@@ -2320,21 +2214,11 @@ func _pilot_emphasis_target(p: PilotData) -> float:
 
 
 func _circle_polygon(center: Vector2, r: float, n: int) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	for i in n:
-		var ang: float = float(i) / float(n) * TAU
-		out.append(center + Vector2(cos(ang), sin(ang)) * r)
-	return out
+	return PilotMarker.circle_polygon(center, r, n)
 
 
 func _close_polygon(pts: PackedVector2Array) -> PackedVector2Array:
-	if pts.is_empty():
-		return pts
-	var out := PackedVector2Array()
-	for v in pts:
-		out.append(v)
-	out.append(pts[0])
-	return out
+	return PilotMarker.close_polygon(pts)
 
 
 ## 텍스처를 검은 외곽선과 함께 그린다 — 같은 텍스처를 검은색으로 물들여
@@ -2367,19 +2251,7 @@ func _alpha_mul(c: Color, alpha: float) -> Color:
 func _draw_arrow_to_tile(circle_pos: Vector2, aim_point: Vector2,
 		radius: float, color: Color, alpha: float = 1.0,
 		em: float = 1.0) -> void:
-	var fill := _arrow_fill_polygon(circle_pos, aim_point, radius, em)
-	if fill.is_empty():
-		return
-	# **검은 외곽선 = 끝까지 뾰족한 한 겹 바깥 삼각형**(`_arrow_outline_polygon`).
-	# HP 링 외곽선과 같은 두께다. 꼬리 밑동은 초상 원판 안쪽에 묻히고, 원판 쪽
-	# 외곽선은 그 위에 그려지므로 원 둘레의 검은 선이 꼬리에 가려 끊기지 않는다.
-	var outline := _arrow_outline_polygon(circle_pos, aim_point, radius, em)
-	var black := _alpha_mul(Color(0.0, 0.0, 0.0), alpha)
-	draw_colored_polygon(outline, black)
-	draw_polyline(_close_polygon(outline), black, 1.0, true)
-	var fill_col := _alpha_mul(color.darkened(0.1), alpha)
-	draw_colored_polygon(fill, fill_col)
-	draw_polyline(_close_polygon(fill), fill_col, 1.0, true)
+	PilotMarker.draw_arrow(self, circle_pos, aim_point, radius, color, alpha, em)
 
 
 # 꼬리의 축 — `{"dir", "perp", "apex_len", "base_len", "base_half"}`(채움 기준).
@@ -2393,36 +2265,13 @@ func _draw_arrow_to_tile(circle_pos: Vector2, aim_point: Vector2,
 # 가리키는 것처럼 읽힌다.
 func _arrow_axis(circle_pos: Vector2, aim_point: Vector2,
 		radius: float, em: float) -> Dictionary:
-	var to_tile := aim_point - circle_pos
-	var dist: float = to_tile.length()
-	if dist < 1.0:
-		return {}
-	var dir := to_tile / dist
-	var draw_radius: float = radius * em
-	var tip_inset: float = clamp(radius * 0.55, 10.0, 26.0)
-	var apex_len: float = dist - tip_inset
-	if apex_len <= draw_radius * 0.75:
-		return {}
-	return {"dir": dir, "perp": Vector2(-dir.y, dir.x), "apex_len": apex_len,
-			"base_len": draw_radius * 0.6,
-			"base_half": clamp(radius * 0.9, 10.0, 18.0) * em * ARROW_WIDTH_SCALE}
+	return PilotMarker.arrow_axis(circle_pos, aim_point, radius, em)
 
 
 # 꼬리 채움 — 끝이 **뾰족한** 삼각형. 비어 있으면 그릴 꼬리가 없다.
 func _arrow_fill_polygon(circle_pos: Vector2, aim_point: Vector2,
 		radius: float, em: float) -> PackedVector2Array:
-	var ax := _arrow_axis(circle_pos, aim_point, radius, em)
-	if ax.is_empty():
-		return PackedVector2Array()
-	var dir: Vector2 = ax["dir"]
-	var perp: Vector2 = ax["perp"]
-	var half: float = float(ax["base_half"])
-	var base := circle_pos + dir * float(ax["base_len"])
-	return PackedVector2Array([
-		circle_pos + dir * float(ax["apex_len"]),
-		base + perp * half,
-		base - perp * half,
-	])
+	return PilotMarker.arrow_fill_polygon(circle_pos, aim_point, radius, em)
 
 
 # 꼬리 외곽(검은 판) — 채움을 `MARKER_OUTLINE_W` 만큼 **모서리를 세운 채** 부풀린
@@ -2434,26 +2283,7 @@ func _arrow_fill_polygon(circle_pos: Vector2, aim_point: Vector2,
 # 오히려 더 뾰족하게 읽힌다.
 func _arrow_outline_polygon(circle_pos: Vector2, aim_point: Vector2,
 		radius: float, em: float) -> PackedVector2Array:
-	var ax := _arrow_axis(circle_pos, aim_point, radius, em)
-	if ax.is_empty():
-		return PackedVector2Array()
-	var dir: Vector2 = ax["dir"]
-	var perp: Vector2 = ax["perp"]
-	var w: float = MARKER_OUTLINE_W
-	var apex_len: float = float(ax["apex_len"])
-	var base_len: float = float(ax["base_len"])
-	var half: float = float(ax["base_half"])
-	var half_ang: float = atan2(half, apex_len - base_len)
-	var push: float = minf(w / maxf(sin(half_ang), 0.05), ARROW_TIP_MITER_MAX)
-	# 밑변을 w 만큼 물린 자리의 반폭 — 채움 옆선을 그 자리까지 연장한 폭 + 옆선이
-	# w 만큼 밖으로 나간 몫.
-	var back_half: float = half * (apex_len - base_len + w) / (apex_len - base_len) 			+ w / cos(half_ang)
-	var base := circle_pos + dir * (base_len - w)
-	return PackedVector2Array([
-		circle_pos + dir * (apex_len + push),
-		base + perp * back_half,
-		base - perp * back_half,
-	])
+	return PilotMarker.arrow_outline_polygon(circle_pos, aim_point, radius, em)
 
 
 func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
@@ -2478,17 +2308,10 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 	# 링 사이 틈이나 반투명한 가장자리로 타일 색이 비치지 않고, 이 원판의 바깥
 	# 띠가 그대로 HP 링의 굵은 검은 외곽선이 된다(꼬리보다 나중에 그려지므로
 	# 꼬리에 가려지지 않는다). 사망 딤 / 복귀 페이드는 alpha 로 함께 탄다.
-	draw_circle(pos, marker_outer_radius(draw_radius),
-			_alpha_mul(Color(0.0, 0.0, 0.0), alpha), true, -1.0, true)
-	draw_circle(pos, maxf(1.0, draw_radius - 1.0), _alpha_mul(portrait_tint, alpha))
-	if portrait != null:
-		var rect := Rect2(pos.x - draw_radius, pos.y - draw_radius,
-				draw_radius * 2.0, draw_radius * 2.0)
-		draw_texture_rect(portrait, rect, false, _alpha_mul(portrait_tint, alpha))
-	else:
-		draw_circle(pos, draw_radius, _alpha_mul(color, alpha))
+	PilotMarker.draw_disc(self, pos, draw_radius, portrait, portrait_tint, color, alpha)
 	draw_hp_ring(self, pos, draw_radius, pilot.hp, pilot.shield, pilot.max_hp,
 			color, alpha)
+
 
 
 # ─── HP 링 (전장 마커와 교전 무대 초상이 함께 쓴다) ──────────────────────────
@@ -2499,12 +2322,12 @@ func _draw_pilot_circle(pilot: PilotData, pos: Vector2, radius: float,
 
 ## 링 한 바퀴가 나타내는 HP — max(최대 체력, HP + 보호막).
 static func hp_ring_span(hp: int, shield: int, max_hp: int) -> float:
-	return float(maxi(maxi(max_hp, 1), hp + shield))
+	return PilotMarker.hp_ring_span(hp, shield, max_hp)
 
 
 ## 초상 반지름 `draw_radius` 바깥에 붙는 링의 중심 반지름.
 static func hp_ring_radius(draw_radius: float) -> float:
-	return draw_radius + HP_RING_W * 0.5 + HP_RING_GAP
+	return PilotMarker.hp_ring_radius(draw_radius)
 
 
 static func _amul(c: Color, alpha: float) -> Color:
@@ -2515,28 +2338,7 @@ static func _amul(c: Color, alpha: float) -> Color:
 ## 구분선은 보호막 구간까지 같은 간격으로 이어진다 — 보호막도 HP 와 같은 단위다.
 static func draw_hp_ring(c: CanvasItem, pos: Vector2, draw_radius: float,
 		hp: int, shield: int, max_hp: int, color: Color, alpha: float) -> void:
-	var ring_r: float = hp_ring_radius(draw_radius)
-	var w: float = HP_RING_W
-	c.draw_arc(pos, ring_r, 0.0, TAU, 36, _amul(Color(0.15, 0.15, 0.15), alpha), w)
-	var span: float = hp_ring_span(hp, shield, max_hp)
-	var start_a: float = -PI * 0.5
-	var hp_f: float = clampf(float(maxi(hp, 0)) / span, 0.0, 1.0)
-	var all_f: float = clampf(float(maxi(hp, 0) + maxi(shield, 0)) / span, 0.0, 1.0)
-	if hp_f > 0.0:
-		c.draw_arc(pos, ring_r, start_a, start_a + TAU * hp_f,
-				maxi(8, int(36.0 * hp_f)), _amul(color, alpha), w)
-	if all_f > hp_f:
-		c.draw_arc(pos, ring_r, start_a + TAU * hp_f, start_a + TAU * all_f,
-				maxi(4, int(36.0 * (all_f - hp_f))), _amul(SHIELD_RING_COLOR, alpha), w)
-	var tick_inner: float = ring_r - w * 0.5
-	var tick_outer: float = ring_r + w * 0.5
-	var tick_col: Color = _amul(Color(0.05, 0.05, 0.05), alpha)
-	var i: int = 1
-	while float(i * HP_TICK_STEP) < span:
-		var ang: float = start_a + TAU * float(i * HP_TICK_STEP) / span
-		var dirv := Vector2(cos(ang), sin(ang))
-		c.draw_line(pos + dirv * tick_inner, pos + dirv * tick_outer, tick_col, HP_TICK_W)
-		i += 1
+	PilotMarker.draw_hp_ring(c, pos, draw_radius, hp, shield, max_hp, color, alpha)
 
 
 ## 방금 잃은 구간들 — **잃기 전** 링 배치 기준의 비율. HP 조각은 `[hp1, hp0]`,
@@ -2555,9 +2357,10 @@ static func hp_loss_segments(hp0: int, sh0: int, hp1: int, sh1: int,
 	return out
 
 
-## HP 조각 하나 — **제자리에서** 커지며 사라진다. 링 반지름은 그대로 두고
-## 두께와 호의 각도만 조각의 가운데를 기준으로 키운다(바깥으로 튀어 나가지
-## 않는다). `k` 는 0..1 진행도. 검은 외곽을 한 겹 깔아 밝은 바탕에서도 읽힌다.
+## HP 조각 하나 — **바깥으로 튀어 나가며** 커지고 사라진다. 링 반지름이
+## `draw_radius * HP_CHIP_FLY` 만큼 easeOutCubic 으로 밀려나고, 두께와 호의
+## 각도는 조각의 가운데를 기준으로 커진다. `k` 는 0..1 진행도. 검은 외곽을
+## 한 겹 깔아 밝은 바탕에서도 읽힌다.
 static func draw_hp_chip(c: CanvasItem, pos: Vector2, draw_radius: float,
 		seg: Array, color: Color, k: float, alpha: float) -> void:
 	var grow: float = 1.0 - pow(1.0 - k, 3.0)          # ease-out
@@ -2570,7 +2373,7 @@ static func draw_hp_chip(c: CanvasItem, pos: Vector2, draw_radius: float,
 	var start_a: float = -PI * 0.5
 	var a0: float = start_a + TAU * (mid - half)
 	var a1: float = start_a + TAU * (mid + half)
-	var ring_r: float = hp_ring_radius(draw_radius)
+	var ring_r: float = hp_ring_radius(draw_radius) + draw_radius * HP_CHIP_FLY * grow
 	var w: float = HP_RING_W * s
 	var n: int = maxi(4, int(36.0 * half * 2.0))
 	var fill: Color = SHIELD_RING_COLOR if bool(seg[2]) else color.lightened(0.35)

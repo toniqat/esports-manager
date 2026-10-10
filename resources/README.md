@@ -11,6 +11,16 @@ Full list: `docs/localization_design.md` §0.7.
 
 ## Files
 
+### PilotMarker.gd
+`class_name PilotMarker`, static only. The pilot marker shared by the battlefield (`BattleRenderer`, one tile = one
+point) and the team base map (`BaseMap`, one spot = one point — it uses only the tail / shadow helpers; its seating and
+outline-only look are `BaseMapSeating`): portrait disc (`draw_disc`), team / HP ring
+(`draw_hp_ring`), speech-bubble tail (`arrow_*`, `draw_arrow`), soft shadow (`draw_shadow`, `ShadowPart`; optional `outer` = disc silhouette radius, used by the base map's
+outline-only marker), and the
+seating of a point's block in horizontal rows that avoid other portraits and tails (`pick_row_seats`,
+`repair_arrow_overlaps`). Draw from the caller's `_draw` (pass the CanvasItem). Rules and history:
+`features/battle_sim/rendering/README.md` "Where portraits sit".
+
 ### CardData.gd
 `class_name CardData`, extends `Resource`.
 

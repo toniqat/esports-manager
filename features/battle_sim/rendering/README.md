@@ -96,6 +96,12 @@ the minion concept. Tile background colouring (lane vs jungle vs neutral) is
 owned by the TileMapLayer in `BattleField.tscn`, not by the renderer.
 
 ### Where portraits sit — horizontal rows first (`_row_blocks` → `_pick_row_seats`)
+**Shared code (2026-10):** the row seating (`pick_row_seats`, `slot_collides`, `seat_crosses_arrows`,
+`repair_arrow_overlaps`), the tail geometry / drawing, the shadow, the portrait disc and the HP ring live in
+`resources/PilotMarker.gd` (static), shared with the team base map (`features/season/week/base_map/`). The renderer's
+functions of the same names (`_pick_row_seats`, `_draw_arrow_to_tile`, `marker_outer_radius`, `draw_hp_ring`, …) and its
+marker constants are thin delegates / aliases; the hex-ring fallback, glide, emphasis and press stay here.
+
 `_solve_slots()` first seats team blocks **in a single horizontal row below (team 0) / above (team 1)
 the tile**. Both the row spacing and the distance from the tile are `d = diameter + MARKER_GAP`
 (= hex ring 0 radius, 91px), so faces don't touch either within a row or between rows.
@@ -289,16 +295,17 @@ are drawn with this same static function** — the single source that keeps the 
 diverging. The card-preview blink (`attack` / `restore`) uses the same ring layout too
 (`_draw_ring_blink`).
 
-### HP ring chips — the lost portion grows in place and fades
+### HP ring chips — the lost portion flies outward, grows and fades
 The ring reads `pilot.hp` / `.shield` directly and simply gets shorter on the frame damage lands, so
 **the portion just lost** is erased in place (`_advance_hp_chips` / `_draw_hp_chips` → static
 `hp_loss_segments` / `draw_hp_chip`). Detection is done by the renderer comparing `_hp_seen` (last seen
 `Vector2i(hp, shield)`) with the current values — damage paths (battlefield fights · attack cards ·
 turrets · arena · skills) are scattered, so hooking the call sites would miss some. Segments are measured
 on **the ring layout before the loss**, giving up to two chips: HP `[hp1, hp0]` and shield
-`[hp0 + sh1, hp0 + sh0]` (light grey). Chips **do not fly outward** — the ring radius stays put, and only
-thickness and arc angle grow about the chip's middle over `HP_CHIP_DUR` (0.45s) up to `HP_CHIP_SCALE`
-(1.45×, ease-out) while fading with alpha `1 − k²`. The HP chip colour is a brightened team colour + one
+`[hp0 + sh1, hp0 + sh0]` (light grey). Over `HP_CHIP_DUR` (0.45s) chips **fly outward** — the arc radius moves
+out by `draw_radius × HP_CHIP_FLY` (0.45, so the big engage-stage portraits fly proportionally) — while
+thickness and arc angle grow about the chip's middle up to `HP_CHIP_SCALE` (1.45×); both use one
+easeOutCubic curve, and the chip fades with alpha `1 − k²`. The HP chip colour is a brightened team colour + one
 black outline. **Battlefield-side detection is deferred while the engage stage is up** — the stage
 portraits pop the same chips themselves (`EngageArena._advance_hp_chips`), and after the stage lifts the
 total lost on the battlefield marker drops as one chip. `clear_popups()` (restart) clears them too.

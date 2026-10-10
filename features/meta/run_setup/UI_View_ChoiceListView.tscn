@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 
 [node name="ChoiceListView" type="Control"]
-editor_description = "Base of the 'pick one card' run-setup steps. UI_View_ScenarioStepView.tscn / UI_View_TeamStepView.tscn inherit this scene and swap the root script; edit shared layout here."
+editor_description = "Base of the 'pick one card' run-setup steps. UI_View_TeamStepView.tscn inherits this scene and swap the root script; edit shared layout here."
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

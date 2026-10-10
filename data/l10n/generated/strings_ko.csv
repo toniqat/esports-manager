@@ -917,7 +917,7 @@ tx_DBE01WV863,ESPORTS MANAGER
 tx_C43HAK9QB4,진행 중인 런
 tx_5WJB7HWPMA,경기 진행 중
 tx_8QB02J8X4E,진행 중인 런이 없습니다
-tx_WGC1W057NT,아래 '새 런' 으로 시즌을 시작하세요
+tx_WGC1W057NT,아래 '게임 시작' 으로 시즌을 시작하세요
 tx_VCBJXS80JH,새 런
 tx_X0EYJ8K5SH,이어하기
 tx_B6XWT6321G,감독 Lv{level} · 보유 선수 {pilots}명 · 특성 {traits}개
@@ -956,6 +956,7 @@ tx_3M4BE5GPXC,HOME
 tx_28F8XG4H78,PASS
 tx_MK3GPRAY5Y,SHOP
 tx_VPTW1MTX4D,Lv
+tx_P1QQB4F5NY,게임 시작
 tx_J99WKD5PN8,운영형
 tx_KQSXCRDMQT,실전형
 tx_T2Z72WAY5Q,조직 운영에 밝은 감독. 관리 · 멘탈 쪽으로 조금 기운 고른 분배
@@ -2210,6 +2211,8 @@ tx_Z7WZT1J6Q7,편성 완료 · 남은 샐러리 {n}
 tx_RQV5HNW8TV,편성 완료
 tx_N58C8KX6P1,게임 시작
 tx_B0NGFXJ0F2,랭크 {rank} · Lv {level}
+tx_3PMG907FZ1,시나리오 선택
+tx_BBWCK9NDMS,리그에서 사용할 수 있는 파일럿의 샐러리 총합의 제한입니다.
 tx_WMF4H900Y6,루키 리그
 tx_WHEYGN2VQZ,슈퍼 리그
 tx_FHYTT6JZHE,샐러리캡이 낮다. 비싼 선수는 두세 명이 한계.

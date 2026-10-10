@@ -34,7 +34,7 @@ const SCHEMAS: Dictionary = {
 	"intl_players": {"req": ["id","team_id","name_key","role","field_hit","field_eva","engage_hit","engage_eva","atk_growth","hp_growth","pilot_cards","main_mechs","mech_pref"], "pk": "id"},
 	"pilot_card_slots": {"req": ["position","slot1","slot2","slot3"], "pk": "position"},
 	"training_tiles": {"req": ["id","name_key","grade","shape","exp","effect"], "pk": "id"},
-	"scenarios":   {"req": ["id","name_key","salary_cap","desc_key"], "pk": "id"},
+	"scenarios":   {"req": ["id","name_key","salary_cap","art","logo","art_focus_x"], "pk": "id"},
 	"pilot_levels": {"req": ["level","stat_bonus","salary_bonus","levelup_cost","exp_required"], "pk": "level"},
 	# M3~M7 (감독 · 스태프 · 재무 · 멘탈) — 계약: docs/outgame_dev_plan.md §11
 	"manager_types": {"req": ["id","name_key","gender","training","tactics","knowledge","mental","analysis","finance","desc_key"], "pk": "id"},
@@ -312,7 +312,11 @@ const TABLE_DEFS: Dictionary = {
 		"id":         {"data_type": "int",  "primary_key": true, "not_null": true},
 		"name_key":       {"data_type": "text", "not_null": true},
 		"salary_cap": {"data_type": "int",  "not_null": true},
-		"desc_key":       {"data_type": "text", "not_null": true},
+		# Scenario select screen (`ScenarioSelectView`): full-screen art (res path), league logo
+		# (res path) and the art's focus x (main character's face, 0..1 of the art width).
+		"art":         {"data_type": "text", "not_null": true},
+		"logo":        {"data_type": "text", "not_null": true},
+		"art_focus_x": {"data_type": "real", "not_null": true},
 	},
 	# 선수 레벨 1..10 — 모든 선수 공통. 값은 Lv1 대비 **누적** 가산.
 	"pilot_levels": {

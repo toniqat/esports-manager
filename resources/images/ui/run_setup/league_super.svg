@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE9A3"/>
+      <stop offset="0.5" stop-color="#F5B92E"/>
+      <stop offset="1" stop-color="#B86A0C"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B1FA6"/>
+      <stop offset="1" stop-color="#A3123A"/>
+    </linearGradient>
+  </defs>
+  <!-- wings behind the shield -->
+  <g fill="url(#gold)">
+    <path d="M46 52 L2 30 L12 50 L46 72 Z"/>
+    <path d="M46 78 L6 66 L16 84 L46 98 Z"/>
+    <path d="M48 104 L14 104 L24 120 L52 124 Z"/>
+    <path d="M210 52 L254 30 L244 50 L210 72 Z"/>
+    <path d="M210 78 L250 66 L240 84 L210 98 Z"/>
+    <path d="M208 104 L242 104 L232 120 L204 124 Z"/>
+  </g>
+  <!-- crest shield -->
+  <path d="M128 4 L226 38 V118 C226 184 182 226 128 250 C74 226 30 184 30 118 V38 Z" fill="#1A0A26"/>
+  <path d="M128 14 L216 45 V118 C216 178 176 216 128 238 C80 216 40 178 40 118 V45 Z" fill="url(#gold)"/>
+  <path d="M128 28 L202 54 V118 C202 170 168 204 128 224 C88 204 54 170 54 118 V54 Z" fill="url(#core)"/>
+  <!-- dark facet on the right half -->
+  <path d="M128 28 L202 54 V118 C202 170 168 204 128 224 Z" fill="#000000" fill-opacity="0.16"/>
+  <!-- crown star -->
+  <path d="M128 46 L132.7 59.5 L147 60 L135.6 68.5 L139.8 82.2 L128 74 L116.2 82.2 L120.4 68.5 L109 60 L123.3 59.5 Z" fill="url(#gold)"/>
+  <!-- stylised S monogram -->
+  <path d="M162 100 H110 Q96 100 96 114 V122 Q96 136 110 136 H146 Q160 136 160 150 V160 Q160 174 146 174 H92"
+        fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linejoin="round"/>
+  <!-- base bar -->
+  <path d="M104 196 H152" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+</svg>

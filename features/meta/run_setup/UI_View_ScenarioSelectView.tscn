@@ -1,0 +1,436 @@
+[gd_scene load_steps=15 format=3 uid="uid://blxx2cd78eep2"]
+
+[ext_resource type="Script" uid="uid://c7pdh0snlctjj" path="res://features/meta/run_setup/ScenarioSelectView.gd" id="1_view"]
+[ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://features/meta/run_setup/ScenarioArrowGlyph.gd" id="4_glyph"]
+[ext_resource type="Script" path="res://features/meta/run_setup/ScenarioWipe.gd" id="9_wipe"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/run_setup/icon_salary.svg" id="6_salary"]
+[ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="7_fbb"]
+[ext_resource type="Texture2D" path="res://resources/images/scenario/scenario-rookie.png" id="8_art"]
+[ext_resource type="Shader" path="res://features/meta/run_setup/scenario_logo_shadow.gdshader" id="10_shadow"]
+[ext_resource type="Shader" path="res://features/meta/run_setup/ScenarioWipe.gdshader" id="11_wipe_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wipe"]
+shader = ExtResource("11_wipe_shader")
+shader_parameter/progress = 0.0
+shader_parameter/direction = 1.0
+shader_parameter/via_black = true
+shader_parameter/soft = 0.2
+shader_parameter/scale = 3.0
+shader_parameter/stretch = 8.0
+shader_parameter/speed = 1.0
+shader_parameter/aspect = 0.5625
+shader_parameter/tint = Color(0, 0, 0, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_logo_shadow"]
+shader = ExtResource("10_shadow")
+shader_parameter/shadow_color = Color(0, 0, 0, 0.6)
+shader_parameter/pad = 0.1067
+shader_parameter/blur = 0.06
+
+[sub_resource type="Gradient" id="Gradient_top"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0, 0, 0, 0.5, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_top"]
+gradient = SubResource("Gradient_top")
+width = 8
+height = 256
+fill_to = Vector2(0, 1)
+
+[node name="ScenarioSelectView" type="Control"]
+editor_description = "Full-screen scenario (league) pick, hosted INSIDE the lobby (full rect under the lobby top bar; the lobby level / settings discs stay drawn above it). Art (full viewport height, cover-cropped around scenarios.csv art_focus_x) + black wipe for art changes + dark slanted sheet that swings in counter-clockwise: salary-cap card (bottom-left), league logo / name / index pills between arrows (bottom-right), bar 뒤로 / 시나리오 선택. ScenarioSelectView.gd fills data and runs the animations."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_view")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _fit_viewport (spans the whole viewport: notch band + bottom inset)
+Black backdrop behind the art."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ArtLayer" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd (shown / hidden while the wipe covers the screen)"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ArtClip" type="Control" parent="ArtLayer"]
+unique_name_in_owner = true
+clip_contents = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _fit_viewport (spans the whole viewport; horizontal swipe = change league)
+%Art is placed by code: height = viewport height, width by aspect, x so the face (scenarios.csv art_focus_x) sits mid-screen."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Art" type="TextureRect" parent="ArtLayer/ArtClip"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _layout_art (the scenario art; position / size by code)"
+layout_mode = 0
+offset_left = -154.0
+offset_right = 3259.0
+offset_bottom = 1920.0
+mouse_filter = 2
+texture = ExtResource("8_art")
+expand_mode = 1
+
+[node name="TopShade" type="TextureRect" parent="ArtLayer"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _fit_viewport (top edge = viewport top)
+Soft dark band along the top so the lobby's level / settings discs read on any art."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 260.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_top")
+expand_mode = 1
+
+[node name="Sheet" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd. Holds the giant rotated slab (SlabPivot / Slab) and the un-rotated contents (Content: info row + bottom bar)."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SlabPivot" type="Control" parent="Sheet"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _place_slab / _set_swing (zero-size pivot off the bottom-left screen corner; code places it and rotates it for the swing in / out)"
+layout_mode = 0
+offset_left = -600.0
+offset_top = 2520.0
+offset_right = -600.0
+offset_bottom = 2520.0
+mouse_filter = 2
+
+[node name="Slab" type="Panel" parent="Sheet/SlabPivot"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _place_slab (giant plain dark rectangle, much larger than any screen; code rotates it so its top edge reads as the diagonal — every other edge stays off-screen)"
+layout_mode = 0
+offset_right = 5200.0
+offset_bottom = 3600.0
+mouse_filter = 2
+theme_type_variation = &"ScenarioSelectSlab"
+
+[node name="Content" type="Control" parent="Sheet"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd (fades in / out in place — never rotates — as the slab arrives / before it leaves)"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Safe" type="Control" parent="Sheet/Content"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd (OutgameTheme.fit_bottom_bar: offset_bottom = -bottom inset)"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="League" type="Control" parent="Sheet/Content/Safe"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _place_league (code sets offset_top / offset_bottom so the logo's centre sits ON the slab's diagonal edge at the logo's x — the edge height changes with the screen width; the inner layout and the 271 height are the scene's)
+Bottom-right league block: logo on top, the name with the arrows either side of it, the index pills under the name."
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -520.0
+offset_top = -576.0
+offset_right = -40.0
+offset_bottom = -305.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="PrevButton" type="Button" parent="Sheet/Content/Safe/League"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd (previous league, left of the name; glyph only, 112 tap area; hidden on the first row by modulate, so the row never shifts)"
+layout_mode = 0
+offset_left = 8.0
+offset_top = 159.0
+offset_right = 120.0
+offset_bottom = 271.0
+focus_mode = 0
+theme_type_variation = &"ScenarioSelectArrow"
+
+[node name="Glyph" type="Control" parent="Sheet/Content/Safe/League/PrevButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 34.0
+offset_right = -36.0
+offset_bottom = -34.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_glyph")
+point_right = false
+stroke = 7.0
+
+[node name="LogoShadow" type="TextureRect" parent="Sheet/Content/Safe/League"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_logo_shadow")
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _show_row (same texture as %Logo)
+Soft drop shadow: the logo rect grown 24 px per side (shader pad 24 / 225), dropped 10 px; scenario_logo_shadow.gdshader blurs the alpha in black."
+layout_mode = 0
+offset_left = 127.0
+offset_top = -14.0
+offset_right = 352.0
+offset_bottom = 211.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Logo" type="TextureRect" parent="Sheet/Content/Safe/League"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _fill (scenarios.csv logo; empty if the file is missing) · _place_league (its centre is put on the slab edge)"
+layout_mode = 0
+offset_left = 151.0
+offset_right = 328.0
+offset_bottom = 177.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LeagueName" type="Label" parent="Sheet/Content/Safe/League"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _show_row (Loc.t(scenario.N.name))"
+layout_mode = 0
+offset_left = 112.0
+offset_top = 183.0
+offset_right = 368.0
+offset_bottom = 247.0
+theme_type_variation = &"ScenarioSelectLeagueName"
+text = "tx_WMF4H900Y6"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="Dots" type="HBoxContainer" parent="Sheet/Content/Safe/League"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _build_dots (league index pills under the name: one per scenarios.csv row, duplicated from the first child; current = ScenarioSelectDotOn)"
+layout_mode = 0
+offset_left = 112.0
+offset_top = 257.0
+offset_right = 368.0
+offset_bottom = 271.0
+mouse_filter = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Dot" type="Panel" parent="Sheet/Content/Safe/League/Dots"]
+custom_minimum_size = Vector2(40, 14)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"ScenarioSelectDotOn"
+
+[node name="NextButton" type="Button" parent="Sheet/Content/Safe/League"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd (next league, right of the name; glyph only, 112 tap area; hidden on the last row)"
+layout_mode = 0
+offset_left = 360.0
+offset_top = 159.0
+offset_right = 472.0
+offset_bottom = 271.0
+focus_mode = 0
+theme_type_variation = &"ScenarioSelectArrow"
+
+[node name="Glyph" type="Control" parent="Sheet/Content/Safe/League/NextButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 34.0
+offset_right = -36.0
+offset_bottom = -34.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_glyph")
+stroke = 7.0
+
+[node name="Bar" type="HBoxContainer" parent="Sheet/Content"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _ready (OutgameTheme.fit_bottom_bar adds the bottom inset)
+Bottom action bar 뒤로 / 시나리오 선택 — floating capsules, both 328 wide (the old 뒤로 width), 16 apart, packed to the RIGHT (alignment end); the salary-cap pill sits at the left of the same row."
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -128.0
+offset_right = -40.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 16
+alignment = 2
+
+[node name="FloatingBarButton_Back" parent="Sheet/Content/Bar" instance=ExtResource("7_fbb")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _ready (→ back_requested)"
+custom_minimum_size = Vector2(328, 96)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"BarDarkButton"
+theme_override_font_sizes/font_size = 30
+text = "tx_AT96DE2X15"
+
+[node name="FloatingBarButton_Choose" parent="Sheet/Content/Bar" instance=ExtResource("7_fbb")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _ready (→ scenario_chosen(selected_id))"
+custom_minimum_size = Vector2(328, 96)
+layout_mode = 2
+focus_mode = 0
+theme_type_variation = &"BarPrimaryButton"
+theme_override_font_sizes/font_size = 38
+text = "tx_3PMG907FZ1"
+
+[node name="CapPill" type="Button" parent="Sheet/Content"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd (tap = salary-cap tooltip %CapTip; code centres it vertically on %Bar's row)
+Salary-cap capsule, bottom-left on the bar row: salary icon + cap number."
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -116.0
+offset_right = 210.0
+offset_bottom = -44.0
+grow_vertical = 0
+focus_mode = 0
+theme_type_variation = &"ScenarioSelectCapPill"
+
+[node name="Row" type="HBoxContainer" parent="Sheet/Content/CapPill"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_right = -26.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="CapIcon" type="TextureRect" parent="Sheet/Content/CapPill/Row"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("6_salary")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CapValue" type="Label" parent="Sheet/Content/CapPill/Row"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _show_row (Loc.grouped(salary_cap))"
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"ScenarioSelectCapValue"
+text = "250"
+vertical_alignment = 1
+
+[node name="CapTip" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _show_cap_tip / _hide_cap_tip / _fit_viewport (spans the whole viewport)
+Salary-cap tooltip: %TipCatcher swallows the next tap anywhere and closes it; %TipCard sits above the pill (code), inside the safe area, over the slab content."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TipCatcher" type="Button" parent="CapTip"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _ready (any tap closes the tooltip; the tap is swallowed)"
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+flat = true
+
+[node name="TipCard" type="PanelContainer" parent="CapTip"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _show_cap_tip (placed above the pill, left-aligned with it, clamped to the safe area). Look = TraitTooltipCard (the manager trait tooltip)."
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 0
+offset_left = 40.0
+offset_top = 1500.0
+offset_right = 600.0
+offset_bottom = 1620.0
+mouse_filter = 2
+theme_type_variation = &"TraitTooltipCard"
+
+[node name="TipText" type="Label" parent="CapTip/TipCard"]
+layout_mode = 2
+theme_type_variation = &"SubLabel"
+theme_override_font_sizes/font_size = 24
+text = "tx_BBWCK9NDMS"
+autowrap_mode = 3
+
+[node name="Wipe" type="ColorRect" parent="."]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_wipe")
+editor_description = "[필수] 지우면 오류 — ScenarioSelectView.gd _wipe / _fit_viewport (black brush / wind wipe — ScenarioWipe.gd drives ScenarioWipe.gdshader; tune streaks via the material's soft / scale / stretch / speed. LAST child: over all of this view's UI, spanning the whole viewport; the lobby %TopBar (level / settings discs) is a later sibling of this view and stays drawn above it)"
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+script = ExtResource("9_wipe")

@@ -2,7 +2,8 @@
 
 Project entry point — `scenes/Lobby.tscn` (`run/main_scene`). White outgame
 theme (`OutgameTheme`): floating top bar (manager level disc · wallet pills · settings disc), tab body, optional
-action bar, **floating capsule nav** at the bottom. Replaces the old 3-slot TitleScreen
+action bar, **floating capsule nav** at the bottom. The home tab's `게임 시작` opens **scenario mode** in place
+(`ScenarioSelectView` from `../run_setup/`, see *Scenario mode* below). Replaces the old 3-slot TitleScreen
 (save structure is now profile 1 + run 1 — `features/save_load/README.md`).
 
 표시 텍스트는 l10n key (`lobby` · `settings` 도메인 + 공유 `ui` · `term`). `TABS` `caption` values are keys
@@ -14,10 +15,10 @@ are `deprecated`.
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`, settings disc → `SettingsPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup. **Layout lives in `scenes/Lobby.tscn`** |
+| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`, settings disc → `SettingsPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup, scenario mode (`open_scenario_select`). **Layout lives in `scenes/Lobby.tscn`** |
 | `UI_Comp_LobbyCurrencyPill.tscn` | — (no script, `Button` `LobbyCurrencyPill`) | One wallet pill: `%Icon` · `%Value` (right-aligned, `Loc.grouped` commas) · `%Plus` (accent "+" disc) — item scene, one per `WALLET` row; the whole pill opens the currency shop |
 | `UI_Comp_LobbyNavButton.tscn` | — (no script, flat `Button`) | One cell of the capsule nav: `%Icon` (52, white SVG tinted by `self_modulate`) · `%Caption` (17, shown only when selected) · red `%Badge` — item scene, one per `TABS` row |
-| `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, continue / new run / abandon (the old lobby body). **Layout lives in the `.tscn`** |
+| `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, 게임 시작 (→ scenario mode) / continue / abandon (the old lobby body). **Layout lives in the `.tscn`** |
 | `UI_View_ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
 | `UI_View_ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
 | `UI_View_SettingsPopup.tscn` + `SettingsPopup.gd` | `class_name SettingsPopup extends CanvasLayer` | Settings modal (l10n D10) — language list, one button per `L.LOCALES`. Opened from the lobby top bar's `%SettingsButton` (gear disc). **Layout lives in the `.tscn`** |
@@ -68,10 +69,14 @@ to only print (`UiPreview.mute`).
   `%ActionBar` (tab has a bar) or `%NavBar` (no bar) — read from the scene's offsets.
 - Tab duck-typed contract: `bar_specs() -> Array` (fixed has-bar / no-bar per tab), `setup(host)`,
   `on_bar_pressed(i)`, `on_shown()` (every activation — redraw from the profile).
+- Optional tab hook `bar_scale() -> Vector2` (only `HomeTab`: `(0.5, 1.1)`): `_lift_bar` shrinks the laid-out row to
+  x × its total width, **centred** (capsules keep `BOTTOM_BAR_GAP` and their weight ratio), and makes each capsule
+  y × the slot height, growing **upwards** from the slot bottom (the 16 px gap to the nav stays). The shared
+  `OutgameTheme.add_bottom_bar` / `layout_bottom_bar` are untouched.
 - Host services: `show_toast(msg, is_error)`, `refresh_currency()` (wallet + level disc), `rebuild_bar()` /
   `relayout_bar()` / `bar_buttons()`, `switch_tab(id)`, `set_tab_badge(id, on)` / `refresh_badges()`,
   `open_confirm(title, body, cancel, confirm, danger, callback)`, `open_manager()`, `open_wallet()`,
-  `open_settings()`.
+  `open_settings()`, `open_scenario_select(animate)` / `close_scenario_select(animate)` / `is_scenario_open()`.
 - **Settings disc** (`%SettingsButton`, top bar, right of the wallet): → `open_settings()` (one `SettingsPopup`,
   lazy child) → `locale_chosen(code)` → `_on_locale_chosen`: `ProfileManager.set_locale(code)` (saves) →
   `get_tree().reload_current_scene()` — the only way texts refresh after a language switch (§10.4: no
@@ -118,6 +123,30 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `currency_gem` (coloured), `icon_plus`, `icon_close`, `icon_settings` (white stroked gear, 64 px, stroke 5),
   `ring_track` (112 px ring for the level disc).
 
+## Scenario mode (`open_scenario_select`)
+The new-run entry: the home tab's `게임 시작` **without a run** (and the corrupt-run abandon path) calls
+`open_scenario_select(true)`; `LobbyScreen.open_scenario_on_enter = true` before loading the lobby (RunSetup's first
+step 뒤로, RunResult 새 런) makes `_ready` switch to 홈 and open it with `animate = false` (the chrome snaps; the view
+may still animate its own panel).
+- **Chrome slide** (`_slide_chrome` → `_apply_chrome(t)`, `CHROME_SLIDE_SEC` 0.38 s, cubic in-out): `%Wallet` moves up
+  until its bottom is `CHROME_SLIDE_MARGIN` above the notch; `%NavBar` and `%ActionBar` move down until their top is
+  that margin under the screen bottom. Driven by offsets from `_chrome_base` (the scene's offsets, captured in
+  `_build`; `_place_tab` / `_lift_bar` read the base, never the slid value). Hidden at `t = 1` (no taps). The level
+  disc and the settings disc stay — both work in scenario mode.
+- **View**: `ScenarioSelectView.create()` once, child of the lobby moved to just **below `%TopBar`** (above `%Tabs`;
+  `%SafeBottom` / toast / modals stay above it), full rect, `open(selected, animate)` — `selected` = the view's
+  last `selected_id`, first time `RunSetupScreen.entry_scenario` (if ≥ 0) else 0. The view owns its bottom bar
+  (뒤로 / 시나리오 선택) and its enter / exit animation.
+- `back_requested` → `close_scenario_select()` → `view.close(true)`; the chrome slides back only on the view's
+  `closed` (`_on_scenario_closed`, after its close wipe has fully finished — never in parallel; skipped if the mode
+  was re-opened meanwhile). `close_scenario_select(false)` → the view closes at once and the chrome snaps back.
+- The view's black wipe is its own last child, so it stays **under `%TopBar`**: the level / settings discs remain
+  visible over the black.
+- `scenario_chosen(id)` → `GameManager.reset_season_state()`, `RunSetupScreen.entry_scenario = id`,
+  `RunSetup.tscn`.
+- **Modals in scenario mode**: `open_manager` doesn't fade the nav and `_on_modal_closed` doesn't fade it back while
+  `_scenario_open` — the nav stays slid away until 뒤로.
+
 ## HomeTab (was LobbyScreen body)
 - **Layout lives in `UI_View_HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
   Tree: `HomeTab` (full rect, theme) → `VBox` (top-wide, sep 0): Gap 64 · `Title` (`HeadingLabel` 64) · Gap ·
@@ -135,16 +164,18 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   phase name (`HubView.PHASE_NAMES`), "경기 진행 중" chip when `match_in_progress`,
   date + weekday (`OutgameTheme.DAY_LETTERS`), team, trophies, league rank W-L
   (or "리그 미시작"), last saved time. No run → empty-state card.
-- Bottom bar: with a run `새 런`(ghost, 1) / `이어하기`(primary, 2); without, `새 런` full width.
+- Bottom bar (`bar_specs`, font 35, `bar_scale()` = half width · 1.1× height, centred): with a run
+  `게임 시작`(ghost, 1) / `이어하기`(primary, 2) in 500 px total; without, one `게임 시작` 500 px wide. Key
+  `lobby.home.start`; `lobby.home.new_run` (새 런) stays for `RunResult`.
 - `이어하기` → `load_run()` → `MatchFlow.tscn` if `season_state.match_resume != null`,
   else `Season.tscn`. Error → red toast above the bar + ERROR haptic.
-- `새 런` without a run → `reset_season_state()` → `RunSetup.tscn`.
-- `새 런` with a run → WARNING haptic + `ConfirmPopup` ("진행 중인 런을 포기할까요?",
+- `게임 시작` without a run → host `open_scenario_select(true)` (scenario mode; the pick resets the season → `RunSetup.tscn`).
+- `게임 시작` with a run → WARNING haptic + `ConfirmPopup` ("진행 중인 런을 포기할까요?",
   danger style; body: settled as a failure, score / currency rewards still paid, irreversible;
   confirm "포기하고 정산"). Confirm (`_on_abandon_confirmed`) → `SaveSystem.load_run()` →
   `RunResult.settle_current_run("abandon")` (writes the profile, deletes `run.save`) →
   `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
-  Load fails (corrupt run) → warning, `delete_run()` and straight to a new run without settlement.
+  Load fails (corrupt run) → warning, `delete_run()`, the tab redraws as run-less and scenario mode opens (no settlement).
 - A summary line under the title: manager level · owned pilots · owned traits.
 
 ## SettingsPopup (l10n M5 — `docs/localization_design.md` D10 · §10.4)

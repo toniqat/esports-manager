@@ -1,3 +1,3 @@
-id,name_key,salary_cap,desc_key
-0,tx_WMF4H900Y6,250,tx_FHYTT6JZHE
-1,tx_WHEYGN2VQZ,300,tx_4H2VGDNYW7
+id,name_key,salary_cap,art,logo,art_focus_x
+0,tx_WMF4H900Y6,250,res://resources/images/scenario/scenario-rookie.png,res://resources/images/ui/run_setup/league_rookie.svg,0.18
+1,tx_WHEYGN2VQZ,300,res://resources/images/scenario/scenario-super.png,res://resources/images/ui/run_setup/league_super.svg,0.57

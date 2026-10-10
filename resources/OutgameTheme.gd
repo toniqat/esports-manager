@@ -1140,6 +1140,37 @@ static func _add_screen_variations(th: Theme) -> void:
 	# bar fills (this variation), the plain `ProgressFill` (ACCENT) while capped (code switches).
 	_add_derived(th, "SeasonPilotDetailLevelFill", &"ProgressFill", flat_style(LINK, BAR_RADIUS))
 
+	# --- ScenarioSelect (meta/run_setup `UI_View_ScenarioSelectView.tscn`) ---
+	# Giant dark slab under the scenario info, rotated by code so its top edge reads as a diagonal
+	# (every other edge is off-screen); the soft shadow lifts that edge off the art.
+	var slab := flat_style(Color(RAIL, 0.93), 0)
+	slab.shadow_color = Color(0, 0, 0, 0.35)
+	slab.shadow_size = 36
+	_add_derived(th, "ScenarioSelectSlab", &"SunkPanel", slab)
+	# Salary-cap capsule (bottom-left, tap = tooltip): faint white glass pill with a hairline border.
+	var sc_pill: Dictionary = {}
+	for n in BUTTON_STATES:
+		var pa: float = {"hover": 0.16, "pressed": 0.22, "hover_pressed": 0.22}.get(n, 0.10)
+		sc_pill[n] = flat_style(Color(1, 1, 1, pa), 999, Color(1, 1, 1, 0.18), 2)
+	sc_pill["focus"] = StyleBoxEmpty.new()
+	_add_button(th, "ScenarioSelectCapPill", FONT_BODY, TEXT_ON_FILL, sc_pill)
+	# League arrows: glyph only (`ScenarioArrowGlyph`), no plate in any state — the button is just
+	# a generous tap area.
+	var sc_arrow: Dictionary = {}
+	for n in BUTTON_STATES:
+		sc_arrow[n] = StyleBoxEmpty.new()
+	_add_button(th, "ScenarioSelectArrow", FONT_BODY, TEXT_ON_FILL, sc_arrow)
+	# League index pills (bottom-left of the sheet): faint white, current = amber (code switches).
+	_add_derived(th, "ScenarioSelectDot", &"SunkPanel", flat_style(Color(1, 1, 1, 0.28), 7))
+	_add_derived(th, "ScenarioSelectDotOn", &"SunkPanel", flat_style(ACCENT, 7))
+	for spec in [["ScenarioSelectLeagueName", 44, TEXT_ON_FILL],
+			["ScenarioSelectCapValue", 30, TEXT_ON_FILL]]:
+		var v: String = spec[0]
+		_add_label(th, v, int(spec[1]), spec[2])
+		th.set_color(&"font_shadow_color", v, Color(0, 0, 0, 0.5))
+		th.set_constant(&"shadow_offset_x", v, 0)
+		th.set_constant(&"shadow_offset_y", v, 2)
+
 
 ## 둥근 그림 마스크(`clip_children` 부모가 그리는 흰 판).
 static func _mask_box(radius: int) -> StyleBoxFlat:

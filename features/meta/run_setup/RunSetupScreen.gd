@@ -2,7 +2,7 @@ class_name RunSetupScreen
 extends Control
 
 # 런 준비 화면(`scenes/RunSetup.tscn`) — 오케스트레이터.
-# 시나리오 → 팀 → 감독(프리셋 · 특성) → 5인 편성(레벨 · 샐러리캡) → `GameManager.start_run(run_setup)`
+# (시나리오는 로비에서 고른다 — `entry_scenario`) 팀 → 감독(프리셋 · 특성) → 5인 편성(레벨 · 샐러리캡) → `GameManager.start_run(run_setup)`
 # → `Season.tscn`(HUB 부터). 계약: `docs/outgame_dev_plan.md` §10.2.
 #
 # **단계는 표 하나(`STEPS`)다.** 맨 위 단계 머리글도, `뒤로` / `다음` 의 이동도
@@ -20,8 +20,9 @@ const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
 const SEASON_SCENE: String = "res://scenes/Season.tscn"
 
 ## 단계 표. `id` 는 `_make_step_view` 의 분기 키, `label` 은 머리글 글자의 l10n key.
+## The scenario (league) is picked in the lobby (`ScenarioSelectView`) before this scene opens —
+## every row here is a header step; 뒤로 on the first one returns to the lobby's scenario pick.
 const STEPS: Array = [    # l10n-keys: run_setup.step.*
-	{"id": "scenario", "label": L.RUN_SETUP_STEP_SCENARIO},
 	{"id": "team",     "label": L.RUN_SETUP_STEP_TEAM},
 	{"id": "manager",  "label": L.TERM_PERSON_MANAGER},    # M8/M9 — preset + traits (ManagerStepView)
 	{"id": "lineup",   "label": L.RUN_SETUP_STEP_LINEUP},
@@ -37,6 +38,11 @@ const CONTENT_TOP: float = 116.0
 static func content_top() -> float:
 	return CONTENT_TOP
 
+
+## Scenario chosen in the lobby's scenario pick (`ScenarioSelectView`) — set by the lobby right
+## before `change_scene_to_file(RunSetup.tscn)`; RunSetup starts at the team step with it.
+## Still -1 when RunSetup.tscn is run on its own (F6) → scenario 0.
+static var entry_scenario: int = -1
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _pm: Node = get_node("/root/ProfileManager")
@@ -60,6 +66,7 @@ func _ready() -> void:
 	if _built:
 		return
 	_built = true
+	scenario_id = maxi(0, entry_scenario)
 	# 화면째 안전 영역 위끝으로 내린다(Pattern B) — 단계 뷰들은 그 안의 좌표로 산다.
 	# 바탕만 노치 띠까지 위로 늘린다.
 	ScreenMetrics.indent_to_safe_top(self)
@@ -90,6 +97,8 @@ func current_step_id() -> String:
 
 func go_to_step(i: int) -> void:
 	if i < 0:
+		# 뒤로 on the team step → the lobby reopens on its scenario pick.
+		LobbyScreen.open_scenario_on_enter = true
 		get_tree().change_scene_to_file(LOBBY_SCENE)
 		return
 	if i >= STEPS.size():
@@ -118,12 +127,6 @@ func _prev_step() -> void:
 ## 단계 id → 그 단계의 뷰. **새 단계는 여기에 분기 하나를 더한다.**
 func _make_step_view(id: String) -> Control:
 	match id:
-		"scenario":
-			var sv := ScenarioStepView.create()
-			%Steps.add_child(sv)
-			sv.back_requested.connect(_prev_step)
-			sv.next_requested.connect(_on_scenario_next.bind(sv))
-			return sv
 		"team":
 			var tv := TeamStepView.create()
 			%Steps.add_child(tv)
@@ -158,11 +161,6 @@ func _on_step_entered(id: String) -> void:
 			_draft.set_scenario(scenario_id)
 		if _load_error != "":
 			_show_error(Loc.t(L.RUN_SETUP_LOAD_FAILED, {"error": _load_error}))
-
-
-func _on_scenario_next(view: ScenarioStepView) -> void:
-	scenario_id = view.selected_id
-	_next_step()
 
 
 func _on_team_next(view: TeamStepView) -> void:

@@ -3,8 +3,8 @@ tx_DBE01WV863,lobby.home.title,active,로비 홈 탭 맨 위 게임 제목,,,ESP
 tx_C43HAK9QB4,lobby.home.section_run,active,로비 홈 탭 런 카드 위 섹션 제목,,,진행 중인 런,Run in Progress,draft,ccef8fc4
 tx_5WJB7HWPMA,lobby.home.live_chip,active,로비 홈 런 카드 칩: 경기 도중 저장됨,,,경기 진행 중,Match in progress,draft,b3bcafa9
 tx_8QB02J8X4E,lobby.home.empty_headline,active,로비 홈 빈 카드 제목,,,진행 중인 런이 없습니다,No run in progress,draft,9f5e6310
-tx_WGC1W057NT,lobby.home.empty_hint,active,로비 홈 빈 카드 안내: '새 런' 은 lobby.home.new_run 버튼,,,아래 '{tx_VCBJXS80JH}' 으로 시즌을 시작하세요,Tap '{tx_VCBJXS80JH}' below to start a season,draft,9e4b3dbe
-tx_VCBJXS80JH,lobby.home.new_run,active,로비 홈 행동 바 버튼 / 런 결과 화면 하단 버튼: 새 런 준비로,,,새 런,New Run,draft,2e6fc531
+tx_WGC1W057NT,lobby.home.empty_hint,active,로비 홈 빈 카드 안내: '게임 시작' 은 lobby.home.start 버튼,,,아래 '{tx_P1QQB4F5NY}' 으로 시즌을 시작하세요,Tap '{tx_P1QQB4F5NY}' below to start a season,draft,639c0278
+tx_VCBJXS80JH,lobby.home.new_run,active,런 결과 화면 하단 버튼: 새 런 준비로 (로비 홈은 lobby.home.start),,,새 런,New Run,draft,2e6fc531
 tx_X0EYJ8K5SH,lobby.home.continue,active,로비 홈 행동 바 버튼: 저장된 런 이어하기,,,이어하기,Continue,draft,4459ec31
 tx_B6XWT6321G,lobby.home.summary,active,로비 홈 요약 줄,,,{tx_PR6YFXCW5G} Lv{level} · {tx_WEMGESKYB6} {pilots}명 · 특성 {traits}개,Manager Lv{level} · {pilots} {plural:pilots|{tx_3ZSF3DW62X}|{tx_3HRCFHPCM4}} · {traits} {plural:traits|{tx_GW0QTR6A5N}|{tx_BCYB93VHH3}},draft,7c07a912
 tx_5065WMC273,lobby.home.date,active,로비 홈 런 카드 게임 날짜. weekday = 요일 약칭,,,{year}년 {month}월 {day}일 ({weekday}),"Year {year}, {month}/{day} ({weekday})",draft,3eb58269
@@ -42,3 +42,4 @@ tx_3M4BE5GPXC,lobby.nav.home,active,로비 하단 플로팅 메뉴 — 선택된
 tx_28F8XG4H78,lobby.nav.pass,active,로비 하단 플로팅 메뉴 — 선택된 칸 이름 (패스). 모든 언어 영문 대문자,8,,PASS,PASS,draft,bd564db5
 tx_MK3GPRAY5Y,lobby.nav.shop,active,로비 하단 플로팅 메뉴 — 선택된 칸 이름 (상점). 모든 언어 영문 대문자,8,,SHOP,SHOP,draft,f2e1c7fa
 tx_VPTW1MTX4D,lobby.level.caption,active,로비 좌상단 감독 레벨 원 — 숫자 위 작은 글자,3,,Lv,Lv,draft,1aa6e8ca
+tx_P1QQB4F5NY,lobby.home.start,active,"로비 홈 행동 바 주 버튼: 런이 없으면 시나리오 선택을 연다, 있으면 포기 확인",,,게임 시작,Start Game,draft,62d82d76

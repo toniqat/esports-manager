@@ -53,7 +53,6 @@
     { "csv": "finance_specials.csv", "id": "id", "column": "name_key", "domain": "finance", "alias": "finance.special.{id}.name" },
     { "csv": "finance_specials.csv", "id": "id", "column": "desc_key", "domain": "finance", "alias": "finance.special.{id}.desc" },
     { "csv": "scenarios.csv", "id": "id", "column": "name_key", "domain": "scenario", "alias": "scenario.{id}.name" },
-    { "csv": "scenarios.csv", "id": "id", "column": "desc_key", "domain": "scenario", "alias": "scenario.{id}.desc" },
     { "csv": "training_tiles.csv", "id": "id", "column": "name_key", "domain": "training", "alias": "training.tile.{id}.name" },
     { "csv": "mental_texts.csv", "id": "id", "column": "text_key", "domain": "mental", "alias": "mental.{event_id}.{id}" },
     { "csv": "facility_defs.csv", "id": "id", "column": "name_key", "domain": "facility", "alias": "facility.def.{id}.name" },

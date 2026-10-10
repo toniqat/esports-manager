@@ -31,7 +31,14 @@ extends Control
 #   둘 다 로비의 자식 Control 이라 `%Toast`(z 5) 가 그 위에 뜬다.
 # - host 가 주는 것: `show_toast(msg, is_error)`, `refresh_currency()`(재화 + 레벨 원),
 #   `rebuild_bar()` (글자 · 활성 상태가 바뀌면), `bar_buttons()`, `switch_tab(id)`,
-#   `set_tab_badge(id, on)`, `refresh_badges()`, `open_confirm(...)`.
+#   `set_tab_badge(id, on)`, `refresh_badges()`, `open_confirm(...)`, `open_scenario_select(animate)`.
+# - 탭이 선택적으로 주는 것: `bar_scale() -> Vector2` — 행동 바 전체 폭 × x(가운데 정렬),
+#   캡슐 높이 × y(아래끝 고정). 없으면 (1, 1).
+# - **Scenario mode** (`open_scenario_select`): the home tab's `게임 시작` without a run. The
+#   wallet slides up past the notch, the nav capsule + action bar slide down off-screen
+#   (`_slide_chrome`), and `ScenarioSelectView` covers the tab body between `%Tabs` and `%TopBar`
+#   — the level disc and the settings disc stay on top and usable. 뒤로 slides the chrome back;
+#   a pick resets the season and goes to RunSetup on that scenario.
 # - 하단 바 규칙(`resources/README.md`)의 예외: 로비만 **캡슐 메뉴가 맨 아래**이고 행동 바가
 #   그 바로 위에 선다. 행동 바 모양 · 무게 · 주 행동 오른쪽 규칙은 그대로다.
 
@@ -58,10 +65,18 @@ const NAV_BUTTON_SCENE: String = "res://features/meta/lobby/UI_Comp_LobbyNavButt
 
 ## 선택 알약이 칸 사이를 미끄러지는 시간(초).
 const SELECTOR_SEC: float = 0.28
+## Scenario mode: wallet / nav / action bar slide time (s) and the extra distance past the edge.
+const CHROME_SLIDE_SEC: float = 0.38
+const CHROME_SLIDE_MARGIN: float = 40.0
+const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
 ## 캡슐 메뉴 아이콘 색: 어두운 캡슐 위(꺼짐) · 흰 알약 위(켜짐) · 막힌 칸.
 const NAV_ICON_OFF: Color = Color(0.85, 0.85, 0.88, 1.0)
 const NAV_ICON_ON: Color = OutgameTheme.TEXT
 const NAV_ICON_LOCKED: Color = Color(0.85, 0.85, 0.88, 0.28)
+
+## Set before `change_scene_to_file(Lobby.tscn)` to open straight into the scenario pick
+## (RunSetup team step 뒤로, RunResult 새 런). Cleared by the lobby once read.
+static var open_scenario_on_enter: bool = false
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _pm: Node = get_node("/root/ProfileManager")
@@ -85,6 +100,12 @@ var _manager_sheet: ManagerPopup = null
 var _wallet_popup: CurrencyShopPopup = null
 var _nav_fade: Tween
 var _settings: SettingsPopup = null
+var _scenario_view: ScenarioSelectView = null
+var _chrome_back_animate: bool = true   # how the chrome returns once the scenario view has closed
+var _scenario_open: bool = false
+var _chrome_tween: Tween
+var _chrome_t: float = 0.0           # 0 = wallet / nav / bar in place, 1 = slid off-screen
+var _chrome_base: Dictionary = {}    # Control → Vector2(offset_top, offset_bottom) from the scene
 var _built: bool = false
 
 
@@ -96,12 +117,19 @@ func _ready() -> void:
 		return
 	_built = true
 	_build()
+	if open_scenario_on_enter:
+		# Back from RunSetup's first step / RunResult 새 런: straight into the scenario pick.
+		open_scenario_on_enter = false
+		switch_tab("home")
+		open_scenario_select(false)
 
 
 # ── Build ────────────────────────────────────────────────────────────────────
 func _build() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	_fit_safe_area()
+	for c in [%Wallet, %NavBar, %ActionBar]:
+		_chrome_base[c] = Vector2((c as Control).offset_top, (c as Control).offset_bottom)
 	_sync_wallet()
 	_sync_nav_buttons()
 	%LevelButton.pressed.connect(open_manager)
@@ -194,7 +222,8 @@ func _place_tab(tab: Control, has_bar: bool) -> void:
 	tab.offset_left = 0.0
 	tab.offset_right = 0.0
 	tab.offset_top = (%TopBar as Control).offset_bottom
-	tab.offset_bottom = (%SafeBottom as Control).offset_bottom + slot.offset_top
+	# The scene's offset, not the live one — the slot may be slid away (scenario mode).
+	tab.offset_bottom = (%SafeBottom as Control).offset_bottom + (_chrome_base[slot] as Vector2).x
 
 
 # ── Tabs ─────────────────────────────────────────────────────────────────────
@@ -279,7 +308,8 @@ func open_manager() -> void:
 		add_child(_manager_sheet)
 		_manager_sheet.closed.connect(_on_modal_closed)
 	_hide_toast()
-	_fade_nav(false)
+	if not _scenario_open:
+		_fade_nav(false)
 	_manager_sheet.open(self)
 
 
@@ -308,7 +338,9 @@ func _fade_nav(show_it: bool) -> void:
 
 
 func _on_modal_closed() -> void:
-	_fade_nav(true)
+	# In scenario mode the nav stays slid away — only the 감독 modal can open there.
+	if not _scenario_open:
+		_fade_nav(true)
 	refresh_currency()
 	refresh_badges()
 	var tab: Control = _tabs.get(current_tab, null)
@@ -343,26 +375,43 @@ func relayout_bar() -> void:
 	_lift_bar()
 
 
-# The shared bar sits on the very bottom; here it fills the %ActionBar slot on top of the
-# tab bar (the slot is already above the gesture zone, so no inset padding).
+# `layout_bottom_bar` stands the capsules on the safe line; here they move up into the
+# %ActionBar slot above the nav capsule (the slot is already above the gesture zone).
+# A tab's optional `bar_scale()` then shrinks the whole row to x × its width, centred (the
+# capsules keep the shared gap and their weights), and makes each capsule y × the slot height,
+# growing upwards from the slot's bottom (the gap to the nav capsule stays).
 func _lift_bar() -> void:
-	var slot: Control = %ActionBar
-	var h: float = slot.offset_bottom - slot.offset_top
+	var base: Vector2 = _chrome_base[%ActionBar]
+	var slot_h: float = base.y - base.x
+	var scale_xy := Vector2.ONE
+	var tab: Control = _tabs.get(current_tab, null)
+	if tab != null and tab.has_method("bar_scale"):
+		scale_xy = tab.call("bar_scale")
+	var h: float = roundf(slot_h * scale_xy.y)
+	var shown: Array = []
+	var total_w: float = 0.0
 	for raw in _bar:
 		var b: Button = raw
-		# Margin first: while it still holds the inset padding, the button's minimum
-		# height exceeds the slot and `size.y = h` would be clamped (the bar then
-		# overhung the tab bar on devices with a bottom inset).
-		for n in OutgameTheme.BUTTON_STATES:
-			var sb := b.get_theme_stylebox(n) as StyleBoxFlat
-			if sb != null:
-				sb.content_margin_bottom = 8.0
-		b.position.y = 0.0
+		b.position.y = slot_h - h
 		b.size.y = h
-		for c in b.get_children():
-			var sep := c as ColorRect
-			if sep != null:
-				sep.size.y = h
+		if b.visible:
+			shown.append(b)
+			total_w += b.size.x
+	if is_equal_approx(scale_xy.x, 1.0) or shown.is_empty():
+		return
+	var gap: float = OutgameTheme.BOTTOM_BAR_GAP
+	var gaps: float = gap * float(shown.size() - 1)
+	var new_row: float = roundf((total_w + gaps) * scale_xy.x)
+	var avail: float = new_row - gaps
+	var x: float = roundf((ScreenMetrics.vp_w() - new_row) * 0.5)
+	var right: float = x + new_row
+	for i in shown.size():
+		var b: Button = shown[i]
+		var w: float = right - x if i == shown.size() - 1 \
+				else floorf(avail * b.size.x / total_w)
+		b.position.x = x
+		b.size.x = w
+		x += w + gap
 
 
 func _on_bar_pressed(i: int) -> void:
@@ -452,6 +501,92 @@ func _on_locale_chosen(code: String) -> void:
 		show_toast(Loc.t(L.SETTINGS_SAVE_FAILED, {"error": err}), true)
 		return
 	get_tree().reload_current_scene()
+
+
+# ── Scenario mode ────────────────────────────────────────────────────────────
+## Opens the scenario pick over the home tab: wallet / nav / action bar slide away
+## (`animate` = tween, else snap), the view (made once) opens on the last picked scenario.
+func open_scenario_select(animate: bool = true) -> void:
+	if _scenario_open:
+		return
+	_scenario_open = true
+	_hide_toast()
+	var selected: int = maxi(0, RunSetupScreen.entry_scenario)
+	if _scenario_view == null:
+		_scenario_view = ScenarioSelectView.create()
+		add_child(_scenario_view)
+		# Above the tab bodies, below the top bar (level / settings discs stay on top),
+		# the bottom chrome, the toast and the modals.
+		move_child(_scenario_view, (%TopBar as Control).get_index())
+		_scenario_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_scenario_view.back_requested.connect(close_scenario_select)
+		_scenario_view.scenario_chosen.connect(_on_scenario_chosen)
+		_scenario_view.closed.connect(_on_scenario_closed)
+	else:
+		selected = _scenario_view.selected_id
+	_slide_chrome(true, animate)
+	_scenario_view.open(selected, animate)
+
+
+## 뒤로 from the scenario view — the view closes itself (contents fade, slab swings out, black wipe);
+## the chrome slides back only once that has fully finished (`closed`), never in parallel.
+func close_scenario_select(animate: bool = true) -> void:
+	if not _scenario_open:
+		return
+	_scenario_open = false
+	if _scenario_view == null:
+		_slide_chrome(false, animate)
+		return
+	_chrome_back_animate = animate
+	_scenario_view.close(animate)
+
+
+func _on_scenario_closed() -> void:
+	# Re-opened before the close finished (the view's open kills its close) — keep the chrome away.
+	if _scenario_open:
+		return
+	_slide_chrome(false, _chrome_back_animate)
+
+
+func is_scenario_open() -> bool:
+	return _scenario_open
+
+
+func _on_scenario_chosen(scenario_id: int) -> void:
+	_gm.reset_season_state()
+	RunSetupScreen.entry_scenario = scenario_id
+	get_tree().change_scene_to_file(RUN_SETUP_SCENE)
+
+
+## Slides the wallet up past the notch and the nav capsule + action bar down past the bottom
+## edge (`away`), or back. Hidden while off-screen, so they take no taps.
+func _slide_chrome(away: bool, animate: bool) -> void:
+	if _chrome_tween != null:
+		_chrome_tween.kill()
+		_chrome_tween = null
+	var target: float = 1.0 if away else 0.0
+	if not away:
+		(%NavBar as Control).modulate.a = 1.0
+	if not animate:
+		_apply_chrome(target)
+		return
+	_chrome_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_chrome_tween.tween_method(_apply_chrome, _chrome_t, target, CHROME_SLIDE_SEC)
+
+
+func _apply_chrome(t: float) -> void:
+	_chrome_t = t
+	var up: float = ScreenMetrics.top_y() + CHROME_SLIDE_MARGIN
+	var below: float = maxf(0.0, ScreenMetrics.insets().w) + CHROME_SLIDE_MARGIN
+	for raw in _chrome_base.keys():
+		var c: Control = raw
+		var base: Vector2 = _chrome_base[c]
+		# Wallet: its bottom edge ends `up` above the top bar's top (= above the notch).
+		# Bottom slots: their top edge ends `below` under the safe bottom (= under the screen).
+		var dy: float = -(base.y + up) if c == %Wallet else -base.x + below
+		c.offset_top = base.x + dy * t
+		c.offset_bottom = base.y + dy * t
+		c.visible = t < 1.0
 
 
 ## Modal confirm; `on_confirm` runs when confirmed.

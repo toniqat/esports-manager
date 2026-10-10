@@ -1,17 +1,20 @@
 class_name HomeTab
 extends Control
 
-# 로비의 홈 탭 — 진행 중인 런 카드와 `새 런`(1) / `이어하기`(2) 행동 바.
-# 런이 없으면 빈 상태 카드와 전폭 `새 런`. 탭 계약은 `LobbyScreen.gd` 머리말.
+# 로비의 홈 탭 — 진행 중인 런 카드와 `게임 시작`(1) / `이어하기`(2) 행동 바.
+# 런이 없으면 빈 상태 카드와 `게임 시작` 하나. 탭 계약은 `LobbyScreen.gd` 머리말.
+# The bar is half the usual width and 10 % taller, centred (`bar_scale`, applied by the host).
 #
 # **레이아웃 · 스타일의 정본은 `UI_View_HomeTab.tscn`** — 이 스크립트는 `%노드` 에 글을 넣고
 # 런 카드 / 빈 카드 중 하나를 보일 뿐이다. 생성은 `HomeTab.create()`.
 #
-# `새 런` 을 누를 때 런이 이미 있으면 **포기 확인 모달**을 띄운다 — 확인하면 그 런을
+# `게임 시작` 을 누를 때 런이 없으면 host 의 시나리오 선택 모드(`open_scenario_select`)를
+# 연다. 런이 이미 있으면 **포기 확인 모달**을 띄운다 — 확인하면 그 런을
 # **포기로 정산**(`RunResult.settle_current_run("abandon")`, 실패 정산이지만 보상은
 # 준다)하고 정산 화면으로 간다. 그 화면의 `새 런` 이 런 준비로 잇는다.
 
-const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
+## Action bar font (32 before the home bar grew 10 %).
+const BAR_FONT: int = 35
 const SCENE_PATH: String = "res://features/meta/lobby/UI_View_HomeTab.tscn"
 
 var _host: LobbyScreen
@@ -32,13 +35,19 @@ func _ready() -> void:
 
 
 func bar_specs() -> Array:
-	# 런이 있으면 1:2 — 이어하기가 주 행동이라 오른쪽 3분의 2. 없으면 새 런이 전폭.
+	# 런이 있으면 1:2 — 이어하기가 주 행동이라 오른쪽 3분의 2. 없으면 게임 시작 하나.
 	if SaveSystem.has_run():
 		return [
-			{"text": Loc.t(L.LOBBY_HOME_NEW_RUN),  "style": "ghost",   "font": 32, "weight": 1.0},
-			{"text": Loc.t(L.LOBBY_HOME_CONTINUE), "style": "primary", "font": 32, "weight": 2.0},
+			{"text": Loc.t(L.LOBBY_HOME_START),    "style": "ghost",   "font": BAR_FONT, "weight": 1.0},
+			{"text": Loc.t(L.LOBBY_HOME_CONTINUE), "style": "primary", "font": BAR_FONT, "weight": 2.0},
 		]
-	return [{"text": Loc.t(L.LOBBY_HOME_NEW_RUN), "style": "primary", "font": 32, "weight": 1.0}]
+	return [{"text": Loc.t(L.LOBBY_HOME_START), "style": "primary", "font": BAR_FONT, "weight": 1.0}]
+
+
+## Optional host hook (`LobbyScreen._lift_bar`): the row's total width × x (centred) and the
+## capsule height × y. Home = half the full row, 10 % taller.
+func bar_scale() -> Vector2:
+	return Vector2(0.5, 1.1)
 
 
 func setup(host: LobbyScreen) -> void:
@@ -58,7 +67,7 @@ func on_bar_pressed(i: int) -> void:
 	if _has_run and i == 1:
 		_on_continue_pressed()
 	else:
-		_on_new_run_pressed()
+		_on_start_pressed()
 
 
 # ── Fill (레이아웃 · 스타일은 UI_View_HomeTab.tscn) ─────────────────────────────────────
@@ -114,9 +123,9 @@ func _on_continue_pressed() -> void:
 		get_tree().change_scene_to_file("res://scenes/Season.tscn")
 
 
-func _on_new_run_pressed() -> void:
+func _on_start_pressed() -> void:
 	if not _has_run:
-		_start_new_run()
+		_host.open_scenario_select(true)
 		return
 	Haptics.play(Haptics.Kind.WARNING)
 	_host.open_confirm(Loc.t(L.LOBBY_HOME_ABANDON_TITLE), Loc.t(L.LOBBY_HOME_ABANDON_BODY),
@@ -132,19 +141,18 @@ func _on_abandon_confirmed() -> void:
 		RunResult.settle_current_run(RunResult.OUTCOME_ABANDON)
 		get_tree().change_scene_to_file(RunResult.SCENE_PATH)
 		return
-	# 깨진 런 — 정산할 것이 없다. 지우고 새 런으로.
+	# 깨진 런 — 정산할 것이 없다. 지우고 시나리오 선택으로.
 	push_warning("Lobby: abandon could not load run (%s) — deleting without settlement" % lerr)
 	var err: String = SaveSystem.delete_run()
 	if err != "":
 		_host.show_toast(Loc.t(L.LOBBY_HOME_DELETE_FAILED, {"error": err}), true)
 		return
 	Haptics.play(Haptics.Kind.ERROR)
-	_start_new_run()
-
-
-func _start_new_run() -> void:
-	_gm.reset_season_state()
-	get_tree().change_scene_to_file(RUN_SETUP_SCENE)
+	_has_run = false
+	_meta = {}
+	_fill()
+	_host.rebuild_bar()
+	_host.open_scenario_select(true)
 
 
 ## F6 단독 실행 미리보기 — 메모리 런(몇 주 치른 리그)의 런 카드 (`resources/UiPreview.gd`).

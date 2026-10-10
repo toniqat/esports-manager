@@ -14,7 +14,7 @@
 Godot 4.5-stable, GDScript · 2D mobile portrait 1080×1920 · main scene `res://scenes/Lobby.tscn`.
 
 ```
-Lobby ──new run──▶ RunSetup ──start_run──▶ Season (SeasonHub) ◀──────────┐
+Lobby ─scenario──▶ RunSetup ──start_run──▶ Season (SeasonHub) ◀──────────┐
   │  (nav: 기록 · 컬렉션 · 홈 · 패스 · 상점)     │ week: HUB → TRAINING → WEEK         │
   └──continue─────────────────────────────▶   │ 토 ban/pick · 일 match ▼ → PRESS   │
                                                MatchFlow (PREP → BAN_PICK) ──▶ BattleSim
@@ -46,8 +46,8 @@ Read the README of every row your task touches. Indented rows are submodules —
 | ↳ `l10n/` | Localization source CSVs (`src/`), `config.json`, generated `strings_*.csv` · `L.gd` · `refs.json` — text is l10n keys, shown via `Loc.t()` | `data/l10n/README.md` |
 | `features/save_load/` | Profile / run save, autosave points, mid-match resume, test run file | `features/save_load/README.md` |
 | `features/meta/` | Outgame outside a run | `features/meta/README.md` |
-| ↳ `lobby/` | Entry scene = tab host: floating capsule nav, level disc (→ 감독 modal), wallet pills (→ currency shop), settings disc, confirm popup, manager type popup | `features/meta/lobby/README.md` |
-| ↳ `run_setup/` | Scenario → team → manager preset → 5-pilot lineup (levels, salary cap), `DraftDetailPanel` | `features/meta/run_setup/README.md` |
+| ↳ `lobby/` | Entry scene = tab host: floating capsule nav, level disc (→ 감독 modal), wallet pills (→ currency shop), settings disc, scenario mode (hosts `ScenarioSelectView`, chrome slides away), confirm popup, manager type popup | `features/meta/lobby/README.md` |
+| ↳ `run_setup/` | `ScenarioSelectView` (league pick shown in the lobby: art, slant panel, league logo, cap ring) · RunSetup: team → manager preset → 5-pilot lineup (levels, salary cap), `DraftDetailPanel` | `features/meta/run_setup/README.md` |
 | ↳ `run_result/` | Run settlement (`RunResult`), result screen, run balance sim | `features/meta/run_result/README.md` |
 | ↳ `traits/` | Manager traits, bonus points, unlocks (`TraitSystem`) | `features/meta/traits/README.md` |
 | ↳ `manager/` | Manager levels, specialisation, presets, prestige, 감독 modal (`ManagerPopup` → `ManagerTab`) | `features/meta/manager/README.md` |

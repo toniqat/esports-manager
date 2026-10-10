@@ -917,7 +917,7 @@ tx_DBE01WV863,ESPORTS MANAGER
 tx_C43HAK9QB4,Run in Progress
 tx_5WJB7HWPMA,Match in progress
 tx_8QB02J8X4E,No run in progress
-tx_WGC1W057NT,Tap 'New Run' below to start a season
+tx_WGC1W057NT,Tap 'Start Game' below to start a season
 tx_VCBJXS80JH,New Run
 tx_X0EYJ8K5SH,Continue
 tx_B6XWT6321G,Manager Lv{level} · {pilots} {plural:pilots|player|players} · {traits} {plural:traits|trait|traits}
@@ -956,6 +956,7 @@ tx_3M4BE5GPXC,HOME
 tx_28F8XG4H78,PASS
 tx_MK3GPRAY5Y,SHOP
 tx_VPTW1MTX4D,Lv
+tx_P1QQB4F5NY,Start Game
 tx_J99WKD5PN8,Organizer
 tx_KQSXCRDMQT,Field Veteran
 tx_T2Z72WAY5Q,A manager versed in running an organization. A balanced spread leaning slightly toward Management and Mental
@@ -2210,6 +2211,8 @@ tx_Z7WZT1J6Q7,Lineup complete · {n} salary left
 tx_RQV5HNW8TV,Lineup complete
 tx_N58C8KX6P1,Start Game
 tx_B0NGFXJ0F2,Rank {rank} · Lv {level}
+tx_3PMG907FZ1,Select Scenario
+tx_BBWCK9NDMS,The limit on the total salary of the pilots you can field in this league.
 tx_WMF4H900Y6,Rookie League
 tx_WHEYGN2VQZ,Super League
 tx_FHYTT6JZHE,Low salary cap: two or three expensive pilots at most.

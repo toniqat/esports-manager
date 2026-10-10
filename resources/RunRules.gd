@@ -20,8 +20,9 @@ static var _loaded: bool = false
 
 
 # ── 표 ───────────────────────────────────────────────────────────────────────
-## `[{id, name_key, salary_cap, desc_key}]`, id 순. 텍스트는 l10n key
-## (`scenario.*.name` / `.desc`) — 화면이 `Loc.t` 로 보인다.
+## `[{id, name_key, salary_cap, art, logo, art_focus_x}]` by id. `name_key` is an l10n key
+## (`scenario.*.name`, shown via `Loc.t`). `art` / `logo` = res paths, `art_focus_x` = the main
+## character's face x as a fraction of the art width (0..1) — read by `ScenarioSelectView`.
 static func scenarios() -> Array:
 	_ensure_loaded()
 	return _scenarios
@@ -333,7 +334,9 @@ static func _ensure_loaded() -> void:
 		for row in db.query_result:
 			_scenarios.append({
 				"id": int(row["id"]), "name_key": String(row["name_key"]),
-				"salary_cap": int(row["salary_cap"]), "desc_key": String(row["desc_key"]),
+				"salary_cap": int(row["salary_cap"]),
+				"art": String(row.get("art", "")), "logo": String(row.get("logo", "")),
+				"art_focus_x": float(row.get("art_focus_x", 0.5)),
 			})
 	if _has_table(db, "pilot_levels"):
 		db.query("SELECT * FROM pilot_levels ORDER BY level")

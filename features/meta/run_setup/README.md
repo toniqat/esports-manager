@@ -1,6 +1,6 @@
 # Run setup
 
-Everything between the lobby's `새 런` (New run) and the first season HUB —
+Everything between the lobby's scenario (league) pick and the first season HUB —
 `scenes/RunSetup.tscn`. White outgame theme (`OutgameTheme`), bottom action bar on every step.
 Contract: `docs/outgame_dev_plan.md` §10 (M1). Replaces the old in-season DRAFT screen
 (`features/season/draft/`, deleted — Season now always opens at HUB).
@@ -10,8 +10,11 @@ Contract: `docs/outgame_dev_plan.md` §10 (M1). Replaces the old in-season DRAFT
 `RunRoster.assign` / `ManagerStepView.toggle_trait` are returned already translated.
 
 ```
-Lobby 새 런 ─▶ 1 시나리오 ─▶ 2 팀 ─▶ 3 감독 ─▶ 4 편성 (PICK ↔ CONFIRM) ── 게임 시작 ──▶ start_run ──▶ Season.tscn (HUB)
-     ◀── 뒤로 ──┘   ◀── 뒤로 ──┘  ◀── 뒤로 ──┘  ◀── 뒤로 (PICK) ──┘
+Lobby 게임 시작 ─▶ lobby scenario pick (ScenarioSelectView) ── RunSetupScreen.entry_scenario = id ──▶ RunSetup.tscn
+RunSetup:  [팀 ─▶ 감독 ─▶ 편성 (PICK ↔ CONFIRM)] ── 게임 시작 ──▶ start_run ──▶ Season.tscn (HUB)
+     ◀── 뒤로 ──┘  ◀─ 뒤로 ─┘ ◀── 뒤로 (PICK) ──┘
+  뒤로 on 팀 → LobbyScreen.open_scenario_on_enter = true → Lobby.tscn (reopens on the scenario pick)
+RunResult 새 런 → same lobby scenario pick (features/meta/run_result/README.md)
 ```
 
 What `start_run` does with the result (validation, `run_seed`, AI roster distribution,
@@ -24,8 +27,6 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `RunSetupScreen.gd` (+ `scenes/RunSetup.tscn`) | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header (`StepChip` per row), step views (into `%Steps`), builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start (116). |
 | `UI_Comp_StepChip.tscn` + `.gd` | `class_name StepChip extends Panel` | Item scene: one header pill. `create()`, `set_text`, `paint(bg, fg, border)` (state colours on a copy of the pill variation `StepChipPanel`). |
 | `UI_View_ChoiceListView.tscn` + `.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_make_card(item) -> Button` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
-| `UI_View_ScenarioStepView.tscn` + `.gd` | `class_name ScenarioStepView extends ChoiceListView` | Step 1 — `RunRules.scenarios()` (`{id, name_key, salary_cap, desc_key}` — text fields are l10n keys) → one `ScenarioCard` each. Scene **inherits** `UI_View_ChoiceListView.tscn` (root script swapped). `create()`. |
-| `UI_Comp_ScenarioCard.tscn` + `.gd` | `class_name ScenarioCard extends Button` | Item scene: name, salary-cap chip (`AccentChip` PanelContainer, 260×44), desc. Root variation `SelectableCardButton` (`...On` when chosen — `ChoiceListView._refresh`). `create()`, `fill(item)` — name / desc are `Loc.t` of the scenario's `name_key` / `desc_key` (`scenario.{id}.*`); F6 preview uses scenario 1's real keys. |
 | `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 2 — `RunRules.team_packages()` (8, `{id, name_key, short_name_key, budget, facility_level, manual_areas, desc_key}` — text fields are l10n keys) → one `TeamCard` each. Hint: higher budget = easier. Display / snapshot only — effects are M3 / M6. Scene inherits `UI_View_ChoiceListView.tscn`. `create()`. |
 | `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene: name · short name, budget (+ bar relative to the highest budget — `%Fill.anchor_right`), facility level, "직접 해야 하는 일" (`manual_areas` → `RunRules.area_label`, empty = "없음" in green), desc. Name / short / desc are `Loc.t` of the package's `name_key` · `short_name_key` · `desc_key`. `fill(item, max_budget)`. F6 preview uses team 3's real keys. |
 | `UI_View_ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 3 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
@@ -35,31 +36,102 @@ level application) is documented in `features/season/README.md` "Entry point"
 | `UI_Comp_PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell — square face crop + top-left `PositionBadge` (`resources/`) + gold border / check when selected + bottom-right salary tag (`set_tag`). Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset, variation `PilotThumbArtMask`) has radius 14 to follow it; check / tag = `PilotThumbCheck` / `PilotThumbTag`. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
 | `UI_View_DraftDetailPanel.tscn` + `.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). Layout lives in the `.tscn`; construct with `DraftDetailPanel.create()` (not `.new()`), then `open(p: PlayerData)` / `close()` / `is_open()`. See "DraftDetailPanel — scene" below. |
 | `UI_Comp_DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
+| `UI_View_ScenarioSelectView.tscn` + `ScenarioSelectView.gd` | `class_name ScenarioSelectView extends Control` | Full-screen scenario (league) pick **hosted by the lobby** (before `RunSetup.tscn`). Contract: `create()`, `open(scenario_id = 0, animate = true)`, `close(animate = true)` (hides, then `closed`), `selected_id`, signals `back_requested` / `scenario_chosen(id)` / `closed`. See "Scenario select (lobby)" below. |
+| `ScenarioWipe.gd` + `ScenarioWipe.gdshader` | `class_name ScenarioWipe extends ColorRect` (`@tool`) | The select view's black brush / wind wipe (last child of the view — over all its UI, under the lobby `%TopBar`). The node maps `progress` 0 → 1 (cover) · 1 (all black) · 1 → 2 (uncover) and `from_right` onto the shader's black-via mode (`progress / 2`, `direction` ∓1, `aspect` from the rect). Shader = threshold-mask wipe: v = x·0.65 + n·0.35 (x along travel, n = 5-octave value-noise fBm stretched horizontally and flowing with `TIME`), coverage `smoothstep(v, v + soft, t·(1 + soft))`, each half cubic ease-in-out — exactly 0 at the ends, exactly 1 at the midpoint. Uniforms `soft` 0.2 · `scale` 3 · `stretch` 8 · `speed` 1 (material in the scene). |
+| `ScenarioArrowGlyph.gd` | `class_name ScenarioArrowGlyph extends Control` (`@tool`, `_draw`) | Chevron ‹ / › inside the plate-less league arrow buttons (`point_right`, `stroke`, `color`, `shadow_color` — a soft dark stroke 3 px under it so it reads over bright art); dims to 50 % while its parent button is held. |
+| `scenario_logo_shadow.gdshader` | — (canvas_item shader) | `%LogoShadow` material: the logo's alpha blurred (`blur`) in `shadow_color`, sampled inset by `pad` so the blur can spread inside the grown rect; keeps the parent modulate (fades with `%Content`). |
 | `RunRoster.gd` | `class_name RunRoster` | AI roster distribution used by `GameManager.start_run` — owned by RunCore, see `features/season/README.md`. |
 
 ## F6 preview (standalone run)
 Every scene in this folder except `RunSetup.tscn` shows dummy data when run on its own
 (editor "Run Current Scene") — `_ready` → `UiPreview.is_standalone(self)` → `_fill_preview()` at the
 bottom of each script (`resources/UiPreview.gd`). Nothing is saved.
-- Item scenes (`StepChip`, `ScenarioCard`, `TeamCard`, `DraftStatChip`, `DraftSlot`,
+- Item scenes (`StepChip`, `TeamCard`, `DraftStatChip`, `DraftSlot`,
   `PilotThumb`) — hand-written values (real pilot ids for the art), selected / filled state.
-- `ChoiceListView` (base alone: three hand-written scenario cards) · `ScenarioStepView` · `TeamStepView`
+- `ChoiceListView` (base alone: the first three real team cards) · `TeamStepView`
   (real `RunRules` tables) — second card selected.
 - `ManagerStepView` — real profile, active preset; `_preview` stops trait taps from saving the profile.
 - `TeamDraftView` — no parent `TeamDraft`, so the branch runs **first** in `_ready` and injects one
   (game.db pool + real owned collection, first scenario), then seats the strongest five within the cap.
 - `DraftDetailPanel` — opens the top-rated non-mob pilot with a skill (game.db), Lv 3.
+- `ScenarioSelectView` — indents itself to the safe top (as the lobby does), opens scenario 0 animated; 뒤로 closes,
+  `closed` re-opens, 시나리오 선택 only prints.
+
+## Scenario select (lobby) — `ScenarioSelectView`
+One scenario at a time, full screen, inside the lobby (the lobby's level / settings discs stay above it,
+its wallet / nav slide away while it is open). Data = `RunRules.scenarios()` (`scenarios.csv`:
+`name_key`, `salary_cap`, `art`, `logo`, `art_focus_x`).
+```
+ScenarioSelectView (full rect, theme, STOP — blocks the lobby underneath)
+├ %Backdrop   ColorRect black               ┐ code (_fit_viewport): span the WHOLE viewport — notch band and
+├ %ArtLayer                                  │ bottom inset included — wherever the host placed the view
+│ ├ %ArtClip  clip → %Art                    │ (art placed by code; horizontal swipe here = ‹ / ›)
+│ └ %TopShade top gradient (lobby discs read) ┘
+├ %Sheet
+│ ├ %SlabPivot  zero-size pivot off the bottom-left corner (code) — the swing rotates it
+│ │ └ %Slab     Panel `ScenarioSelectSlab` 5200×3600 — a plain giant rectangle, rotated by code (_place_slab):
+│ │             top edge SLAB_EDGE_LEFT (190) above the safe bottom at the left screen edge, rising SLAB_SLOPE
+│ │             (200 / 1080) per px — the same angle on every width (`_edge_h(x)`)
+│ └ %Content  never rotates; fades in place
+│   ├ %Safe   offset_bottom = -inset (fit_bottom_bar)
+│   │ └ %League bottom-right, 480×271, vertical offsets by code (`_place_league`: the logo's centre ON the
+│   │         slab edge at the logo's x): %LogoShadow + %Logo 177 / [%PrevButton ‹ · %LeagueName · %NextButton ›] /
+│   │         %Dots (index pills) — on 9:16 / 9:19.5 the pills end ~27 px above the bar
+│   ├ %Bar    FloatingBarButton_Back (뒤로) / _Choose (시나리오 선택), both 328 wide, packed RIGHT (alignment end) —
+│   │         fit_bottom_bar
+│   └ %CapPill bottom-left on the bar row (code centres it on %Bar): `ScenarioSelectCapPill` Button, salary icon 40 +
+│             %CapValue (`Loc.grouped(cap)`), width follows the content (`_fit_pill`); tap = %CapTip
+├ %CapTip     tooltip layer (whole viewport, hidden): %TipCatcher (flat full-rect Button — the next tap anywhere
+│             closes it and is swallowed) · %TipCard (`TraitTooltipCard`, 560 wide, text `run_setup.scenario.cap_tip`,
+│             placed TIP_GAP above the pill, clamped TIP_EDGE inside the safe area)
+└ %Wipe       ScenarioWipe (ColorRect + ScenarioWipe.gdshader) — LAST child: over all of this view's UI, but the lobby's %TopBar (level /
+              settings discs) is a later sibling of the view, so the discs stay visible over the black
+```
+- **Art**: height = the viewport height on every aspect (9:16, 9:19.5, 9:20, tablets — checked with
+  `ESM_SAFE_AREA`), width by aspect, x so `art_focus_x` (the main character's face, fraction of the art width) sits at
+  screen centre, clamped so no side gap shows (`_layout_art`). Tuned by screenshot: rookie 0.18, super 0.57.
+- **Wipe** (`_wipe` / `_append_wipe`, every art change — open, close, league change): a black brush / wind sweep —
+  the boundary is coarse horizontal streaks with a short gradient tail, flowing along the travel. Black sweeps in
+  (`WIPE_IN_SEC`) until the whole view is black — art, slab, contents, bar (the lobby's two top discs stay above
+  it) — holds `WIPE_HOLD_SEC` (the swap happens at its start, while every pixel is black), then keeps travelling
+  the same way and leaves off the far edge (`WIPE_OUT_SEC`). Tweens are linear; the shader eases each half.
+  Direction follows navigation: › / swipe left = from the right edge, ‹ / swipe right = from the left.
+  No opacity transitions on the art.
+- **Slab swing** (`_set_swing`): 0 = final tilted pose, 1 = rotated `SWING_ANGLE` further clockwise around
+  `%SlabPivot` and dropped `SWING_DROP` (off-screen). Only the slab moves — the contents keep their final,
+  un-rotated places and fade (`_set_content`; hidden = no taps).
+- **Open**: wipe from the right covers the lobby → art + backdrop on → wipe recedes to the left; `SWING_DELAY` into the
+  wipe-out the slab swings in counter-clockwise (`SWING_SEC`, cubic out); the contents fade in from
+  `CONTENT_FADE_AT` (72 %) of the swing. **Close** = the mirror: contents fade out first (`CONTENT_OUT_SEC`) → slab
+  swings out CLOCKWISE on the same path (same pivot, `SWING_SEC`, cubic ease-in = the open curve reversed in time);
+  the wipe from the left sweeps in over the end of the swing (it ends `SWING_DELAY` after the swing, as the open's
+  wipe-out began `SWING_DELAY` before it) → hold → art off → wipe recedes onto the lobby → hidden + `closed` (the
+  lobby slides its chrome back only then). `animate = false` = instant. Input is ignored while any of this runs (`_busy`).
+- **Logo** (177, `%LogoShadow` = blurred dark copy, 24 px larger per side, dropped 10 px) sits half over the art,
+  half over the slab; the name (with ‹ › either side of it) and the pills hang under it on the slab.
+- ‹ / › are glyphs only (variation `ScenarioSelectArrow` = empty boxes, 112 px tap area); the first row's ‹ and the
+  last row's › are hidden by `modulate` (the row never shifts) and ignore input. Index pills sit under the name.
+- Salary cap = the pill's number only (no caption / ring); its meaning is the tooltip. League name = `Loc.t(name_key)`.
+  A missing logo file leaves `%Logo` empty (no crash).
+- One league is always shown, so `시나리오 선택` is always enabled (no "nothing preselected" rule here).
+- The old description line (`scenario.*.desc`) and step hint (`run_setup.scenario.hint`) are gone (deprecated).
+- Variations: `ScenarioSelectSlab` · `ScenarioSelectCapPill` · `ScenarioSelectArrow` · `ScenarioSelectDot` / `…On` ·
+  `ScenarioSelectLeagueName` · `ScenarioSelectCapValue`; tooltip card reuses `TraitTooltipCard` (manager trait tooltip).
 
 ## Steps — one table
 `RunSetupScreen.STEPS` is the single list (`{id, label}`, `label` = l10n key) the header and `뒤로` / `다음`
 navigation read. **To add a step**: add one row and one branch in
 `_make_step_view(id)` that builds the view and wires its back / next signals to
-`_prev_step` / `_next_step`. Nothing else changes. Rows: `scenario` · `team` · `manager` · `lineup`.
+`_prev_step` / `_next_step`. Nothing else changes. Rows: `team` · `manager` · `lineup`.
 
 - Each step view is built the first time it is entered and then only hidden / shown, so going
   back to the team step and forward again keeps the lineup picks and levels. Entering the
   lineup step calls `TeamDraft.set_scenario(scenario_id)` so a changed cap redraws the gauge.
-- `뒤로` on step 1 → `Lobby.tscn`.
+- **Scenario = picked in the lobby** (`ScenarioSelectView`, before this scene): the lobby sets the static
+  `RunSetupScreen.entry_scenario` and changes scene; `_ready` copies it into `scenario_id` (`maxi(0, …)` — a
+  standalone F6 run of `RunSetup.tscn` gets scenario 0) and opens at the team step.
+- `뒤로` on the team step (`go_to_step(-1)`) → `LobbyScreen.open_scenario_on_enter = true` → `Lobby.tscn`,
+  which reopens on its scenario pick.
 - Header: one pill per step — done = amber tint, current = amber fill, upcoming = white.
 - The pilot pool is read **once** from `GameManager.load_match_data()["players"]` (Lv1 CSV
   copies) — `season_state` is not initialised yet during run setup. A load error is shown as a

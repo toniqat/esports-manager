@@ -15,13 +15,12 @@ extends Control
 # traits) are drawn from `result.profile_delta` (the before/after settlement wrote
 # into the profile) — test runs have no such key, so only computed values show.
 # 하단 바는 평소 `로비로`, 로비에서 런을 포기하고 왔으면(`outcome == "abandon"`)
-# `새 런`(→ 런 준비). 결과가 비어 있으면(씬을 바로 연 경우) 빈 상태 한 장.
+# `새 런`(→ 로비의 시나리오 선택 — `LobbyScreen.open_scenario_on_enter`). 결과가 비어 있으면(씬을 바로 연 경우) 빈 상태 한 장.
 #
 # 결과 딕셔너리만으로 그린다 — 표시용 키(`team_name` · `pilots` ·
 # `breakdown` · `phases_cleared`)를 `RunResult.build_result` 가 미리 담아 둔다.
 
 const LOBBY_SCENE: String = "res://scenes/Lobby.tscn"
-const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
 
 const ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultRow.tscn")
 const TRUE_END_ROW_SCENE: PackedScene = preload("res://features/meta/run_result/UI_Comp_RunResultTrueEndRow.tscn")
@@ -336,6 +335,8 @@ func _on_lobby_pressed() -> void:
 	get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
+## A new run starts from the lobby's scenario pick (the league is chosen there, then RunSetup).
 func _on_new_run_pressed() -> void:
 	_gm.reset_season_state()
-	get_tree().change_scene_to_file(RUN_SETUP_SCENE)
+	LobbyScreen.open_scenario_on_enter = true
+	get_tree().change_scene_to_file(LOBBY_SCENE)

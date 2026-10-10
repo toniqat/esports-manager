@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B9F26B"/>
+      <stop offset="1" stop-color="#14B8A6"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#11505A"/>
+      <stop offset="1" stop-color="#0A2E36"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#C8F7EF"/>
+    </linearGradient>
+  </defs>
+  <!-- outer hex badge -->
+  <path d="M128 6 L234 67 V189 L128 250 L22 189 V67 Z" fill="#072127"/>
+  <path d="M128 18 L224 73 V183 L128 238 L32 183 V73 Z" fill="url(#rim)"/>
+  <path d="M128 32 L212 80 V176 L128 224 L44 176 V80 Z" fill="url(#core)"/>
+  <!-- light facet on the upper half -->
+  <path d="M128 32 L212 80 V112 L128 64 L44 112 V80 Z" fill="#FFFFFF" fill-opacity="0.07"/>
+  <g transform="translate(0,-6)">
+    <!-- stylised R monogram -->
+    <path fill="url(#mark)" fill-rule="evenodd"
+          d="M84 72 H142 A30 30 0 0 1 150 130.9 L174 178 H146 L124 134 H110 V178 H84 Z
+             M110 94 V112 H140 A9 9 0 0 0 140 94 Z"/>
+    <!-- rising spark -->
+    <path d="M186 48 L190.5 59.5 L202 64 L190.5 68.5 L186 80 L181.5 68.5 L170 64 L181.5 59.5 Z" fill="#B9F26B"/>
+    <!-- chevron (rising rank) -->
+    <path d="M96 196 L128 212 L160 196" fill="none" stroke="#B9F26B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

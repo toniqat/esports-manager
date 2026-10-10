@@ -137,7 +137,7 @@ mouse_filter = 2
 color = Color(0.878, 0.271, 0.271, 1)
 
 [node name="Wallet" type="HBoxContainer" parent="TopBar"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet(). One LobbyCurrencyPill per WALLET row, right-aligned left of %SettingsButton (12 px gap); grows to the left."
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _sync_wallet() · LobbyScreen.gd _chrome_base (slides up off-screen in scenario mode). One LobbyCurrencyPill per WALLET row, right-aligned left of %SettingsButton (12 px gap); grows to the left."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
@@ -216,7 +216,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="ActionBar" type="Control" parent="SafeBottom"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _bar · LobbyScreen.gd _lift_bar() · LobbyScreen.gd _place_tab()"
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _bar · LobbyScreen.gd _lift_bar() · LobbyScreen.gd _place_tab() · LobbyScreen.gd _chrome_base (slides down off-screen in scenario mode)"
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
@@ -230,7 +230,7 @@ grow_vertical = 0
 mouse_filter = 2
 
 [node name="NavBar" type="Control" parent="SafeBottom"]
-editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab(). Floating capsule, 40 px from the sides and 32 px above the safe bottom."
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _place_tab() · LobbyScreen.gd _chrome_base (slides down off-screen in scenario mode). Floating capsule, 40 px from the sides and 32 px above the safe bottom."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12

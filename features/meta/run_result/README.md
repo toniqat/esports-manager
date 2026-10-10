@@ -116,7 +116,8 @@ RunResult (Control, full rect, theme = OutgameTheme.tres, script RunResultScreen
   - **선수 성장**: per pilot `pilot_exp` and an amber `Lv a → b` chip from `profile_delta.pilots` (EXP raises
     the level up to the rank's level cap; rank-ups are bought in the collection).
 - Bottom bar, one full-width primary button: `로비로` → `Lobby.tscn`; when `outcome == "abandon"`
-  `새 런` → `RunSetup.tscn`. Both call `reset_season_state()` first.
+  `새 런` → `Lobby.tscn` with `LobbyScreen.open_scenario_on_enter = true` (the lobby opens on its scenario
+  pick, which then enters `RunSetup.tscn`). Both call `reset_season_state()` first.
 - `last_run_result` empty (scene opened directly) → empty-state card + `로비로`.
 - SUCCESS haptic on open for a clear.
 

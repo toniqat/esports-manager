@@ -1,15 +1,14 @@
 class_name ChoiceListView
 extends Control
 
-# 런 준비의 "카드 한 장 고르기" 단계 공용 틀 — 시나리오 · 팀 단계가 이걸 잇는다.
+# 런 준비의 "카드 한 장 고르기" 단계 공용 틀 — 팀 단계(`TeamStepView`)가 이걸 잇는다.
 #
 #   단계 머리글 아래(`RunSetupScreen.content_top()`)부터: 안내 한 줄 → 카드 목록
 #   (세로 스크롤) → 하단 바 `뒤로`(1) / `다음`(2)
 #
 # **모양의 정본은 `UI_View_ChoiceListView.tscn`** (안내 줄 · 스크롤 목록 · 카드 간격 · 하단 바).
-# 잇는 단계는 그 씬을 상속한 씬(`UI_View_ScenarioStepView.tscn` · `UI_View_TeamStepView.tscn` — 루트
-# 스크립트만 바꾼다)이고, 카드 한 장은 단계마다의 아이템 씬(`UI_Comp_ScenarioCard.tscn` ·
-# `UI_Comp_TeamCard.tscn`)이다. 생성은 각 단계의 `create()`.
+# 잇는 단계는 그 씬을 상속한 씬(`UI_View_TeamStepView.tscn` — 루트 스크립트만 바꾼다)이고,
+# 카드 한 장은 단계마다의 아이템 씬(`UI_Comp_TeamCard.tscn`)이다. 생성은 각 단계의 `create()`.
 #
 # 카드는 통째로 하나의 `Button` 이다 — 누르면 고른 것이 되고(앰버 테두리),
 # `다음` 은 하나를 골랐을 때만 풀린다. 카드는 `ScrollContainer` 안에 있으므로
@@ -109,24 +108,23 @@ func _refresh() -> void:
 	(%FloatingBarButton_Next as Button).disabled = selected_id < 0
 
 
-## F6 단독 실행 미리보기 (`resources/UiPreview.gd`) — 잇는 단계(`ScenarioStepView` ·
-## `TeamStepView`)는 실제 표(`RunRules`)로 이미 찼으니 둘째 카드를 고른 상태로 둔다.
-## 이 틀 씬만 띄우면 카드가 없으므로 손으로 적은 시나리오 카드 세 장을 꽂는다(더미 글 — l10n 제외).
+## F6 단독 실행 미리보기 (`resources/UiPreview.gd`) — 잇는 단계(`TeamStepView`)는 실제 표
+## (`RunRules`)로 이미 찼으니 둘째 카드를 고른 상태로 둔다. 이 틀 씬만 띄우면 카드가 없으므로
+## 실제 팀 표의 앞 세 장을 꽂는다(안내 줄은 더미 글 — l10n 제외).
 func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.stage(self)
 	UiPreview.trace(back_requested)
 	UiPreview.trace(next_requested)
 	if _cards.is_empty():
 		(%Hint as Label).text = "카드 한 장을 고르세요 — 고르기 전에는 다음이 잠깁니다."
-		var samples: Array = [
-			{"id": 0, "name": "표준 시즌", "salary_cap": 260, "desc": "보통 난이도 — 스타 둘까지는 넉넉합니다."},
-			{"id": 1, "name": "도전자의 시즌", "salary_cap": 240, "desc": "캡이 빠듯합니다 — 신인을 섞어야 합니다."},
-			{"id": 2, "name": "언더독", "salary_cap": 220, "desc": "가장 어렵습니다 — 레벨을 낮춰 캡을 맞추세요."},
-		]
-		for raw in samples:
+		var teams: Array = RunRules.team_packages()
+		var max_budget: int = 1
+		for raw in teams:
+			max_budget = maxi(max_budget, int((raw as Dictionary).get("budget", 0)))
+		for raw in teams.slice(0, 3):
 			var item: Dictionary = raw
-			var card := ScenarioCard.create()
-			card.fill(item)
+			var card := TeamCard.create()
+			card.fill(item, max_budget)
 			(%List as Control).add_child(card)
 			card.pressed.connect(_on_card_pressed.bind(int(item["id"])))
 			_cards[int(item["id"])] = card

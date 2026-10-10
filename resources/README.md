@@ -1135,6 +1135,11 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `PositionBadgePanel` | AccentChip | `PositionBadge` root (r8, 1px `POSITION_BADGE_EDGE`, padding `POSITION_BADGE_PAD_H` / `_V`) — shared widget in `resources/`, used on outgame and battle screens | role fill (`set_role`) |
 | `StepChipPanel` | AccentChip | `StepChip` root (pill) | state fill / border (`paint`) |
 | `TeamDraftGridBack` | Card | `TeamDraftView` `GridBack` | — |
+| `ScenarioSelectDot` · `ScenarioSelectDotOn` | SunkPanel | `ScenarioSelectView` league index pills (white 28 % / `ACCENT`, r7) | — |
+| `ScenarioSelectCapPill` | Button | `ScenarioSelectView` salary-cap pill (white 10 / 16 / 22 % glass, white 18 % 2px border, fully round) — tap = tooltip | — |
+| `ScenarioSelectArrow` | Button | `ScenarioSelectView` ‹ › league arrows — no plate in any state (empty boxes = tap area only), glyph drawn by `ScenarioArrowGlyph` | — |
+| `ScenarioSelectLeagueName` · `ScenarioSelectCapValue` | Label (white, soft dark shadow) | league name (44) · cap value in the pill (30) on the dark sheet | — |
+| `ScenarioSelectSlab` | SunkPanel | `ScenarioSelectView` giant rotated slab under the info row (`RAIL` 93 %, r0, black 35 % shadow 36 — lifts the diagonal edge off the art) | — |
 | `ShopRowPanel` | Card | `ShopCraftRow` · `ShopExchangeRow` · `ShopShardRow` roots | — |
 | `ShopBannerCard` · `ShopDevRowPanel` | Card · SunkPanel | `ShopTab` `Banner` · `DevRow` | banner fill = pool (`_fill_gacha`) |
 | `TrainingCourseCardFrame` · `TrainingCourseGradeBand` | Card · SunkPanel | `TrainingCourseCard` root · `Band` | grade colour (`fill` / `set_selected`) |

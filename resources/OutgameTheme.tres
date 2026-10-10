@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=204 format=3 uid="uid://co7tw5omdwmyd"]
+[gd_resource type="Theme" load_steps=219 format=3 uid="uid://co7tw5omdwmyd"]
 
 [sub_resource type="StyleBoxFlat" id="AccentChip_panel"]
 content_margin_left = 20.0
@@ -1447,6 +1447,99 @@ shadow_color = Color(0.11, 0.11, 0.18, 0.1)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_disabled"]
+
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_focus"]
+
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_hover"]
+
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_hover_pressed"]
+
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_normal"]
+
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectArrow_pressed"]
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectCapPill_disabled"]
+bg_color = Color(1, 1, 1, 0.1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.18)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxEmpty" id="ScenarioSelectCapPill_focus"]
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectCapPill_hover"]
+bg_color = Color(1, 1, 1, 0.16)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.18)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectCapPill_hover_pressed"]
+bg_color = Color(1, 1, 1, 0.22)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.18)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectCapPill_normal"]
+bg_color = Color(1, 1, 1, 0.1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.18)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectCapPill_pressed"]
+bg_color = Color(1, 1, 1, 0.22)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.18)
+corner_radius_top_left = 999
+corner_radius_top_right = 999
+corner_radius_bottom_right = 999
+corner_radius_bottom_left = 999
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectDot_panel"]
+bg_color = Color(1, 1, 1, 0.28)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectDotOn_panel"]
+bg_color = Color(0.961, 0.651, 0.137, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="ScenarioSelectSlab_panel"]
+bg_color = Color(0.11, 0.11, 0.122, 0.93)
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 36
+
 [sub_resource type="StyleBoxFlat" id="ScreenBackground_panel"]
 content_margin_left = 0.0
 content_margin_top = 0.0
@@ -2743,6 +2836,52 @@ RunResultSectionCardAmber/base_type = &"Card"
 RunResultSectionCardAmber/styles/panel = SubResource("RunResultSectionCardAmber_panel")
 RunResultTraitCard/base_type = &"Card"
 RunResultTraitCard/styles/panel = SubResource("RunResultTraitCard_panel")
+ScenarioSelectArrow/base_type = &"Button"
+ScenarioSelectArrow/colors/font_color = Color(1, 1, 1, 1)
+ScenarioSelectArrow/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+ScenarioSelectArrow/colors/font_focus_color = Color(1, 1, 1, 1)
+ScenarioSelectArrow/colors/font_hover_color = Color(1, 1, 1, 1)
+ScenarioSelectArrow/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+ScenarioSelectArrow/colors/font_pressed_color = Color(1, 1, 1, 1)
+ScenarioSelectArrow/font_sizes/font_size = 26
+ScenarioSelectArrow/styles/disabled = SubResource("ScenarioSelectArrow_disabled")
+ScenarioSelectArrow/styles/focus = SubResource("ScenarioSelectArrow_focus")
+ScenarioSelectArrow/styles/hover = SubResource("ScenarioSelectArrow_hover")
+ScenarioSelectArrow/styles/hover_pressed = SubResource("ScenarioSelectArrow_hover_pressed")
+ScenarioSelectArrow/styles/normal = SubResource("ScenarioSelectArrow_normal")
+ScenarioSelectArrow/styles/pressed = SubResource("ScenarioSelectArrow_pressed")
+ScenarioSelectCapPill/base_type = &"Button"
+ScenarioSelectCapPill/colors/font_color = Color(1, 1, 1, 1)
+ScenarioSelectCapPill/colors/font_disabled_color = Color(0.722, 0.722, 0.749, 1)
+ScenarioSelectCapPill/colors/font_focus_color = Color(1, 1, 1, 1)
+ScenarioSelectCapPill/colors/font_hover_color = Color(1, 1, 1, 1)
+ScenarioSelectCapPill/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+ScenarioSelectCapPill/colors/font_pressed_color = Color(1, 1, 1, 1)
+ScenarioSelectCapPill/font_sizes/font_size = 26
+ScenarioSelectCapPill/styles/disabled = SubResource("ScenarioSelectCapPill_disabled")
+ScenarioSelectCapPill/styles/focus = SubResource("ScenarioSelectCapPill_focus")
+ScenarioSelectCapPill/styles/hover = SubResource("ScenarioSelectCapPill_hover")
+ScenarioSelectCapPill/styles/hover_pressed = SubResource("ScenarioSelectCapPill_hover_pressed")
+ScenarioSelectCapPill/styles/normal = SubResource("ScenarioSelectCapPill_normal")
+ScenarioSelectCapPill/styles/pressed = SubResource("ScenarioSelectCapPill_pressed")
+ScenarioSelectCapValue/base_type = &"Label"
+ScenarioSelectCapValue/colors/font_color = Color(1, 1, 1, 1)
+ScenarioSelectCapValue/colors/font_shadow_color = Color(0, 0, 0, 0.5)
+ScenarioSelectCapValue/constants/shadow_offset_x = 0
+ScenarioSelectCapValue/constants/shadow_offset_y = 2
+ScenarioSelectCapValue/font_sizes/font_size = 30
+ScenarioSelectDot/base_type = &"SunkPanel"
+ScenarioSelectDot/styles/panel = SubResource("ScenarioSelectDot_panel")
+ScenarioSelectDotOn/base_type = &"SunkPanel"
+ScenarioSelectDotOn/styles/panel = SubResource("ScenarioSelectDotOn_panel")
+ScenarioSelectLeagueName/base_type = &"Label"
+ScenarioSelectLeagueName/colors/font_color = Color(1, 1, 1, 1)
+ScenarioSelectLeagueName/colors/font_shadow_color = Color(0, 0, 0, 0.5)
+ScenarioSelectLeagueName/constants/shadow_offset_x = 0
+ScenarioSelectLeagueName/constants/shadow_offset_y = 2
+ScenarioSelectLeagueName/font_sizes/font_size = 44
+ScenarioSelectSlab/base_type = &"SunkPanel"
+ScenarioSelectSlab/styles/panel = SubResource("ScenarioSelectSlab_panel")
 ScreenBackground/base_type = &"Panel"
 ScreenBackground/styles/panel = SubResource("ScreenBackground_panel")
 SeasonPilotCardBare/base_type = &"Card"

@@ -9,15 +9,16 @@ extends Control
 # no change line):
 #   stress     `show_stress(value, delta)` — icon + ring in the stress band colour (≤30 green ·
 #              ≤60 yellow · ≤100 orange · >100 red), ring full at `STRESS_LAP`, a second lap
-#              (dark red) on top above it; the exact value under the ring, `(+N)` / `(-N)`
+#              (dark red) on top above it; the exact value under the ring, `+N` / `-N`
 #   trust      `show_trust(points, delta_points)` — pink heart, the trust **level** inside it,
 #              ring = progress inside the level (`MentalSystem.level_of_trust` /
-#              `progress_of_trust`), `64%` under it, `(+N%)` in percent of a level (a level-up
+#              `progress_of_trust`), `64%` under it, `+N%` in percent of a level (a level-up
 #              wraps: the ring shows the new level's part and the old level's rest as added)
 # Change segment (`GaugeRing.seg_*`): the ring holds the value before the change, the added
-# part in a lighter tone (rise) or the removed part as a faint ghost (fall). `(+N)` is red for
+# part in a lighter tone (rise) or the removed part as a faint ghost (fall). `+N` is red for
 # stress, green for trust (and the reverse for a fall).
 # `set_dimmed(true)` lays the round black mask (`%Mask`) over the ring and fades the numbers.
+# `set_size_factor(f)` grows the whole gauge from its scene sizes (week screen: 1.2).
 # Colours are data (code).
 
 const ICON_STRESS: Texture2D = preload("res://resources/images/ui/gauge/stress.svg")
@@ -47,6 +48,8 @@ const DIM_TEXT_ALPHA: float = 0.35
 @onready var _value: Label = %Value
 @onready var _delta: Label = %Delta
 @onready var _mask: Control = %Mask
+## Scene sizes `set_size_factor` scales from (read on its first call).
+var _base_sizes: Dictionary = {}
 
 
 func _ready() -> void:
@@ -75,7 +78,7 @@ func show_stress(v: int, delta: int = 0) -> void:
 	_value.theme_type_variation = &"NegativeLabel" if v > STRESS_LAP else &"BodyLabel"
 	_segment(_lap_of(before) + _over_of(before, s_max), _lap_of(v) + _over_of(v, s_max), delta,
 			col, stress_color(before), C_DARK_RED)
-	_show_delta("(%+d)" % delta, delta, true)
+	_show_delta("%+d" % delta, delta, true)
 
 
 ## `points` = trust points now; `delta_points` = the change that led to them.
@@ -100,7 +103,39 @@ func show_trust(points: int, delta_points: int = 0) -> void:
 	else:
 		_segment(p_before, p_after, delta_points, C_PINK, C_PINK, C_PINK)
 	var d_pct: int = roundi(float(delta_points) * 100.0 / float(per))
-	_show_delta("(%+d%%)" % d_pct, d_pct if delta_points != 0 else 0, false)
+	_show_delta("%+d%%" % d_pct, d_pct if delta_points != 0 else 0, false)
+
+
+## Scales the whole gauge (ring, stroke, icon, centre / value / change text and their rows)
+## by `f` from the scene sizes (1.0 = as in the scene). The gauge's minimum size follows, so a
+## container lays it out at the new size. Week screen: 1.2 (`SeasonPilotCard.set_week_layout`).
+func set_size_factor(f: float) -> void:
+	if _base_sizes.is_empty():
+		_base_sizes = {
+			"min": custom_minimum_size,
+			"ring": _ring.custom_minimum_size,
+			"stroke": _ring.width,
+			"icon": _icon.offset_right,
+			"center": _center.get_theme_font_size(&"font_size"),
+			"value_h": _value.custom_minimum_size.y,
+			"value": _value.get_theme_font_size(&"font_size"),
+			"delta_h": _delta.custom_minimum_size.y,
+			"delta": _delta.get_theme_font_size(&"font_size"),
+		}
+	var b: Dictionary = _base_sizes
+	custom_minimum_size = ((b["min"] as Vector2) * f).round()
+	_ring.custom_minimum_size = ((b["ring"] as Vector2) * f).round()
+	_ring.width = float(b["stroke"]) * f
+	var half: float = float(b["icon"]) * f
+	_icon.offset_left = -half
+	_icon.offset_top = -half
+	_icon.offset_right = half
+	_icon.offset_bottom = half
+	_center.add_theme_font_size_override(&"font_size", roundi(float(b["center"]) * f))
+	_value.custom_minimum_size.y = roundf(float(b["value_h"]) * f)
+	_value.add_theme_font_size_override(&"font_size", roundi(float(b["value"]) * f))
+	_delta.custom_minimum_size.y = roundf(float(b["delta_h"]) * f)
+	_delta.add_theme_font_size_override(&"font_size", roundi(float(b["delta"]) * f))
 
 
 func set_dimmed(on: bool) -> void:

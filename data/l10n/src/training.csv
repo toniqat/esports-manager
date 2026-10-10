@@ -94,3 +94,4 @@ tx_12SWRVVP9V,training.view.fac_short.train_growth,active,Short name of the 성�
 tx_AJKVZQH4TF,training.view.fac_mult,active,Training screen effect line item: facility short name + EXP multiplier,,,{fac} ×{mult},{fac} ×{mult},draft,20783e92
 tx_EJXYR1ZTRE,training.view.effect_fac,active,Training screen effect line: per-facility EXP multipliers,,,훈련 효과 {parts},Training effect {parts},draft,982d9615
 tx_BXBGNK9B53,training.view.effect_fac_breakdown,active,Training screen effect line + finance / trait parts,,,훈련 효과 {parts} ({extra}),Training effect {parts} ({extra}),draft,2ded2fa9
+tx_QSS0PEAPRT,training.level.chip_prefix,active,SeasonPilotCard level chip: small faded prefix before the 깨달음 level number (the number is a separate label),,,Lv,Lv,draft,1aa6e8ca

@@ -149,7 +149,7 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   and the line-up of tokens sharing a spot: `base_map/README.md`. There is no caption over the map (the old `%Hint`
   "what Next does now" line was removed 2026-10) and no facility research bubbles (hub only).
 * **Pilot cards under the map** (`%PilotRow`, every day, both halves): `SeasonPilotCard` × 5 in seat order (portrait in the 깨달음 level ring, the two stress · trust gauges, no role badge, no card background); each gauge shows
-  **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `(+N)` stress / `(+N%)` trust
+  **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `+N` stress / `+N%` trust (no brackets)
   under the value, nothing at 0; they pop when the result FX starts), and the portrait ring shows the day's level EXP as a
   light segment. `_day_delta(pid, kind)` (kind `stress` · `trust` · `tlexp`) = training row `stress` / `tlexp` + self-outing relief (stress) + `kind` / `<kind>_all` notes of the
   day's talk / incident / afternoon (visit · evening) outcomes. Not counted (not in the day record): the Sunday press answer,

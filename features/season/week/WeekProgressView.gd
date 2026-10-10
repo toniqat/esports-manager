@@ -158,6 +158,7 @@ func _ready() -> void:
 	_action_btn.pressed.connect(_on_action_pressed)
 	_pilot_cards = _pilot_row.get_children()
 	for c in _pilot_cards:
+		(c as SeasonPilotCard).set_week_layout()
 		(c as SeasonPilotCard).pressed.connect(_on_pilot_card_pressed)
 	# Drag / fling scrolling instead of the engine's touch drag.
 	DragScroll.attach(_list_scroll)
@@ -686,7 +687,7 @@ func _result_lines(row: Dictionary) -> Array:
 
 # ── 하단 선수 카드 줄 ─────────────────────────────────────────────────────────
 ## The five cards under the map (every day). The gauges show the day's changes
-## (`_day_delta`: stress · trust points): ring segment + `(+N)` / `(+N%)` under the value,
+## (`_day_delta`: stress · trust points): ring segment + `+N` / `+N%` under the value,
 ## none at 0; the portrait ring shows the day's 깨달음 level EXP (`tlexp`) as a light segment.
 func _refresh_pilot_row() -> void:
 	var s: Dictionary = _gm.season_state

@@ -4,12 +4,13 @@ extends Panel
 # Small vertical pilot card shown five in a row (seat order) on the season hub and at the
 # bottom of the week screen: round portrait inside a **level ring** on top (`ProgressRing` =
 # the run-only 깨달음 level's EXP bar, `TrainingLevel.progress`; LINK blue, ACCENT while capped =
-# limit break due or max) with the level chip `Lv N` at its bottom-left (`set_training_level`,
-# accent while a limit break is due), then two gauges (`PilotGauge`: stress · trust). No card
+# limit break due or max) with the level chip `Lv N` centred on the ring's top edge like a tab
+# (`set_training_level`; painted in the ring's colour, small faded `Lv` + the number), then two
+# gauges (`PilotGauge`: stress · trust). No card
 # background (`SeasonPilotCardBare`): the parts sit on the page. Each gauge shows its value
 # under the ring (stress number · trust percent); the week screen adds that day's changes
-# (`set_day_deltas`: gauge ring segment + `(+N)` / `(+N%)` under the value, the day's level EXP
-# as a light segment on the portrait ring). No position badge — the seat order (`GameEnums.ROLE_DISPLAY_ORDER`) says the role. Tapping the card emits `pressed(pilot_id)`; the
+# (`set_day_deltas`: gauge ring segment + `+N` / `+N%` under the value, the day's level EXP
+# as a light segment on the portrait ring) and is drawn larger (`set_week_layout`). No position badge — the seat order (`GameEnums.ROLE_DISPLAY_ORDER`) says the role. Tapping the card emits `pressed(pilot_id)`; the
 # screens open `SeasonPilotDetail` with it.
 #
 # **Layout lives in `UI_Comp_SeasonPilotCard.tscn`.** This script fills `%` nodes and paints
@@ -18,6 +19,10 @@ extends Panel
 signal pressed(pilot_id: int)
 
 const SCENE_PATH: String = "res://features/season/UI_Comp_SeasonPilotCard.tscn"
+## `set_week_layout` growth from the scene sizes: portrait (ring · portrait · level chip) and
+## the two gauges (ring · icon · numbers).
+const WEEK_PORTRAIT_SCALE: float = 1.1
+const WEEK_GAUGE_SCALE: float = 1.2
 
 ## Pilot shown on this card (-1 = empty seat).
 var pilot_id: int = -1
@@ -26,6 +31,10 @@ var _stress: int = 0
 var _trust: int = 0
 ## `set_gauges_visible` — false keeps the two gauges (and their value / change lines) hidden.
 var _gauges_on: bool = true
+## Colour of the portrait ring (`_set_ring`) — the level chip is painted with it.
+var _ring_color: Color = OutgameTheme.LINK
+## `set_week_layout` already applied.
+var _week_layout: bool = false
 
 
 static func create() -> SeasonPilotCard:
@@ -71,21 +80,77 @@ func show_empty() -> void:
 	pilot_id = -1
 	_draw_portrait(null)
 	_set_ring(0.0, 0.0, OutgameTheme.LINK)
-	(%LevelChip as Control).visible = false
+	set_training_level(0)
 	_show_gauges(false)
 	(%Hit as Button).disabled = true
 
 
-## 깨달음 level chip: `level` < 1 hides it; `alert` (a limit break is due) paints it in the
-## accent colour instead of the dark rail.
-func set_training_level(level: int, alert: bool) -> void:
+## 깨달음 level chip: `level` < 1 hides it. The `Lv` prefix is a fixed scene label; the chip's
+## colour follows the portrait ring (`_set_ring`).
+func set_training_level(level: int) -> void:
 	var chip: Panel = %LevelChip
 	chip.visible = level >= 1
-	if not chip.visible:
+	if chip.visible:
+		(%LevelText as Label).text = str(level)
+
+
+## Week screen only: the portrait (ring · portrait · level chip) grows by `WEEK_PORTRAIT_SCALE`
+## and the two gauges by `WEEK_GAUGE_SCALE`, all from the scene sizes and still centred; the
+## gauges move down under the bigger ring (same gap) and `custom_minimum_size.y` grows to fit
+## (scene 244 → 274). Call once after `_ready` (again = no-op); the portrait is redrawn if a
+## pilot is already shown.
+func set_week_layout() -> void:
+	if _week_layout:
 		return
-	(%LevelText as Label).text = Loc.t(L.TRAINING_LEVEL_CHIP, {"n": level})
-	chip.add_theme_stylebox_override("panel", OutgameTheme.flat_style(
-			OutgameTheme.ACCENT if alert else OutgameTheme.RAIL, int(chip.custom_minimum_size.y * 0.5)))
+	_week_layout = true
+	var ring: ProgressRing = %Ring
+	var gauges: HBoxContainer = %Gauges
+	var gap: float = gauges.offset_top - ring.offset_bottom
+	var tail: float = custom_minimum_size.y - gauges.offset_bottom
+	var pf: float = WEEK_PORTRAIT_SCALE
+	# Ring: centred, same top, diameter × pf.
+	var d: float = roundf((ring.offset_right - ring.offset_left) * pf)
+	ring.offset_left = -d * 0.5
+	ring.offset_right = d * 0.5
+	ring.offset_bottom = ring.offset_top + d
+	ring.width *= pf
+	var slot: Control = %Portrait
+	var inset: float = roundf(slot.offset_left * pf)
+	slot.offset_left = inset
+	slot.offset_top = inset
+	slot.offset_right = d - inset
+	slot.offset_bottom = d - inset
+	# Level chip: × pf, still centred on the ring's top stroke (kept inside the card).
+	var chip: Panel = %LevelChip
+	var chip_size: Vector2 = (chip.custom_minimum_size * pf).round()
+	chip.custom_minimum_size = chip_size
+	chip.offset_left = -chip_size.x * 0.5
+	chip.offset_right = chip_size.x * 0.5
+	chip.offset_top = maxf(0.0, roundf(ring.offset_top + ring.width * 0.5 - chip_size.y * 0.5))
+	chip.offset_bottom = chip.offset_top + chip_size.y
+	_scale_font(%LevelText, pf)
+	_scale_font(%LevelPrefix, pf)
+	var pad: MarginContainer = %LevelPrefixPad
+	pad.add_theme_constant_override(&"margin_top",
+			roundi(float(pad.get_theme_constant(&"margin_top")) * pf))
+	_paint_chip()
+	# Gauges: × WEEK_GAUGE_SCALE (sizes, not `scale`), right under the bigger ring.
+	var gf: float = WEEK_GAUGE_SCALE
+	gauges.add_theme_constant_override(&"separation",
+			roundi(float(gauges.get_theme_constant(&"separation")) * gf))
+	for g in [%PilotGauge_Stress, %PilotGauge_Trust]:
+		(g as PilotGauge).set_size_factor(gf)
+	var gauges_h: float = roundf((gauges.offset_bottom - gauges.offset_top) * gf)
+	gauges.offset_top = ring.offset_bottom + gap
+	gauges.offset_bottom = gauges.offset_top + gauges_h
+	custom_minimum_size.y = gauges.offset_bottom + tail
+	if pilot_id >= 0:
+		_draw_portrait(PilotImages.circle_for(pilot_id))
+
+
+static func _scale_font(lbl: Label, f: float) -> void:
+	lbl.add_theme_font_size_override(&"font_size",
+			roundi(float(lbl.get_theme_font_size(&"font_size")) * f))
 
 
 func _show_gauges(on: bool) -> void:
@@ -105,11 +170,10 @@ func _run_state() -> Dictionary:
 func _show_run_level(pid: int, exp_delta: int) -> void:
 	var state: Dictionary = _run_state()
 	if not TrainingLevel.has_level(state, pid):
-		set_training_level(0, false)
+		set_training_level(0)
 		_set_ring(0.0, 0.0, OutgameTheme.LINK)
 		return
-	set_training_level(TrainingLevel.level(state, pid),
-			TrainingLevel.awaiting_break(state, pid))
+	set_training_level(TrainingLevel.level(state, pid))
 	var capped: bool = TrainingLevel.is_capped(state, pid)
 	var now: float = TrainingLevel.progress(state, pid)
 	var before: float = now
@@ -128,7 +192,8 @@ func _show_run_level(pid: int, exp_delta: int) -> void:
 	_set_ring(before, now, OutgameTheme.ACCENT if capped else OutgameTheme.LINK)
 
 
-## Portrait ring: solid fill to `before`, the light change segment `before` → `now`.
+## Portrait ring: solid fill to `before`, the light change segment `before` → `now`; the
+## level chip takes the same colour.
 func _set_ring(before: float, now: float, col: Color) -> void:
 	var ring: ProgressRing = %Ring
 	ring.color = col
@@ -136,6 +201,15 @@ func _set_ring(before: float, now: float, col: Color) -> void:
 	ring.seg_from = before
 	ring.seg_to = now
 	ring.seg_color = col.lerp(Color.WHITE, PilotGauge.RISE_LIGHTEN)
+	_ring_color = col
+	_paint_chip()
+
+
+## Level chip background = the ring colour (pill, radius = half its height).
+func _paint_chip() -> void:
+	var chip: Panel = %LevelChip
+	chip.add_theme_stylebox_override(&"panel", OutgameTheme.flat_style(
+			_ring_color, int(chip.custom_minimum_size.y * 0.5)))
 
 
 ## The gauges with the changes that led to the shown values (week screen: the day's stress /
@@ -168,15 +242,16 @@ func _on_hit() -> void:
 		pressed.emit(pilot_id)
 
 
-## F6 단독 실행 미리보기 — 신뢰가 반을 넘고 위축된 미드 선수 한 장, 오늘 스트레스 +12 · 신뢰 +3,
-## 한계돌파 대기(강조색) 레벨 칩 (`resources/UiPreview.gd`; 런 밖이라 링은 손으로 채운다).
-## 얼굴이 나오게 실제 선수 id(Corin)를 쓴다.
+## F6 preview — one shaken mid pilot with trust past half, today's stress +12 · trust +3,
+## level chip `Lv 3` in the ring's LINK colour while the ring fills 0.55 → 0.8
+## (`resources/UiPreview.gd`; outside a run, so the ring is filled by hand). Uses a real pilot
+## id (Corin) so the face shows.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	var t_max: int = ConstTable.int_of("TRUST_MAX")
 	show_pilot(2, int(float(t_max) * 0.6),
 			ConstTable.int_of("STRESS_THRESHOLD") + 20)
 	set_day_deltas(12, 3)
-	set_training_level(2, true)
+	set_training_level(3)
 	_set_ring(0.55, 0.8, OutgameTheme.LINK)
 	UiPreview.trace(pressed, "pressed")

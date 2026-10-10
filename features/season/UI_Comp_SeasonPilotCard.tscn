@@ -7,7 +7,7 @@
 
 [node name="SeasonPilotCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the progress ring (깨달음 level EXP bar, TrainingLevel.progress) on top with the level chip at its bottom-left, then two gauges (%Gauges: stress · trust, PilotGauge; each gauge shows its value under the ring (stress number, trust %) and, on the week screen, today's change on the ring + (+N) / (+N%) under the value; the portrait ring shows the day's level EXP as a light segment). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
+editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the progress ring (깨달음 level EXP bar, TrainingLevel.progress) on top with the level chip centred on the ring's top edge (ring colour), then two gauges (%Gauges: stress · trust, PilotGauge; each gauge shows its value under the ring (stress number, trust %) and, on the week screen, today's change on the ring + +N / +N% under the value; the portrait ring shows the day's level EXP as a light segment). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
 custom_minimum_size = Vector2(0, 244)
 offset_right = 190.0
 offset_bottom = 244.0
@@ -18,7 +18,7 @@ script = ExtResource("1_script")
 
 [node name="Ring" type="Control" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_day_deltas()
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_day_deltas() · set_week_layout()
 ProgressRing: track + arc of the 깨달음 level EXP bar (TrainingLevel.progress; code paints LINK, ACCENT while capped = limit break due / max) + the day's EXP as a light segment (week screen)."
 layout_mode = 1
 anchors_preset = 5
@@ -34,7 +34,7 @@ script = ExtResource("4_ring")
 
 [node name="Portrait" type="Control" parent="Ring"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd _draw_portrait()
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd _draw_portrait() · set_week_layout()
 Slot for the round portrait (code draws OutgameTheme.add_round_portrait here, diameter = this slot's width), inset inside the ring."
 anchors_preset = 0
 offset_left = 12.0
@@ -45,37 +45,67 @@ mouse_filter = 2
 
 [node name="LevelChip" type="Panel" parent="."]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_training_level() · show_empty()
-깨달음 level chip (Lv N, TrainingLevel.level) at the portrait's bottom-left; code paints RAIL, ACCENT while a limit break is due (TrainingLevel.awaiting_break). Hidden for pilots without a level."
-custom_minimum_size = Vector2(60, 34)
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_training_level() · _set_ring() · show_empty() · set_week_layout()
+깨달음 level chip (Lv N, TrainingLevel.level) on top of the portrait, centred on the ring's top stroke like a tab (scene: ring stroke 12..20, chip 0..32). Code paints it in the ring colour (LINK while filling, ACCENT while capped = limit break due / max). Hidden for pilots without a level."
+custom_minimum_size = Vector2(64, 32)
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -82.0
-offset_top = 120.0
-offset_right = -22.0
-offset_bottom = 154.0
+offset_left = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
 mouse_filter = 2
 theme_type_variation = &"ProgressFill"
 
-[node name="LevelText" type="Label" parent="LevelChip"]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_training_level()"
+[node name="LevelRow" type="HBoxContainer" parent="LevelChip"]
+editor_description = "Small faded \"Lv\" prefix + the level number, centred in the chip."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 1
+alignment = 1
+
+[node name="LevelPrefixPad" type="MarginContainer" parent="LevelChip/LevelRow"]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_week_layout()
+Top margin drops the small prefix so it sits on the number's baseline."
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_top = 7
+
+[node name="LevelPrefix" type="Label" parent="LevelChip/LevelRow/LevelPrefixPad"]
+unique_name_in_owner = true
+auto_translate_mode = 1
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_week_layout()
+\"Lv\" prefix (l10n key in the scene): 50% of the number's font size, faded (modulate alpha)."
+modulate = Color(1, 1, 1, 0.6)
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+theme_override_font_sizes/font_size = 10
+text = "tx_QSS0PEAPRT"
+vertical_alignment = 1
+
+[node name="LevelText" type="Label" parent="LevelChip/LevelRow"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_training_level() · set_week_layout()
+The level number (code fills it), full size and opacity."
+layout_mode = 2
 theme_type_variation = &"OnFillLabel"
 theme_override_font_sizes/font_size = 20
-text = "Lv2"
-horizontal_alignment = 1
+text = "3"
 vertical_alignment = 1
 
 [node name="Gauges" type="HBoxContainer" parent="."]
-editor_description = "Two PilotGauge panels side by side (stress · trust), centred under the portrait."
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_week_layout()
+Two PilotGauge panels side by side (stress · trust), centred under the portrait."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -88,13 +118,13 @@ alignment = 1
 
 [node name="PilotGauge_Stress" parent="Gauges" instance=ExtResource("3_gauge")]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
-Stress: band-coloured icon, ring = 0..100 + overflow lap to STRESS_MAX, the value under it; week screen: today's change as a ring segment + (+N) / (-N) under the value (set_day_deltas)."
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_week_layout()
+Stress: band-coloured icon, ring = 0..100 + overflow lap to STRESS_MAX, the value under it; week screen: today's change as a ring segment + +N / -N under the value (set_day_deltas)."
 layout_mode = 2
 
 [node name="PilotGauge_Trust" parent="Gauges" instance=ExtResource("3_gauge")]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty()
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_week_layout()
 Trust: pink heart with the level inside, ring = progress inside the level, the progress % under it; week screen: today's change (+N%, set_day_deltas)."
 layout_mode = 2
 

@@ -14,6 +14,27 @@ theme = ExtResource("2_theme")
 theme_override_constants/separation = 0
 script = ExtResource("1_panel")
 
+[node name="TopPortrait" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _top · _place_top_portrait()
+Main pilot's round portrait, centred on the TOP EDGE of the hosting card (the nearest PanelContainer ancestor): half outside, half inside. Code sets this slot's height (room under the portrait's lower half) and the disc's offsets. The panel must be the first thing in the card. [필수] 경로로 참조: Disc."
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Disc" type="Control" parent="TopPortrait"]
+editor_description = "Portrait holder (OutgameTheme.add_round_portrait, diameter = min width). Anchored top-centre; code moves it up onto the card's top edge."
+custom_minimum_size = Vector2(144, 144)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -72.0
+offset_right = 72.0
+offset_bottom = 144.0
+grow_horizontal = 2
+mouse_filter = 2
+
 [node name="Blocks" type="VBoxContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _blocks
@@ -25,14 +46,14 @@ theme_override_constants/separation = 28
 [node name="BlockTemplate" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _block_tpl · _add_block()
-Hidden template of one pilot block. [필수] 경로로 참조: Portrait, Body/Name, Body/Rows, Body/Chips, Body/Lines."
+Hidden template of one pilot block. [필수] 경로로 참조: Portrait, Body/Rows, Body/Chips, Body/Lines. No name line — names are not shown in the result."
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 24
 
 [node name="Portrait" type="Control" parent="BlockTemplate"]
-editor_description = "Round portrait slot (OutgameTheme.add_round_portrait, diameter = min width). Hidden for the team block."
-custom_minimum_size = Vector2(104, 104)
+editor_description = "Round portrait slot (OutgameTheme.add_round_portrait, diameter = min width). Hidden for the main block (its portrait is %TopPortrait) and the team block; other pilots (e.g. team-wide stress) keep it."
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 size_flags_vertical = 0
 mouse_filter = 2
@@ -42,14 +63,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 12
-
-[node name="Name" type="Label" parent="BlockTemplate/Body"]
-auto_translate_mode = 2
-layout_mode = 2
-theme_type_variation = &"TitleLabel"
-theme_override_font_sizes/font_size = 28
-text = "Evelyn"
-vertical_alignment = 1
 
 [node name="Rows" type="VBoxContainer" parent="BlockTemplate/Body"]
 editor_description = "One %RowTemplate duplicate per bar (stress, trust, 깨달음 레벨 EXP)."
@@ -70,54 +83,69 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="RowTemplate" type="VBoxContainer" parent="."]
+[node name="RowTemplate" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — EventResultPanel.gd _row_tpl · _row()
-Hidden template of one bar row. [필수] 경로로 참조: Head/Label, Head/Value, Head/Delta, Bar."
+Hidden template of one bar row, one line: name · bar (expands) · value now (change) / max. [필수] 경로로 참조: Label, Bar, Value/Now, Value/Delta, Value/Max."
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 16
 
-[node name="Head" type="HBoxContainer" parent="RowTemplate"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 14
-
-[node name="Label" type="Label" parent="RowTemplate/Head"]
+[node name="Label" type="Label" parent="RowTemplate"]
 auto_translate_mode = 2
+editor_description = "Item name. Fixed width so the bars of all rows line up."
+custom_minimum_size = Vector2(216, 0)
 layout_mode = 2
-size_flags_horizontal = 3
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 24
 text = "Stress"
 vertical_alignment = 1
-
-[node name="Value" type="Label" parent="RowTemplate/Head"]
-auto_translate_mode = 2
-editor_description = "Value now (\"72 / 100\", \"64%\"); NegativeLabel while stress is over the threshold."
-layout_mode = 2
-theme_type_variation = &"BodyLabel"
-theme_override_font_sizes/font_size = 24
-text = "72 / 100"
-vertical_alignment = 1
-
-[node name="Delta" type="Label" parent="RowTemplate/Head"]
-auto_translate_mode = 2
-editor_description = "Change (PositiveLabel = welcome, NegativeLabel = not, CaptionLabel = ±0 when sources cancelled out)."
-custom_minimum_size = Vector2(84, 0)
-layout_mode = 2
-theme_type_variation = &"PositiveLabel"
-theme_override_font_sizes/font_size = 24
-text = "-15"
-horizontal_alignment = 2
-vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="Bar" type="Control" parent="RowTemplate"]
 editor_description = "EventResultBar (_draw): before → after fill, overflow / wrap."
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 mouse_filter = 2
 script = ExtResource("3_bar")
+
+[node name="Value" type="HBoxContainer" parent="RowTemplate"]
+editor_description = "Value now + change: counted rows \"7 (-5) / 100\", the rest \"12% (+12%)\". Min width keeps the bars the same length; text right-aligned."
+custom_minimum_size = Vector2(232, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="Now" type="Label" parent="RowTemplate/Value"]
+auto_translate_mode = 2
+editor_description = "Value now (\"72\", \"64%\", \"최고 레벨\"); NegativeLabel while stress is over the threshold."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 24
+text = "7"
+vertical_alignment = 1
+
+[node name="Delta" type="Label" parent="RowTemplate/Value"]
+auto_translate_mode = 2
+editor_description = "Change in brackets (PositiveLabel = welcome, NegativeLabel = not, CaptionLabel = ±0 when sources cancelled out). Hidden when there is none."
+layout_mode = 2
+theme_type_variation = &"PositiveLabel"
+theme_override_font_sizes/font_size = 24
+text = "(-5)"
+vertical_alignment = 1
+
+[node name="Max" type="Label" parent="RowTemplate/Value"]
+auto_translate_mode = 2
+editor_description = "\"/ max\" of counted rows (stress, 깨달음 레벨 EXP); hidden for percent / text values. Same look as Now."
+layout_mode = 2
+theme_type_variation = &"BodyLabel"
+theme_override_font_sizes/font_size = 24
+text = "/ 100"
+vertical_alignment = 1
 
 [node name="ChipTemplate" type="PanelContainer" parent="."]
 unique_name_in_owner = true

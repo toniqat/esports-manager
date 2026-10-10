@@ -248,7 +248,7 @@ tx_9M70CG3F4P,mental.ui.stress.mood.awaken,active,"스트레스 상태 - 경기 
 tx_526PWNR0KP,mental.ui.stress.mood.panic,active,"스트레스 상태 - 경기 중 시험 결과(-), 경기 끝까지",,,패닉,Panic,draft,c0a785ec
 tx_QZCW0ABV05,mental.ui.note.stress,active,멘탈 결과 칩 (MentalEvents.note_text),,,{name} 스트레스 {delta},{name} stress {delta},draft,e04dc6c2
 tx_29J1CQRVAJ,mental.ui.note.stress_all,active,멘탈 결과 칩,,,팀 전체 스트레스 {delta},Team stress {delta},draft,d5eaa849
-tx_TEE5MJ4DBZ,mental.ui.vn.result_title,active,"VnDialogueView (면담 · 외출 비주얼 노벨 대화) 결과 판 제목, 선택 뒤 신뢰 · 스트레스 칩 위",,,결과,Outcome,draft,71d855ac
+tx_TEE5MJ4DBZ,mental.ui.vn.result_title,deprecated,"VnDialogueView (면담 · 외출 비주얼 노벨 대화) 결과 판 제목, 선택 뒤 신뢰 · 스트레스 칩 위",,,결과,Outcome,draft,71d855ac
 tx_AM6AWHMZNN,mental.ui.mod_source.talk,active,Staff sheet temporary mod source / event kind label: morning talk after training,,,만남,Talk,draft,2036fe09
 tx_GN6EV5KMJW,mental.ui.preview.trust,active,Choice preview effect label (MentalEvents.preview_label),,,신뢰,Trust,draft,cd2eb323
 tx_ZJV1EWSDKB,mental.ui.preview.trust_all,active,Choice preview effect label,,,팀 신뢰,Team trust,draft,06b48372
@@ -378,7 +378,7 @@ tx_TN0T71EKCT,mental.ui.visit.coach_points,active,VisitMenu header: coach points
 tx_T4J6SR6Z2H,mental.ui.visit.cost,active,Focus training course row: coach point cost,,,{n}P,{n}P,draft,8fdfbd00
 tx_SBR87FT4VQ,mental.ui.visit.title_menu,active,VisitMenu caption: the three visit options,,,무엇을 함께할까요?,What will you do together?,draft,5c72e178
 tx_KW9B22X657,mental.ui.visit.title_courses,active,VisitMenu caption: course list,,,집중 훈련 코스를 고르세요,Pick a focus training course,draft,3961af13
-tx_KD8HT00MQD,mental.ui.visit.title_result,active,VisitMenu caption: result page,,,집중 훈련 결과,Focus training result,draft,1a3a0d14
+tx_KD8HT00MQD,mental.ui.visit.title_result,deprecated,VisitMenu caption: result page,,,집중 훈련 결과,Focus training result,draft,1a3a0d14
 tx_2XVVB7WQTS,mental.ui.visit.focus_note,active,VisitMenu line under the focus training option,,,코치 포인트를 써서 두 능력치를 집중 단련합니다,Spend coach points to drill two stats,draft,2fa70915
 tx_R7T4K0Y2S7,mental.ui.visit.story_note.weekday,active,"VisitMenu line under the story option, Mon–Fri",,,오늘 아침 훈련 이야기를 나눕니다,Talk about this morning's training,draft,cde38c77
 tx_WNWP86AD7S,mental.ui.visit.story_note.sat,active,"VisitMenu line under the story option, Saturday after the ban/pick",,,밴픽과 내일 탈 메크 이야기를 나눕니다,Talk about the ban/pick and tomorrow's mech,draft,1a0929bf

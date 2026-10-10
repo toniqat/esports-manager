@@ -842,9 +842,12 @@ static func merge_notes(notes: Array) -> Array:
 
 ## Result panel data (`EventResultPanel`) for notes applied just now: one block per pilot —
 ## `main_pid` first, then in note order — and a team block (pid -1) for notes without a pilot.
-## Block `{pid, name, rows: [row], chips: [String], lines: [String]}`:
-## - row `{kind: stress|trust|tlexp, label, value, delta, good, mode: "stack"|"wrap",
-##   from, to, end_full}` — a progress bar. `from` / `to` in bars (stack: 0..2, the part over 1
+## Block `{pid, name, rows: [row], chips: [String], lines: [String], main?: true}` (`main` = the
+## `main_pid` block — the panel puts its portrait on top):
+## - row `{kind: stress|trust|tlexp, label, value, max, delta, good, mode: "stack"|"wrap",
+##   from, to, end_full}` — a progress bar. `value` = the value now ("72", "64%"), `max` = the
+##   bar's end for counted rows ("100", "" for percent / text values), `delta` = the change
+##   ("-5", "+16%", "" = none); the panel writes `value (delta) / max` or `value (delta)`. `from` / `to` in bars (stack: 0..2, the part over 1
 ##   is stress over the threshold; wrap: whole part = levels / gauges filled, the bar restarts);
 ##   `good` = the change is welcome (green), else red; `neutral` = delta 0 (sources that cancelled
 ##   out: grey `±0`).
@@ -897,6 +900,9 @@ static func result_blocks(state: Dictionary, notes: Array, main_pid: int = -1) -
 		var line: String = note_text(state, n)
 		if not line.is_empty():
 			(b["lines"] as Array).append(line)
+	# The result's own pilot = the main block (the panel shows its portrait on top).
+	if main_pid >= 0:
+		(by_pid[main_pid] as Dictionary)["main"] = true
 	# Team block last; empty blocks (the main pilot with nothing) dropped.
 	var out: Array = []
 	var team: Dictionary = {}
@@ -937,7 +943,7 @@ static func _stress_row(state: Dictionary, n: Dictionary) -> Dictionary:
 	var after: int = _after_of(n, StressSystem.value(state, pid))
 	var before: int = clampi(after - d, 0, ConstTable.int_of("STRESS_MAX"))
 	return {"kind": "stress", "label": Loc.t(L.MENTAL_UI_PREVIEW_STRESS),
-			"value": "%d / %d" % [after, base], "delta": _signed(d), "good": d < 0, "neutral": d == 0,
+			"value": str(after), "max": str(base), "delta": _signed(d), "good": d < 0, "neutral": d == 0,
 			"mode": "stack", "from": float(before) / float(base), "to": float(after) / float(base),
 			"end_full": false, "over": after >= base}
 
@@ -953,7 +959,7 @@ static func _trust_row(state: Dictionary, n: Dictionary) -> Dictionary:
 	var top: bool = lv >= ConstTable.int_of("TRUST_LEVEL_MAX") and prog >= 1.0
 	var value: String = Loc.t(L.UI_WORD_MAX_LEVEL) if top else "%d%%" % roundi(prog * 100.0)
 	return {"kind": "trust", "label": Loc.t(L.MENTAL_UI_RESULT_TRUST, {"n": lv}), "value": value,
-			"delta": trust_delta_text(d), "good": d >= 0, "neutral": d == 0, "mode": "wrap",
+			"max": "", "delta": trust_delta_text(d), "good": d >= 0, "neutral": d == 0, "mode": "wrap",
 			"from": float(MentalSystem.level_of_trust(before) - 1) + MentalSystem.progress_of_trust(before),
 			"to": float(lv - 1) + prog, "end_full": top}
 
@@ -979,12 +985,15 @@ static func _tlexp_row(state: Dictionary, n: Dictionary) -> Dictionary:
 	var row: Dictionary = {"kind": "tlexp", "label": label, "delta": _signed(d) if d > 0 else "",
 			"good": true, "neutral": false, "mode": "wrap", "from": from, "ups": ups}
 	if TrainingLevel.is_max(state, pid) or TrainingLevel.awaiting_break(state, pid):
-		row["value"] = Loc.t(L.UI_WORD_MAX_LEVEL) if TrainingLevel.is_max(state, pid) 				else Loc.t(L.MENTAL_UI_RESULT_TLEXP_FULL)
+		var top: bool = TrainingLevel.is_max(state, pid)
+		row["value"] = Loc.t(L.UI_WORD_MAX_LEVEL if top else L.MENTAL_UI_RESULT_TLEXP_FULL)
+		row["max"] = ""
 		row["to"] = float(ups) if ups > 0 else 1.0
 		row["end_full"] = true
 		return row
 	var need: int = TrainingLevel.need_for_level(lv)
-	row["value"] = "%d / %d" % [after, need]
+	row["value"] = str(after)
+	row["max"] = str(need)
 	row["to"] = float(ups) + clampf(float(after) / float(maxi(need, 1)), 0.0, 1.0)
 	row["end_full"] = false
 	return row

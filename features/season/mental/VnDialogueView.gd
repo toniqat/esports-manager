@@ -16,8 +16,9 @@ extends Control
 # Flow: `open(...)` → lines one per tap → choices → `choice_picked(idx)` → the owner
 # applies the effects and calls `show_result(MentalEvents.outcome_view(state, outcome))`
 # → the picked answer (manager line) and the reply lines, one per tap → result panel
-# over the dim (verdict chip + `EventResultPanel`: per-pilot bars from the view's
-# `result_blocks`, or plain note chips) → tap → `closed`.
+# over the dim (no title: `EventResultPanel` — the pilot's portrait on the panel's top edge,
+# bars from the view's `result_blocks`, or plain note chips — then the verdict chip) → tap →
+# `closed`.
 #
 # Line grammar (mental_texts.csv line marker, first char after translation): plain = the
 # pilot (name plate = the pilot's name), `>text` = the manager (manager name plate, the
@@ -237,8 +238,8 @@ func _on_choice_pressed(idx: int) -> void:
 	choice_picked.emit(idx)
 
 
-## Result panel over the dim: verdict chip (when the entry rolled a check) + the result body
-## (`EventResultPanel`). Nothing to show → the hint asks for the closing tap right away.
+## Result panel over the dim: the result body (`EventResultPanel`, its main pilot's portrait on
+## the panel's top edge) + verdict chip under it (when the entry rolled a check). Nothing to show → the hint asks for the closing tap right away.
 func _show_outcome() -> void:
 	_stage = Stage.OUTCOME
 	if _verdict != 0:

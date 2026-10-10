@@ -17,7 +17,7 @@ and gets no `L` constant. Mod clauses write `source = "mental:<event id>"` (`MOD
 | `StressSystem.gd` | `class_name StressSystem` (static). Stress (Darkest Dungeon style): run init, clamp, shaken (위축) ratio, mood multipliers, roster-copy `apply_to` (MatchFlow), `snapshot` → `match_ctx.stress`, `record_match` ← `pending_match.stress`, training-day roll, interview / outing relief, display helpers (`mood_label`, `line`). The in-match part is `features/battle_sim/stress/`. |
 | `VnDialogueView.gd` | `class_name VnDialogueView extends Control`: **visual-novel dialogue** for interviews, outings and incidents (full-body art, bottom speech bubble, dimmed centred choices, result panel). Drop-in for `MessengerView` on the week screen's evening dialog. See **VN dialogue (VnDialogueView)** below. |
 | `UI_View_VnDialogue.tscn` | Its scene (layout owner): header, `%Stage` art box, `%Bubble`, `%Dim`, `%Overlay` with `%ChoiceList` · `%ResultPanel` · `%Hint`. Create with `VnDialogueView.create()`. |
-| `EventResultPanel.gd` · `UI_Comp_EventResultPanel.tscn` | `class_name EventResultPanel extends VBoxContainer`: **event result body** — one block per pilot (round portrait top-left, progress-bar rows, compact stat chips, other notes as `MessengerNoteChip`), team block last. Reusable by any result screen. See **Event result panel** below. |
+| `EventResultPanel.gd` · `UI_Comp_EventResultPanel.tscn` | `class_name EventResultPanel extends VBoxContainer`: **event result body** — the result's pilot as a round portrait on the hosting card's top edge (half outside), then one block per pilot (one-line progress-bar rows, compact stat chips, other notes as `MessengerNoteChip`; other pilots keep a small left portrait), team block last. No names. Reusable by any result screen. See **Event result panel** below. |
 | `EventResultBar.gd` | `class_name EventResultBar extends Control`: the `_draw` bar of one panel row (before → after fill, stress overflow layer, wrap on level up / gauge crossed), placed as the row template's `Bar` node. |
 | `UI_Comp_VnChoiceButton.tscn` | Item (no script): one answer — `%Button` (`VnDialogueChoiceButton`, 880 wide, at least 112 tall, autowrap) + `%Preview` line under it (check chance + effect directions). Code sets both texts + `pressed`. |
 | `FocusTraining.gd` | `class_name FocusTraining` (static, §15 D). The visit option **집중 훈련**: course table (`COURSES`), `courses_view` / `refusal` / `cost_of`, `apply` (coach points → stat EXP through the training EXP bank, 깨달음 레벨 EXP (+ `FOCUS_AWAKEN` points × `LEVEL_EXP_PER_AWAKEN`), stress; 한계돌파 → `LimitBreak.complete`). Shared helpers the story clauses use: `add_stat_exp`, `add_training_exp`, `add_story_mastery`, `story_mech`. See "Afternoon visit (방문)". |
@@ -318,10 +318,11 @@ hint "Tap the screen to continue".)
 
 **Flow**: lines (one per tap) → choices: `%Dim` fades in, `%ChoiceList` lists the answers
 vertically in the screen centre → `choice_picked` → the picked answer plays as a manager line,
-then the `say` replies (one per tap) → `%ResultPanel` over the dim: mental check verdict
-(`press.messenger.check_pass` / `check_fail`, only when `checked`) + `%EventResultPanel_Result`
-(`EventResultPanel`: the view's `result_blocks` as per-pilot bars, or — a view without blocks, e.g.
-`LimitBreak.choose_goal` — its `notes` texts as chips) → tap → `closed`. No notes and no check → no panel,
+then the `say` replies (one per tap) → `%ResultPanel` over the dim (no title):
+`%EventResultPanel_Result` first (`EventResultPanel`: the pilot's portrait on the card's top edge + the view's
+`result_blocks` as bars, or — a view without blocks, e.g. `LimitBreak.choose_goal` — its `notes` texts as chips,
+no portrait), then the mental check verdict (`press.messenger.check_pass` / `check_fail`, only when `checked`)
+→ tap → `closed`. The panel must stay `Column`'s first child (its top portrait reserves the room). No notes and no check → no panel,
 the next tap closes. No choices → the tap after the last line closes.
 
 **Choices**: `UI_Comp_VnChoiceButton.tscn` is a VBox — `%Button` (the answer) and `%Preview` under it
@@ -347,7 +348,8 @@ the safe top). Code extends `%Background` and `%Dim` into the notch band and lif
 `VnDialogueNamePlateMine` (AccentChip, `ACCENT` / `RAIL`), `VnDialogueArtSlab` (SunkPanel),
 `VnDialogueChoiceButton` (GhostButton + padding). Dim = shared `DimPanel`, result = `PopupCard`.
 
-**l10n**: new key `mental.ui.vn.result_title` (result panel title, scene text). Reused:
+**l10n**: `mental.ui.vn.result_title` (the old result panel title) is **deprecated** since the title was
+removed (2026-10). Reused:
 `ui.button.tap_to_continue`, `press.messenger.pick_answer` / `hint_close` / `check_pass` /
 `check_fail`, `term.person.manager`. Scene placeholders the script overwrites are `auto_translate_mode = 2`.
 
@@ -370,39 +372,57 @@ What an answer / visit did, drawn after the effects are applied. Self-contained:
 `%EventResultPanel_Result`, `VisitMenu.show_result(state, notes)`).
 
 ```
-(portrait)  Evelyn
-            스트레스             72 / 100   -15     ← label · value now · delta (green = welcome, red = not)
-            [██████████░░░░░░░░░]                 ← EventResultBar: before → after, animated
-            신뢰도 Lv.3              64%   +16%
-            (전장 명중 +1) (능력치 EXP +40)        ← compact stat chips
-            ( 외출 2회째 · … )                     ← other notes (MessengerNoteChip)
-팀 전체                                            ← notes without a pilot (no portrait)
+                    ( portrait )                           ← %TopPortrait: the result's pilot, centred on the
+ ┌─────────────────(            )─────────────────┐          hosting card's top edge (half outside)
+ │ 스트레스      [██████████░░░░░░]   7 (-5) / 100 │  ← name · EventResultBar · now (change) / max
+ │ 신뢰도 Lv.3   [██████░░░░░░░░░░]     64% (+16%) │  ← rows without a max: now (change)
+ │ (전장 명중 +1) (능력치 EXP +40)                 │  ← compact stat chips
+ │ ( 외출 2회째 · … )                              │  ← other notes (MessengerNoteChip)
+ │ (o) 스트레스  [████████░░]      142 (+12) / 100 │  ← another pilot: small left portrait
+ │ ( 팀 전체 신뢰도 +12% )                         │  ← notes without a pilot (no portrait)
+ └─────────────────────────────────────────────────┘
 ```
 
-(Mockup text: stress, trust Lv.3, chips "field hit +1" / "stat EXP +40", "outing #2 · …", block "whole team".)
+(Mockup text: stress, trust Lv.3, chips "field hit +1" / "stat EXP +40", "outing #2 · …", "whole team trust +12%".)
+
+**No names** anywhere in the panel. The change keeps its colour (green = welcome, red = not, grey = ±0), the value
+its own (`NegativeLabel` while stress is over the threshold). Name labels have a fixed width and the value group a
+minimum width, so the bars of one block line up.
+
+**Top portrait / hosting**: the block marked `main` (`MentalEvents.result_blocks` sets it on the `main_pid` block)
+gets no left portrait; its pilot's round portrait (`OutgameTheme.add_round_portrait`, white ring) is `%TopPortrait/Disc`,
+which code centres on the top edge of the **nearest `PanelContainer` ancestor** (the hosting card) and the slot
+`%TopPortrait` reserves the room for the disc's lower half below the card's padding (`TOP_PORTRAIT_GAP`). So a host
+must (1) put the panel **first** in its card (nothing visible above it), (2) not clip the card (PanelContainer
+default). Hosts: VN `%ResultPanel` (verdict moved under the panel, title removed), VisitMenu modal `Card` (caption
+hidden on the result page). Without a card (F6 alone) the disc sits fully inside the panel's top.
 
 | Member | Meaning |
 |---|---|
 | `static create() -> EventResultPanel` | Instantiates `UI_Comp_EventResultPanel.tscn` (top-wide VBox, height = content) |
-| `show_result(state, pid, notes, animate = true)` | Note dicts of one result, **right after** they were applied (previous = `after` or now − delta). `pid` = the result's pilot (first block; an `outing` note joins it). Pair talks → one block per pilot |
-| `show_blocks(blocks, animate = true)` | Precomputed `MentalEvents.result_blocks(state, notes, pid)` (also `outcome_view.result_blocks`) |
-| `show_texts(texts)` · `clear()` · `is_empty()` | Plain text chips (no blocks) · empty · nothing shown |
+| `show_result(state, pid, notes, animate = true)` | Note dicts of one result, **right after** they were applied (previous = `after` or now − delta). `pid` = the result's pilot (first block, portrait on top; an `outing` note joins it) |
+| `show_blocks(blocks, animate = true)` | Precomputed `MentalEvents.result_blocks(state, notes, pid)` (also `outcome_view.result_blocks`); the first block with `main: true` goes on top |
+| `top_pilot_id() -> int` | The pilot whose portrait is on top (-1 = none) |
+| `show_texts(texts)` · `clear()` · `is_empty()` | Plain text chips (no blocks, no portrait) · empty · nothing shown |
 
 Rows (`MentalEvents.result_blocks`, data only — the panel only draws):
-- **stress** — bar = `STRESS_THRESHOLD`, value `n / threshold`; above it the overflow (up to `STRESS_MAX`) is drawn
+- Row text: `value` (now) + `max` (bar end, "" when none) + `delta` → `now (delta) / max` (stress, level EXP) or
+  `now (delta)` (trust `12% (+12%)`, text values such as `최고 레벨`); no delta → no brackets.
+- **stress** — bar = `STRESS_THRESHOLD`, value `n`, max `threshold`; above it the overflow (up to `STRESS_MAX`) is drawn
   again from the left in dark red and the value turns `NegativeLabel`.
 - **trust** — label `mental.ui.result.trust` (level after), value = progress in the level (`ui.word.max_level` at the
   top), delta = `trust_delta_text`; a level up wraps the bar (the `trust_level` note is folded into this row).
 - **깨달음 레벨 EXP** (`tlexp`, one row per pilot — focus stat EXP + `FOCUS_AWAKEN` + clause EXP merged) — label
-  `mental.ui.result.tlexp` (level after), value = EXP in the level / `TrainingLevel.need_for_level`; `wrap` mode over the
+  `mental.ui.result.tlexp` (level after), value = EXP in the level, max = `TrainingLevel.need_for_level`; `wrap` mode over the
   level-ups between `from_level` and `level` (row `ups`; any level-up adds the line `awakening.detail.pending`); bar
   locked at an even level → full bar + `mental.ui.result.tlexp_full`; the cap → full bar + `ui.word.max_level`.
 - `stat_up` → chip `<stat> +N`, `stat_exp` → chip `mental.ui.result.stat_exp`; every other note → `note_text` line.
 - A delta of 0 (merged sources that cancelled out) reads `±0` / `±0%` (`MentalEvents._signed`, `trust_delta_text`) and
   the row carries `neutral: true` → the delta label is grey (`CaptionLabel`), the bar does not move.
 
-Layout: `%Blocks` + hidden templates `%BlockTemplate` (Portrait · Body/Name · Body/Rows · Body/Chips · Body/Lines),
-`%RowTemplate` (Head/Label · Head/Value · Head/Delta · Bar), `%ChipTemplate` (`EventResultChip`). Bars start
+Layout: `%TopPortrait` (Disc) + `%Blocks` + hidden templates `%BlockTemplate` (Portrait · Body/Rows · Body/Chips ·
+Body/Lines), `%RowTemplate` (one HBox line: Label · Bar · Value/Now · Value/Delta · Value/Max), `%ChipTemplate` (`EventResultChip`). Bars start
 (`EventResultBar.play`, deferred into the tree) when the panel is filled, so fill it when it is shown.
 F6: an in-memory run, two pilots with real effects (two stress sources, trust, level EXP, stat EXP, overflow stress,
-team trust, outing). Keys `mental.ui.result.*`: `trust`, `tlexp`, `tlexp_full`, `stat_exp`, `team`.
+team trust, outing). Keys `mental.ui.result.*`: `trust`, `tlexp`, `tlexp_full`, `stat_exp`, `team` (block data only —
+names are not drawn). `mental.ui.visit.title_result` (the focus result caption) is deprecated (2026-10).

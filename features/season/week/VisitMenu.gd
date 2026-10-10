@@ -12,8 +12,8 @@ extends CanvasLayer
 #   courses  `%Modal`, centred in the safe area over a dim (the bubble hides): the focus
 #            training courses (`FocusTraining.courses_view`): tap one, then Confirm →
 #            `course_picked(id)`; Back → the bubble menu
-#   result   the same modal: the focus training notes in an `EventResultPanel` (bars + chips);
-#            Confirm → `closed`
+#   result   the same modal: the focus training notes in an `EventResultPanel` (pilot portrait
+#            on the card's top edge, bars + chips; no caption); Confirm → `closed`
 # The owner (`WeekProgressView`) applies everything — this popup only draws and emits.
 # Create with `create()`, add it, `point_at` the token, then `open_menu`.
 
@@ -123,8 +123,10 @@ func _show_page(page: int) -> void:
 	(%Courses as Control).visible = page == Page.COURSES
 	(%EventResultPanel_Result as Control).visible = page == Page.RESULT
 	(%Caption as Label).text = Loc.t(L.MENTAL_UI_VISIT_TITLE_MENU)
-	(%ModalCaption as Label).text = Loc.t(L.MENTAL_UI_VISIT_TITLE_COURSES if page == Page.COURSES
-			else L.MENTAL_UI_VISIT_TITLE_RESULT)
+	# Result page: no caption — the result panel comes first, its pilot portrait on the card's
+	# top edge.
+	(%ModalCaption as Label).visible = page == Page.COURSES
+	(%ModalCaption as Label).text = Loc.t(L.MENTAL_UI_VISIT_TITLE_COURSES)
 	var back: Button = %Back
 	var confirm: Button = %Confirm
 	back.visible = page == Page.COURSES

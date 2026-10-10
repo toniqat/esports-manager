@@ -328,7 +328,8 @@ horizontal_alignment = 2
 
 [node name="ModalCaption" type="Label" parent="Root/Modal/Safe/Card/VBox"]
 unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()"
+editor_description = "[필수] 지우면 오류: VisitMenu.gd _show_page()
+Courses page only (the result page has no caption: its EventResultPanel comes first, portrait on the card's top edge)."
 layout_mode = 2
 theme_type_variation = &"SubLabel"
 theme_override_font_sizes/font_size = 26
@@ -345,7 +346,7 @@ theme_override_constants/separation = 12
 [node name="EventResultPanel_Result" parent="Root/Modal/Safe/Card/VBox" instance=ExtResource("3_result")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: VisitMenu.gd show_result() · _show_page()
-Result page: what the focus training did (EventResultPanel.show_result — the pilot's stress / 깨달음 level EXP bars + stat chips). Its height follows the content; the bubble re-fits (reset_size) and re-places."
+Result page: what the focus training did (EventResultPanel.show_result — the pilot's portrait centred on Card's top edge, half outside, + stress / 깨달음 level EXP bars + stat chips). On that page nothing above it is visible (header / caption / courses hidden), so it is the card's first child and its top portrait reserves the room itself; Card must not clip. Its height follows the content."
 layout_mode = 2
 
 [node name="Buttons" type="HBoxContainer" parent="Root/Modal/Safe/Card/VBox"]

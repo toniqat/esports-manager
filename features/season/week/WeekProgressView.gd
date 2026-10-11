@@ -3,46 +3,45 @@ extends Control
 
 # ── 시간 경과 화면 (월 → 일) ─────────────────────────────────────────────────
 #
-# **맨 위에 가로 요일 레일**(왼쪽 → 오른쪽으로 월 … 일), 그 아래 머리글과
-# 그날의 카드 목록.
+# Top: my team's banner + logo (left half, the right 30 % dissolving in streaks) and the team
+# budget / coach point capsules; under it the day progress bar, then the header and the
+# day's card list.
 #
-#   ┌──────────────────────────────────────┐
-#   │  15  16 [DAY 17] 18  19  20  21        │  ← 요일 레일: 칸마다 페이즈 안의 날 수
-#   │  MON TUE   WED   THU FRI SAT SUN       │    (CalendarSystem.day_in_phase) · 요일 영문 약칭
-#   └──────────────────────────────────────┘
-#                  프리시즌                    ← 페이즈 이름 (가운데)
-#           오전     오후     저녁             ← time row: previous · NOW · next (%TimeRow)
-#     [ 사건 · 오후 카드 ]                     ← 세로 스크롤 (%Scroll, 맵 위)
-#   [ 팀 부지 맵 + 선수 토큰 (1200 폭, 좌우 60 잘림) ] ← 화면 높이 가운데 (%MapPin)
-#     [선수][선수][선수][선수][선수]           ← 항상, 맵 바로 아래 (%PilotRow, 스트레스 링에 오늘 증감)
-#    [ 오전 / 오후 ][        다음        ]    ← 하단 바
+#   [▓▓ LOGO banner ▓▓░░ ]          [💵 12,300] [📯 6]   ← %TopBar
+#     ●━━━━●━━━━◉────○────○────○────○                 ← %DayTrack: filled up to today
+#    MON  TUE  WED  THU  FRI  SAT  SUN                 ← %DayAbbrs
+#              [DAY 12]                                 ← %DayBubble under today (tail up)
+#                  프리시즌                              ← phase name (centred)
+#           오전     오후     저녁                       ← time row: previous · NOW · next (%TimeRow)
+#     [ incident · afternoon card ]                     ← vertical scroll (%Scroll, above the map)
+#   [ team base map + pilot tokens (1200 wide, 60 cropped each side) ] ← %MapPin
+#  [▓▓▓▓ team banner strap: five pilot cards ▓▓▓▓]      ← %PilotBanner + %PilotRow
+#                                       [  다음  ]      ← bottom bar (short capsule, right)
 #
-# 레일의 **지금 요일 한 칸만 앰버 알약(%DayHighlight)이 깔린다** — 지나온 날은 흰 글자,
-# 남은 날은 흐린 글자다. 날이 바뀌면 알약이 미끄러져 온다.
+# When the day moves on the bar fills on to the new circle and the DAY bubble slides right.
 # A finished half moves on by itself through black (`_next_auto`, `WeekFade`); "다음" skips.
 #
-# ── 훈련일 (월~금) = 오전 → 오후 → 저녁 ───────────────────────────────────────
-# 훈련일은 다섯 단계(`_stage`)로 흐르고, 단계는 **기록에서 읽는다** (따로 저장하지 않는다):
-#   MORNING   `week_day_log` 에 그날이 없다. 맵에서 선수가 그날 훈련 시설 자리에 서 있고,
-#             초상화 위 말풍선이 그 시간의 훈련 이름을 말한다.
-#             "다음" = `TrainingBoard.apply_day_training` 으로 정산 → 결과를 `week_day_log[day]` 에.
-#   RESULT    정산됐고 오전 만남이 아직 열리지 않았다. 그날 결과(능력치 · 스트레스 · 숙련 · 기벽)가
-#             초상화 위에서 떠올라 흐려진다(`_play_result_fx`). 연출이 끝나면 스스로
-#             `MentalSystem.begin_morning` → 오전 만남. "다음" = 연출을 건너뛴다.
-#   TALK      오전 만남(훈련 소감): 선수 하나를 누르면 그 위에 말풍선(`VisitMenu.open_talk`) →
-#             만남 → 대화 (그 선수만). 끝나면 스스로 오후로. "다음" = 오후 (`AfternoonAway.begin`;
-#             아직 만날 수 있으면 경고 팝업).
-#   AFTERNOON the afternoon record exists. Pilots who can be visited are lit; a tap = visit (`VisitMenu`, §15 D).
-#             "다음" = 저녁 (아직 할 수 있으면 경고 → 패스로 기록) — `MentalSystem.begin_dusk` 가
-#             사건을 굴리고, 사건이 없으면 바로 다음 날.
-#   EVENING   저녁 사건(선수가 아니라 팀에 일어나는 일, 저절로 열린다). "다음" = 다음 날.
-# **이미 정산된 날은 다시 정산하지 않는다** — 경기를 치르고 같은 요일로 돌아와도,
-# 불러오기를 해도 같은 기록을 다시 그린다.
+# ── Training day (Mon–Fri) = morning → afternoon → evening ───────────────────
+# Four stages (`_stage`), **read from the records** (never stored on their own):
+#   MORNING   no `week_day_log[day]`. Each pilot stands on that day's training spot, a speech
+#             bubble names the training. After `MORNING_HOLD` the day settles **by itself**
+#             (`TrainingBoard.apply_day_training` → `week_day_log[day]`); "다음" settles now.
+#   RESULT    settled, the afternoon not begun. The day's results (stats · stress · quirks)
+#             rise out of the portraits and fade (`_play_result_fx`); when they end the
+#             afternoon starts by itself (`AfternoonAway.begin`). "다음" = skip the FX.
+#   AFTERNOON the afternoon record exists. Pilots at home wander to random spots of the map
+#             (seeded per day, `_wander_spot`); resting / out-alone pilots go to Dorm / Entrance.
+#             Pilots who can be visited are lit; a tap = visit (`VisitMenu`, §15 D). "다음" =
+#             evening (warning while a visit is possible → recorded as a pass) —
+#             `MentalSystem.begin_dusk` rolls the incident; none = straight to the next day.
+#   EVENING   the evening incident (opens by itself). "다음" = next day.
+# **A settled day is never settled again** — back from a match or after a reload the same
+# record is redrawn.
 #
 # ── Weekend (Sat · Sun) ── one player match per week, on Sunday ─────────────
 #   Sat STADIUM   stadium map; "경기 준비" → MatchFlow PREP + BAN_PICK (picks stored,
 #                 `SeasonHub.on_week_day_match_prep`), then AFTERNOON → EVENING on the
-#                 team map (no training, no morning talk).
+#                 team map (no training).
 #   Sun STADIUM   stadium map; "경기 시작" → BattleSim with the Saturday picks
 #                 (`SeasonHub.on_week_day_match_start`) → standings → PRESS
 #                 (stadium map, "기자회견" → `SeasonHub.open_press`) → AFTERNOON (team
@@ -51,14 +50,14 @@ extends Control
 # stages are read from the records too (picks in `pending_match`, the week's result,
 # `MentalSystem.press_answered`, the afternoon / dusk records).
 #
-# ── 씬 ──────────────────────────────────────────────────────────────────────
-# **배치 · 스타일은 `UI_View_WeekProgressView.tscn` 이 갖는다** (레일 · 머리글 · 구분선 ·
-# 맵 아래 선수 카드 줄 `%PilotRow` · 스크롤 · 하단 바). 맵(`WeekMapSection`(+ `BaseMap` ·
-# `WeekMapPilot`))은 고정된 `%MapPin` 에, 목록의 카드는 아이템 씬(`WeekMatchCard` ·
-# `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` · `WeekAfternoonDoneCard`)을 `%List` 에 붙인다.
-# 이 스크립트는 `%` 노드에 데이터를 넣고, 데이터에 따라 바뀌는 색(역할 띠 · 오늘 칩 ·
-# 내 경기 카드 · 상승/하락 · 오후에 못 부르는 선수의 흐림)과 기기 인셋만 코드로 넣는다.
-# 생성은 `create()`.
+# ── Scene ──────────────────────────────────────────────────────────────────
+# **Layout and style belong to `UI_View_WeekProgressView.tscn`** (top bar · day bar · header ·
+# the pilot row under the map · scroll · bottom bar). The map (`WeekMapSection` (+ `BaseMap` ·
+# `WeekMapPilot`)) goes into the fixed `%MapPin`, the list's cards are item scenes
+# (`WeekMatchCard` · `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` ·
+# `WeekAfternoonDoneCard`) added to `%List`. This script fills `%` nodes, paints data colours
+# (lead bars · my match card · ups / downs · masked tokens) and device insets only.
+# Create with `create()`.
 
 const SCENE_PATH: String = "res://features/season/week/UI_View_WeekProgressView.tscn"
 const MATCH_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMatchCard.tscn")
@@ -68,17 +67,18 @@ const AFTERNOON_DONE_SCENE: PackedScene = preload("res://features/season/week/UI
 const INCIDENT_CARD_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekIncidentCard.tscn")
 const MAP_SECTION_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapSection.tscn")
 const MAP_PILOT_SCENE: PackedScene = preload("res://features/season/week/UI_Comp_WeekMapPilot.tscn")
+const STREAK_SHADER: Shader = preload("res://features/season/week/WeekBannerStreak.gdshader")
 
 const STAT_KEYS: Array   = PlayerData.STAT_KEYS
 
-## Weekday (Mon 0 … Sun 6) → English abbreviation key (header, under DAY N).
+## Weekday (Mon 0 … Sun 6) → English abbreviation key (`%DayAbbrs`).
 const DAY_ABBR: Array = [  # l10n-keys: term.day.abbr.*
 	L.TERM_DAY_ABBR_MON, L.TERM_DAY_ABBR_TUE, L.TERM_DAY_ABBR_WED, L.TERM_DAY_ABBR_THU,
 	L.TERM_DAY_ABBR_FRI, L.TERM_DAY_ABBR_SAT, L.TERM_DAY_ABBR_SUN,
 ]
 
 ## Day stage, read from the records (`_stage`). STADIUM / PRESS are weekend-only.
-enum Stage { OFF, MORNING, RESULT, TALK, AFTERNOON, EVENING, STADIUM, PRESS }
+enum Stage { OFF, MORNING, RESULT, AFTERNOON, EVENING, STADIUM, PRESS }
 
 # ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
 const MATCH_CARD_H: float = 168.0    # the player's match card (others: OTHER_MATCH_H)
@@ -93,7 +93,7 @@ const FX_TAIL: float = 0.25
 ## Start offset between pilots (seat order), so neighbouring tokens' texts sit at different heights.
 const FX_PILOT_STAGGER: float = 0.2
 const DONE_TEXT_X_NO_PORTRAIT: float = 28.0   # afternoon summary without a pilot (pass)
-## The picked map token (morning talk pick / afternoon visit open) is drawn this much larger,
+## The picked map token (the pilot whose afternoon visit is open) is drawn this much larger,
 ## around its centre. A token that cannot be picked gets the black mask instead
 ## (`_token_dimmed`; `%Mask`).
 const MAP_PICKED_SCALE: float = 1.2
@@ -103,10 +103,14 @@ const MAP_PICKED_SCALE: float = 1.2
 const STAGE_TIME: float = 1.4
 const NIGHT_TIME: float = 2.8
 const NIGHT_WALK_DELAY: float = 0.45
-## Rail: the amber pill slides from the last shown weekday to today over `RAIL_SLIDE`; the
-## "DAY" tag of today grows in (width + alpha) meanwhile, the old one fades over `TAG_FADE`.
-const RAIL_SLIDE: float = 0.45
-const TAG_FADE: float = 0.25
+## Day bar: on a new day the fill runs on to today's circle and the DAY bubble slides
+## there over `RAIL_SLIDE`.
+const RAIL_SLIDE: float = 0.55
+## Morning: the pilots stand on their training spots this long (after the map has settled)
+## before the day settles by itself and the results rise.
+const MORNING_HOLD: float = 1.2
+## Afternoon: share of my at-home pilots that wander to a random spot is all of them; the
+## spot pool is every `Spot_*` marker of the map but Dorm / Entrance (`BaseMap.wander_spots`).
 ## Time row (`%TimePrev` · `%TimeNow` · `%TimeNext`): slot spacing (matches the scene's
 ## authored offsets), the small sides' scale and alpha, and the shift time.
 const TIME_SLOT_DX: float = 300.0
@@ -129,44 +133,40 @@ enum Auto { NONE, AFTERNOON, EVENING, NEXT_DAY }
 @onready var _list_end: Control = %ListEnd
 @onready var _map_pin: Control = %MapPin
 @onready var _pilot_row: Control = %PilotRow
-@onready var _day_highlight: Control = %DayHighlight
+@onready var _day_track: WeekDayTrack = %DayTrack
+@onready var _day_bubble: Control = %DayBubble
 @onready var _time_row: Control = %TimeRow
 @onready var _time_prev: Label = %TimePrev
 @onready var _time_now: Label = %TimeNow
 @onready var _time_next: Label = %TimeNext
-@onready var _stage_btn: Button = %FloatingBarButton_Stage
 @onready var _action_btn: Button = %FloatingBarButton_Action
 
 var _built: bool = false
 var _day: int = 0
 
-var _chip_panels: Array = []       # 7 Panel (scene: %Days/Day*/Chip)
-var _chip_nums: Array = []         # 7 Label (… /Chip/Box/NumRow/Num): day inside the phase
-var _chip_tags: Array = []         # 7 Label (… /Chip/Box/NumRow/DayTag): "DAY", today only
-var _chip_abbrs: Array = []        # 7 Label (… /Chip/Box/Abbr): MON … SUN
+var _day_abbrs: Array = []         # 7 Label (scene: %DayAbbrs/Day*/Abbr): MON … SUN
 
 # M7 — afternoon / incident dialogs.
-var _sel_pid: int = -1                # pilot picked on the map this morning / afternoon (-1 = none)
-var _sel_day: int = -1                # weekday `_sel_pid` belongs to
-var _sel_stage: int = Stage.OFF       # stage `_sel_pid` was picked in (a new half drops it)
-var _overlay: VnDialogueView = null   # talk / afternoon / limit-break / incident dialogue, null when closed
-var _overlay_kind: String = ""        # "talk" / "evening" / "limit_break" / "incident"
+var _overlay: VnDialogueView = null   # afternoon / limit-break / incident dialogue, null when closed
+var _overlay_kind: String = ""        # "evening" / "limit_break" / "incident"
 var _overlay_pid: int = -1            # the dialogue's pilot (limit break answers by pilot)
 var _visit_menu: VisitMenu = null     # afternoon visit popup (pick / menu / courses / result)
 var _awaken_view: Node = null         # §15 C AwakeningView while it is open
-var _skip_popup: ConfirmPopup = null  # "skip the morning talk / afternoon?" warning, made on first use
+var _skip_popup: ConfirmPopup = null  # "skip the afternoon?" warning, made on first use
 
 var _pilot_cards: Array = []          # SeasonPilotCard x5 (scene %PilotRow, seat order)
 var _tokens: Dictionary = {}          # pilot id -> map token of the current list build
 var _fx_day: int = -1                 # weekday whose result FX is playing (-1 = none)
+var _fx_done_day: int = -1            # weekday whose result FX has ended (the afternoon may start)
+var _morning_wait: int = 0            # bumps per morning hold timer (a stale timer does nothing)
 var _map: BaseMap = null              # map of the current list build (null = none)
-var _rail_tween: Tween = null         # highlight slide + chip text colours
+var _rail_tween: Tween = null         # day bar fill + DAY bubble slide
 var _time_tween: Tween = null         # time row shift
 var _time_ghost: Label = null         # incoming "next" label during the time row shift
 ## The last drawn map, across rebuilds and screens (the view is re-made per day):
 ## `{scene, day, stage, hour, tokens}` — the next draw animates from it (`_animate_map`).
 static var _map_memory: Dictionary = {}
-## The rail's last shown `{week, day}` (the highlight slides from it) and the time row's
+## The day bar's last shown `{week, day}` (the fill / bubble move on from it) and the time row's
 ## last `{day, half}` (it shifts on from it) — static for the same reason.
 static var _rail_memory: Dictionary = {}
 static var _half_memory: Dictionary = {}
@@ -179,16 +179,11 @@ static func create() -> WeekProgressView:
 
 
 func _ready() -> void:
-	for slot in (%Days as Control).get_children():
-		var chip: Panel = slot.get_node_or_null("Chip") as Panel
-		var num: Label = slot.get_node_or_null("Chip/Box/NumRow/Num") as Label
-		var tag: Label = slot.get_node_or_null("Chip/Box/NumRow/DayTag") as Label
-		var abbr: Label = slot.get_node_or_null("Chip/Box/Abbr") as Label
-		if chip != null and num != null and tag != null and abbr != null:
-			_chip_panels.append(chip)
-			_chip_nums.append(num)
-			_chip_tags.append(tag)
-			_chip_abbrs.append(abbr)
+	for slot in (%DayAbbrs as Control).get_children():
+		var abbr: Label = slot.get_node_or_null("Abbr") as Label
+		if abbr != null:
+			_day_abbrs.append(abbr)
+	(%TeamBanner as Control).resized.connect(_fit_streak)
 	_action_btn.pressed.connect(_on_action_pressed)
 	_pilot_cards = _pilot_row.get_children()
 	for c in _pilot_cards:
@@ -224,19 +219,20 @@ func refresh() -> void:
 	_day = clampi(int(_gm.season_state.get("week_day", 0)), 0,
 			CalendarSystem.DAYS_PER_WEEK - 1)
 	_advance_weekend()
+	_refresh_top_bar()
 	_refresh_rail()
 	_refresh_header()
 	_refresh_time_row()
 	_rebuild_list()
 	_refresh_pilot_row()
 	_refresh_action_button()
-	if _stage() == Stage.RESULT and _fx_day != _day:
+	if _stage() == Stage.RESULT and _fx_day != _day and _fx_done_day != _day:
 		_play_result_fx()
 	_open_pending.call_deferred()
 
 
 ## What opens by itself after a redraw, one at a time (each one's close redraws again):
-## a talk / visit / afternoon dialog left open by a reload, a queued awakening
+## a visit / afternoon dialog left open by a reload, a queued awakening
 ## (`Awakening.next_pending`, §15 C — after every state change that can raise the gauge),
 ## then at the evening the limit-break event (`LimitBreak.pending_event`, §15 B) before the
 ## incident. The day cannot be confirmed past any of them.
@@ -244,9 +240,7 @@ func _open_pending() -> void:
 	if _busy() or not is_inside_tree():
 		return
 	var s: Dictionary = _gm.season_state
-	if _talk_open():
-		_open_talk_session(MentalSystem.begin_talk(s, _day, -1))
-	elif MentalSystem.visit_open(s, _day) >= 0 and _stage() == Stage.AFTERNOON:
+	if MentalSystem.visit_open(s, _day) >= 0 and _stage() == Stage.AFTERNOON:
 		_open_visit_menu(MentalSystem.visit_open(s, _day))
 	elif _evening_open():
 		_open_evening_session(MentalSystem.begin_evening(s, _day, "", -1))
@@ -258,11 +252,13 @@ func _open_pending() -> void:
 		_open_incident()
 	elif _next_auto() != Auto.NONE:
 		WeekFade.through(_run_auto)
+	elif _stage() == Stage.MORNING:
+		_hold_morning()
 
 
 ## What the day moves on to by itself now that its half is done — nothing while anything is
 ## still open or queued (a dialog, the visit popup, the result FX, an awakening, the limit-break
-## event, an incident): the morning talk answered → afternoon; the visit settled → evening; the
+## event, an incident): the result FX ended → afternoon; the visit settled → evening; the
 ## evening's events settled → next day (not the Sunday — "주 마감 →" stays a button, and not
 ## without the hub (F6 preview), which cannot move the day).
 func _next_auto() -> int:
@@ -272,8 +268,8 @@ func _next_auto() -> int:
 	if Awakening.next_pending(s) >= 0:
 		return Auto.NONE
 	match _stage():
-		Stage.TALK:
-			if MentalSystem.talk_done(s, _day):
+		Stage.RESULT:
+			if _fx_done_day == _day:
 				return Auto.AFTERNOON
 		Stage.AFTERNOON:
 			if MentalSystem.evening_done(s, _day) and MentalSystem.visit_open(s, _day) < 0 \
@@ -307,10 +303,9 @@ func _busy() -> bool:
 
 
 ## Where the day stands — read from the records, never stored on its own.
-## Training days (Mon–Fri): no `week_day_log[day]` = MORNING, settled without a talk
-## record = RESULT, talk record (`MentalSystem.morning_started`) = TALK, afternoon rolled
-## (`AfternoonAway.started`) = AFTERNOON, evening marked (`MentalSystem.dusk_started`) =
-## EVENING. Old saves reach the afternoon without a talk record: the talk is skipped.
+## Training days (Mon–Fri): no `week_day_log[day]` = MORNING, settled = RESULT, afternoon
+## rolled (`AfternoonAway.started`) = AFTERNOON, evening marked (`MentalSystem.dusk_started`) =
+## EVENING. (An old save's morning-talk record is ignored: RESULT moves on to the afternoon.)
 ## Weekend: STADIUM while the Saturday prep / Sunday match is open, PRESS until the
 ## Sunday press conference is answered, then the afternoon / evening records.
 func _stage() -> int:
@@ -325,8 +320,6 @@ func _stage() -> int:
 		return Stage.MORNING
 	if AfternoonAway.started(s, _day):
 		return Stage.EVENING if MentalSystem.dusk_started(s, _day) else Stage.AFTERNOON
-	if MentalSystem.morning_started(s, _day):
-		return Stage.TALK
 	return Stage.RESULT
 
 
@@ -358,9 +351,9 @@ func _advance_weekend() -> void:
 		_save("afternoon")
 
 
-## 그날 훈련을 정산한다 (오전의 "다음"). **기록이 이미 있으면 아무것도 하지 않는다** —
-## 경기를 치르고 같은 요일로 돌아오는 경로가 실제로 있고, 거기서 다시 정산하면 훈련이
-## 두 번 먹는다.
+## Settles the day's training (the morning hold, or "다음" in the morning). **Does nothing when
+## the record exists** — the screen really comes back to the same weekday after a match, and
+## settling again there would apply the training twice.
 func _settle_day() -> void:
 	if not CalendarSystem.is_training_day(_day):
 		return
@@ -385,11 +378,10 @@ func _board() -> TrainingBoard:
 	return get_node_or_null("PreviewBoard") as TrainingBoard
 
 
-## 오후로 넘어간다 (오전 만남의 "다음"): 만나지 않았으면 패스로 기록하고, 혼자 외출(스트레스가
-## 높은 선수) → 아니면 숙소 휴식을 선수마다 한 번 굴린다. `AfternoonAway` 가 기록하고, 다시
-## 불러도 그 기록을 돌려준다.
+## Into the afternoon (after the result FX): rolls each pilot's away state once (out alone
+## when stressed, else maybe resting in the dorm). `AfternoonAway` records it, a reload
+## returns the same.
 func _begin_afternoon() -> void:
-	MentalSystem.pass_talk(_gm.season_state, _day)
 	AfternoonAway.begin(_gm.season_state, _day)
 	_save("afternoon")
 
@@ -416,12 +408,11 @@ func _week_log() -> Dictionary:
 	return _gm.season_state["week_day_log"]
 
 
-## Each chip = that weekday's day number inside the phase (`CalendarSystem.day_in_phase`
-## counted from this week's Monday) over its abbreviation (MON … SUN); today's chip adds
-## the small "DAY" tag left of the number. Today is marked by the amber pill `%DayHighlight`
-## behind the (transparent) chips: on a new day of the same week (`_rail_memory`) it slides
-## from the last shown weekday, the new "DAY" tag grows in from the left while fading in (the
-## number moves right to make room) and the old one fades out.
+## Day bar: seven circles (Mon → Sun) under the top bar, the line filled up to today's
+## circle, the weekday abbreviations under the circles and today's DAY bubble (day number
+## inside the phase, `CalendarSystem.day_in_phase`) under today's label. On a new day of the
+## same week (`_rail_memory`) the fill runs on from the last shown day and the bubble slides
+## right with it (after a fade has cleared); other redraws place everything at once.
 func _refresh_rail() -> void:
 	var s: Dictionary = _gm.season_state
 	var monday: int = CalendarSystem.day_in_phase(s) - _day
@@ -429,109 +420,85 @@ func _refresh_rail() -> void:
 	var was: Dictionary = _rail_memory
 	_rail_memory = {"week": week_id, "day": _day}
 	var from_day: int = int(was.get("day", -1)) if int(was.get("week", -1)) == week_id else -1
-	var animate: bool = from_day >= 0 and from_day != _day
+	for d in _day_abbrs.size():
+		var abbr: Label = _day_abbrs[d]
+		abbr.text = day_abbr(d)
+		abbr.theme_type_variation = &"BodyLabel" if d == _day else &"CaptionLabel"
+	(%DayNum as Label).text = str(monday + _day)
 	if _rail_tween != null and _rail_tween.is_valid():
 		_rail_tween.kill()
 	_rail_tween = null
-	var delay: float = WeekFade.clear_delay()
-	for d in _chip_panels.size():
-		var num: Label = _chip_nums[d]
-		var abbr: Label = _chip_abbrs[d]
-		var tag: Label = _chip_tags[d]
-		num.text = str(monday + d)
-		abbr.text = day_abbr(d)
-		var col: Color = _rail_text_color(d, _day)
-		if animate and (d == from_day or d == _day):
-			var col_from: Color = _rail_text_color(d, from_day)
-			_tween_rail_color(num, col_from, col, delay)
-			_tween_rail_color(abbr, col_from, col, delay)
-			if d == _day:
-				_tag_in(tag, delay)
-			else:
-				_tag_out(tag, delay)
-		else:
-			num.add_theme_color_override("font_color", col)
-			abbr.add_theme_color_override("font_color", col)
-			_set_tag(tag, d == _day)
-	_move_highlight(from_day if animate else _day, _day, delay)
-
-
-## Chip text colour of weekday `d` while `today` is lit: dark on the amber pill; past days
-## stay white, remaining days dim — that contrast reads "how many days left" from the rail.
-static func _rail_text_color(d: int, today: int) -> Color:
-	if d == today:
-		return OutgameTheme.RAIL
-	return OutgameTheme.TEXT_ON_FILL if d < today else OutgameTheme.RAIL_TEXT
-
-
-func _tween_rail_color(lbl: Label, from: Color, to: Color, delay: float) -> void:
-	lbl.add_theme_color_override("font_color", from)
-	var paint: Callable = func(c: Color) -> void:
-		lbl.add_theme_color_override("font_color", c)
-	var tw: Tween = lbl.create_tween()
-	tw.tween_interval(delay)
-	tw.tween_method(paint, from, to, RAIL_SLIDE).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-
-
-## Full width of a "DAY" tag (its translated text at its font size).
-static func _tag_width(tag: Label) -> float:
-	var font: Font = tag.get_theme_font("font")
-	var fs: int = tag.get_theme_font_size("font_size")
-	return ceilf(font.get_string_size(tag.atr(tag.text), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
-
-
-func _set_tag(tag: Label, on: bool) -> void:
-	tag.visible = on
-	tag.modulate.a = 1.0
-	tag.custom_minimum_size.x = _tag_width(tag) if on else 0.0
-
-
-## Today's tag grows from zero width (right-aligned and clipped: the text slides in from the
-## left while the centred row pushes the number right) and fades in.
-func _tag_in(tag: Label, delay: float) -> void:
-	tag.visible = true
-	tag.custom_minimum_size.x = 0.0
-	tag.modulate.a = 0.0
-	var tw: Tween = tag.create_tween()
-	tw.tween_interval(delay)
-	tw.tween_property(tag, "custom_minimum_size:x", _tag_width(tag), RAIL_SLIDE) \
-			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(tag, "modulate:a", 1.0, RAIL_SLIDE)
-
-
-## The old day's tag fades out, then gives its width back.
-func _tag_out(tag: Label, delay: float) -> void:
-	tag.visible = true
-	tag.custom_minimum_size.x = _tag_width(tag)
-	tag.modulate.a = 1.0
-	var tw: Tween = tag.create_tween()
-	tw.tween_interval(delay)
-	tw.tween_property(tag, "modulate:a", 0.0, TAG_FADE)
-	tw.tween_property(tag, "custom_minimum_size:x", 0.0, RAIL_SLIDE - TAG_FADE)
-	tw.tween_callback(func() -> void: tag.visible = false)
-
-
-## Puts `%DayHighlight` behind chip `from_d`, then slides it to chip `to_d` (same = no slide).
-## Waits a frame: the chips' positions are only known once the rail is laid out.
-func _move_highlight(from_d: int, to_d: int, delay: float) -> void:
-	await get_tree().process_frame
-	if not is_inside_tree() or to_d < 0 or to_d >= _chip_panels.size():
+	_day_track.today = _day
+	if from_day < 0 or from_day >= _day:
+		_day_track.progress = float(_day)
+		_move_bubble(float(_day))
 		return
-	var to_x: float = _chip_x(to_d)
-	if from_d == to_d or from_d < 0 or from_d >= _chip_panels.size():
-		_day_highlight.position.x = to_x
-		return
-	_day_highlight.position.x = _chip_x(from_d)
-	_rail_tween = _day_highlight.create_tween()
-	_rail_tween.tween_interval(delay)
-	_rail_tween.tween_property(_day_highlight, "position:x", to_x, RAIL_SLIDE) \
+	_day_track.progress = float(from_day)
+	_move_bubble(float(from_day))
+	_rail_tween = create_tween()
+	_rail_tween.tween_interval(WeekFade.clear_delay())
+	_rail_tween.tween_method(_set_rail_at, float(from_day), float(_day), RAIL_SLIDE) \
 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 
 
-## x of chip `d` in the highlight's parent (the rail).
-func _chip_x(d: int) -> float:
-	var parent: Control = _day_highlight.get_parent() as Control
-	return (_chip_panels[d] as Control).global_position.x - parent.global_position.x
+## One frame of the day bar's move: fill and bubble at circle position `f`.
+func _set_rail_at(f: float) -> void:
+	_day_track.progress = f
+	_move_bubble(f)
+
+
+## Centres `%DayBubble` under circle position `at` (a fractional circle index while sliding).
+## Waits for the layout on the first draw: the bar's width is only known once laid out.
+func _move_bubble(at: float) -> void:
+	if _day_track.size.x <= 0.0:
+		await get_tree().process_frame
+		if not is_inside_tree():
+			return
+	var x0: float = _day_track.dot_x(0)
+	var x6: float = _day_track.dot_x(WeekDayTrack.DAYS - 1)
+	var cx: float = _day_track.position.x + lerpf(x0, x6, at / float(WeekDayTrack.DAYS - 1))
+	_day_bubble.position.x = roundf(cx - _day_bubble.size.x * 0.5)
+
+
+## Top bar: my team's banner (also the strap behind the pilot cards) and logo, the team budget
+## (`FinanceSystem.balance`) and this week's coach points (`StaffSystem.coach_points`).
+func _refresh_top_bar() -> void:
+	var s: Dictionary = _gm.season_state
+	var team: int = int(s.get("player_team_id", 0))
+	for n in [%TeamBanner, %PilotBanner]:
+		var banner: TeamBanner = n
+		banner.color = TeamLogos.color(team)
+		banner.texture = TeamLogos.banner(team)
+	(%TeamLogo as TextureRect).texture = TeamLogos.texture(team)
+	(%LobbyCurrencyPill_Budget.get_node("%Value") as Label).text = FinanceSystem.fmt(FinanceSystem.balance(s))
+	(%LobbyCurrencyPill_Coach.get_node("%Value") as Label).text = str(StaffSystem.coach_points(s))
+	_fit_streak()
+
+
+## The top banner's streak dissolve (`WeekBannerStreak.gdshader`) needs the node size.
+func _fit_streak() -> void:
+	var banner: CanvasItem = %TeamBanner
+	var mat := banner.material as ShaderMaterial
+	if mat == null:
+		mat = ShaderMaterial.new()
+		mat.shader = STREAK_SHADER
+		banner.material = mat
+	mat.set_shader_parameter("rect_size", (%TeamBanner as Control).size)
+
+
+## Morning: the pilots stand on their training spots a moment (after the map's clock and walks
+## have settled), then the day settles by itself and the results rise (RESULT).
+func _hold_morning() -> void:
+	_morning_wait += 1
+	var ticket: int = _morning_wait
+	var wait: float = WeekFade.clear_delay() + MORNING_HOLD
+	if _map != null and is_instance_valid(_map) and _map.is_animating():
+		wait += NIGHT_TIME
+	get_tree().create_timer(wait).timeout.connect(func() -> void:
+		if ticket != _morning_wait or not is_inside_tree() or _busy() or _stage() != Stage.MORNING:
+			return
+		_settle_day()
+		refresh())
 
 
 func _refresh_header() -> void:
@@ -736,11 +703,6 @@ func _add_map_section(stage: int) -> void:
 		names = board.day_tile_names(_day)
 		groups = board.day_groups(_day)
 
-	if _sel_day != _day or _sel_stage != stage or not _can_pick(stage, _sel_pid):
-		_sel_day = _day
-		_sel_stage = stage
-		_sel_pid = -1
-
 	_tokens.clear()
 	var entries: Array = []
 	for raw_pid in _my_pilots_in_seat_order():
@@ -763,6 +725,8 @@ func _add_map_section(stage: int) -> void:
 			spot = BaseMap.SPOT_DORM
 		elif away == AfternoonAway.AWAY_SELF_OUTING:
 			spot = BaseMap.SPOT_ENTRANCE
+		elif not stadium and (stage == Stage.AFTERNOON or stage == Stage.EVENING):
+			spot = _wander_spot(map, pid)
 		var token: Control = _add_map_token(map, stage, pid, String(names.get(seat, "")), away)
 		_tokens[pid] = token
 		var hold: Control = token.get_node("%Portrait")
@@ -773,6 +737,20 @@ func _add_map_section(stage: int) -> void:
 	_animate_map(map, stage)
 
 
+## Afternoon / evening: where an at-home pilot wanders on the team map — one of the map's
+## spots (`BaseMap.wander_spots`: training colour + facility markers), drawn per pilot and day
+## from a fixed seed, so a redraw / reload puts them on the same spot (the evening keeps the
+## afternoon's).
+func _wander_spot(map: BaseMap, pid: int) -> String:
+	var pool: Array = map.wander_spots()
+	if pool.is_empty():
+		return BaseMap.SPOT_NEUTRAL
+	var s: Dictionary = _gm.season_state
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%s|%d|%d|wander" % [MentalSystem.week_key(s), _day, pid])
+	return String(pool[rng.randi_range(0, pool.size() - 1)])
+
+
 ## Time of day on the map for a stage (`BaseMapLighting` hour).
 func _stage_hour(stage: int) -> float:
 	match stage:
@@ -780,8 +758,6 @@ func _stage_hour(stage: int) -> float:
 			return 8.0
 		Stage.RESULT:
 			return 9.5
-		Stage.TALK:
-			return 11.0
 		Stage.AFTERNOON:
 			return 15.0
 		Stage.EVENING:
@@ -881,26 +857,19 @@ func _add_map_token(map: BaseMap, stage: int, pid: int, course: String, away: St
 	return token
 
 
-## The token of `pid` is the picked one: the morning talk's pick (until the talk is used) or
-## the pilot whose afternoon visit is open (menu / courses / result).
+## The token of `pid` is the picked one: the pilot whose afternoon visit is open (menu /
+## courses / result).
 func _token_picked(stage: int, pid: int) -> bool:
-	var s: Dictionary = _gm.season_state
-	if stage == Stage.TALK:
-		return pid == _sel_pid and MentalSystem.can_talk(s, _day, pid)
 	if stage == Stage.AFTERNOON:
-		return pid >= 0 and pid == MentalSystem.visit_open(s, _day)
+		return pid >= 0 and pid == MentalSystem.visit_open(_gm.season_state, _day)
 	return false
 
 
-## Black mask over a token: in the talk / afternoon / evening stages every pilot that cannot
-## be picked, except the one whose meeting is under way — so once the morning talk or the
-## afternoon visit is used, and all evening, every token is dark.
+## Black mask over a token: in the afternoon / evening every pilot that cannot be picked,
+## except the one whose visit is under way — so once the visit is used, and all evening,
+## every token is dark.
 func _token_dimmed(stage: int, pid: int) -> bool:
 	var s: Dictionary = _gm.season_state
-	if stage == Stage.TALK:
-		if MentalSystem.talk_done(s, _day):
-			return true
-		return not MentalSystem.can_talk(s, _day, pid) and not _in_talk(pid)
 	if stage == Stage.AFTERNOON:
 		if MentalSystem.evening_done(s, _day):
 			return true
@@ -911,21 +880,13 @@ func _token_dimmed(stage: int, pid: int) -> bool:
 	return stage == Stage.EVENING
 
 
-## `pid` may be picked on the map in `stage` (morning talk / afternoon action).
+## `pid` may be picked on the map in `stage` (the afternoon visit).
 func _can_pick(stage: int, pid: int) -> bool:
 	if pid < 0:
 		return false
-	if stage == Stage.TALK:
-		return MentalSystem.can_talk(_gm.season_state, _day, pid)
 	if stage == Stage.AFTERNOON:
 		return AfternoonAway.can_request(_gm.season_state, _day, pid)
 	return false
-
-
-## `pid` took part in this morning's talk (the met pilot or the joint-training partner).
-func _in_talk(pid: int) -> bool:
-	var t: Dictionary = MentalSystem.talk(_gm.season_state, _day)
-	return int(t.get("pilot_id", -1)) == pid or int(t.get("partner_id", -1)) == pid
 
 
 # ── 훈련 결과 연출 (RESULT) ──────────────────────────────────────────────────
@@ -979,14 +940,14 @@ func _on_result_fx_timeout(day: int) -> void:
 		_finish_result_fx()
 
 
-## End of the result FX (or Next pressed during it): open the morning talk and redraw.
+## End of the result FX (or Next pressed during it): marks the FX done; what opens by itself
+## (an awakening the training raised) comes first, then the afternoon starts (`_next_auto`).
 func _finish_result_fx() -> void:
 	_fx_day = -1
 	if _stage() != Stage.RESULT:
 		return
-	MentalSystem.begin_morning(_gm.season_state, _day)
-	_save("morning_talk")
-	refresh()
+	_fx_done_day = _day
+	_open_pending()
 
 
 ## Rising lines for one training row, `[[text, colour]]` in display order.
@@ -1036,7 +997,7 @@ func _refresh_pilot_row() -> void:
 ## Change of `pid`'s `kind` ("stress" · "trust" (points) · "tlexp" (깨달음 level EXP)) on the
 ## shown weekday so far: the morning training row (`stress` / `tlexp` keys — `tlexp` = the EXP
 ## the level actually took, `TrainingLevel.on_training_day`), a self outing (stress:
-## `AfternoonAway.relief_of`) and the `kind` / `<kind>_all` notes of the day's talk, incident
+## `AfternoonAway.relief_of`) and the `kind` / `<kind>_all` notes of the day's incident
 ## and afternoon (visit / evening) outcomes. `<kind>_all` notes carry the clause's nominal
 ## delta (a clamped pilot reads it unclamped). Not recorded per day, so not counted: the
 ## Sunday press answer and the match's level EXP.
@@ -1051,7 +1012,7 @@ func _day_delta(pid: int, kind: String) -> int:
 	if kind == "stress":
 		total += AfternoonAway.relief_of(s, _day, pid)
 	var rec: Dictionary = MentalSystem.day_record(s, _day)
-	for k in ["talk", "incident", "evening"]:
+	for k in ["incident", "evening"]:
 		var outcome: Dictionary = (rec.get(k, {}) as Dictionary).get("outcome", {})
 		for n_raw in (outcome.get("notes", []) as Array):
 			var n: Dictionary = n_raw
@@ -1067,46 +1028,12 @@ func _on_pilot_card_pressed(pid: int) -> void:
 	SeasonPilotDetail.open(self, pid)
 
 
-## Map tap. Morning talk: pick the pilot (the talk card asks). Afternoon: visit the tapped
-## pilot straight away (tokens never overlap, so there is no "who?" picker).
+## Map tap in the afternoon: visit the tapped pilot straight away (tokens never overlap, so
+## there is no "who?" picker).
 func _on_map_pilot_picked(pid: int) -> void:
-	if _busy():
+	if _busy() or _stage() != Stage.AFTERNOON:
 		return
-	if _stage() == Stage.AFTERNOON:
-		_start_visit(pid)
-		return
-	_sel_pid = pid
-	_sel_day = _day
-	_sel_stage = _stage()
-	_rebuild_list()
-	_open_talk_bubble(pid)
-
-
-## Morning talk: the bubble over the picked pilot's token (`VisitMenu.open_talk`) — the
-## pilot's line and one button, 만남. A tap outside closes it (`_on_talk_dismissed`).
-func _open_talk_bubble(pid: int) -> void:
-	if _visit_menu == null:
-		_visit_menu = _make_visit_menu()
-	var token: Control = _tokens.get(pid, null)
-	if token != null:
-		_visit_menu.point_at(token.get_node("%Portrait"), token)
-	_visit_menu.open_talk(_gm.season_state, pid)
-
-
-## Tap outside the talk bubble: closed, the pick dropped — a tap on another pilot that can be
-## met picks that one instead.
-func _on_talk_dismissed(at: Vector2) -> void:
-	_close_visit_menu()
-	var other: int = -1
-	for pid in _tokens:
-		var hit: Control = (_tokens[pid] as Control).get_node("%Hit")
-		if int(pid) != _sel_pid and hit.get_global_rect().has_point(at):
-			other = int(pid)
-	if other >= 0 and _can_pick(Stage.TALK, other):
-		_on_map_pilot_picked(other)
-		return
-	_sel_pid = -1
-	_rebuild_list()
+	_start_visit(pid)
 
 
 ## 이번 주 그 경기일의 경기들. 플레이어 경기가 맨 위, 나머지는 그 아래로.
@@ -1308,13 +1235,6 @@ func _refresh_action_button() -> void:
 	if _action_btn == null:
 		return
 	var stage: int = _stage()
-	_stage_btn.visible = stage != Stage.OFF
-	var stage_key: String = L.SEASON_WEEK_STAGE_MORNING
-	if stage == Stage.AFTERNOON or stage == Stage.PRESS:
-		stage_key = L.SEASON_WEEK_STAGE_AFTERNOON
-	elif stage == Stage.EVENING:
-		stage_key = L.SEASON_WEEK_STAGE_EVENING
-	_stage_btn.text = Loc.t(stage_key)  # l10n-dynamic: season.week.stage.*
 	if stage == Stage.STADIUM:
 		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
 		# 도로 둥글어져 이 칸만 화면에서 떠오른다. 갈아입은 뒤 인셋 몫을 다시 얹는다.
@@ -1362,35 +1282,15 @@ func _on_action_pressed() -> void:
 			# Skip the rest of the result FX.
 			_finish_result_fx()
 			return
-		Stage.TALK:
-			# Moving on while a morning talk is still possible asks first.
-			if _any_talk():
-				_open_skip_popup(Stage.TALK)
-				return
-			WeekFade.through(_to_afternoon)
-			return
 		Stage.AFTERNOON:
 			# Moving on while an interview / outing is still possible asks first.
 			if not MentalSystem.evening_done(_gm.season_state, _day) \
 					and AfternoonAway.any_request(_gm.season_state, _day):
-				_open_skip_popup(Stage.AFTERNOON)
+				_open_skip_popup()
 				return
 			WeekFade.through(_begin_evening)
 			return
 	WeekFade.through(_leave_day)
-
-
-func _to_afternoon() -> void:
-	_begin_afternoon()
-	refresh()
-
-
-## Some pilot can still be met this morning (the skip warning).
-func _any_talk() -> bool:
-	for pid in MentalSystem.my_pilot_ids(_gm.season_state):
-		if MentalSystem.can_talk(_gm.season_state, _day, int(pid)):
-			return true
-	return false
 
 
 ## Off to the next day (or the match). An unused afternoon is recorded as a pass.
@@ -1406,26 +1306,19 @@ func _leave_day() -> void:
 	_hub.on_week_day_confirmed()
 
 
-## Skip warning for the morning talk (`Stage.TALK`) or the afternoon (`Stage.AFTERNOON`).
-func _open_skip_popup(stage: int) -> void:
+## Skip warning for the afternoon (a visit is still possible).
+func _open_skip_popup() -> void:
 	if _skip_popup == null:
 		_skip_popup = ConfirmPopup.create()
 		add_child(_skip_popup)
 		_skip_popup.confirmed.connect(_on_skip_confirmed)
-	if stage == Stage.TALK:
-		_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TALK_TITLE), Loc.t(L.SEASON_WEEK_SKIP_TALK_BODY),
-				Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
-	else:
-		_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TITLE), Loc.t(L.SEASON_WEEK_SKIP_BODY),
-				Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
+	_skip_popup.open(Loc.t(L.SEASON_WEEK_SKIP_TITLE), Loc.t(L.SEASON_WEEK_SKIP_BODY),
+			Loc.t(L.UI_BUTTON_CANCEL), Loc.t(L.SEASON_WEEK_SKIP_CONFIRM))
 
 
 func _on_skip_confirmed() -> void:
-	match _stage():
-		Stage.TALK:
-			WeekFade.through(_to_afternoon)
-		Stage.AFTERNOON:
-			WeekFade.through(_begin_evening)
+	if _stage() == Stage.AFTERNOON:
+		WeekFade.through(_begin_evening)
 
 
 # ── 오후 · 사건 (M7) ──────────────────────────────────────────────────────────
@@ -1492,39 +1385,6 @@ func _add_afternoon_done_card(e: Dictionary) -> void:
 			else Loc.t(L.SEASON_WEEK_RESTED_LINE if action == MentalSystem.ACTION_PASS else L.SEASON_WEEK_NO_CHANGE)
 
 
-# ── 오전 만남 (훈련 소감) ─────────────────────────────────────────────────────
-## The morning talk was started but not answered (e.g. the game was reloaded).
-func _talk_open() -> bool:
-	if not CalendarSystem.is_training_day(_day):
-		return false
-	var t: Dictionary = MentalSystem.talk(_gm.season_state, _day)
-	return String(t.get("action", "")) == MentalSystem.ACTION_TALK and int(t.get("choice", -1)) < 0
-
-
-func _on_talk_pressed() -> void:
-	_close_visit_menu()
-	if _busy() or _sel_pid < 0:
-		return
-	var session: Dictionary = MentalSystem.begin_talk(_gm.season_state, _day, _sel_pid)
-	if session.is_empty():
-		_rebuild_list()
-		return
-	_save("talk_open")
-	_open_talk_session(session)
-
-
-func _open_talk_session(session: Dictionary) -> void:
-	if _busy() or session.is_empty():
-		return
-	var s: Dictionary = _gm.season_state
-	var view: Dictionary = MentalSystem.session_view(s, session)
-	if view.is_empty():
-		return
-	var pid: int = int(view["pilot_id"])
-	_open_overlay("talk", Loc.t(L.SEASON_WEEK_SUB_TALK, {"day": OutgameTheme.day_name(_day)}),
-			MentalEvents.pilot_name(s, pid), pid, view)
-
-
 ## The day's incident: resolved → summary; pending → a tap target that reopens it.
 func _add_incident_card() -> void:
 	var s: Dictionary = _gm.season_state
@@ -1576,8 +1436,6 @@ func _make_visit_menu() -> VisitMenu:
 	menu.option_picked.connect(_on_visit_option)
 	menu.course_picked.connect(_on_visit_course)
 	menu.closed.connect(_on_visit_closed)
-	menu.talk_picked.connect(_on_talk_pressed)
-	menu.dismissed.connect(_on_talk_dismissed)
 	return menu
 
 
@@ -1682,7 +1540,7 @@ func _open_overlay(kind: String, sub: String, title: String, pid: int, view: Dic
 		speaker: String = "") -> void:
 	_overlay_kind = kind
 	_overlay_pid = pid
-	# Interviews / outings / incidents = visual-novel dialogue (`mental/VnDialogueView`).
+	# Stories / outings / incidents = visual-novel dialogue (`mental/VnDialogueView`).
 	# Opens through black (`WeekFade`); `_overlay` is set at once, so the screen is busy meanwhile.
 	var vn := VnDialogueView.create()
 	_overlay = vn
@@ -1710,8 +1568,6 @@ func _on_overlay_choice(idx: int) -> void:
 	var out: Dictionary
 	if _overlay_kind == "incident":
 		out = MentalSystem.resolve_incident(s, _day, idx)
-	elif _overlay_kind == "talk":
-		out = MentalSystem.finish_talk(s, _day, idx)
 	else:
 		out = MentalSystem.finish_evening(s, _day, idx)
 	_save("choice")
@@ -1811,5 +1667,4 @@ func _fill_preview() -> void:
 	for d in day + 1:
 		day_log[d] = board.apply_day_training(d)
 	_day = day
-	MentalSystem.begin_morning(s, day)
 	_begin_afternoon()

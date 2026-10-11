@@ -8,6 +8,9 @@ extends Control
 #   ├ 행동 바 (%ActionBar — 탭이 `bar_specs()` 를 주면)                      ┤
 #   └ 떠 있는 캡슐 메뉴 (%NavBar — 기록 · 컬렉션 · 홈 · 패스 · 상점, 아이콘만)  ┘
 #
+# 앱을 켠 첫 로비만 인트로(`_play_intro`): 검은 화면(%IntroFade)이 걷히며 위 막대는 화면 위 밖에서
+# 내려오고, 캡슐 메뉴는 화면 아래 밖에서 올라온다.
+#
 # **레이아웃 · 스타일의 정본은 `scenes/Lobby.tscn`** (+ 아이템 씬 `UI_Comp_LobbyCurrencyPill.tscn` ·
 # `UI_Comp_LobbyNavButton.tscn`). 이 스크립트는 화면 틀을 만들지 않는다 — 표(`TABS` ·
 # `WALLET`) 만큼 아이템 수를 맞추고, 글 · 아이콘을 넣고, 시그널을 잇는다. 코드가 정하는 것:
@@ -74,9 +77,18 @@ const NAV_ICON_OFF: Color = Color(0.85, 0.85, 0.88, 1.0)
 const NAV_ICON_ON: Color = OutgameTheme.TEXT
 const NAV_ICON_LOCKED: Color = Color(0.85, 0.85, 0.88, 0.28)
 
+## App-start intro (`_play_intro`): black fade-out, then the top bar slides down from above the
+## screen and the nav capsule slides up from below it.
+const INTRO_FADE_SEC: float = 0.7
+const INTRO_SLIDE_SEC: float = 0.55
+const INTRO_TOP_DELAY: float = 0.25
+const INTRO_NAV_DELAY: float = 0.4
+
 ## Set before `change_scene_to_file(Lobby.tscn)` to open straight into the scenario pick
 ## (RunSetup team step 뒤로, RunResult 새 런). Cleared by the lobby once read.
 static var open_scenario_on_enter: bool = false
+## The intro plays once per app launch — later lobby entries (back from a run) open plain.
+static var _intro_played: bool = false
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _pm: Node = get_node("/root/ProfileManager")
@@ -121,8 +133,15 @@ func _ready() -> void:
 	if open_scenario_on_enter:
 		# Back from RunSetup's first step / RunResult 새 런: straight into the scenario pick.
 		open_scenario_on_enter = false
+		_intro_played = true
 		switch_tab("home")
 		open_scenario_select(false)
+		_open_manager_type_if_needed()
+	elif not _intro_played:
+		_intro_played = true
+		_play_intro()
+	else:
+		_open_manager_type_if_needed()
 
 
 # ── Build ────────────────────────────────────────────────────────────────────
@@ -153,13 +172,53 @@ func _build() -> void:
 	switch_tab("home")
 	refresh_badges()
 
-	# First lobby of a profile: the manager type must be chosen before anything
-	# else (plan §11.0). The popup can't be dismissed without choosing.
-	if not _pm.manager_type_chosen():
-		_manager_popup = ManagerTypePopup.create()
-		add_child(_manager_popup)
-		_manager_popup.chosen.connect(_on_manager_type_chosen)
-		_manager_popup.open()
+
+## First lobby of a profile: the manager type must be chosen before anything else
+## (plan §11.0). The popup can't be dismissed without choosing. Opened after the intro.
+func _open_manager_type_if_needed() -> void:
+	if _pm.manager_type_chosen() or _manager_popup != null:
+		return
+	_manager_popup = ManagerTypePopup.create()
+	add_child(_manager_popup)
+	_manager_popup.chosen.connect(_on_manager_type_chosen)
+	_manager_popup.open()
+
+
+## App-start intro: `%IntroFade` (black, swallows taps) fades out; the top bar (level disc ·
+## wallet · settings) slides down from above the top edge, then the nav capsule slides up from
+## below the bottom edge. Offsets only, back to the scene's at the end.
+func _play_intro() -> void:
+	var fade: ColorRect = %IntroFade
+	ScreenMetrics.extend_background(fade)
+	fade.visible = true
+	fade.color.a = 1.0
+	fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	var top: Control = %TopBar
+	var top_base := Vector2(top.offset_top, top.offset_bottom)
+	var top_dy: float = -(top_base.y + ScreenMetrics.top_y())
+	var nav: Control = %NavBar
+	var nav_base: Vector2 = _chrome_base[nav]
+	var place_top := func(t: float) -> void:
+		top.offset_top = top_base.x + top_dy * (1.0 - t)
+		top.offset_bottom = top_base.y + top_dy * (1.0 - t)
+	# Same off-screen spot as the scenario-mode slide: its top `CHROME_SLIDE_MARGIN` under the screen.
+	var nav_dy: float = -nav_base.x + maxf(0.0, ScreenMetrics.insets().w) + CHROME_SLIDE_MARGIN
+	var place_nav := func(t: float) -> void:
+		nav.offset_top = nav_base.x + nav_dy * (1.0 - t)
+		nav.offset_bottom = nav_base.y + nav_dy * (1.0 - t)
+	place_top.call(0.0)
+	place_nav.call(0.0)
+	var tw: Tween = create_tween().set_parallel(true)
+	tw.tween_property(fade, "color:a", 0.0, INTRO_FADE_SEC) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_method(place_top, 0.0, 1.0, INTRO_SLIDE_SEC).set_delay(INTRO_TOP_DELAY) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_method(place_nav, 0.0, 1.0, INTRO_SLIDE_SEC).set_delay(INTRO_NAV_DELAY) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.chain().tween_callback(func() -> void:
+		fade.visible = false
+		fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_open_manager_type_if_needed())
 
 
 ## 기기마다 다른 값만 오프셋으로 넣는다(패턴 B) — 배경은 노치 밑까지 올리고, 아래쪽

@@ -2,14 +2,16 @@
 class_name GaugeRing
 extends Control
 
-# Radial progress ring of one `PilotGauge` (a `_draw` widget placed as a node in
-# `UI_Comp_PilotGauge.tscn`): a full track circle, an arc from 12 o'clock clockwise for
-# `ratio`, then a second-lap arc for `over_ratio` drawn **on top** in `over_color` (stress
-# above 100 = a full first lap + the overflow lap). An optional **change segment**
-# `seg_from` → `seg_to` (in lap units 0..2: 0..1 = first lap, 1..2 = second lap) is drawn
-# over each lap in `seg_color` / `seg_over_color` — the stress gauge's "today's change"
-# (lighter tone for a rise, a faint ghost for the part a fall removed). The scene sets its
-# size and `width`, `PilotGauge` sets the ratios and colours (data colours).
+# Half-ring gauge of one `PilotGauge` flag (a `_draw` widget placed as a node in
+# `UI_Comp_PilotGauge.tscn`): only the **bottom half** of a circle — a track from 9 o'clock down
+# through 6 to 3 o'clock, filled **left → right** for `ratio`, then a second pass for
+# `over_ratio` drawn **on top** in `over_color` (stress above 100 = a full first pass + the
+# overflow pass on the same half arc). An optional **change segment** `seg_from` → `seg_to`
+# (in lap units 0..2: 0..1 = first pass, 1..2 = second pass) is drawn over each pass in
+# `seg_color` / `seg_over_color` — "today's change" (lighter tone for a rise, a faint ghost for
+# the part a fall removed). The circle is as wide as the node and its lowest point touches the
+# node's bottom (`centre()`), so the icon sits in the bowl. The scene sets size and `width`,
+# `PilotGauge` sets the ratios and colours (data colours).
 
 const _SEGMENTS: int = 64
 
@@ -60,24 +62,32 @@ const _SEGMENTS: int = 64
 		queue_redraw()
 
 
+## Circle centre in local coordinates: as wide as the node, lowest point on its bottom edge.
+func centre() -> Vector2:
+	return Vector2(size.x * 0.5, size.y - size.x * 0.5)
+
+
+func _radius() -> float:
+	return size.x * 0.5 - width * 0.5
+
+
 func _draw() -> void:
-	var r: float = minf(size.x, size.y) * 0.5 - width * 0.5
+	var r: float = _radius()
 	if r <= 0.0:
 		return
-	var centre: Vector2 = size * 0.5
+	var c: Vector2 = centre()
 	var lo: float = minf(seg_from, seg_to)
 	var hi: float = maxf(seg_from, seg_to)
-	draw_arc(centre, r, 0.0, TAU, _SEGMENTS, track_color, width, true)
-	_arc(centre, r, 0.0, ratio, color)
-	_arc(centre, r, clampf(lo, 0.0, 1.0), clampf(hi, 0.0, 1.0), seg_color)
-	_arc(centre, r, 0.0, over_ratio, over_color)
-	_arc(centre, r, clampf(lo - 1.0, 0.0, 1.0), clampf(hi - 1.0, 0.0, 1.0), seg_over_color)
+	_arc(c, r, 0.0, 1.0, track_color)
+	_arc(c, r, 0.0, ratio, color)
+	_arc(c, r, clampf(lo, 0.0, 1.0), clampf(hi, 0.0, 1.0), seg_color)
+	_arc(c, r, 0.0, over_ratio, over_color)
+	_arc(c, r, clampf(lo - 1.0, 0.0, 1.0), clampf(hi - 1.0, 0.0, 1.0), seg_over_color)
 
 
-## Arc from `a` to `b` (shares of a lap, 0 = 12 o'clock, clockwise); nothing when b <= a.
-func _arc(centre: Vector2, r: float, a: float, b: float, col: Color) -> void:
+## Arc from `a` to `b` (shares of the half ring, 0 = 9 o'clock, 1 = 3 o'clock, through the
+## bottom); nothing when b <= a. Angles run PI → 0 (y points down, so PI / 2 is the bottom).
+func _arc(c: Vector2, r: float, a: float, b: float, col: Color) -> void:
 	if b <= a:
 		return
-	var start: float = -PI * 0.5
-	draw_arc(centre, r, start + TAU * a, start + TAU * b,
-			maxi(4, int(_SEGMENTS * (b - a))), col, width, true)
+	draw_arc(c, r, PI - PI * a, PI - PI * b, maxi(4, int(_SEGMENTS * (b - a))), col, width, true)

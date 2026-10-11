@@ -579,7 +579,7 @@ func apply_day_training(day: int) -> Array:
 			# The week screen's base map stands the pilot on that colour's spot.
 			"color": String(colors.get(seat, filler_color())),
 			# Placed tile the cell belongs to (-1 = basic course) and its facility: pilots in
-			# the same group trained together (joint training, mental `talk_pair`).
+			# the same group trained together (joint training: one shared map spot).
 			"group": int((groups.get(seat, {}) as Dictionary).get("group", -1)),
 			"facility": String((groups.get(seat, {}) as Dictionary).get("facility", "")),
 		})

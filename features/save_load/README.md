@@ -28,7 +28,7 @@ Auto-save fires at discrete points (no manual save UI):
    applies the result and clears `match_resume`.
 6. **Weekly flow** — every step of the week (`SeasonHub.autosave(reason)`, public so the
    press / week screens call it): week start (training confirmed), each day-stage change
-   (settlement → morning talk → afternoon → evening incident roll; the weekend's automatic afternoon /
+   (settlement → afternoon → evening incident roll; the weekend's automatic afternoon /
    evening), a talk / interview / outing opened (record with `choice = -1`), every answer picked, the
    Sunday press answer, next day, end of week. See the table below.
 
@@ -209,7 +209,7 @@ Resource-typed entries:
 | 4 | Post-match (return from BattleSim, result applied) | `SeasonHub._ready()` | null (cleared by `_consume_pending_match_result`) |
 | 5 | Press answer (`press_answer`, Sunday afternoon) | `PressConferenceView._on_answer_picked` | null |
 | 6 | Week start (`week_start`, `week_day = 0`) | `SeasonHub.on_training_confirmed` | null |
-| 7 | Training settled (`training_settled`) · talk opens (`morning_talk`) · afternoon (`afternoon`) · incident rolled (`incident`) | `WeekProgressView._settle_day` · `_finish_result_fx` · `_begin_afternoon` · `_begin_evening` · `_advance_weekend` | null (or the Saturday picks in `pending_match`) |
+| 7 | Training settled (`training_settled`) · afternoon (`afternoon`) · incident rolled (`incident`) | `WeekProgressView._settle_day` · `_finish_result_fx` · `_begin_afternoon` · `_begin_evening` · `_advance_weekend` | null (or the Saturday picks in `pending_match`) |
 | 8 | Dialog opened (`talk_open` / `afternoon_open`) · answer picked (`choice`) | `WeekProgressView._on_talk_pressed` · `_on_afternoon_action` · `_on_overlay_choice` | null |
 | 9 | Next day (`next_day`) · end of week (`post_week`) | `SeasonHub.on_week_day_confirmed` · `_end_week` | null |
 

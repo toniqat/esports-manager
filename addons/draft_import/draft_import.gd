@@ -2,7 +2,7 @@
 extends RefCounted
 
 # ── Draft runtime JSON → mental_events.csv + mental_texts.csv + l10n src/mental.csv ──
-# The mental events (interview · outing · incident · press · morning talk) are authored
+# The mental events (interview · story · outing · incident · press · limit break) are authored
 # in the Draft project `res://narrative/` and exported by Draft as `draft-runtime` JSON
 # into `res://data/draft/` (Draft runtime preset, auto-sync on save). This importer turns
 # those flows into the game's tables; the game itself never reads the JSON.
@@ -31,10 +31,10 @@ const TARGET_LOCALE: String = "en"
 const DRAFT_LANG: String = "En"
 ## Event kinds in table order (rows are sorted by kind, then id).
 ## `story` / `story_sat` / `story_sun` = the afternoon visit's 이야기 (§15 D, `MentalEvents.STORY_KINDS`).
-const KINDS: Array = ["interview", "outing", "incident", "press", "talk", "talk_pair",
+const KINDS: Array = ["interview", "outing", "incident", "press",
 		"story", "story_sat", "story_sun", "limit_break"]
 ## Wiki speaker name → line marker. No speaker = narration `*`; any other name = plain.
-const SPEAKER_MARKERS: Dictionary = {"감독": ">", "파트너": "&", "태그": "@"}
+const SPEAKER_MARKERS: Dictionary = {"감독": ">", "태그": "@"}
 const EVENT_HEADER: String = "id,kind,manager_type,stage,cond,effects,weight"
 const TEXT_HEADER: String = "id,event_id,slot,choice,branch,seq,text_key"
 

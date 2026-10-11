@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://bgmh0rlwbhyb6"]
+[gd_scene load_steps=5 format=3 uid="uid://bgmh0rlwbhyb6"]
 
 [ext_resource type="Script" uid="uid://cr0d2b6l2s2dg" path="res://features/meta/lobby/HomeTab.gd" id="1_home"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
+[ext_resource type="PackedScene" uid="uid://doulqevypbgq4" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="3_bar"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/lobby/icon_close.svg" id="4_close"]
 
 [node name="HomeTab" type="Control"]
 layout_mode = 3
@@ -22,48 +24,8 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Gap0" type="Control" parent="VBox"]
+[node name="GapTop" type="Control" parent="VBox"]
 custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Title" type="Label" parent="VBox"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-theme_type_variation = &"HeadingLabel"
-theme_override_font_sizes/font_size = 64
-text = "tx_DBE01WV863"
-horizontal_alignment = 1
-
-[node name="Gap1" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 14)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Rule" type="ColorRect" parent="VBox"]
-custom_minimum_size = Vector2(80, 6)
-layout_mode = 2
-size_flags_horizontal = 4
-mouse_filter = 2
-color = Color(0.961, 0.651, 0.137, 1)
-
-[node name="Gap2" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Summary" type="Label" parent="VBox"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — HomeTab.gd _fill()"
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 32)
-layout_mode = 2
-theme_type_variation = &"CaptionLabel"
-text = "감독 Lv1 · 보유 선수 10명 · 특성 6개"
-horizontal_alignment = 1
-
-[node name="Gap3" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 mouse_filter = 2
 
@@ -75,7 +37,7 @@ theme_type_variation = &"CaptionLabel"
 theme_override_font_sizes/font_size = 24
 text = "tx_C43HAK9QB4"
 
-[node name="Gap4" type="Control" parent="VBox"]
+[node name="Gap0" type="Control" parent="VBox"]
 custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 mouse_filter = 2
@@ -274,3 +236,49 @@ layout_mode = 2
 theme_type_variation = &"FaintLabel"
 text = "tx_WGC1W057NT"
 horizontal_alignment = 1
+
+[node name="Gap1" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Buttons" type="Control" parent="VBox"]
+editor_description = "Run actions under the run card: the main capsule centred, the round X hanging left of it (shown only with a run)."
+custom_minimum_size = Vector2(920, 106)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="FloatingBarButton_Main" parent="VBox/Buttons" instance=ExtResource("3_bar")]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — HomeTab.gd _fill() (이어하기 with a run, 게임 시작 without)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 106)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_right = 250.0
+offset_bottom = 106.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 35
+text = "이어하기"
+
+[node name="FloatingBarButton_NewGame" parent="VBox/Buttons" instance=ExtResource("3_bar")]
+editor_description = "[필수] 지우면 오류 — HomeTab.gd _fill() (round X = new game → run-abandon modal; hidden without a run)"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(106, 106)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -372.0
+offset_right = -266.0
+offset_bottom = 106.0
+grow_horizontal = 2
+theme_type_variation = &"BarDarkButton"
+theme_override_constants/icon_max_width = 44
+text = ""
+icon = ExtResource("4_close")
+icon_alignment = 1

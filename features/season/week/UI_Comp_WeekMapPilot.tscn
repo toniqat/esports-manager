@@ -135,7 +135,7 @@ horizontal_alignment = 1
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_map_token()
-Tap target over the portrait (morning talk / afternoon: pick this pilot). Code disables it for pilots that cannot be asked."
+Tap target over the portrait (afternoon: visit this pilot). Code disables it for pilots that cannot be asked."
 layout_mode = 0
 offset_right = 92.0
 offset_bottom = 92.0

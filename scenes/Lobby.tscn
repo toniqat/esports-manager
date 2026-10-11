@@ -338,3 +338,15 @@ text = "토스트 미리보기 — show_toast() 가 글을 넣는다"
 horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
+
+[node name="IntroFade" type="ColorRect" parent="."]
+editor_description = "[필수] 지우면 오류 — LobbyScreen.gd _play_intro(). App-start black: fades out while the top bar and the nav capsule drop in; swallows taps until the intro ends, then hidden. Extended under the notch in code. Hidden in the editor (shown only for the intro)."
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)

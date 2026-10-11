@@ -6,7 +6,7 @@ extends RefCounted
 # Its texts are `mental_texts` rows (l10n keys) by `event_id`:
 #   slot `line`   — in `seq` order. Text marker: plain = the other side speaks (left
 #                   bubble), `>text` = the manager (right bubble), `*text` = narration,
-#                   `&text` = the partner of a joint-training talk (`talk_pair`),
+#                   `&text` = a second pilot (`partner_id`; no event kind uses it since the joint talk went, 2026-10),
 #                   `@text` = tag (press outlet / incident name), not shown as a bubble.
 #   slot `choice` — manager answer `choice` (0-based).
 #   slot `say`    — reply line after answer `choice`; `branch` ok / ng = only on a
@@ -17,7 +17,7 @@ extends RefCounted
 #             mental check (an entry with any gated clause **or a gated say** rolls a check).
 #   cond    — `;`-joined tokens that must all hold for the row to be drawn.
 # `{name}` in any text is filled with the target pilot's name at display time
-# (`Loc.t(key, {"name": …, "name2": …})`, `{name2}` = the `talk_pair` partner).
+# (`Loc.t(key, {"name": …, "name2": …})`, `{name2}` = the second pilot, unused since 2026-10).
 # Outcomes keep **keys / ids only** (they are saved).
 #
 # Pure static helpers over a `season_state` dictionary — no autoloads.
@@ -26,11 +26,6 @@ const KIND_INTERVIEW: String = "interview"
 const KIND_OUTING: String = "outing"
 const KIND_INCIDENT: String = "incident"
 const KIND_PRESS: String = "press"
-## Morning talk right after training (훈련 소감) and its joint-training variant: the
-## picked pilot and the pilot who trained in the same tile that day both appear, and
-## every single-pilot clause (`trust` · `stress` · `pmod`) applies to **both**.
-const KIND_TALK: String = "talk"
-const KIND_TALK_PAIR: String = "talk_pair"
 ## Limit-break dialogue lines (§15 B) — drawn and played by `LimitBreak`, never by `MentalSystem`.
 const KIND_LIMIT_BREAK: String = "limit_break"
 ## Afternoon visit story (§15 D, 이야기) — the interview's successor. `story` = Mon–Fri, about
@@ -40,7 +35,7 @@ const KIND_LIMIT_BREAK: String = "limit_break"
 const KIND_STORY: String = "story"
 const KIND_STORY_SAT: String = "story_sat"
 const KIND_STORY_SUN: String = "story_sun"
-const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS, KIND_TALK, KIND_TALK_PAIR,
+const KINDS: Array = [KIND_INTERVIEW, KIND_OUTING, KIND_INCIDENT, KIND_PRESS,
 		KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN, KIND_LIMIT_BREAK]
 const STORY_KINDS: Array = [KIND_STORY, KIND_STORY_SAT, KIND_STORY_SUN]
 
@@ -52,8 +47,6 @@ const KIND_LABELS: Dictionary = {
 	KIND_OUTING: L.TERM_ACTIVITY_OUTING,
 	KIND_INCIDENT: L.MENTAL_UI_MOD_SOURCE_INCIDENT,
 	KIND_PRESS: L.TERM_ACTIVITY_PRESS,
-	KIND_TALK: L.MENTAL_UI_MOD_SOURCE_TALK,
-	KIND_TALK_PAIR: L.MENTAL_UI_MOD_SOURCE_TALK,
 	KIND_STORY: L.MENTAL_UI_VISIT_STORY,
 	KIND_STORY_SAT: L.MENTAL_UI_VISIT_STORY,
 	KIND_STORY_SUN: L.MENTAL_UI_VISIT_STORY,

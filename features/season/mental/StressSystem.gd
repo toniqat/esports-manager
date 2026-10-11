@@ -131,8 +131,8 @@ static func relieve(state: Dictionary, pilot_id: int, action: String) -> int:
 	return add(state, pilot_id, -relief_amount(action))
 
 
-## Base stress relief of a finished action or event kind (≥ 0): outing / interview / morning
-## talk (`STRESS_*_RELIEF`); incidents and press conferences relieve nothing.
+## Base stress relief of a finished action or event kind (≥ 0): outing / interview / story
+## (`STRESS_*_RELIEF`); incidents and press conferences relieve nothing.
 static func relief_amount(action: String) -> int:
 	match action:
 		MentalSystem.ACTION_OUTING, MentalEvents.KIND_OUTING:
@@ -140,8 +140,6 @@ static func relief_amount(action: String) -> int:
 			return ConstTable.int_of("STRESS_OUTING_RELIEF") + ConstTable.int_of("VISIT_OUTING_RELIEF_BONUS")
 		MentalSystem.ACTION_INTERVIEW, MentalEvents.KIND_INTERVIEW, MentalSystem.ACTION_STORY:
 			return ConstTable.int_of("STRESS_INTERVIEW_RELIEF")
-		MentalSystem.ACTION_TALK, MentalEvents.KIND_TALK_PAIR:
-			return ConstTable.int_of("STRESS_TALK_RELIEF")
 	return 0
 
 

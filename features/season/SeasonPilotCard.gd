@@ -4,13 +4,15 @@ extends Panel
 # Small vertical pilot card shown five in a row (seat order) on the season hub and at the
 # bottom of the week screen: round portrait inside a **level ring** on top (`ProgressRing` =
 # the run-only 깨달음 level's EXP bar, `TrainingLevel.progress`; LINK blue, ACCENT while capped =
-# limit break due or max) with the level chip `Lv N` centred on the ring's top edge like a tab
-# (`set_training_level`; painted in the ring's colour, small faded `Lv` + the number), then two
-# gauges (`PilotGauge`: stress · trust). No card
-# background (`SeasonPilotCardBare`): the parts sit on the page. Each gauge shows its value
-# under the ring (stress number · trust percent); the week screen adds that day's changes
-# (`set_day_deltas`: gauge ring segment + `+N` / `+N%` under the value, the day's level EXP
-# as a light segment on the portrait ring) and is drawn larger (`set_week_layout`). No position badge — the seat order (`GameEnums.ROLE_DISPLAY_ORDER`) says the role. Tapping the card emits `pressed(pilot_id)`; the
+# limit break due or max) on a white rounded **plate** (`%Plate`, `SeasonPilotCardPlate`), with
+# the level chip `Lv N` centred on the ring's top edge like a tab (`set_training_level`; painted
+# in the ring's colour, small faded `Lv` + the number). Under the plate hang two tall **pentagon
+# flags** pointing down (`PilotGauge`: stress left · trust right), each a bottom-half gauge with
+# its icon in the bowl, the value under it (stress number · trust percent); the week screen adds
+# that day's changes (`set_day_deltas`: gauge segment + `+N` / `+N%` under the value, the day's
+# level EXP as a light segment on the portrait ring) and is drawn larger (`set_week_layout`). No
+# card background (`SeasonPilotCardBare`). No position badge — the seat order
+# (`GameEnums.ROLE_DISPLAY_ORDER`) says the role. Tapping the card emits `pressed(pilot_id)`; the
 # screens open `SeasonPilotDetail` with it.
 #
 # **Layout lives in `UI_Comp_SeasonPilotCard.tscn`.** This script fills `%` nodes and paints
@@ -20,7 +22,7 @@ signal pressed(pilot_id: int)
 
 const SCENE_PATH: String = "res://features/season/UI_Comp_SeasonPilotCard.tscn"
 ## `set_week_layout` growth from the scene sizes: portrait (ring · portrait · level chip) and
-## the two gauges (ring · icon · numbers).
+## the two flags (gauge · icon · numbers · point; their width stays the row's).
 const WEEK_PORTRAIT_SCALE: float = 1.1
 const WEEK_GAUGE_SCALE: float = 1.2
 
@@ -47,8 +49,9 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## Shows / hides the two gauges with their value and change lines (default shown; the
-## PREP screen hides them). Positions are fixed in the scene, so the rest of the card stays put.
+## Shows / hides the two gauge flags with their value and change lines (default shown; the
+## PREP screen hides them). Positions are fixed in the scene, so the rest of the card (plate
+## included) stays put.
 func set_gauges_visible(on: bool) -> void:
 	_gauges_on = on
 	_show_gauges(on and pilot_id >= 0)
@@ -95,17 +98,20 @@ func set_training_level(level: int) -> void:
 
 
 ## Week screen only: the portrait (ring · portrait · level chip) grows by `WEEK_PORTRAIT_SCALE`
-## and the two gauges by `WEEK_GAUGE_SCALE`, all from the scene sizes and still centred; the
-## gauges move down under the bigger ring (same gap) and `custom_minimum_size.y` grows to fit
-## (scene 244 → 274). Call once after `_ready` (again = no-op); the portrait is redrawn if a
-## pilot is already shown.
+## and the two flags by `WEEK_GAUGE_SCALE` (height and contents; the width stays the row's), all
+## from the scene sizes and still centred; the plate follows the bigger ring (same margin under
+## it), the flags hang from its new bottom edge (tuck scaled with them) and
+## `custom_minimum_size.y` grows to fit (scene 256 → 290). Call once after `_ready` (again =
+## no-op); the portrait is redrawn if a pilot is already shown.
 func set_week_layout() -> void:
 	if _week_layout:
 		return
 	_week_layout = true
 	var ring: ProgressRing = %Ring
+	var plate: Panel = %Plate
 	var gauges: HBoxContainer = %Gauges
-	var gap: float = gauges.offset_top - ring.offset_bottom
+	var plate_pad: float = plate.offset_bottom - ring.offset_bottom
+	var tuck: float = plate.offset_bottom - gauges.offset_top
 	var tail: float = custom_minimum_size.y - gauges.offset_bottom
 	var pf: float = WEEK_PORTRAIT_SCALE
 	# Ring: centred, same top, diameter × pf.
@@ -120,6 +126,7 @@ func set_week_layout() -> void:
 	slot.offset_top = inset
 	slot.offset_right = d - inset
 	slot.offset_bottom = d - inset
+	plate.offset_bottom = ring.offset_bottom + plate_pad
 	# Level chip: × pf, still centred on the ring's top stroke (kept inside the card).
 	var chip: Panel = %LevelChip
 	var chip_size: Vector2 = (chip.custom_minimum_size * pf).round()
@@ -134,14 +141,12 @@ func set_week_layout() -> void:
 	pad.add_theme_constant_override(&"margin_top",
 			roundi(float(pad.get_theme_constant(&"margin_top")) * pf))
 	_paint_chip()
-	# Gauges: × WEEK_GAUGE_SCALE (sizes, not `scale`), right under the bigger ring.
+	# Flags: × WEEK_GAUGE_SCALE (sizes, not `scale`), hanging from the plate's new bottom.
 	var gf: float = WEEK_GAUGE_SCALE
-	gauges.add_theme_constant_override(&"separation",
-			roundi(float(gauges.get_theme_constant(&"separation")) * gf))
 	for g in [%PilotGauge_Stress, %PilotGauge_Trust]:
 		(g as PilotGauge).set_size_factor(gf)
 	var gauges_h: float = roundf((gauges.offset_bottom - gauges.offset_top) * gf)
-	gauges.offset_top = ring.offset_bottom + gap
+	gauges.offset_top = plate.offset_bottom - roundf(tuck * gf)
 	gauges.offset_bottom = gauges.offset_top + gauges_h
 	custom_minimum_size.y = gauges.offset_bottom + tail
 	if pilot_id >= 0:

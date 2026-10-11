@@ -1163,11 +1163,10 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `TrainingCourseShapeWell` | SunkPanel | `TrainingCourseCard` `Well` | — |
 | `TrainingCoursePopoverFrame` | PopupCard | `TrainingCoursePopover` root | grade border (`fill`) |
 | `TrainingThumbFrame` · `TrainingThumbExpChip` | Card · AccentChip | `TrainingThumb` root · `ExpChip` | role border, ± fill (`TrainingView`) |
-| `WeekRail` | SunkPanel | `WeekProgressView` `Rail` (the old `WeekEveningHighlight` went with the evening slot scene) | — |
-| `WeekDayChip` · `WeekDayChipToday` | AccentChip | `WeekProgressView` day `Chip`s (`WEEK_DAY_CHIP_RADIUS`) | variation switched by `_refresh_rail` |
+| `WeekDayChipToday` | AccentChip | `WeekProgressView` `%DayBubble` (amber, `WEEK_DAY_CHIP_RADIUS`; `WeekRail` · `WeekDayChip` went with the old rail 2026-10) | — |
 | `WeekMapBubble` | SurfaceChip | `WeekMapPilot` `%Bubble` (morning speech bubble over a map token: white, `BORDER_STRONG` 2px, radius 14) | scene-set |
-| `PilotGaugeMask` | DimPanel | `PilotGauge` `%Mask` (black 0.62 circle, r 21 = half the 42 ring; the gauge has no panel since 2026-10) | scene-set (mask shown by code) |
 | `SeasonPilotCardBare` | Card | `SeasonPilotCard` root — `StyleBoxEmpty`, no card background (hub roster · week row · detail head · own PREP card) | — |
+| `SeasonPilotCardPlate` | Card | `SeasonPilotCard` `%Plate` — white rounded plate (r `SEASON_PILOT_PLATE_RADIUS` 26, `BORDER_STRONG` border, card shadow) behind the portrait ring; the two gauge flags (`PilotFlag`) hang from under it | — |
 | `SeasonPilotDetailLevelFill` | ProgressFill | `SeasonPilotDetail` `%TrainFill` — the 깨달음 level bar in `LINK` (the card ring colour) while it fills; code switches back to `ProgressFill` (ACCENT) while capped (locked / max) | `theme_type_variation` (code) |
 | `WeekMapPilotMask` | DimPanel | `WeekMapPilot` `%Mask`: black 0.62 circle (r 42) over the portrait of a pilot who cannot be picked | scene-set (shown by code) |
 | `VisitMenuBubble` | PopupCard | `VisitMenu` `%Bubble`: the visit menu speech bubble (white, `BORDER_STRONG` 2px, r 28, shadow, padding 32 / 28; the scene's `%Tail` polygons use the same colours) | scene-set |

@@ -2,7 +2,7 @@
   "schemaVersion": 12,
   "id": "bb7c7573-e105-59a2-a405-2a98c8e4fc21",
   "name": "EsportsManager",
-  "description": "EsportsManager 멘탈 이벤트 (면담 · 외출 · 사건 · 기자회견 · 오전 만남). 규약: README.md",
+  "description": "EsportsManager 멘탈 이벤트 (면담 · 외출 · 사건 · 기자회견). 규약: README.md",
   "createdAt": "2026-10-08T00:00:00.000Z",
   "updatedAt": "2026-10-08T14:17:52.595Z",
   "folders": {
@@ -24,16 +24,6 @@
     "ec57a5a5-b671-5d6b-8bed-630ed5f29af7": {
       "id": "ec57a5a5-b671-5d6b-8bed-630ed5f29af7",
       "name": "기자회견",
-      "parentId": null
-    },
-    "c90d4e07-90a2-5500-b1ec-a1bac9edaf2a": {
-      "id": "c90d4e07-90a2-5500-b1ec-a1bac9edaf2a",
-      "name": "오전 만남",
-      "parentId": null
-    },
-    "a72769bf-05db-521e-a181-18bf95eaf65f": {
-      "id": "a72769bf-05db-521e-a181-18bf95eaf65f",
-      "name": "합동 훈련",
       "parentId": null
     },
     "3b6f0a52-1d5e-5c4e-9a1f-15d0000000a1": {
@@ -71,16 +61,6 @@
       "attributes": [],
       "values": {},
       "notes": "대상 선수 ({name}). 면담 · 외출 · 사건 · 만남의 상대"
-    },
-    "6b1de2e5-536b-5673-b2c0-0f81cf838865": {
-      "id": "6b1de2e5-536b-5673-b2c0-0f81cf838865",
-      "name": "파트너",
-      "categoryId": "dd665e10-0059-53d3-a1c2-b806960e315d",
-      "parentId": null,
-      "isCategory": false,
-      "attributes": [],
-      "values": {},
-      "notes": "합동 훈련 상대 ({name2}). talk_pair 만"
     },
     "23f70dcf-de2b-50ea-a210-97bcdd22d3a0": {
       "id": "23f70dcf-de2b-50ea-a210-97bcdd22d3a0",

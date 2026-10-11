@@ -161,7 +161,9 @@ const POSITION_BADGE_EDGE: Color = Color(0, 0, 0, 0.18)
 ## 포지션 배지 글자 좌우 / 위아래 여백.
 const POSITION_BADGE_PAD_H: float = 8.0
 const POSITION_BADGE_PAD_V: float = 1.0
-## 주간 레일 요일 칩 반지름 (`WeekDayChip` · `WeekDayChipToday`).
+## `SeasonPilotCardPlate` 반지름 (선수 카드 초상화 뒤 판).
+const SEASON_PILOT_PLATE_RADIUS: int = 26
+## Corner radius of the week screen's DAY bubble (`WeekDayChipToday`).
 const WEEK_DAY_CHIP_RADIUS: int = 20
 
 ## `build_theme()` 이 만든 테마가 저장되는 곳. 손으로 고치지 않는다 —
@@ -1009,8 +1011,6 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "TrainingThumbExpChip", &"AccentChip", flat_style(POSITIVE, 14))
 
 	# season/week — 시간 경과
-	_add_derived(th, "WeekRail", &"SunkPanel", flat_style(RAIL, 48))
-	_add_derived(th, "WeekDayChip", &"AccentChip", flat_style(Color(0, 0, 0, 0), WEEK_DAY_CHIP_RADIUS))
 	_add_derived(th, "WeekDayChipToday", &"AccentChip", flat_style(ACCENT, WEEK_DAY_CHIP_RADIUS))
 	# 맵 토큰 위 말풍선 (오전: 그 시간의 훈련 이름)
 	var bubble := flat_style(SURFACE, 14, BORDER_STRONG, 2)
@@ -1181,9 +1181,8 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "CurrencyShopPriceCash", &"SunkPanel", flat_style(ACCENT, 999))
 
 	# --- B week UI rework ---
-	# season — the round black masks over a stat gauge ring (`UI_Comp_PilotGauge` %Mask, ring
-	# 42 → r 21) / a map token (portrait circle = r 42) whose pilot cannot be picked.
-	_add_derived(th, "PilotGaugeMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 21))
+	# season — the round black mask over a map token (portrait circle = r 42) whose pilot
+	# cannot be picked.
 	_add_derived(th, "WeekMapPilotMask", &"DimPanel", flat_style(Color(0, 0, 0, 0.62), 42))
 	# season/week — the afternoon visit menu as a speech bubble over the picked token
 	# (`UI_View_VisitMenu`; the tail polygons in the scene use the same SURFACE / BORDER_STRONG).
@@ -1208,6 +1207,11 @@ static func _add_screen_variations(th: Theme) -> void:
 	# season — `SeasonPilotCard` root without a card (portrait and gauges sit on the page;
 	# hub roster · week row · detail sheet head · own PREP card).
 	_add_derived(th, "SeasonPilotCardBare", &"Card", StyleBoxEmpty.new())
+	# season — `SeasonPilotCard` %Plate: the white rounded plate behind the portrait ring; the two
+	# gauge flags hang from under its bottom edge.
+	var pilot_plate := card_style(SEASON_PILOT_PLATE_RADIUS)
+	pilot_plate.border_color = BORDER_STRONG
+	_add_derived(th, "SeasonPilotCardPlate", &"Card", pilot_plate)
 
 	# --- U level merge ---
 	# season — `SeasonPilotDetail` 깨달음 level bar fill in the card ring's colour: LINK while the

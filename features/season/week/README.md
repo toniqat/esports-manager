@@ -11,6 +11,8 @@ The weekend carries the week's one player match: **Saturday morning** = stadium 
 |---|---|
 | `WeekProgressView.gd` | `class_name WeekProgressView extends Control` — the whole screen's logic. Binds `%` nodes, fills data, adds the list's item scenes, drives the training-day stages. Create with `WeekProgressView.create()` (`.new()` is an empty Control) |
 | `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
+| `WeekDayTrack.gd` | `class_name WeekDayTrack extends Control` — `_draw` widget of the day progress bar (`%DayTrack`): thin line + 7 circles at the centres of 7 equal cells, filled left → right up to `progress` (circle index, fractions while sliding), `today` = the larger circle with a white core; `dot_x(i)` |
+| `WeekBannerStreak.gdshader` | Canvas shader on the top `%TeamBanner`: the right 30 % (`fade_from` 0.7) dissolves into transparency through coarse horizontal fBm streaks (the `ScenarioWipe` look, still). Uses the node-local vertex position, so it works on the banner's cropped `draw_texture_rect_region`; `rect_size` set by code |
 | `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers) + the weekend `UI_Comp_BaseMap_Stadium.tscn`. See `base_map/README.md` |
 | `UI_Comp_WeekMapSection.tscn` | The map slot (fills `%MapPin`, full screen width): `%MapHolder` (plain Control) that receives the team's `BaseMap` / the stadium via `BaseMap.mount` (1200 × 761, centred, 60 px cropped each side). No caption and no facility research bubbles on this screen (both removed 2026-10; the hub keeps the bubbles) |
 | `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 92 × 92, **portrait only** (`%Portrait` slot 84 · `%Mask` black circle over the portrait; the stress / trust gauges moved to the pilot cards under the map 2026-10) · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token · the portrait disc, black outline, tail and shadow are not in the scene — `BaseMap` draws them under the token, `base_map/README.md`). No name, no role badge |
@@ -19,17 +21,17 @@ The weekend carries the week's one player match: **Saturday morning** = stadium 
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
 | `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the visit — `PanelContainer` (Card, height = content) ─ Box VBox: Head · `%Hint` (only when nobody can be visited) · `%Coach` (coach points left / weekly grant). The "tap a pilot on the map …" instruction was removed 2026-10 |
-| `VisitMenu.gd` | `class_name VisitMenu extends CanvasLayer` — the **morning talk bubble** (`open_talk(state, pid)`: header + caption 오전 만남 + one 만남 button → `talk_picked`; a tap outside the bubble → `dismissed(at)`) and the afternoon **visit (방문)** popup, two surfaces: the **menu** as a **speech bubble over the visited pilot's token** (only the options 집중 훈련 / 이야기 / 외출), and the **focus training modal** centred in the safe area over a dim (courses → result; the bubble hides, Back on the courses page returns to the bubble). `point_at(portrait, token)` gives the bubble's target; `_place_bubble` (every frame while the menu page is open, only on change) puts the bubble above the portrait with the tail down, else under the token with the tail flipped up, else on the roomier side clamped into the safe area (tail hidden if it would cover the token); x centred on the token, clamped into the safe area. The result page has no caption: its `EventResultPanel` comes first, the pilot portrait half over the card's top edge (no names). It hosts an `EventResultPanel` (`show_result(state, notes)` takes the outcome's **note dicts**, right after they were applied: bars before → after + stat chips). Draws and emits only (`option_picked` · `course_picked` · `closed`); `create()`, `point_at` / `open_menu` / `show_courses` / `show_result`. F6 preview = the menu of my first visitable pilot (visit recorded in memory), centred, no tail; 집중 훈련 → courses → a real `finish_focus` result |
-| `UI_View_VisitMenu.tscn` | Its scene (layer 20): `Root` full rect STOP (swallows other taps) → `%Bubble` (`VisitMenuBubble`, 840 wide): VBox sep 16 — `%Header` (`%Portrait` 80 · `%Name` · `%PilotLine` · `%Coach`) · `%Caption` · `%Options` (`%Focus` / `%Story` / `%Outing` `SelectableCardButton`s 104 high with title + note); `%Tail` (Node2D, `Edge` + `Fill` triangles); `%Modal` (hidden; `Dim` `DimPanel` + `%Safe` CenterContainer inset to the safe area → `Card` `PopupCard` 920 wide: `%ModalHeader` (courses page only: `%ModalPortrait` · `%ModalName` · `%ModalPilotLine` · `%ModalCoach`) · `%ModalCaption` · `%Courses` · `%EventResultPanel_Result` (`UI_Comp_EventResultPanel`) · `Buttons` (`%Back` · `%Confirm`)) |
+| `VisitMenu.gd` | `class_name VisitMenu extends CanvasLayer` — the afternoon **visit (방문)** popup (the morning talk bubble `open_talk` was deleted 2026-10 with the talk), two surfaces: the **menu** as a **speech bubble over the visited pilot's token** (only the options 집중 훈련 / 이야기 / 외출), and the **focus training modal** centred in the safe area over a dim (courses → result; the bubble hides, Back on the courses page returns to the bubble). `point_at(portrait, token)` gives the bubble's target; `_place_bubble` (every frame while the menu page is open, only on change) puts the bubble above the portrait with the tail down, else under the token with the tail flipped up, else on the roomier side clamped into the safe area (tail hidden if it would cover the token); x centred on the token, clamped into the safe area. The result page has no caption: its `EventResultPanel` comes first, the pilot portrait half over the card's top edge (no names). It hosts an `EventResultPanel` (`show_result(state, notes)` takes the outcome's **note dicts**, right after they were applied: bars before → after + stat chips). Draws and emits only (`option_picked` · `course_picked` · `closed`); `create()`, `point_at` / `open_menu` / `show_courses` / `show_result`. F6 preview = the menu of my first visitable pilot (visit recorded in memory), centred, no tail; 집중 훈련 → courses → a real `finish_focus` result |
+| `UI_View_VisitMenu.tscn` | Its scene (layer 20): `Root` full rect STOP (swallows other taps) → `%Bubble` (`VisitMenuBubble`, 840 wide): VBox sep 16 — `%Header` (`%Portrait` 80 · `%Name` · `%PilotLine` · `%Coach`) · `%Caption` · `%Options` (`%Focus` / `%Story` / `%Outing` `SelectableCardButton`s; the talk page's `%Talk` button was deleted 104 high with title + note); `%Tail` (Node2D, `Edge` + `Fill` triangles); `%Modal` (hidden; `Dim` `DimPanel` + `%Safe` CenterContainer inset to the safe area → `Card` `PopupCard` 920 wide: `%ModalHeader` (courses page only: `%ModalPortrait` · `%ModalName` · `%ModalPilotLine` · `%ModalCoach`) · `%ModalCaption` · `%Courses` · `%EventResultPanel_Result` (`UI_Comp_EventResultPanel`) · `Buttons` (`%Back` · `%Confirm`)) |
 | `UI_Comp_VisitCourseRow.tscn` | Item of the menu (no script): one focus course, 96 high (`%Name` · `%Stats` · `%Cost` · `%Reason`; picked = `SelectableCardButtonOn`) |
-| `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`); also the morning talk's summary |
+| `UI_Comp_WeekAfternoonDoneCard.tscn` | Item: 오후 summary after the action (`%Portrait` · `%Head` · `%Line`) |
 | *(shared)* `../UI_Comp_SeasonPilotCard.tscn` | The five pilot cards of `%PilotRow` (`features/season/README.md` "Pilot card · detail sheet") |
 
 The per-pilot training result cards (`WeekPilotCard` + `WeekStatCell`, six short-named stat columns) were deleted
 (2026-10): the day's results now rise over the map portraits and the stress change sits on the pilot cards under the map.
 
-The morning talk card (`UI_Comp_WeekTalkCard`, pilot + 만남 button under the map) was deleted 2026-10: the talk is a
-speech bubble over the tapped token (`VisitMenu.open_talk`); its done-summary card went too (the day moves on by itself).
+The morning talk (훈련 소감) was deleted 2026-10 entirely — card, talk bubble, `Stage.TALK`, its skip warning and its
+events (`features/season/mental/README.md`): the morning settles by itself and the afternoon follows the result FX.
 
 The old evening card (`WeekEveningCard` with five `WeekEveningSlot` portraits and a `패스` button) was replaced by
 the map + afternoon card; the slot scene and its `WeekEveningHighlight` variation were deleted.
@@ -46,36 +48,44 @@ F6 preview (one token per spot, named after it).
 WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 ├ %Background   ColorRect BG — code: ScreenMetrics.extend_background (notch band)
 └ %SafeArea     full rect — code: offset_bottom = −bottom inset (bottom edge = safe_h())
-  ├ Rail        Panel `WeekRail` (dark pill, RAIL r48), x 24 … −24, y 26 … 122
-  │ ├ %DayHighlight  Panel `WeekDayChipToday` 124 × 80 (y 8), behind the chips — code sets its x to today's chip
-  │ └ Row (HBox) ─ LeftPad (14)
-  │              ─ %Days (HBox, expand) ─ Day0…Day6 (CenterContainer, equal share ≈ 143)
-  │              │                         └ Chip (Panel 124×80, `WeekDayChip`, transparent — the pill is the highlight)
-  │              │                           └ Box (VBox, centred, sep −6) ─ NumRow (HBox, centred, sep 5):
-  │              │                             DayTag (16, "DAY", key `season.week.rail_day`, today only; clipped, right-aligned,
-  │              │                             width animated by code) · Num (30)
-  │              │                             ─ Abbr (14, MON … SUN)
-  │              ─ RightPad (14)
-  ├ %Phase (CaptionLabel 26, centred, x 40 … −40, y 134 … 170)  ← phase name only (no divider under it)
-  ├ %TimeRow    x 40 … −40, y 172 … 244, clips: %TimePrev · %TimeNow · %TimeNext (TitleLabel 52, 320 wide, centre
+  ├ TopBar      full width, y 16 … 128
+  │ ├ %TeamBanner   TeamBanner (match_prep `_draw` widget) x 0 … 540 (= the screen centre on the 1080 design),
+  │ │               my team's banner; material = WeekBannerStreak.gdshader (right 30 % streak dissolve, code)
+  │ ├ %TeamLogo     TextureRect 88², x 28, centred on the bar
+  │ └ Wallet (HBox, right, x −516 … −24, sep 12, align End)
+  │   ├ %LobbyCurrencyPill_Budget  (meta/lobby pill scene, 240 × 64, mouse Ignore) icon team_budget.svg · team budget
+  │   └ %LobbyCurrencyPill_Coach   (same, 240 × 64) icon coach_points.svg · coach points left this week
+  ├ %DayTrack   WeekDayTrack, x 72 … −72, y 140 … 176: line + 7 circles (Mon → Sun)
+  ├ %DayAbbrs   HBox, same x span, y 178 … 202: Day0…Day6 (CenterContainer, equal share) ─ Abbr (CaptionLabel 18,
+  │             today BodyLabel; code-filled MON … SUN)
+  ├ %DayBubble  Panel `WeekDayChipToday` (amber) 120 × 74 at y 216, x by code (centred under today's circle):
+  │             BubbleTail (Polygon2D, tail up, ACCENT) · Box VBox ─ DayTag (16, key `season.week.rail_day` "DAY")
+  │             · %DayNum (36, day inside the phase)
+  ├ %Phase (CaptionLabel 26, centred, x 40 … −40, y 296 … 330)  ← phase name only
+  ├ %TimeRow    x 40 … −40, y 326 … 398, clips: %TimePrev · %TimeNow · %TimeNext (TitleLabel 52, 320 wide, centre
   │             anchored, 300 apart; the sides scale 0.55 + alpha 0.45) — half of the day, see "Time row"
-  ├ %MapPin     full width, **centred on the safe area's height** (anchors 0.5, −380 … 381 = 761 map height), hidden
-  │             by default: fixed slot for the map (WeekMapSection)
-  ├ %Scroll     x 40 … −40, y 258 … (centre − 394 = map top − 14), anchors_preset −1 (grows right only): the card
+  ├ %MapPin     full width, centred on the safe area's height **+ 70** (anchors 0.5, −310 … 451 = 761 map height),
+  │             hidden by default: fixed slot for the map (WeekMapSection)
+  ├ %Scroll     x 40 … −40, y 410 … (centre − 324 = map top − 14), anchors_preset −1 (grows right only): the card
   │             list **above the map**
   │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
-  ├ %PilotRow   HBox sep 12, x 40 … −40, centre + 395 … 669 (map bottom + 14, 274 tall): SeasonPilotCard_Pilot0..4
-  │             (seat order, `set_week_layout()`: portrait ×1.1, gauges ×1.2), **always shown**
-  └ %Bar        HBox capsule row, sep 16, y −128 … −32, 40 side insets — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
-    ├ %FloatingBarButton_Stage  BarDarkButton 28, ratio 1, mouse Ignore (a label: 오전 / 오후 / 저녁); hidden when the day has no stage
-    └ %FloatingBarButton_Action BarPrimaryButton, ratio 2 (다음 / 확인 / 기자회견 / 주 마감 →); `BarDarkButton` for 경기 준비 / 경기 시작 + `fit_bar_button`
+  ├ %PilotBanner TeamBanner, full width (edge to edge), centre + 465 … 755: my team's banner as the strap behind the cards
+  ├ %PilotRow   HBox sep 12, x 40 … −40, centre + 465 … 755 (map bottom + 14, 290 tall): SeasonPilotCard_Pilot0..4
+  │             (seat order, `set_week_layout()`), **always shown**
+  └ %Bar        HBox capsule row, sep 16, align End, y −128 … −32, 40 side insets — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
+    └ %FloatingBarButton_Action BarPrimaryButton, 262 wide (40 % of the old 2/3 slot), shrink-end = right
+                                (다음 / 확인 / 기자회견 / 주 마감 →); `BarDarkButton` for 경기 준비 / 경기 시작 + `fit_bar_button`
 ```
 
-* **Scene owns**: every position / size, fonts (variations + size overrides), the rail pill (screen variation,
+The old dark weekday rail (`Rail` · `%DayHighlight` · seven `WeekDayChip` chips with numbers) and the bar's stage
+label (`%FloatingBarButton_Stage`, 오전 / 오후 / 저녁) were deleted 2026-10: the day bar + DAY bubble and the time row
+say the same.
+
+* **Scene owns**: every position / size, fonts (variations + size overrides), the DAY bubble (screen variation,
   no local StyleBoxes), button kinds of the afternoon card, the map section / token layout, sample texts. Spot
   positions are the `Spot_*` markers of each base map scene.
-* **Code owns** (data / device dependent): the chip numbers / abbreviations, which chip is today (variation switch
-  `WeekDayChip` ↔ `WeekDayChipToday`, its `DayTag` shown) and the chip text colours,
+* **Code owns** (data / device dependent): the weekday abbreviations (today's in `BodyLabel`), the day bar's
+  fill / today and the DAY bubble's x and number, the team banners / logo / pill values and the streak material,
   the lead bars (role colour, incident = `NEGATIVE`) and the player's dark match card
   (`card_style(…, RAIL)`), status / role / trust / result colours, card heights (match 168 / 96), the round portraits (cards: drawn into the `%Portrait` slots with
   `OutgameTheme.add_round_portrait`; map tokens: battlefield markers drawn by `BaseMap` from the `portrait` / `ring` of each
@@ -95,63 +105,55 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
 ## Screen
 
 ```
-┌──────────────────────────────────────────┐
-│  15   16   17   18 [DAY 19] 20   21       │  ← top horizontal weekday rail: day inside the phase
-│  MON  TUE  WED  THU   FRI   SAT  SUN      │    over the weekday abbreviation; today = amber pill + "DAY"
-└──────────────────────────────────────────┘
-                 프리시즌                       ← phase name, centred
-         오전      오후      저녁              ← time row: previous (small) · NOW (big) · next (small)
-  ▌(○) 오후                                  ← afternoon card, then incident (scroll, above the map)
-[   team base map 1200 wide, five pilot tokens   ]  ← centred on the screen height (%MapPin); 60 px cropped each side
-  [TOP][JGL][MID][ADC][SUP]                  ← %PilotRow: five pilot cards, always shown, right under the map
- [  오후  ][            다음            ]
+[▓▓ LOGO  banner ▓▓░░ ]        [💵  12,300][📯     6]   ← team banner (to the centre) · budget · coach points
+   ●━━━━━●━━━━━◉─────○─────○─────○─────○                ← day bar: filled up to today
+  MON   TUE   WED   THU   FRI   SAT   SUN
+              [DAY 3]                                   ← bubble under today, tail up
+                 프리시즌                                ← phase name, centred
+         오전      오후      저녁                        ← time row: previous (small) · NOW (big) · next (small)
+  ▌(○) 오후                                             ← afternoon card, then incident (scroll, above the map)
+[   team base map 1200 wide, five pilot tokens   ]     ← %MapPin; 60 px cropped each side
+[▓▓▓[TOP][JGL][MID][ADC][SUP]▓▓▓]                      ← team banner strap + five pilot cards
+                                     [   다음   ]
 ```
 
 (Mockup uses in-game Korean text: "프리시즌" = Preseason, 오후 = afternoon,
 `다음` = Next.)
 
-* **Rail animation** (`_refresh_rail`, static `_rail_memory` = the last `{week, day}`): on a new day of the same week the
-  amber pill `%DayHighlight` slides from the last shown chip to today's (`RAIL_SLIDE` 0.45 s), the chip texts change colour
-  with it, today's `DAY` tag grows in from zero width while fading in (right-aligned and clipped, so the text slides in
-  from the left and the number moves right) and the old tag fades out (`TAG_FADE`), then gives its width back. Other
-  redraws place everything without animation. Behind a fade (`WeekFade`) it waits until the screen clears.
+* **Top bar** (`_refresh_top_bar`, every redraw): `%TeamBanner` / `%PilotBanner` = `TeamLogos.banner` + `TeamLogos.color`
+  of `player_team_id`, `%TeamLogo` = `TeamLogos.texture`; budget = `FinanceSystem.fmt(FinanceSystem.balance)`,
+  coach points = `StaffSystem.coach_points` (the afternoon card still shows `n / weekly grant`). The pills are the
+  lobby wallet pill (`features/meta/lobby/UI_Comp_LobbyCurrencyPill.tscn`) with its `%Icon` replaced and mouse Ignore —
+  no shop here. The streak material is made on first draw and gets `rect_size` on every resize (`_fit_streak`).
+* **Day bar animation** (`_refresh_rail`, static `_rail_memory` = the last `{week, day}`): on a new day of the same week
+  the fill runs from the last shown circle to today's and the DAY bubble slides with it (`RAIL_SLIDE` 0.55 s, after
+  `WeekFade.clear_delay()`); other redraws place everything at once. Circles up to today are filled amber, later ones
+  are white with a grey ring.
 * **Time row** (`_refresh_time_row`, static `_half_memory`): `%TimeNow` = the half of the day (`_stage_half`: 오전 = the
   morning stages and the weekend stadium, 오후 = afternoon / press, 저녁 = evening), `%TimePrev` = the half before (hidden
   in the morning), `%TimeNext` = the half after (after 저녁 the next 오전). When the day moved on by one half (evening →
   next morning included) the row shifts left over `TIME_SHIFT`: the old previous slides out left and fades, the current
   shrinks into the previous slot and dims, the next grows into the centre, a new next fades in from the right.
-* **Top horizontal rail** — on a dark pill spanning the full screen width, seven weekday (요일) chips
-  spaced evenly **left → right** (the old `N주` label at the left end was removed 2026-10). Each chip shows
-  **that weekday's day number inside the phase** (`CalendarSystem.day_in_phase` of today − today's weekday + the
-  chip's weekday) with the English abbreviation `MON` … `SUN` under it (`WeekProgressView.day_abbr`, keys
-  `term.day.abbr.*`). **Only the current weekday is lit** (the amber pill behind its chip) and adds a small `DAY` left of its number. Past days have white text, remaining days dim text — that
-  contrast lets you read "how many days left" from the rail alone. It used to be a **left vertical
-  column** (exactly as in the reference design), but the rail took 152 px of width, squeezing the
-  card's six stat cells, and weekdays flowing top-to-bottom clashed with how calendars are read.
-* **Header** (below the rail) — the **phase name only**, centred (`GameEnums.phase_label`). The old centred
-  `DAY N` / weekday block (`%DayCount` / `%DayAbbr`, key `season.week.day_count`) was folded into the rail 2026-10.
-  No calendar date (year / month / day of month) any more — removed 2026-10 with the
-  week number, the weekday title and `_date_of_day`.
+* **Header** (below the bubble) — the **phase name only**, centred (`GameEnums.phase_label`).
 * **Body** — the card list, vertical scroll (`%Scroll`, drag-scrolled by `DragScroll.attach` in `_ready`) between the
-  time row and the map; the map is centred on the screen height (`%MapPin`), the pilot cards (`%PilotRow`) under it.
-* **Bottom bar**: stage label (left: `오전` / `오후` / `저녁`) + the action (right): `다음` (Next) on every
-  stage, **`경기 준비`** (Match prep, Saturday stadium) / **`경기 시작`** (Start match, Sunday stadium) in the
-  dark fill ("you are leaving this screen"), `기자회견` (Press conference, Sunday afternoon,
-  `term.activity.press`), `주 마감 →` (End of week) on the Sunday evening. A day without any stage shows
-  `확인` (OK) full width.
+  time row and the map; the map sits 70 px under the safe area's centre (`%MapPin`), the pilot cards (`%PilotRow`) under it.
+* **Bottom bar**: one short capsule at the right: `다음` (Next) on every stage, **`경기 준비`** (Match prep, Saturday
+  stadium) / **`경기 시작`** (Start match, Sunday stadium) in the dark fill ("you are leaving this screen"), `기자회견`
+  (Press conference, Sunday afternoon, `term.activity.press`), `주 마감 →` (End of week) on the Sunday evening,
+  `확인` (OK) on a day without any stage.
 
 ## What each weekday does
 
 | Weekday | What happens |
 |---|---|
-| 월~금 (Mon–Fri) | **Training days**: 오전 (training, then the morning talk) → 오후 (afternoon) → 저녁 (evening incident), see "Training day: morning → afternoon → evening". The morning's Next runs `TrainingBoard.apply_day_training(day)`, which settles that row of the board and actually raises player stats. |
-| 토 (Sat) | **Prep day**: `STADIUM` (stadium map, "경기 준비" → MatchFlow PREP + BAN_PICK, picks stored) → `AFTERNOON` → `EVENING` on the team map, **no training, no morning talk**. Sunday's matches show as cards while the prep is open. |
+| 월~금 (Mon–Fri) | **Training days**: 오전 (training: settles by itself, results rise) → 오후 (afternoon) → 저녁 (evening incident), see "Training day: morning → afternoon → evening". The settlement is `TrainingBoard.apply_day_training(day)`, which settles that row of the board and actually raises player stats. |
+| 토 (Sat) | **Prep day**: `STADIUM` (stadium map, "경기 준비" → MatchFlow PREP + BAN_PICK, picks stored) → `AFTERNOON` → `EVENING` on the team map, **no training**. Sunday's matches show as cards while the prep is open. |
 | 일 (Sun) | **Match day** (`CalendarSystem.MATCH_DAY`): `STADIUM` ("경기 시작" → BattleSim with the Saturday picks) → standings → `PRESS` (stadium map, "기자회견") → `AFTERNOON` (team map, visit — the story is about the match) → `EVENING` (incident) → "주 마감 →". The day's matches show as cards. |
 
 ### Training day: morning → afternoon → evening (base map)
 
 **Time passing on the map** (`_animate_map`, after every map build): each stage has an hour (`_stage_hour`: MORNING 8 ·
-RESULT 9.5 · TALK 11 · AFTERNOON 15 · EVENING 18.5 · STADIUM Sat 10 / Sun 13 · PRESS 16.5). The last drawn map is kept
+RESULT 9.5 · AFTERNOON 15 · EVENING 18.5 · STADIUM Sat 10 / Sun 13 · PRESS 16.5). The last drawn map is kept
 in the static `_map_memory` (`{scene, day, stage, hour, tokens}`, survives the view being re-made per day). When the day
 or the stage changed since then, the map's clock runs from the old hour to the new one (`STAGE_TIME` 1.4 s; a new day
 runs through the night, `NIGHT_TIME` 2.8 s) and, on the same map scene, my pilots walk the roads from where they stood
@@ -159,16 +161,15 @@ runs through the night, `NIGHT_TIME` 2.8 s) and, on the same map scene, my pilot
 same stage just sets the hour. A tap on the map while it moves skips to the end (`_input`). Lighting / roads:
 `base_map/README.md` "Time of day", "Roads and walking".
 
-A training day runs in five stages (`WeekProgressView.Stage`). The stage is **read from the records**, not
+A training day runs in four stages (`WeekProgressView.Stage`). The stage is **read from the records**, not
 stored on its own (`_stage`), so re-entering the day (after a match, after a reload) lands on the same stage:
 
 | Stage | Record | Map | Next (다음) |
 |---|---|---|---|
-| `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training facility** (`TrainingBoard.day_groups` `facility` → `BaseMap.spot_of_facility`: the tile's `facility` column, else the colour of its first cell that day, so a joint-training group shares one spot; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`) | settles the day (`_settle_day` → `apply_day_training`) |
-| `RESULT` | `week_day_log[day]` set, no talk record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, quirk events; the pilot cards' stress change pops (`pulse_note`). When the FX ends the morning talk **opens by itself** (`_finish_result_fx` → `MentalSystem.begin_morning`) | skips the rest of the FX (same `_finish_result_fx`) |
-| `TALK` | `MentalSystem.morning_started`, no afternoon record | same spots; pilots that can be met are tappable (`MentalSystem.can_talk`), the picked one is scaled up; once the talk is used **every** token is masked black. Tap one → the **talk bubble** over it (`VisitMenu.open_talk`; tap outside = close, on another pilot = pick that one) → 만남 → morning talk dialog (only that pilot; the joint-training pair talk was removed 2026-10). Answered → **afternoon by itself** | afternoon (`_begin_afternoon`: `pass_talk` + `AfternoonAway.begin`); while a talk is still possible a **warning** asks first |
-| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`; anyone who cannot be visited is masked black and not tappable (`AfternoonAway.can_request`), except the pilot whose visit is under way (scaled up). Tap = visit (`VisitMenu`); once the visit is used every token is masked | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident and no limit-break event = straight to the next day**, except Sunday, which stops on its evening for "주 마감 →"); while a visit is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
-| `EVENING` | `MentalSystem.dusk_started` | afternoon positions, nobody tappable, every token masked; the limit-break event (§15 B) then the incident open by themselves | next day (`on_week_day_confirmed`) |
+| `MORNING` | no `week_day_log[day]` | each pilot on the spot of **that day's training facility** (`TrainingBoard.day_groups` `facility` → `BaseMap.spot_of_facility`: the tile's `facility` column, else the colour of its first cell that day, so a joint-training group shares one spot; no tile = basic course = neutral `W`); a **speech bubble** over the portrait names the training (`TrainingBoard.day_tile_names`). **Settles by itself** after `MORNING_HOLD` (1.2 s, + the clear delay of a fade, + `NIGHT_TIME` while the map still runs the night: `_hold_morning`, a ticket counter drops stale timers; nothing settles while a popup / awakening is open — its close redraws and re-arms the timer) | settles now (`_settle_day` → `apply_day_training`) |
+| `RESULT` | `week_day_log[day]` set, no afternoon record | same spots, no bubble; **result FX** (`_play_result_fx`): per pilot, lines rise out of the portrait top and fade (`FX_RISE` / `FX_TIME`, `FX_STAGGER` between lines, `FX_PILOT_STAGGER` between pilots): stat ups by **full name** (`전장 명중 +1`, else `EXP +N`), `스트레스 ±N`, quirk events; the pilot cards' stress change pops (`pulse_note`). When the FX ends (`_finish_result_fx` → `_fx_done_day`) a queued awakening opens first, then the **afternoon starts by itself** through black (`_next_auto` → `Auto.AFTERNOON` → `AfternoonAway.begin`) | skips the rest of the FX (same `_finish_result_fx`) |
+| `AFTERNOON` | `AfternoonAway.started`, no `dusk` | resting pilots on `Dorm`, pilots out alone on `Entrance`, **everyone else on a random spot** of the map (`_wander_spot`: `BaseMap.wander_spots` = every `Spot_*` but Dorm / Entrance — colour + facility markers, one per point; seeded by week key · day · pilot, so a reload / the evening keeps it; pilots walk there from the morning spots); anyone who cannot be visited is masked black and not tappable (`AfternoonAway.can_request`), except the pilot whose visit is under way (scaled up). Tap = visit (`VisitMenu`); once the visit is used every token is masked | evening (`_begin_evening`: pass if unused, `MentalSystem.begin_dusk` rolls the incident; **no incident and no limit-break event = straight to the next day**, except Sunday, which stops on its evening for "주 마감 →"); while a visit is still possible (`AfternoonAway.any_request`) a **warning** `ConfirmPopup` asks first, confirm = pass |
+| `EVENING` | `MentalSystem.dusk_started` | afternoon positions (same seed), nobody tappable, every token masked; the limit-break event (§15 B) then the incident open by themselves | next day (`on_week_day_confirmed`) |
 
 * **Map**: the team's base map (`RunRules.team_map_id(player_team_id)` = `teams.csv` `map_id` → `BaseMap.create`),
   pinned in `%MapPin` above the pilot cards and the scrolling list. Spots per colour group, the 1.2× scale / crop
@@ -178,28 +179,25 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `+N` stress / `+N%` trust (no brackets)
   under the value, nothing at 0; they pop when the result FX starts), and the portrait ring shows the day's level EXP as a
   light segment. `_day_delta(pid, kind)` (kind `stress` · `trust` · `tlexp`) = training row `stress` / `tlexp` + self-outing relief (stress) + `kind` / `<kind>_all` notes of the
-  day's talk / incident / afternoon (visit · evening) outcomes. Not counted (not in the day record): the Sunday press answer,
+  day's incident / afternoon (visit · evening) outcomes. Not counted (not in the day record): the Sunday press answer,
   the match's level EXP; `<kind>_all` notes are nominal (unclamped). Tap = `SeasonPilotDetail` sheet.
 * **Moving on by itself** (`_next_auto` → `_run_auto`, always through black, `WeekFade`): once nothing is open or queued
-  (dialog, visit popup, result FX, awakening, limit-break event, incident) — the morning talk answered → afternoon; the
+  (dialog, visit popup, result FX, awakening, limit-break event, incident) — the result FX ended → afternoon; the
   visit settled (story / outing answered, focus result confirmed) → evening; the evening's events settled → next day
   (Mon–Sat; the Sunday keeps "주 마감 →"; not without the hub). Checked when a dialog / the visit result / an awakening
   closes (inside its closing fade) and after every redraw (`_open_pending`), so a reload on a finished half moves on too.
   **다음** stays as the skip (warning while an action is still possible) and also fades.
-* **Fades** (`WeekFade.through`): every dialog (talk, story, outing, limit break, incident) and the awakening view open
-  and close through black; the moves to the next half / day too. The map's clock and walks, the rail and the time row
+* **Fades** (`WeekFade.through`): every dialog (story, outing, limit break, incident) and the awakening view open
+  and close through black; the moves to the next half / day too. The map's clock and walks, the day bar and the time row
   start under the black and run as it clears.
 * A reload between the settlement and the afternoon lands on `RESULT`: the FX plays again, then the afternoon starts.
-* **Autosave** (`_save` → `SeasonHub.autosave`): after the settlement, the talk opening, the afternoon, the incident roll,
-  opening a talk, the visit (`visit`), a story / outing, a focus course (`focus`), an awakening / limit break and
+* **Autosave** (`_save` → `SeasonHub.autosave`): after the settlement, the afternoon, the incident roll, the visit (`visit`), a story / outing, a focus course (`focus`), an awakening / limit break and
   every answer — closing the game mid-week resumes on this screen at
   the same stage (`features/save_load/README.md`).
 * **Afternoon away states** (rules and record: `features/season/mental/README.md` "Afternoon away states"):
   a stressed pilot may go out alone, otherwise any pilot may stay in the dorm by chance (rolled once, recorded).
   An empty training cell is the basic course, not a rest.
-* The bottom bar's left slot names the half (`오전` for `MORNING` / `RESULT` / `TALK`, `오후` for `AFTERNOON`, `저녁` for `EVENING`).
-* Old saves that reached the afternoon before the morning talk existed simply skip it (`_stage` checks the
-  afternoon record first). The map pick (`_sel_pid`) is dropped when the stage changes (`_sel_stage`).
+* Old saves with a morning-talk record (`days["<day>"].talk`) ignore it: `RESULT` replays the FX, then the afternoon.
 
 ### Weekend (Sat · Sun)
 
@@ -229,14 +227,11 @@ Lists every match of that match day (Sunday; on Saturday while the prep is open,
 otherwise the league schedule (`_matches_on_day`). The status cell is `예정` (Scheduled) /
 `승` (Win) / `패` (Loss) / `<팀> 승` (<team> wins).
 
-### Mon–Fri: 오전 만남 (talk) card + 오후 (afternoon) card + incident card (M7)
+### Mon–Fri: 오후 (afternoon) card + incident card (M7)
 
 Rules and state are in `features/season/mental/README.md` (`MentalSystem`); this screen only draws
-records and forwards taps. On a training day the list order is **(pinned map) → talk / afternoon → incident**.
+records and forwards taps. On a training day the list order is **(pinned map) → afternoon → incident**.
 
-* **오전 만남** (`TALK` only): tap a pilot on the map → speech bubble over the token (`VisitMenu.open_talk`: portrait,
-  name, trust / stress line, caption 오전 만남, button 만남) → the dialog. Only that pilot (no joint-training partner since
-  2026-10). After the talk the day moves on to the afternoon by itself. A talk left open by a reload reopens itself (`_talk_open`).
 * **Incident** — rolled when the evening starts (`_begin_evening` → `MentalSystem.begin_dusk`, once per weekday,
   seeded). A pending incident opens its dialog **by itself** (`_open_incident`, deferred); the card (red lead
   bar) shows `사건: <name> · <pilot>` and either `눌러서 대응하기` (reopens the dialog) or the effect notes once resolved.
@@ -251,7 +246,7 @@ records and forwards taps. On a training day the list order is **(pinned map) �
   closes, then the screen `refresh()`es. An afternoon dialog left open by a reload (record with `choice = -1`)
   reopens itself with the same event.
 * **What opens by itself** (`_open_pending`, deferred after every `refresh`, one at a time, `_busy()` blocks the rest):
-  a talk / visit menu / afternoon dialog left open → a queued **awakening** (§15 C) → at the evening the
+  a visit menu / afternoon dialog left open → a queued **awakening** (§15 C) → at the evening the
   **limit-break event** (§15 B) → the incident.
 
 ### Afternoon visit (방문, §15 D)
@@ -268,7 +263,7 @@ Rules and records: `features/season/mental/README.md` "Afternoon visit (방문)"
    stored before the confirm); once the course is confirmed the visit is settled and nothing reopens.
 
 ### Awakening and limit break (§15 B · C integration)
-* **Awakening** (`_open_awakening`): after every redraw (morning settlement once its result FX has ended, every
+* **Awakening** (`_open_awakening`): after every redraw (morning settlement once its result FX has ended — before the afternoon, every
   dialog / visit result, the return from a match) `Awakening.next_pending(state)` ≥ 0 opens C's `AwakeningView`
   (`create()` → `add_child` → `open(pid)`, waits for `closed`, saves `awakening`, redraws → polls again). The class
   is looked up by name (`ProjectSettings.get_global_class_list`), so a tree without it simply skips.
@@ -301,7 +296,7 @@ There are three pieces of week-progress state (all in `season_state`, all saved)
 All three are cleared by `TrainingBoard.reset_week_progress()`, which runs in two places:
 **training confirm** (`SeasonHub.on_training_confirmed`) and **week end** (`reset_for_new_week`).
 
-The M7 morning talk, the afternoon action, the incident and the afternoon away states follow the same rule with their own
+The afternoon action, the incident and the afternoon away states follow the same rule with their own
 record, `season_state.mental.days["<day>"]` (`MentalSystem`; `AfternoonAway` keeps `afternoon` there): the
 incident and the away states are rolled once and the afternoon dialog's event is stored before it opens, so
 re-entering the weekday (after a match, after load) redraws from the record and never rerolls or re-applies.
@@ -320,14 +315,13 @@ day's league must still run, so the next standings shown match the date.
 
 ## Localization
 Display text is l10n keys (`season` domain, `season.week.*` · `season.week_*` scene keys; the map / afternoon
-keys are `season.week.stage.*` · `season.week.map.*` · `season.week.afternoon_*` ·
-`season.week.skip.*` · `season.week.skip_talk.*` · `season.week.talk_*` · `season.week.talk_card.head` (scene) ·
-`season.week.sub_talk` · `season.week.sub_*_pm` (talk bubble: `season.week.talk_card.head` · `season.week.talk_button`;
-deprecated 2026-10 with the talk card: `season.week.talk_none` · `talk_with` · `talk_solo` · `talk_done` · `talk_done_pair`); weekend: `season.week.btn_match_prep` · `season.week.hint_prep` ·
-`season.week.hint_match_ready`; the press button reuses `term.activity.press`; rail: `season.week.rail_day` (scene, today's "DAY") ·
-`term.day.abbr.*`). Deleted 2026-10 (rows removed): `season.week.map_hint.*` (11, the map caption),
-`season.week.date` (the `N년 N월` header), `season.week.day_count` (the `DAY N` header block),
-`season.week.afternoon_pick` / `season.week.talk_pick` (the "tap a pilot on the map" card hints). Bubble texts are training tile names (data). Deprecated 2026-10:
+keys are `season.week.stage.*` (time row) · `season.week.map.*` · `season.week.afternoon_*` · `season.week.skip.*`;
+weekend: `season.week.btn_match_prep` · `season.week.hint_prep` · `season.week.hint_match_ready`; the press button
+reuses `term.activity.press`; day bar: `season.week.rail_day` (scene, the bubble's "DAY") · `term.day.abbr.*`). The
+pills show numbers only (no text). **Deleted 2026-10** (rows removed): the morning talk's `season.week.talk_*` ·
+`season.week.sub_talk` · `season.week.skip_talk.*` (and `mental.ui.mod_source.talk`); earlier: `season.week.map_hint.*`
+(the map caption), `season.week.date`, `season.week.day_count`, `season.week.afternoon_pick` / `talk_pick`.
+Bubble texts are training tile names (data). Deprecated 2026-10:
 `season.week.evening_limits` · `season.week.interview_week_done` · `season.week.outing_week_done` (weekly limits removed),
 `mental.ui.stress.day` (old training card). Item scenes whose every label is code-filled set
 `auto_translate_mode = 2` on their root; `UI_View_WeekProgressView.tscn` and `UI_Comp_WeekAfternoonCard.tscn` set it

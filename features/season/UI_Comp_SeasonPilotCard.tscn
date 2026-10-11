@@ -7,14 +7,58 @@
 
 [node name="SeasonPilotCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the progress ring (깨달음 level EXP bar, TrainingLevel.progress) on top with the level chip centred on the ring's top edge (ring colour), then two gauges (%Gauges: stress · trust, PilotGauge; each gauge shows its value under the ring (stress number, trust %) and, on the week screen, today's change on the ring + +N / +N% under the value; the portrait ring shows the day's level EXP as a light segment). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
-custom_minimum_size = Vector2(0, 244)
+editor_description = "Small vertical pilot card (season hub roster row · week screen row under the map · detail sheet head · own PREP card, five in seat order). No card background (SeasonPilotCardBare = empty box, 2026-10): portrait and gauges sit on the page. Width comes from the row (expand), height fixed here. Portrait in the progress ring (깨달음 level EXP bar, TrainingLevel.progress) on a white plate (%Plate) with the level chip centred on the ring's top edge (ring colour); under the plate hang two pentagon flags pointing down (%Gauges: stress · trust, PilotGauge; each flag holds a bottom-half gauge with its icon, the value (stress number, trust %) and, on the week screen, today's change on the gauge + +N / +N% under the value; the portrait ring shows the day's level EXP as a light segment). No position badge (removed 2026-10; seat order says the role). Tap = pressed(pilot_id) → SeasonPilotDetail."
+custom_minimum_size = Vector2(0, 256)
 offset_right = 190.0
-offset_bottom = 244.0
+offset_bottom = 256.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
 theme_type_variation = &"SeasonPilotCardBare"
 script = ExtResource("1_script")
+
+[node name="Gauges" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_week_layout()
+The two gauge flags (PilotGauge: stress left · trust right), each half the row (expand). First child = drawn under %Plate: the flags' tops tuck under the plate's bottom edge, so they hang from it."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 148.0
+offset_right = -10.0
+offset_bottom = 256.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="PilotGauge_Stress" parent="Gauges" instance=ExtResource("3_gauge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_week_layout()
+Stress flag (left): band-coloured icon in the bottom-half gauge (0..100 + overflow pass to STRESS_MAX), the value under it; week screen: today's change as a gauge segment + +N / -N under the value (set_day_deltas)."
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PilotGauge_Trust" parent="Gauges" instance=ExtResource("3_gauge")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_week_layout()
+Trust flag (right): pink heart with the level inside, bottom-half gauge = progress inside the level, the progress % under it; week screen: today's change (+N%, set_day_deltas)."
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Plate" type="Panel" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_week_layout()
+White rounded plate behind the portrait ring (SeasonPilotCardPlate), 6 px in from the card sides, 8 px under the ring; the gauge flags hang from under its bottom edge. Shown on an empty seat too."
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = 160.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"SeasonPilotCardPlate"
 
 [node name="Ring" type="Control" parent="."]
 unique_name_in_owner = true
@@ -101,32 +145,6 @@ theme_type_variation = &"OnFillLabel"
 theme_override_font_sizes/font_size = 20
 text = "3"
 vertical_alignment = 1
-
-[node name="Gauges" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd set_week_layout()
-Two PilotGauge panels side by side (stress · trust), centred under the portrait."
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 160.0
-offset_bottom = 240.0
-grow_horizontal = 2
-mouse_filter = 2
-theme_override_constants/separation = 14
-alignment = 1
-
-[node name="PilotGauge_Stress" parent="Gauges" instance=ExtResource("3_gauge")]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_week_layout()
-Stress: band-coloured icon, ring = 0..100 + overflow lap to STRESS_MAX, the value under it; week screen: today's change as a ring segment + +N / -N under the value (set_day_deltas)."
-layout_mode = 2
-
-[node name="PilotGauge_Trust" parent="Gauges" instance=ExtResource("3_gauge")]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — SeasonPilotCard.gd show_pilot() · show_empty() · set_week_layout()
-Trust: pink heart with the level inside, ring = progress inside the level, the progress % under it; week screen: today's change (+N%, set_day_deltas)."
-layout_mode = 2
 
 [node name="Hit" type="Button" parent="."]
 unique_name_in_owner = true

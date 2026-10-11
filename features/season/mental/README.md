@@ -34,19 +34,14 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   `level_of_trust` / `progress_of_trust`). Events still add and test **points** (`trust:+4`, `trust>=N`); result chips
   show the change as level progress (`MentalEvents.trust_delta_text`: +4 → `+16%`) and add a `trust_level` note when
   the level changes. It affects **only** outing unlock (level ≥ `TRUST_OUTING_LEVEL`) and the true ending — no match stat effect.
-- **A training day** (Mon–Fri) has three halves after the morning training (`features/season/week/README.md`):
-  **morning talk** (one pilot, no outing) → **afternoon** (interview / outing) → **evening** (forced incident).
-  **Saturday** (after the stadium prep) and a plain weekend day have the **afternoon + evening** only (no
-  training, so no morning talk); the **Sunday of a match** has the press conference, then the afternoon
-  (visit) and the evening (§15 D). The afternoon / evening / incident entry points accept any weekday 0..6
-  (`CalendarSystem.is_week_day`); the morning talk stays Mon–Fri.
-- **Morning talk** (훈련 소감, one per morning, record `days["<day>"].talk`): opened by `begin_morning` when the
-  training result FX ends; `begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` (Next
-  without a talk). **Only the picked pilot** is met: a `talk` row is drawn. The joint-training pair talk
-  (`talk_partner` + `talk_pair` rows) was **removed 2026-10** — new records keep `partner_id = -1`; the `talk_pair`
-  rows stay in the data unused, and an old save's open pair talk still settles both pilots (`finish_talk` keeps the
-  partner branch: every single-pilot clause and `STRESS_TALK_RELIEF` hit both). Checks use the manager's
-  own mental. `can_talk`: the morning is open, the afternoon has not started, no talk yet.
+- **A training day** (Mon–Fri) has two halves after the morning training (`features/season/week/README.md`):
+  **afternoon** (visit) → **evening** (forced incident). **Saturday** (after the stadium prep) and a plain
+  weekend day have the **afternoon + evening** only; the **Sunday of a match** has the press conference, then
+  the afternoon (visit) and the evening (§15 D). The afternoon / evening / incident entry points accept any
+  weekday 0..6 (`CalendarSystem.is_week_day`).
+- The **morning talk** (훈련 소감, `begin_morning` · `begin_talk` · `finish_talk` · `pass_talk`, kinds `talk` /
+  `talk_pair`, `STRESS_TALK_RELIEF`) was **deleted 2026-10** with its events: the morning now settles and moves
+  on to the afternoon by itself. An old save's `days["<day>"].talk` record is simply ignored.
 - **Afternoon = visit (방문, §15 D)** (every day that has an afternoon, one action per day; the record keeps
   its old name `evening`): see "Afternoon visit (방문)" below — visit one pilot, then 집중 훈련 / 이야기 / 외출.
   Leaving the afternoon without a visit records a pass. Manager-only — staff never visit.
@@ -88,7 +83,7 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
 - **Rises**: each training day (every pilot trains; an empty cell is the basic course), `STRESS_TRAIN_MIN..MAX` (seeded per run · week · day ·
   pilot, `TrainingBoard.apply_day_training` row key `stress`; the training result itself is unchanged), and each
   death in a match, `STRESS_DEATH_MIN..MAX` (BattleSim, written back at match end).
-- **Falls**: a finished interview / outing / morning talk relieves `STRESS_INTERVIEW_RELIEF` / `STRESS_OUTING_RELIEF` / `STRESS_TALK_RELIEF` (pair talk: both pilots; `StressSystem.relief_amount`) (note
+- **Falls**: a finished interview / story / outing relieves `STRESS_INTERVIEW_RELIEF` / `STRESS_OUTING_RELIEF` (`StressSystem.relief_amount`) (note
   `{type: stress}` in the outcome), plus any `stress:` / `stress_all:` clause of the chosen answer. No natural decay.
   Each source keeps its own stored note; **display merges them** (`MentalEvents.merge_notes`, used by `note_texts`
   and `result_blocks`), so one answer shows one stress line per pilot with the summed delta.
@@ -165,8 +160,7 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
       "evening":  {action: "visit"|"focus"|"story"|"outing"|"pass" ("interview" = old saves), pilot_id, event,
                   course (focus only), choice (-1 = open), outcome{}},
       "incident": {} (rolled, none) | {event, pilot_id, choice (-1 = pending), outcome{}},
-      "talk":     {} (morning open, nothing chosen) | {action: "talk"|"pass", pilot_id, partner_id (-1 = alone),
-                  event, choice (-1 = open), outcome{}},
+      "talk":     (old saves only, the removed morning talk — ignored)
       "dusk":     true once the evening started (the incident is rolled then),
       "afternoon": {...}  (AfternoonAway, below)
   }},
@@ -200,19 +194,18 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 `text_key` = l10n key (domain `mental`, alias `mental.<event>.<id>`; edit the Korean in
 `data/l10n/src/mental.csv`, not here). Ids: `<event>_L<seq>` · `<event>_C<choice>` · `<event>_C<choice>_S<seq>`.
 
-- `kind` — `interview` / `outing` / `incident` / `press` / `talk` (morning talk) / `talk_pair` (morning talk with
-  the joint-training partner) / `story` · `story_sat` · `story_sun` (afternoon visit 이야기, §15 D; `interview` = their fallback).
+- `kind` — `interview` / `outing` / `incident` / `press` / `story` · `story_sat` · `story_sun` (afternoon visit 이야기, §15 D; `interview` = their fallback).
 - `manager_type` — -1 any, 0 운영형 (m), 1 실전형 (f). Rows for the other type never appear;
   rows for the run's type weigh × `MENTAL_TYPE_WEIGHT_MULT`. Outings pick **strictly** by stage:
   a typed row for the stage beats the generic one.
 - `stage` — outing number 1..N (`outings + 1`; past the last written stage the highest repeats), else 0.
 - `weight` — draw weight (int ≥ 0).
 - text slot `line` (by `seq`) — the text's first char is its marker: plain = the other side (left
-  bubble with portrait), `>text` = manager (right bubble), `*text` = centred narration, `&text` = the
-  `talk_pair` partner, `@text` = tag
+  bubble with portrait), `>text` = manager (right bubble), `*text` = centred narration, `&text` = a second
+  pilot (`partner_id`; no kind uses it since the joint talk was removed), `@text` = tag
   (press outlet / incident name, used in headers, not drawn as a bubble — `MentalSystem.session_view`
   reads it after translation, so **translations keep the marker**). `{name}` → target pilot name,
-  `{name2}` → the `talk_pair` partner, in every slot (`Loc.t(key, {"name": …})`, josa tags like `{name}{eun}` resolve after it).
+  `{name2}` → the second pilot (unused), in every slot (`Loc.t(key, {"name": …})`, josa tags like `{name}{eun}` resolve after it).
 - text slot `choice` — manager answer `choice` (0-based; 2–3 per event).
 - text slot `say` — reply line (left bubble) after answer `choice`, in `seq` order; `branch` `ok` / `ng` =
   only on a passed / failed check (like the clause gates), empty = always. A gated reply makes the
@@ -263,7 +256,7 @@ Kind `limit_break` (§15 B) rows hold only the limit-break **dialogue lines**; `
   rise never becomes a loss; drops pass through untouched.
 
 ## Choice preview (확률 + 방향)
-Every answer of an interview / outing / incident / morning talk / press question shows a preview line under its button
+Every answer of an interview / story / outing / incident / press question shows a preview line under its button
 (`session_view(...).previews[i]`): the mental check chance when the answer rolls one (judge = `judge_for(kind)`:
 staff cover for incidents, else the manager's mental) and the **direction** of each effect, never the number:
 `성공 58% · 신뢰↑` or, when pass and fail differ, `성공 58% · 성공: 신뢰↑ / 실패: 신뢰↓`.
@@ -277,8 +270,7 @@ out. The press conference shows the same line under its answers (`MessengerView.
 ## API (static, `state` = `season_state`)
 `init_run` · `end_week` · `training_exp_mult(state, pid, day)` · `trust` · `trust_level` · `trust_progress` · `outings` · `add_trust` ·
 `true_ending_pilots` · `my_pilot_ids` · `outing_unlocked` / `can_outing` · `evening` / `evening_done` / `begin_evening(state, day, action, pid)` /
-`finish_evening(state, day, choice)` · `begin_morning` / `morning_started` / `talk` / `talk_done` / `can_talk` /
-`begin_talk(state, day, pid)` / `finish_talk(state, day, choice)` / `pass_talk` ·
+`finish_evening(state, day, choice)` ·
 `begin_visit(state, day, pid)` / `visit_open` / `finish_focus(state, day, course)` / `story_kinds_for(state, day)` ·
 `record_match(state, pending_match)` / `last_match_of` / `match_line(state, pid)` · `begin_dusk` /
 `dusk_started` · `ensure_incident` / `incident_pending` / `incident_session` /
@@ -358,8 +350,8 @@ removed (2026-10). Reused:
 
 ### Wiring (coordinator: `features/season/week/WeekProgressView.gd`)
 
-`_overlay: VnDialogueView` serves the morning talk, the afternoon dialog (story / outing), the limit-break event
-(§15 B) and the incident (`_overlay_kind` `talk` / `evening` / `limit_break` / `incident`; a limit-break answer goes
+`_overlay: VnDialogueView` serves the afternoon dialog (story / outing), the limit-break event
+(§15 B) and the incident (`_overlay_kind` `evening` / `limit_break` / `incident`; a limit-break answer goes
 to `LimitBreak.choose_goal`, which returns the outcome view itself). `_open_overlay(kind, sub, title,
 pid, view, speaker = "")`: evening → title = pilot name; incident → title = the event's `@tag`, `speaker` = pilot
 name (sub `season.week.sub_incident`). `_on_overlay_choice` resolves by `_overlay_kind`

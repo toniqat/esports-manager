@@ -8,7 +8,7 @@ extends Control
 # The week flows one day at a time (`season_state["week_day"]` 0..6):
 #
 #   HUB (before the week) → TRAINING (tile board) → WEEK
-#     Mon–Fri  training days (morning training → talk → afternoon → evening)
+#     Mon–Fri  training days (morning training → afternoon → evening)
 #     Sat      morning = stadium → MatchFlow PREP + BAN_PICK (split: picks are
 #              stored in `pending_match.picks`, MatchFlow returns here), then a
 #              normal afternoon / evening without training

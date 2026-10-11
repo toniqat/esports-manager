@@ -16,9 +16,7 @@
           "interview",
           "outing",
           "incident",
-          "press",
-          "talk",
-          "talk_pair"
+          "press"
         ],
         "default": "",
         "description": "이벤트 종류"

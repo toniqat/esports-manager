@@ -280,7 +280,7 @@ weekday, settlement was split per day too.
 It returns the row list that screen reads — in seat order,
 `Array[{pilot_id, role, seat, before, after, ups, exp, carry, quirk, stress, color, group, facility}]`
 (`group` = board entry index of the cell's tile, -1 = basic course — pilots sharing it **trained together**
-that day, the morning talk's `talk_pair`; `facility` = `day_groups(day)`, the week map's spot) (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
+that day (joint training); `facility` = `day_groups(day)`, the week map's spot) (no name — saved in the run file; screens use `GameManager.pilot_name(pilot_id)`, l10n D7)
 (no `mastery` any more — the `M` tiles were removed in §16, readers default it to 0;
 `quirk` = quirk ops run on that pilot that day, `[{kind, result, id?, from?, to?, slots?}]`, empty
 array when none — see "Quirk tiles";

@@ -1,30 +1,32 @@
 class_name PilotGauge
 extends Control
 
-# One small stat gauge of a `SeasonPilotCard` (`UI_Comp_PilotGauge.tscn`, no panel — it sits
-# straight on the page): a flat icon inside a radial ring (`GaugeRing`), an optional number in
-# the icon (`%Center`), the value under the ring (`%Value`) and the change under that
-# (`%Delta`). Two kinds, chosen by the fill call; each takes an optional `delta` = the change
-# that led to the shown value (week screen: today's change; 0 = just the value, no segment,
-# no change line):
-#   stress     `show_stress(value, delta)` — icon + ring in the stress band colour (≤30 green ·
-#              ≤60 yellow · ≤100 orange · >100 red), ring full at `STRESS_LAP`, a second lap
-#              (dark red) on top above it; the exact value under the ring, `+N` / `-N`
+# One stat flag of a `SeasonPilotCard` (`UI_Comp_PilotGauge.tscn`): a tall white pentagon
+# pennant pointing down (`PilotFlag`, its top tucked under the card's portrait plate) holding a
+# **bottom-half gauge** (`GaugeRing`: 9 o'clock → 6 → 3, filled left → right) with a flat icon in
+# its bowl, an optional number in the icon (`%Center`), the value under it (`%Value`) and the
+# change under that (`%Delta`). Two kinds, chosen by the fill call; each takes an optional
+# `delta` = the change that led to the shown value (week screen: today's change; 0 = just the
+# value, no segment, no change line):
+#   stress     `show_stress(value, delta)` — icon + gauge in the stress band colour (≤30 green ·
+#              ≤60 yellow · ≤100 orange · >100 red), gauge full at `STRESS_LAP`, a second pass
+#              (dark red) on top above it; the exact value under it, `+N` / `-N`
 #   trust      `show_trust(points, delta_points)` — pink heart, the trust **level** inside it,
-#              ring = progress inside the level (`MentalSystem.level_of_trust` /
+#              gauge = progress inside the level (`MentalSystem.level_of_trust` /
 #              `progress_of_trust`), `64%` under it, `+N%` in percent of a level (a level-up
-#              wraps: the ring shows the new level's part and the old level's rest as added)
-# Change segment (`GaugeRing.seg_*`): the ring holds the value before the change, the added
+#              wraps: the gauge shows the new level's part and the old level's rest as added)
+# Change segment (`GaugeRing.seg_*`): the gauge holds the value before the change, the added
 # part in a lighter tone (rise) or the removed part as a faint ghost (fall). `+N` is red for
 # stress, green for trust (and the reverse for a fall).
-# `set_dimmed(true)` lays the round black mask (`%Mask`) over the ring and fades the numbers.
-# `set_size_factor(f)` grows the whole gauge from its scene sizes (week screen: 1.2).
+# `set_dimmed(true)` fades the gauge, icon and numbers (`DIM_ALPHA` / `DIM_TEXT_ALPHA`).
+# `set_size_factor(f)` grows the flag's contents from the scene sizes (week screen: 1.2); the
+# flag's width always comes from the card's row.
 # Colours are data (code).
 
 const ICON_STRESS: Texture2D = preload("res://resources/images/ui/gauge/stress.svg")
 const ICON_HEART: Texture2D = preload("res://resources/images/ui/gauge/heart.svg")
 
-## One full ring of stress; the second lap runs from here to `STRESS_MAX` (200).
+## One full gauge of stress; the second pass runs from here to `STRESS_MAX` (200).
 const STRESS_LAP: int = 100
 const STRESS_GREEN_MAX: int = 30
 const STRESS_YELLOW_MAX: int = 60
@@ -39,7 +41,8 @@ const C_PINK: Color = Color(0.937, 0.400, 0.600, 1.0)
 ## removed part's colour at this alpha.
 const RISE_LIGHTEN: float = 0.5
 const FALL_ALPHA: float = 0.28
-## Number opacity while dimmed.
+## Gauge / icon and number opacity while dimmed.
+const DIM_ALPHA: float = 0.3
 const DIM_TEXT_ALPHA: float = 0.35
 
 @onready var _ring: GaugeRing = %Ring
@@ -47,7 +50,8 @@ const DIM_TEXT_ALPHA: float = 0.35
 @onready var _center: Label = %Center
 @onready var _value: Label = %Value
 @onready var _delta: Label = %Delta
-@onready var _mask: Control = %Mask
+@onready var _flag: PilotFlag = %Flag
+@onready var _box: Control = %Box
 ## Scene sizes `set_size_factor` scales from (read on its first call).
 var _base_sizes: Dictionary = {}
 
@@ -106,16 +110,20 @@ func show_trust(points: int, delta_points: int = 0) -> void:
 	_show_delta("%+d%%" % d_pct, d_pct if delta_points != 0 else 0, false)
 
 
-## Scales the whole gauge (ring, stroke, icon, centre / value / change text and their rows)
-## by `f` from the scene sizes (1.0 = as in the scene). The gauge's minimum size follows, so a
-## container lays it out at the new size. Week screen: 1.2 (`SeasonPilotCard.set_week_layout`).
+## Scales the flag's contents (gauge, stroke, icon, centre / value / change text and their
+## rows, the tuck under the plate, the point) by `f` from the scene sizes (1.0 = as in the
+## scene). The minimum height follows, so a container lays it out at the new size; the width
+## stays the scene minimum (the card's row stretches the flag). Week screen: 1.2
+## (`SeasonPilotCard.set_week_layout`).
 func set_size_factor(f: float) -> void:
 	if _base_sizes.is_empty():
 		_base_sizes = {
 			"min": custom_minimum_size,
 			"ring": _ring.custom_minimum_size,
 			"stroke": _ring.width,
-			"icon": _icon.offset_right,
+			"icon": _icon.offset_right - _icon.offset_left,
+			"tuck": _box.offset_top,
+			"point": _flag.point_h,
 			"center": _center.get_theme_font_size(&"font_size"),
 			"value_h": _value.custom_minimum_size.y,
 			"value": _value.get_theme_font_size(&"font_size"),
@@ -123,14 +131,19 @@ func set_size_factor(f: float) -> void:
 			"delta": _delta.get_theme_font_size(&"font_size"),
 		}
 	var b: Dictionary = _base_sizes
-	custom_minimum_size = ((b["min"] as Vector2) * f).round()
-	_ring.custom_minimum_size = ((b["ring"] as Vector2) * f).round()
+	custom_minimum_size = Vector2((b["min"] as Vector2).x, roundf((b["min"] as Vector2).y * f))
+	var ring: Vector2 = ((b["ring"] as Vector2) * f).round()
+	_ring.custom_minimum_size = ring
 	_ring.width = float(b["stroke"]) * f
-	var half: float = float(b["icon"]) * f
-	_icon.offset_left = -half
-	_icon.offset_top = -half
-	_icon.offset_right = half
-	_icon.offset_bottom = half
+	# Icon centred on the half ring's circle centre (`GaugeRing.centre`, read off the new size).
+	var half: float = roundf(float(b["icon"]) * f * 0.5)
+	var c := Vector2(ring.x * 0.5, ring.y - ring.x * 0.5)
+	_icon.position = c - Vector2(half, half)
+	_icon.size = Vector2(half, half) * 2.0
+	_center.position = _icon.position - Vector2(0, 1)
+	_center.size = _icon.size
+	_box.offset_top = roundf(float(b["tuck"]) * f)
+	_flag.point_h = roundf(float(b["point"]) * f)
 	_center.add_theme_font_size_override(&"font_size", roundi(float(b["center"]) * f))
 	_value.custom_minimum_size.y = roundf(float(b["value_h"]) * f)
 	_value.add_theme_font_size_override(&"font_size", roundi(float(b["value"]) * f))
@@ -138,8 +151,9 @@ func set_size_factor(f: float) -> void:
 	_delta.add_theme_font_size_override(&"font_size", roundi(float(b["delta"]) * f))
 
 
+## Fades the gauge, icon and numbers (a pilot that cannot be picked).
 func set_dimmed(on: bool) -> void:
-	_mask.visible = on
+	_ring.modulate.a = DIM_ALPHA if on else 1.0
 	var a: float = DIM_TEXT_ALPHA if on else 1.0
 	_value.modulate.a = a
 	_delta.modulate.a = a

@@ -81,6 +81,8 @@ const MARKER_RADIUS: float = PilotMarker.FIELD_RADIUS
 ## Walking speed along the roads (map px / s) and the shortest walk.
 const WALK_SPEED: float = 300.0
 const WALK_MIN_TIME: float = 0.45
+## `wander_spots`: markers closer than this to an earlier one count as the same spot.
+const SAME_SPOT_DIST: float = 80.0
 
 const _PREVIEW_TOKEN: String = "res://features/season/week/UI_Comp_WeekMapPilot.tscn"
 const _PREVIEW_STEP: float = 3.5
@@ -176,6 +178,34 @@ func spot_point(spot: String) -> Vector2:
 	if m == null:
 		return size * 0.5
 	return m.position
+
+
+## Spots an at-home pilot may wander to in the afternoon (week screen): every `Spot_*` marker
+## but the away spots (Dorm / Entrance) — the training colour spots and the facility spots
+## (`Fac_*`, `spot_point` reads them too). Marker order, so a seeded pick is stable. Markers
+## standing on the same point as an earlier one are left out: tokens are seated per spot
+## name, so two names on one point would stack the portraits.
+func wander_spots() -> Array:
+	var out: Array = []
+	var seen: Array = []
+	var spots: Node = get_node_or_null("Spots")
+	if spots == null:
+		return out
+	for m in spots.get_children():
+		var n: String = String(m.name)
+		if not (m is Node2D) or not n.begins_with("Spot_"):
+			continue
+		var spot: String = n.trim_prefix("Spot_")
+		if spot == SPOT_DORM or spot == SPOT_ENTRANCE:
+			continue
+		var at: Vector2 = (m as Node2D).position
+		var dup: bool = false
+		for q in seen:
+			dup = dup or (q as Vector2).distance_to(at) < SAME_SPOT_DIST
+		if not dup:
+			seen.append(at)
+			out.append(spot)
+	return out
 
 
 ## Does this map have the facility's `Spot_Fac_*` marker? (The stadium has none.)

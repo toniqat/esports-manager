@@ -18,7 +18,7 @@ are `deprecated`.
 | `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`, settings disc → `SettingsPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup, scenario mode (`open_scenario_select`). **Layout lives in `scenes/Lobby.tscn`** |
 | `UI_Comp_LobbyCurrencyPill.tscn` | — (no script, `Button` `LobbyCurrencyPill`) | One wallet pill: `%Icon` · `%Value` (right-aligned, `Loc.grouped` commas) · `%Plus` (accent "+" disc) — item scene, one per `WALLET` row; the whole pill opens the currency shop |
 | `UI_Comp_LobbyNavButton.tscn` | — (no script, flat `Button`) | One cell of the capsule nav: `%Icon` (52, white SVG tinted by `self_modulate`) · `%Caption` (17, shown only when selected) · red `%Badge` — item scene, one per `TABS` row |
-| `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card, 게임 시작 (→ scenario mode) / continue / abandon (the old lobby body). **Layout lives in the `.tscn`** |
+| `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card with its buttons right under it: 게임 시작 (→ scenario mode) / continue + round X (abandon). No host action bar. **Layout lives in the `.tscn`** |
 | `UI_View_AbandonRunPopup.tscn` + `AbandonRunPopup.gd` | `class_name AbandonRunPopup extends CanvasLayer` | Run-abandon modal opened by the home tab's round X: dim + white card — title, the run summary (`SunkPanel` box: phase · date / team / trophies / record / saved at, lines from `HomeTab.run_texts`), warning body, `취소` / `포기하고 정산` (`DangerButton`, auto haptics muted — the caller plays ERROR). `create()`, `open(meta)`, `close()`, `is_open()`, signals `confirmed` / `cancelled`; fixed texts are key literals in the scene. F6 = hand-written meta. Host: `LobbyScreen.open_abandon_run(meta, cb)` |
 | `UI_View_ConfirmPopup.tscn` + `.gd` | `class_name ConfirmPopup extends CanvasLayer` | Reusable modal confirm (dim + white card + cancel / confirm). **Layout lives in the `.tscn`**, style in `OutgameTheme.tres` variations — first scene-authored outgame UI |
 | `UI_View_ManagerTypePopup.tscn` + `.gd` | `class_name ManagerTypePopup extends CanvasLayer` | First-lobby manager type pick (운영형 / 실전형), not dismissible (M3); prestige re-pick mode, dismissible (M9). **Layout lives in the `.tscn`** |
@@ -32,7 +32,7 @@ Every scripted scene here except `LobbyScreen` (the `scenes/Lobby.tscn` root) sh
 (`resources/UiPreview.gd`). Nothing is saved: buttons that would save the profile are re-wired
 to only print (`UiPreview.mute`).
 - `HomeTab` — in-memory run (`ensure_run` + 3 league weeks), run card with rank / record / 경기 진행 중
-  chip; the run file is neither read nor written. No action bar (host-owned).
+  chip; the run file is neither read nor written. The buttons show but do nothing (no host).
 - `ConfirmPopup` — the danger variant (런 포기). `ManagerTypePopup` — prestige mode, real
   `manager_types.csv`, "현재" chip on the last type, first option selected.
 - `ManagerTypeOption` — hand-written 운영형 card, selected + "현재".
@@ -70,7 +70,7 @@ to only print (`UiPreview.mute`).
   `%ActionBar` (tab has a bar) or `%NavBar` (no bar) — read from the scene's offsets.
 - Tab duck-typed contract: `bar_specs() -> Array` (fixed has-bar / no-bar per tab), `setup(host)`,
   `on_bar_pressed(i)`, `on_shown()` (every activation — redraw from the profile).
-- Optional tab hook `bar_scale() -> Vector2` (only `HomeTab`: `(0.5, 1.1)`): `_lift_bar` sizes the capsules to
+- Optional tab hook `bar_scale() -> Vector2` (no tab uses it now — `HomeTab` used `(0.5, 1.1)` before its buttons moved under the run card): `_lift_bar` sizes the capsules to
   x × the full row width (screen − side insets), **centred** (capsules keep `BOTTOM_BAR_GAP` and their weight ratio,
   never under their own minimum width), and makes each capsule y × the slot height, growing **upwards** from the slot
   bottom (the 16 px gap to the nav stays). `round` icon slots (`bar_round` meta) are circles (width = height) that
@@ -106,7 +106,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
 │ │                → LobbyCurrencyPill_Outgame (300×64, Row right margin 22) · _Premium (252×64; preview: gem + plus)
 │ └ %SettingsButton Button `LobbyCurrencyPill` (same black pill look → a circle at 72×72), right-anchored
 │                  (24 px margin), y 32..104 (centred on the pills) → `Icon` TextureRect 44×44 `icon_settings.svg`
-└ %SafeBottom      Control, full rect (bottom offset = device inset, code)
+├ %SafeBottom      Control, full rect (bottom offset = device inset, code)
   ├ %ActionBar     Control slot, bottom-anchored, y −272..−176 (96 tall = one bottom capsule, 16 px above the nav capsule)
   ├ %NavBar        Control, bottom-anchored, 40 px side margins, y −160..−32 (128 high)
   │ ├ NavBack      Panel `LobbyNavCapsule` (RAIL pill + shadow)
@@ -114,6 +114,7 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   │ └ %NavButtons  HBox (10 px inset, sep 0) → 5 LobbyNavButton instances (Record · Pilot · Home · Pass · Shop)
   └ %Toast         Panel `LobbyToast`, z 5, 20 px above the action bar slot (also over the modals)
     └ %ToastText   OnFillLabel 26, centred, clipped
+└ %IntroFade       ColorRect black, full rect, last child, hidden — app-start intro only (below)
 ```
 - **Code-owned**: `indent_to_safe_top(self)` + `_fit_safe_area` (`%Background` extended under the notch,
   `%SafeBottom.offset_bottom = -inset`); item counts / texts / icons from `TABS` · `WALLET` (`_sync_items` reuses the
@@ -126,6 +127,18 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
 - Icons: `resources/images/ui/lobby/*.svg` — white single-colour nav icons (`nav_*`), `currency_coin` /
   `currency_gem` (coloured), `icon_plus`, `icon_close`, `icon_settings` (white stroked gear, 64 px, stroke 5),
   `ring_track` (112 px ring for the level disc).
+
+## App-start intro (`_play_intro`)
+Plays on the **first lobby of an app launch** only (`static var _intro_played`); later entries (back from a
+run, RunResult) open plain, and `open_scenario_on_enter` skips it.
+- `%IntroFade` (black, extended under the notch, `MOUSE_FILTER_STOP` — no taps during the intro) fades out
+  over `INTRO_FADE_SEC` (0.7 s). After `INTRO_TOP_DELAY` (0.25 s) `%TopBar` (level disc · wallet · settings)
+  slides down from above the top edge; after `INTRO_NAV_DELAY` (0.4 s) `%NavBar` slides up from below the
+  bottom edge (start = the scenario-mode off-screen spot, `CHROME_SLIDE_MARGIN` under the screen). Both
+  `INTRO_SLIDE_SEC` (0.55 s), back ease-out (a small overshoot past the slot).
+  Offsets only — they end on the scene's values (`%NavBar` from `_chrome_base`).
+- At the end `%IntroFade` is hidden and the first-profile `ManagerTypePopup` opens
+  (`_open_manager_type_if_needed` — without the intro it opens right after `_build`).
 
 ## Scenario mode (`open_scenario_select`)
 The new-run entry: the home tab's `게임 시작` **without a run** (and the corrupt-run abandon path) calls
@@ -153,14 +166,18 @@ may still animate its own panel).
 
 ## HomeTab (was LobbyScreen body)
 - **Layout lives in `UI_View_HomeTab.tscn`**; created with `HomeTab.create()` (`.new()` is an empty Control).
-  Tree: `HomeTab` (full rect, theme) → `VBox` (top-wide, sep 0): Gap 64 · `Title` (`HeadingLabel` 64) · Gap ·
-  `Rule` (80×6 `ACCENT` ColorRect) · Gap · `%Summary` (`CaptionLabel`) · Gap · `Section` "진행 중인 런" (920 wide) ·
+  Tree: `HomeTab` (full rect, theme) → `VBox` (top-wide, sep 0): `GapTop` 64 · `Section` "진행 중인 런" (920 wide) ·
   Gap · `%RunCard` / `%EmptyCard` (920 wide `Panel` with the `PopupCard` variation — radius 24; Panel so the
   variation's padding is ignored and a `MarginContainer` 44/40/44/42 sets it).
   `%RunCard` → `Header` (`%Phase` `TitleLabel` + `%LiveChip` "경기 진행 중" — margin box → `Chip` `AccentChip` PanelContainer 170×40, centred `AccentLabel` 20) · `%Date` ·
   `Divider` · `%Team` · `%Trophies` (`AccentLabel`) · `%Record` · spacer · `%SavedAt` (right). Gaps are spacer
   Controls sized so every line sits on its old pixel row.
-- Code-owned: texts, which card is visible, `%LiveChip.visible` (`_fill` / `_show_run(meta)`).
+  Then `Gap1` 40 · `Buttons` (920×106 Control, centred): `%FloatingBarButton_Main` (shared
+  `UI_Comp_FloatingBarButton`, `BarPrimaryButton`, 500×106, font 35, centred) · `%FloatingBarButton_NewGame`
+  (same scene, `BarDarkButton`, 106×106 circle, `icon_close.svg` at 44, 16 px left of the main capsule).
+  The old title (`lobby.home.title`) and summary line (`lobby.home.summary`) are gone — both keys `deprecated`.
+- Code-owned: texts, which card is visible, `%LiveChip.visible` (`_fill` / `_show_run(meta)`), the main button
+  text and `%FloatingBarButton_NewGame.visible` (= has a run).
 - The host's `_ready` sets **`GameManager.use_test_run = false`** first — runs entered through the
   lobby save to `user://run.save`; direct editor runs of Season / MatchFlow keep `true`
   and save to the hidden `user://run_test.save`.
@@ -168,9 +185,9 @@ may still animate its own panel).
   phase name (`HubView.PHASE_NAMES`), "경기 진행 중" chip when `match_in_progress`,
   date + weekday (`OutgameTheme.DAY_LETTERS`), team, trophies, league rank W-L
   (or "리그 미시작"), last saved time. No run → empty-state card.
-- Bottom bar (`bar_specs`, font 35, `bar_scale()` = half width · 1.1× height, centred): one 500 px capsule in the
-  centre — `이어하기` (with a run) or `게임 시작` (key `lobby.home.start`, without). With a run a dark **round X**
-  slot (= new game, `icon_close.svg`, `round: true`) hangs left of it. `lobby.home.new_run` (새 런) stays for `RunResult`.
+- No host action bar (`bar_specs()` = `[]`, the tab body reaches the nav capsule). The main button under the card
+  reads `이어하기` (with a run) or `게임 시작` (key `lobby.home.start`, without); with a run the dark **round X**
+  (= new game) shows left of it. `lobby.home.new_run` (새 런) stays for `RunResult`.
 - `이어하기` → `load_run()` → `MatchFlow.tscn` if `season_state.match_resume != null`,
   else `Season.tscn`. Error → red toast above the bar + ERROR haptic.
 - `게임 시작` without a run → host `open_scenario_select(true)` (scenario mode; the pick resets the season → `RunSetup.tscn`).
@@ -180,7 +197,6 @@ may still animate its own panel).
   `RunResult.settle_current_run("abandon")` (writes the profile, deletes `run.save`) →
   `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
   Load fails (corrupt run) → warning, `delete_run()`, the tab redraws as run-less and scenario mode opens (no settlement).
-- A summary line under the title: manager level · owned pilots · owned traits.
 
 ## SettingsPopup (l10n M5 — `docs/localization_design.md` D10 · §10.4)
 `SettingsPopup.create()` → `open()` / `close()` / `is_open()`; signals `locale_chosen(code)` (a locale other

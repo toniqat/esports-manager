@@ -118,7 +118,7 @@ static func matchday_of(day: int) -> int:
 
 
 ## A weekday index inside the week (0..6). Sat / Sun without training still have the
-## morning talk / afternoon / evening halves.
+## morning / afternoon / evening halves.
 static func is_week_day(day: int) -> bool:
 	return day >= 0 and day < DAYS_PER_WEEK
 

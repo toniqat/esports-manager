@@ -17,7 +17,6 @@ extends RefCounted
 const ACTION_INTERVIEW: String = "interview"   # old saves; the afternoon now records `story`
 const ACTION_OUTING: String = "outing"
 const ACTION_PASS: String = "pass"
-const ACTION_TALK: String = "talk"
 ## §15 D afternoon visit (방문): `visit` = a pilot was visited and the 3-option menu is open
 ## (recorded before it shows); then the record becomes `focus` (집중 훈련) / `story` (이야기) / `outing`.
 const ACTION_VISIT: String = "visit"
@@ -277,7 +276,7 @@ static func finish_evening(state: Dictionary, day: int, choice: int) -> Dictiona
 	var judge: int = StaffSystem.manager_value(state, "mental")
 	var out: Dictionary = MentalEvents.apply_choice(state, r, choice, pid, judge,
 			_seed(state, day, "evening_check", choice))
-	# Base stress relief of the talk / outing itself, on top of the row's `stress:` clauses.
+	# Base stress relief of the story / outing itself, on top of the row's `stress:` clauses.
 	var relief: int = StressSystem.relieve(state, pid, String(e["action"]))
 	if relief != 0:
 		(out["notes"] as Array).append(MentalEvents.stress_note(state, pid, relief))
@@ -315,100 +314,6 @@ static func outing_row(state: Dictionary, pilot_id: int) -> Dictionary:
 			best = r
 			best_stage = st
 	return best
-
-
-# ── Morning talk (훈련 소감, one per Mon–Fri morning) ─────────────────────────
-# Right after the morning training is settled the manager may meet one pilot (no
-# outing). Only the picked pilot comes — joint training no longer brings a partner
-# (the `talk_pair` talk was removed 2026-10).
-# Record `days["<day>"].talk`: `{}` = the morning is open (nothing chosen yet),
-# `{action: talk|pass, pilot_id, partner_id, event, choice(-1 = open), outcome{}}`.
-
-## Open the morning (the week screen calls it when the result FX ends). Idempotent.
-static func begin_morning(state: Dictionary, day: int) -> void:
-	if not CalendarSystem.is_training_day(day):
-		return
-	var rec: Dictionary = _day(state, day)
-	if not (rec.get("talk", null) is Dictionary):
-		rec["talk"] = {}
-
-
-## The morning of `day` is open (its talk record exists).
-static func morning_started(state: Dictionary, day: int) -> bool:
-	return _day(state, day).get("talk", null) is Dictionary
-
-
-static func talk(state: Dictionary, day: int) -> Dictionary:
-	var t: Variant = _day(state, day).get("talk", null)
-	return t if t is Dictionary else {}
-
-
-## The morning's talk is settled (answered or passed).
-static func talk_done(state: Dictionary, day: int) -> bool:
-	var t: Dictionary = talk(state, day)
-	return String(t.get("action", "")) == ACTION_PASS or int(t.get("choice", -1)) >= 0
-
-
-## That pilot can be met this morning: the morning is open, the afternoon has not
-## started and no talk was used yet.
-static func can_talk(state: Dictionary, day: int, pilot_id: int) -> bool:
-	return morning_started(state, day) and not AfternoonAway.started(state, day) \
-			and talk(state, day).is_empty() and my_pilot_ids(state).has(pilot_id)
-
-
-## Meet `pilot_id` this morning. Returns a session (`session_view` draws it) or {}.
-## Re-calling while the dialog is open returns the same session. Always one pilot: the
-## joint-training pair talk (`talk_pair`) was removed 2026-10 — new records keep
-## `partner_id = -1`; an old record with a partner still settles both (`finish_talk`).
-static func begin_talk(state: Dictionary, day: int, pilot_id: int) -> Dictionary:
-	var t: Dictionary = talk(state, day)
-	if String(t.get("action", "")) == ACTION_TALK and int(t.get("choice", -1)) < 0:
-		return _talk_session(t)
-	if not can_talk(state, day, pilot_id):
-		return {}
-	var r: Dictionary = _draw(state, MentalEvents.KIND_TALK, pilot_id, _seed(state, day, "talk", pilot_id))
-	if r.is_empty():
-		return {}
-	t = {"action": ACTION_TALK, "pilot_id": pilot_id, "partner_id": -1,
-			"event": String(r["id"]), "choice": -1, "outcome": {}}
-	_day(state, day)["talk"] = t
-	return _talk_session(t)
-
-
-## Settle the morning talk with answer `choice` (manager's own mental). Idempotent.
-static func finish_talk(state: Dictionary, day: int, choice: int) -> Dictionary:
-	var t: Dictionary = talk(state, day)
-	if String(t.get("action", "")) != ACTION_TALK:
-		return {}
-	if int(t.get("choice", -1)) >= 0:
-		return t.get("outcome", {})
-	var r: Dictionary = MentalEvents.row(String(t["event"]))
-	var pid: int = int(t["pilot_id"])
-	var partner: int = int(t.get("partner_id", -1))
-	var out: Dictionary = MentalEvents.apply_choice(state, r, choice, pid,
-			StaffSystem.manager_value(state, "mental"), _seed(state, day, "talk_check", choice), partner)
-	for who in [pid, partner]:
-		if int(who) < 0:
-			continue
-		var relief: int = StressSystem.relieve(state, int(who), ACTION_TALK)
-		if relief != 0:
-			(out["notes"] as Array).append(MentalEvents.stress_note(state, int(who), relief))
-	t["choice"] = choice
-	t["outcome"] = out
-	return out
-
-
-## Leave the morning without a talk (records a pass; a used talk stays).
-static func pass_talk(state: Dictionary, day: int) -> void:
-	if morning_started(state, day) and talk(state, day).is_empty():
-		_day(state, day)["talk"] = {"action": ACTION_PASS, "pilot_id": -1, "partner_id": -1,
-				"event": "", "choice": -1, "outcome": {}}
-
-
-static func _talk_session(t: Dictionary) -> Dictionary:
-	var r: Dictionary = MentalEvents.row(String(t.get("event", "")))
-	return {"kind": String(r.get("kind", MentalEvents.KIND_TALK)), "event": String(t["event"]),
-			"pilot_id": int(t["pilot_id"]), "partner_id": int(t.get("partner_id", -1))}
 
 
 # ── Evening (저녁) — the incident phase ───────────────────────────────────────
@@ -622,7 +527,7 @@ static func session_view(state: Dictionary, session: Dictionary) -> Dictionary:
 			lines.append(t)
 	var choices: Array = []
 	var previews: Array = []
-	# The activity's own stress relief (talk / interview / outing) is the same for every
+	# The activity's own stress relief (interview / story / outing) is the same for every
 	# answer, so the preview shows only what the answer itself changes.
 	var judge: int = judge_for(state, String(r["kind"]))
 	for i in (r["choices"] as Array).size():

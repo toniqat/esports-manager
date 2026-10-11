@@ -21,12 +21,6 @@ signal closed
 const SCENE_PATH: String = "res://features/meta/shop/UI_View_CurrencyShopPopup.tscn"
 const TILE_SCENE: String = "res://features/meta/shop/UI_Comp_CurrencyShopProduct.tscn"
 
-## Profile currency key → icon (also the lobby wallet pills).
-const CURRENCY_ICONS: Dictionary = {
-	"outgame": "res://resources/images/ui/lobby/currency_coin.svg",
-	"premium": "res://resources/images/ui/lobby/currency_gem.svg",
-}
-
 var _lobby = null          # LobbyScreen (untyped: duck-typed services; null in the F6 preview)
 var _pm: Node
 var _sheet_rest: float = 0.0
@@ -37,10 +31,6 @@ static func create() -> CurrencyShopPopup:
 	var p: CurrencyShopPopup = (load(SCENE_PATH) as PackedScene).instantiate()
 	p.visible = false
 	return p
-
-
-static func currency_icon(key: String) -> Texture2D:
-	return load(String(CURRENCY_ICONS.get(key, CURRENCY_ICONS["outgame"]))) as Texture2D
 
 
 func _ready() -> void:
@@ -106,7 +96,7 @@ func _fill_tile(tile: Button, row: Dictionary) -> void:
 	var gain: String = String(row["gain_currency"])
 	var bonus: int = int(row["bonus"])
 	var krw: bool = String(row["price_currency"]) == ShopCatalog.PRICE_KRW
-	(tile.get_node("%Icon") as TextureRect).texture = currency_icon(gain)
+	(tile.get_node("%Icon") as TextureRect).texture = CurrencyIcons.icon(gain)
 	(tile.get_node("%Amount") as Label).text = Loc.grouped(int(row["amount"]))
 	(tile.get_node("%Bonus") as Label).text = Loc.t(L.SHOP_WALLET_BONUS, {"n": Loc.grouped(bonus)}) \
 			if bonus > 0 else ""
@@ -115,7 +105,7 @@ func _fill_tile(tile: Button, row: Dictionary) -> void:
 	var icon: TextureRect = tile.get_node("%PriceIcon")
 	icon.visible = not krw
 	if not krw:
-		icon.texture = currency_icon(String(row["price_currency"]))
+		icon.texture = CurrencyIcons.icon(String(row["price_currency"]))
 	var txt: Label = tile.get_node("%PriceText")
 	txt.theme_type_variation = &"OnFillLabel" if krw else &"BodyLabel"
 	txt.add_theme_font_size_override("font_size", OutgameTheme.FONT_BODY)

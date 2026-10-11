@@ -63,7 +63,7 @@ to only print (`UiPreview.mute`).
 - **Level disc** (`refresh_level`, called by `refresh_currency`): `%LevelValue` = manager level, `%LevelRing`
   (`TextureProgressBar`, radial clockwise, 0..1) = EXP inside the level (`ManagerProgress.level_progress`; full at max).
 - **Wallet** (`WALLET` = `outgame`, `premium` + `plus`): pills show `Loc.grouped(amount)`; icons from
-  `CurrencyShopPopup.currency_icon(key)`. Any pill → `open_wallet()` → `CurrencyShopPopup` (`../shop/README.md`).
+  `CurrencyIcons.icon(key)`. Any pill → `open_wallet()` → `CurrencyShopPopup` (`../shop/README.md`).
   Other currencies are no longer in the lobby header (shop / collection screens show them).
 - Modal close (`closed`) → `_on_modal_closed`: nav fades back · `refresh_currency` · `refresh_badges` · current tab `on_shown`.
 - **Tab rect** (`_place_tab`): anchors full rect, `offset_top` = `%TopBar`'s bottom, `offset_bottom` = top of
@@ -134,16 +134,15 @@ every script *it* references) when the lobby script compiles — at boot. Measur
 autoloads already up): class_name references to the other tabs / modals pulled in 40 scripts (incl. the whole
 `run_setup/` folder via `RunSetupScreen.entry_scenario`) ≈ 550 ms; by path → 8 scripts ≈ 130 ms.
 - **Rule**: only what the first frame needs is referenced by class_name (`HomeTab`, `ConfirmPopup`,
-  `AbandonRunPopup`, `ManagerProgress`, shared `resources/`). Everything opened later is a scene-path const —
+  `AbandonRunPopup`, `ManagerProgress`, `CurrencyIcons`, shared `resources/`). Everything opened later is a scene-path const —
   `TAB_SCENES` (collection · pass · shop), `MANAGER_SHEET_SCENE`, `WALLET_POPUP_SCENE`, `SETTINGS_SCENE`,
   `MANAGER_TYPE_SCENE`, `SCENARIO_VIEW_SCENE` (each = that script's `SCENE_PATH`; **change both** if a scene moves) —
   instanced by `_instantiate(path, hidden)` (popups start hidden, like their `create()`), held in `Control` / `Node`
   vars and driven by name (`call(&"open", …)`, `connect(&"closed", …)`, `get(&"selected_id")`).
   `RunSetupScreen.entry_scenario` is read / written through `load(RUN_SETUP_SCRIPT).get / set` (`_run_setup_script`).
   **Don't add a class_name reference to a lazily opened screen** — it silently puts its script chain back on boot.
-- Known leftover: `_sync_wallet` uses `CurrencyShopPopup.currency_icon(key)` for the first frame, which drags
-  `CurrencyShopPopup` + `ShopCatalog` · `ShopPopup` · `Gacha` · `ShopRevealItem` in at boot (≈ 60 ms cold). Moving the
-  icon table / helper to a light script (shop folder or `resources/`) would remove it.
+- Wallet pill icons come from the dependency-free `CurrencyIcons` (`../shop/`), not `CurrencyShopPopup` — the
+  popup's class_name would pull `ShopCatalog` · `ShopPopup` · `Gacha` · `ShopRevealItem` in at boot (≈ 60 ms cold).
 - **Background preload** (`_preload_in_background`): once the lobby is settled — at the end of the intro tween
   (never during it), or right after `_build` on the non-intro paths — `ResourceLoader.load_threaded_request` for
   `BACKGROUND_SCENES` (scenario view, collection · shop · pass tabs, 감독 · 재화 modals) not yet cached. Instances

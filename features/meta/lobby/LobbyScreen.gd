@@ -57,7 +57,7 @@ const TABS: Array = [    # l10n-keys: lobby.nav.*
 ]
 
 ## 위 막대의 재화 알약(순서대로 — 오른쪽 끝이 마지막). 나머지 재화는 상점 · 컬렉션 화면이
-## 보인다. `plus` = 오른쪽 "+" 원(유료 재화). 아이콘은 `CurrencyShopPopup.CURRENCY_ICONS`.
+## 보인다. `plus` = 오른쪽 "+" 원(유료 재화). 아이콘은 `CurrencyIcons`.
 const WALLET: Array = [
 	{"key": "outgame"},
 	{"key": "premium", "plus": true},
@@ -325,7 +325,7 @@ func _sync_wallet() -> void:
 		var spec: Dictionary = WALLET[i]
 		var key: String = String(spec["key"])
 		var pill: Button = pills[i]
-		(pill.get_node("%Icon") as TextureRect).texture = CurrencyShopPopup.currency_icon(key)
+		(pill.get_node("%Icon") as TextureRect).texture = CurrencyIcons.icon(key)
 		(pill.get_node("%Plus") as Control).visible = bool(spec.get("plus", false))
 		pill.pressed.connect(open_wallet)
 		_currency_labels[key] = pill.get_node("%Value")

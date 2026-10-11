@@ -72,6 +72,33 @@ const SELECTOR_SEC: float = 0.28
 const CHROME_SLIDE_SEC: float = 0.38
 const CHROME_SLIDE_MARGIN: float = 40.0
 const RUN_SETUP_SCENE: String = "res://scenes/RunSetup.tscn"
+
+## Screens the first frame doesn't need are loaded by **path, never by class_name**: a class_name
+## reference makes Godot load (compile) that script — and every script it references — when the
+## lobby script compiles, i.e. at boot. Each path is the same as that script's `SCENE_PATH`;
+## the instances are duck-typed (`call` / `connect` by name). See README → *Boot loading*.
+const TAB_SCENES: Dictionary = {
+	"collection": "res://features/meta/collection/UI_View_CollectionTab.tscn",   # CollectionTab
+	"pass":       "res://features/meta/shop/UI_View_PassTab.tscn",               # PassTab
+	"shop":       "res://features/meta/shop/UI_View_ShopTab.tscn",               # ShopTab
+}
+const MANAGER_SHEET_SCENE: String = "res://features/meta/manager/UI_View_ManagerPopup.tscn"      # ManagerPopup
+const WALLET_POPUP_SCENE: String = "res://features/meta/shop/UI_View_CurrencyShopPopup.tscn"    # CurrencyShopPopup
+const SETTINGS_SCENE: String = "res://features/meta/lobby/UI_View_SettingsPopup.tscn"           # SettingsPopup
+const MANAGER_TYPE_SCENE: String = "res://features/meta/lobby/UI_View_ManagerTypePopup.tscn"    # ManagerTypePopup
+const SCENARIO_VIEW_SCENE: String = "res://features/meta/run_setup/UI_View_ScenarioSelectView.tscn"  # ScenarioSelectView
+## `RunSetupScreen` — only its static `entry_scenario` is touched here (by name, see `_run_setup_script`).
+const RUN_SETUP_SCRIPT: String = "res://features/meta/run_setup/RunSetupScreen.gd"
+## Loaded on a background thread once the lobby is up (after the intro) — the next likely taps.
+## Instances are still made only on first open (`_load_scene` collects the threaded result).
+const BACKGROUND_SCENES: Array = [
+	SCENARIO_VIEW_SCENE,
+	"res://features/meta/collection/UI_View_CollectionTab.tscn",
+	"res://features/meta/shop/UI_View_ShopTab.tscn",
+	"res://features/meta/shop/UI_View_PassTab.tscn",
+	MANAGER_SHEET_SCENE,
+	WALLET_POPUP_SCENE,
+]
 ## 캡슐 메뉴 아이콘 색: 어두운 캡슐 위(꺼짐) · 흰 알약 위(켜짐) · 막힌 칸.
 const NAV_ICON_OFF: Color = Color(0.85, 0.85, 0.88, 1.0)
 const NAV_ICON_ON: Color = OutgameTheme.TEXT
@@ -108,12 +135,13 @@ var _toast_error_style: StyleBox     # the same pill, recoloured NEGATIVE
 var _confirm: ConfirmPopup
 var _abandon: AbandonRunPopup
 var _confirm_cb: Callable = Callable()
-var _manager_popup: ManagerTypePopup = null
-var _manager_sheet: ManagerPopup = null
-var _wallet_popup: CurrencyShopPopup = null
+var _manager_popup: Node = null      # ManagerTypePopup (CanvasLayer)
+var _manager_sheet: Control = null   # ManagerPopup
+var _wallet_popup: Control = null    # CurrencyShopPopup
 var _nav_fade: Tween
-var _settings: SettingsPopup = null
-var _scenario_view: ScenarioSelectView = null
+var _settings: Node = null           # SettingsPopup (CanvasLayer)
+var _scenario_view: Control = null   # ScenarioSelectView
+var _bg_requested: Dictionary = {}   # scene path → true, threaded load issued and not collected yet
 var _chrome_back_animate: bool = true   # how the chrome returns once the scenario view has closed
 var _scenario_open: bool = false
 var _chrome_tween: Tween
@@ -137,11 +165,57 @@ func _ready() -> void:
 		switch_tab("home")
 		open_scenario_select(false)
 		_open_manager_type_if_needed()
+		_preload_in_background()
 	elif not _intro_played:
 		_intro_played = true
-		_play_intro()
+		_play_intro()   # → `_preload_in_background` once the intro has finished
 	else:
 		_open_manager_type_if_needed()
+		_preload_in_background()
+
+
+func _exit_tree() -> void:
+	# Collect finished background loads (non-blocking — they are done); a still-running one is
+	# left to the loader (the next lobby's request joins it).
+	for path in _bg_requested.keys():
+		if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_LOADED:
+			ResourceLoader.load_threaded_get(path)
+	_bg_requested.clear()
+
+
+## Starts threaded loads of `BACKGROUND_SCENES` (scene + its scripts) that aren't loaded yet —
+## called once the lobby's first frame is settled (after the intro tween, never during it).
+func _preload_in_background() -> void:
+	for raw in BACKGROUND_SCENES:
+		var path: String = raw
+		if _bg_requested.has(path) or ResourceLoader.has_cached(path):
+			continue
+		if ResourceLoader.load_threaded_request(path) == OK:
+			_bg_requested[path] = true
+
+
+## A lazily opened screen's scene — the background load's result if one was issued (blocks only
+## if it is still running), else a plain `load`.
+func _load_scene(path: String) -> PackedScene:
+	if _bg_requested.has(path):
+		_bg_requested.erase(path)
+		var res: PackedScene = ResourceLoader.load_threaded_get(path) as PackedScene
+		if res != null:
+			return res
+	return load(path) as PackedScene
+
+
+## Instance of a lazily opened screen (same as its script's `create()`: popups start hidden).
+func _instantiate(path: String, hidden: bool = false) -> Node:
+	var node: Node = _load_scene(path).instantiate()
+	if hidden:
+		node.set("visible", false)
+	return node
+
+
+## `RunSetupScreen` by path (static `entry_scenario` read / written by name).
+func _run_setup_script() -> Script:
+	return load(RUN_SETUP_SCRIPT) as Script
 
 
 # ── Build ────────────────────────────────────────────────────────────────────
@@ -178,10 +252,10 @@ func _build() -> void:
 func _open_manager_type_if_needed() -> void:
 	if _pm.manager_type_chosen() or _manager_popup != null:
 		return
-	_manager_popup = ManagerTypePopup.create()
+	_manager_popup = _instantiate(MANAGER_TYPE_SCENE, true)
 	add_child(_manager_popup)
-	_manager_popup.chosen.connect(_on_manager_type_chosen)
-	_manager_popup.open()
+	_manager_popup.connect(&"chosen", _on_manager_type_chosen)
+	_manager_popup.call(&"open")
 
 
 ## App-start intro: `%IntroFade` (black, swallows taps) fades out; the top bar (level disc ·
@@ -218,7 +292,8 @@ func _play_intro() -> void:
 	tw.chain().tween_callback(func() -> void:
 		fade.visible = false
 		fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_open_manager_type_if_needed())
+		_open_manager_type_if_needed()
+		_preload_in_background())
 
 
 ## 기기마다 다른 값만 오프셋으로 넣는다(패턴 B) — 배경은 노치 밑까지 올리고, 아래쪽
@@ -315,11 +390,9 @@ func switch_tab(id: String) -> void:
 
 
 func _make_tab(id: String) -> Control:
-	match id:
-		"collection": return CollectionTab.create()
-		"shop":       return ShopTab.create()
-		"pass":       return PassTab.create()
-	return HomeTab.create()
+	if TAB_SCENES.has(id):
+		return _instantiate(String(TAB_SCENES[id])) as Control
+	return HomeTab.create()   # the first frame's tab — by class_name on purpose
 
 
 ## 메뉴 칸의 아이콘 색과 영문 이름 — 선택 칸만 흰 알약 위 짙은 아이콘 + 이름.
@@ -367,24 +440,24 @@ func _move_selector(animate: bool) -> void:
 ## 감독 모달(예전 감독 탭) — 레벨 원을 누르면.
 func open_manager() -> void:
 	if _manager_sheet == null:
-		_manager_sheet = ManagerPopup.create()
+		_manager_sheet = _instantiate(MANAGER_SHEET_SCENE, true) as Control
 		add_child(_manager_sheet)
-		_manager_sheet.closed.connect(_on_modal_closed)
+		_manager_sheet.connect(&"closed", _on_modal_closed)
 	_hide_toast()
 	if not _scenario_open:
 		_fade_nav(false)
-	_manager_sheet.open(self)
+	_manager_sheet.call(&"open", self)
 
 
 ## 재화 구매처 — 재화 알약을 누르면.
 func open_wallet() -> void:
 	if _wallet_popup == null:
-		_wallet_popup = CurrencyShopPopup.create()
+		_wallet_popup = _instantiate(WALLET_POPUP_SCENE, true) as Control
 		add_child(_wallet_popup)
-		_wallet_popup.closed.connect(_on_modal_closed)
+		_wallet_popup.connect(&"closed", _on_modal_closed)
 	_hide_toast()
 	_fade_nav(false)
-	_wallet_popup.open(self)
+	_wallet_popup.call(&"open", self)
 
 
 ## The modals that drop from the top put their floating close capsule where the nav capsule
@@ -575,11 +648,11 @@ func _hide_toast() -> void:
 ## The settings disc (top bar, right of the wallet) — one `SettingsPopup`, made on first open.
 func open_settings() -> void:
 	if _settings == null:
-		_settings = SettingsPopup.create()
+		_settings = _instantiate(SETTINGS_SCENE, true)
 		add_child(_settings)
-		_settings.locale_chosen.connect(_on_locale_chosen)
+		_settings.connect(&"locale_chosen", _on_locale_chosen)
 	_hide_toast()
-	_settings.open()
+	_settings.call(&"open")
 
 
 ## Saves the language and reloads the lobby — the only path that rebuilds code-filled texts in
@@ -600,21 +673,22 @@ func open_scenario_select(animate: bool = true) -> void:
 		return
 	_scenario_open = true
 	_hide_toast()
-	var selected: int = maxi(0, RunSetupScreen.entry_scenario)
+	var selected: int = 0
 	if _scenario_view == null:
-		_scenario_view = ScenarioSelectView.create()
+		selected = maxi(0, int(_run_setup_script().get(&"entry_scenario")))
+		_scenario_view = _instantiate(SCENARIO_VIEW_SCENE) as Control
 		add_child(_scenario_view)
 		# Above the tab bodies, below the top bar (level / settings discs stay on top),
 		# the bottom chrome, the toast and the modals.
 		move_child(_scenario_view, (%TopBar as Control).get_index())
 		_scenario_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_scenario_view.back_requested.connect(close_scenario_select)
-		_scenario_view.scenario_chosen.connect(_on_scenario_chosen)
-		_scenario_view.closed.connect(_on_scenario_closed)
+		_scenario_view.connect(&"back_requested", close_scenario_select)
+		_scenario_view.connect(&"scenario_chosen", _on_scenario_chosen)
+		_scenario_view.connect(&"closed", _on_scenario_closed)
 	else:
-		selected = _scenario_view.selected_id
+		selected = int(_scenario_view.get(&"selected_id"))
 	_slide_chrome(true, animate)
-	_scenario_view.open(selected, animate)
+	_scenario_view.call(&"open", selected, animate)
 
 
 ## 뒤로 from the scenario view — the view closes itself (contents fade, slab swings out, black wipe);
@@ -643,7 +717,7 @@ func is_scenario_open() -> bool:
 
 func _on_scenario_chosen(scenario_id: int) -> void:
 	_gm.reset_season_state()
-	RunSetupScreen.entry_scenario = scenario_id
+	_run_setup_script().set(&"entry_scenario", scenario_id)
 	get_tree().change_scene_to_file(RUN_SETUP_SCENE)
 
 

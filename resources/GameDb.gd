@@ -8,11 +8,13 @@ extends RefCounted
 # 타이틀 화면부터 DB 오류로 멈추는 진짜 이유가 이것이다. 그래서 기기에서는
 # 패킹된 DB 를 `user://` 로 한 번 뽑아낸 뒤 그 사본을 열어 준다.
 #
-# **매 실행마다 덮어쓴다.** 런타임에 DB 는 읽기 전용이고(세이브는
-# `user://saves/*.save` JSON 으로 따로 산다) 크기도 작아서, 뭐가 바뀌었는지
-# 비교하는 캐시 무효화 장치를 두는 것보다 그냥 복사하는 쪽이 언제나 옳다 —
-# 새 빌드를 깔았는데 옛 빌드의 game.db 가 `user://` 에 남아 있는 사고가
-# 구조적으로 불가능해진다.
+# Copy only when the user:// copy differs. The DB is read-only at runtime (saves live
+# in `user://saves/*.save`), so rewriting ~340KB of flash on every launch is waste.
+# The check is a plain byte compare of the pck bytes against the existing copy (size
+# first, then contents) — no stamp file, no hash: an old build's DB differs from the
+# new build's bytes, so it can never survive an update, and a torn / tampered copy
+# differs too and is rewritten. Measured on desktop: hashing (md5 + stamp) was slower
+# than this compare, and the compare costs about what the old unconditional write did.
 #
 # `data/game.db` 는 **리소스가 아니므로** 그냥 두면 pck 에 안 들어간다 —
 # `export_presets.cfg` 의 `include_filter` 가 그걸 넣는 자리다.
@@ -29,7 +31,7 @@ static var _path: String = ""
 
 
 # 런타임에 SQLite 에 넘길 game.db 경로. 에디터에서는 res:// 그대로,
-# 익스포트 빌드에서는 pck 에서 뽑아낸 user:// 사본. 한 실행에 한 번만 복사한다.
+# 익스포트 빌드에서는 pck 에서 뽑아낸 user:// 사본. 한 실행에 한 번만 확인한다.
 static func path() -> String:
 	if _path != "":
 		return _path
@@ -40,19 +42,42 @@ static func path() -> String:
 	return _path
 
 
-# pck 안의 game.db 를 user:// 로 꺼낸다. 실패하면 원본 경로를 그대로
-# 돌려준다 — 어차피 열리지 않지만, 호출부마다 있는 open_db 실패 경로가
-# 에러를 대신 말해 주므로 여기서 null 을 새로 만들 이유가 없다.
+# pck 안의 game.db 를 user:// 로 꺼낸다(이미 같은 사본이면 쓰지 않는다). 실패하면
+# 원본 경로를 그대로 돌려준다 — 어차피 열리지 않지만, 호출부마다 있는 open_db
+# 실패 경로가 에러를 대신 말해 주므로 여기서 null 을 새로 만들 이유가 없다.
 static func _extract_to_user() -> String:
-	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(SOURCE_PATH)
+	return RUNTIME_PATH if _sync_copy(SOURCE_PATH, RUNTIME_PATH) else SOURCE_PATH
+
+
+# Make `target` a byte-identical copy of `source`, writing only when it differs.
+# Returns true when `target` holds the source bytes. Paths are parameters so a
+# test harness can run it without touching the real user:// DB.
+static func _sync_copy(source: String, target: String) -> bool:
+	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(source)
 	if bytes.is_empty():
-		push_error("GameDb: %s 가 빌드에 안 들어있다 — export_presets.cfg 의 include_filter 를 확인할 것." % SOURCE_PATH)
-		return SOURCE_PATH
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(RUNTIME_PATH).get_base_dir())
-	var f: FileAccess = FileAccess.open(RUNTIME_PATH, FileAccess.WRITE)
+		push_error("GameDb: %s 가 빌드에 안 들어있다 — export_presets.cfg 의 include_filter 를 확인할 것." % source)
+		return false
+	if _same_bytes(target, bytes):
+		return true
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(target).get_base_dir())
+	var f: FileAccess = FileAccess.open(target, FileAccess.WRITE)
 	if f == null:
-		push_error("GameDb: %s 에 쓸 수 없다 (%d)" % [RUNTIME_PATH, FileAccess.get_open_error()])
-		return SOURCE_PATH
+		push_error("GameDb: %s 에 쓸 수 없다 (%d)" % [target, FileAccess.get_open_error()])
+		return false
 	f.store_buffer(bytes)
 	f.close()
-	return RUNTIME_PATH
+	return true
+
+
+# Does `target` exist with exactly `bytes`? Size is checked first so a missing,
+# truncated or old-size copy is rejected without reading it.
+static func _same_bytes(target: String, bytes: PackedByteArray) -> bool:
+	var f: FileAccess = FileAccess.open(target, FileAccess.READ)
+	if f == null:
+		return false
+	if f.get_length() != bytes.size():
+		f.close()
+		return false
+	var existing: PackedByteArray = f.get_buffer(bytes.size())
+	f.close()
+	return existing == bytes

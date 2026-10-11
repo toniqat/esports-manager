@@ -15,7 +15,7 @@ are `deprecated`.
 ## Files
 | File | Class | Purpose |
 |---|---|---|
-| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`, settings disc → `SettingsPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup, scenario mode (`open_scenario_select`). **Layout lives in `scenes/Lobby.tscn`** |
+| `LobbyScreen.gd` | `class_name LobbyScreen extends Control` (root of `scenes/Lobby.tscn`) | **Tab host** (M8~M10): top bar (level disc → 감독 modal `ManagerPopup`, wallet pills → `CurrencyShopPopup`, settings disc → `SettingsPopup`), capsule nav + sliding selector, per-tab action bar, toast, confirm popup, manager type popup, scenario mode (`open_scenario_select`). Later screens are loaded by scene path (not class_name) + background-preloaded after the intro — *Boot loading*. **Layout lives in `scenes/Lobby.tscn`** |
 | `UI_Comp_LobbyCurrencyPill.tscn` | — (no script, `Button` `LobbyCurrencyPill`) | One wallet pill: `%Icon` · `%Value` (right-aligned, `Loc.grouped` commas) · `%Plus` (accent "+" disc) — item scene, one per `WALLET` row; the whole pill opens the currency shop |
 | `UI_Comp_LobbyNavButton.tscn` | — (no script, flat `Button`) | One cell of the capsule nav: `%Icon` (52, white SVG tinted by `self_modulate`) · `%Caption` (17, shown only when selected) · red `%Badge` — item scene, one per `TABS` row |
 | `UI_View_HomeTab.tscn` + `.gd` | `class_name HomeTab extends Control` | 홈 tab — run card with its buttons right under it: 게임 시작 (→ scenario mode) / continue + round X (abandon). No host action bar. **Layout lives in the `.tscn`** |
@@ -46,8 +46,8 @@ to only print (`UiPreview.mute`).
 └   ( RECORD · PILOT · HOME · PASS · SHOP )  floating capsule nav, icons only      ┘
 ```
 - `TABS` is the one table (left → right: `record` (locked) · `collection` · `home` · `pass` · `shop`, each with
-  `caption` key + `icon` file in `resources/images/ui/lobby/`). `_make_tab(id)` builds each tab with its `create()`
-  (`HomeTab` / `CollectionTab` / `ShopTab` / `PassTab` — all scene-based) lazily on first open, adds it under `%Tabs`,
+  `caption` key + `icon` file in `resources/images/ui/lobby/`). `_make_tab(id)` builds each tab lazily on first open
+  (`HomeTab.create()`; collection / pass / shop from `TAB_SCENES` paths — see *Boot loading*), adds it under `%Tabs`,
   then hides / shows. The lobby opens on `home` (the centre cell).
 - **Locked cell** (`locked: true` — 기록): icon at `NAV_ICON_LOCKED`, button disabled + `MOUSE_FILTER_IGNORE` — no
   reaction at all (no haptic, selector stays). `switch_tab` also refuses it.
@@ -128,6 +128,29 @@ Lobby (Control, full rect, theme = OutgameTheme.tres, LobbyScreen.gd)
   `currency_gem` (coloured), `icon_plus`, `icon_close`, `icon_settings` (white stroked gear, 64 px, stroke 5),
   `ring_track` (112 px ring for the level disc).
 
+## Boot loading (lazy screens by path · background preload)
+The lobby is the main scene, so whatever `LobbyScreen.gd` references by **class_name** is loaded (compiled, with
+every script *it* references) when the lobby script compiles — at boot. Measured headless (`load(Lobby.tscn)`,
+autoloads already up): class_name references to the other tabs / modals pulled in 40 scripts (incl. the whole
+`run_setup/` folder via `RunSetupScreen.entry_scenario`) ≈ 550 ms; by path → 8 scripts ≈ 130 ms.
+- **Rule**: only what the first frame needs is referenced by class_name (`HomeTab`, `ConfirmPopup`,
+  `AbandonRunPopup`, `ManagerProgress`, shared `resources/`). Everything opened later is a scene-path const —
+  `TAB_SCENES` (collection · pass · shop), `MANAGER_SHEET_SCENE`, `WALLET_POPUP_SCENE`, `SETTINGS_SCENE`,
+  `MANAGER_TYPE_SCENE`, `SCENARIO_VIEW_SCENE` (each = that script's `SCENE_PATH`; **change both** if a scene moves) —
+  instanced by `_instantiate(path, hidden)` (popups start hidden, like their `create()`), held in `Control` / `Node`
+  vars and driven by name (`call(&"open", …)`, `connect(&"closed", …)`, `get(&"selected_id")`).
+  `RunSetupScreen.entry_scenario` is read / written through `load(RUN_SETUP_SCRIPT).get / set` (`_run_setup_script`).
+  **Don't add a class_name reference to a lazily opened screen** — it silently puts its script chain back on boot.
+- Known leftover: `_sync_wallet` uses `CurrencyShopPopup.currency_icon(key)` for the first frame, which drags
+  `CurrencyShopPopup` + `ShopCatalog` · `ShopPopup` · `Gacha` · `ShopRevealItem` in at boot (≈ 60 ms cold). Moving the
+  icon table / helper to a light script (shop folder or `resources/`) would remove it.
+- **Background preload** (`_preload_in_background`): once the lobby is settled — at the end of the intro tween
+  (never during it), or right after `_build` on the non-intro paths — `ResourceLoader.load_threaded_request` for
+  `BACKGROUND_SCENES` (scenario view, collection · shop · pass tabs, 감독 · 재화 modals) not yet cached. Instances
+  are still made on first open: `_load_scene(path)` collects a requested path with `load_threaded_get` (blocks only
+  if still running; falls back to `load` on failure), else plain `load`. `_exit_tree` collects finished requests.
+  The settings / manager-type popups are small and not preloaded.
+
 ## App-start intro (`_play_intro`)
 Plays on the **first lobby of an app launch** only (`static var _intro_played`); later entries (back from a
 run, RunResult) open plain, and `open_scenario_on_enter` skips it.
@@ -137,8 +160,9 @@ run, RunResult) open plain, and `open_scenario_on_enter` skips it.
   bottom edge (start = the scenario-mode off-screen spot, `CHROME_SLIDE_MARGIN` under the screen). Both
   `INTRO_SLIDE_SEC` (0.55 s), back ease-out (a small overshoot past the slot).
   Offsets only — they end on the scene's values (`%NavBar` from `_chrome_base`).
-- At the end `%IntroFade` is hidden and the first-profile `ManagerTypePopup` opens
-  (`_open_manager_type_if_needed` — without the intro it opens right after `_build`).
+- At the end `%IntroFade` is hidden, the first-profile `ManagerTypePopup` opens
+  (`_open_manager_type_if_needed` — without the intro it opens right after `_build`) and the background preload
+  starts (`_preload_in_background`, *Boot loading*).
 
 ## Scenario mode (`open_scenario_select`)
 The new-run entry: the home tab's `게임 시작` **without a run** (and the corrupt-run abandon path) calls
@@ -150,7 +174,7 @@ may still animate its own panel).
   that margin under the screen bottom. Driven by offsets from `_chrome_base` (the scene's offsets, captured in
   `_build`; `_place_tab` / `_lift_bar` read the base, never the slid value). Hidden at `t = 1` (no taps). The level
   disc and the settings disc stay — both work in scenario mode.
-- **View**: `ScenarioSelectView.create()` once, child of the lobby moved to just **below `%TopBar`** (above `%Tabs`;
+- **View**: `ScenarioSelectView` instanced once from `SCENARIO_VIEW_SCENE` (by path, *Boot loading*), child of the lobby moved to just **below `%TopBar`** (above `%Tabs`;
   `%SafeBottom` / toast / modals stay above it), full rect, `open(selected, animate)` — `selected` = the view's
   last `selected_id`, first time `RunSetupScreen.entry_scenario` (if ≥ 0) else 0. The view owns its bottom bar
   (뒤로 / 시나리오 선택) and its enter / exit animation.

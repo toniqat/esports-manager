@@ -49,10 +49,11 @@ DB while other scripts' `static var` initialisers run, i.e. possibly before auto
 
 - `GameDb.path() -> String` — `res://data/game.db` in the editor, otherwise
   `user://data/game.db`. Computed once per run and cached.
-- `GameDb._extract_to_user() -> String` — copies the DB inside the pck out to `user://`.
-  **It overwrites on every run**: the DB is read-only and 96KB, so there is no reason
-  for cache invalidation, and this makes it impossible for an old build's DB to survive
-  into a new build. On failure it returns the original path unchanged — the `open_db()`
+- `GameDb._extract_to_user() -> String` — makes `user://data/game.db` a byte-identical copy of the
+  DB inside the pck. **It writes only when the copy differs**: the pck DB (~340KB) is read once, a
+  missing / different-size copy is rejected without reading it, otherwise the existing copy is
+  byte-compared. No stamp or hash, so an old build's DB can never survive into a new build and a
+  torn (crash mid-write) copy is rewritten next launch. On failure it returns the original path unchanged — the `open_db()`
   failure path at each call site reports the error instead.
 
 External consumers: `features/battle_sim/data/DataLoader.gd` (via `GameManager.db_path()`,
@@ -409,11 +410,11 @@ path — left untouched, the iPhone build would have stopped at the title screen
 error. So all runtime DB access goes through one place, **`GameDb.path()`** (`resources/GameDb.gd`;
 `GameManager.db_path()` delegates to it) — in the
 editor it returns `res://data/game.db` as-is (CSV→DB rebuilds must take effect immediately);
-on device it returns a copy of the pck's DB extracted to `user://data/game.db`. **It
-overwrites on every run** — the DB is read-only at runtime (saves are
-`user://saves/*.save`) and only 96KB, so simply copying is always better than a cache
-invalidation mechanism that compares what changed (it becomes structurally impossible for an
-old build's game.db to survive after installing a new build). Only the editor tool
+on device it returns a copy of the pck's DB extracted to `user://data/game.db`. It writes the copy
+**only when it differs** from the pck bytes (size check, then a byte compare — details in
+`resources/README.md` → GameDb.gd). The DB is read-only at runtime (saves are
+`user://saves/*.save`), so a plain compare is enough: an old build's game.db differs from the new
+build's and is always overwritten, so it can never survive installing a new build. Only the editor tool
 `addons/csv_to_db/csv_to_db.gd` still **writes** to `res://data/game.db` — because that is
 the source copy.
 

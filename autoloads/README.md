@@ -35,7 +35,7 @@ draft detail popup call it.
   `description`); display sites call `Loc.t(def["name_key"])`. The old name-based
   `card_costs_by_name()` is gone (D3) — `[card]` references in descriptions resolve by key
   (`CardData.ref_entries`, `resources/README.md`).
-- `pilot_card_slots: Dictionary` — read from the `pilot_card_slots` table in `_ready`.
+- `pilot_card_slots: Dictionary` — read from the `pilot_card_slots` table (lazy, see **Lazy game data** below).
 
 #### game.db path — `db_path()`
 
@@ -63,9 +63,27 @@ the source copy. Full background: `docs/ios_testbuild.md`.
 
 ---
 
+#### Lazy game data — `prewarm_battle_data(training = true)`
+GameManager has **no `_ready`**: nothing is read from game.db at boot, so boot → lobby never
+pays for the battle / training tables (≈60 ms in the editor, headless).
+- **Battle group** — `card_pool_bs`, `pilot_card_slots`, `pilot_skills`, `mech_passives`,
+  `mech_cards`, `mech_card_defs` load together on the first read of any of them
+  (`_ensure_battle_data()`: one SQLite open → `_load_card_pool_bs(db)`, `_load_pilot_card_slots(db)`,
+  `_load_pilot_skills(db)`, `_load_mech_skills(db)`).
+- **Training group** — `training_tiles` loads on its own first read (`_ensure_training_tiles()`).
+- Each public field is a GDScript property: `get:` runs the ensure and returns the private backing
+  container (`_card_pool_bs`, …), so callers keep using `gm.card_pool_bs` unchanged and in-place
+  mutation (append / clear / `[k] = v`) hits the real data; `set:` replaces the backing value.
+  Loaders write only to the `_` backing fields (writing the property would re-enter the ensure).
+- The helpers (`card_def`, `skill_def`, `mech_card_def`, `training_tile_def`, …) read the public
+  properties, so they load on demand too.
+- `prewarm_battle_data(training = true)` — loads both groups now. Optional; call it at an idle
+  moment (e.g. after the lobby intro) to move the cost off the first season / BattleSim frame.
+- `_db_pilot_cards` (players' `pilot_cards` column) was already lazy (`_ensure_db_pilot_cards`).
+
 #### BattleSim card pool
-- `card_pool_bs: Array` — loaded once on `_ready()` from the `cards` table via
-  `_load_card_pool_bs()`. CardPhaseManager copies entries into starter decks.
+- `card_pool_bs: Array` — loaded lazily (see above) from the `cards` table via
+  `_load_card_pool_bs(db)`. CardPhaseManager copies entries into starter decks.
   `scope` and `pool` are read with `row.get(…, default)` so a game.db built
   before those columns existed still loads (every card reads as `any` / in
   pool). `pool = 0` rows are dropped from the random deal;

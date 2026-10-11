@@ -717,27 +717,71 @@ var use_test_run: bool = true
 # Each entry mirrors a row from the cards table. CardPhaseManager pulls 6 random
 # entries per pilot at match start, wraps each in a CardData instance, and tags
 # it with the owning PilotData (시전자 rule).
-var card_pool_bs: Array = []  # Array of {id,name_key,cost,uses,cast_method,target,cast_range,area,keyword,effect,description_key,scope,pool,card_type,card_cat,excl_group,charge_max,upgrade_id} — *_key = l10n key
+#
+# Lazy: the battle tables (`card_pool_bs`, `pilot_card_slots`, `pilot_skills`,
+# `mech_passives`, `mech_cards`, `mech_card_defs`) load together on the first read of
+# any of them (`_ensure_battle_data`, one SQLite open); `training_tiles` loads on its
+# own first read (`_ensure_training_tiles`). Boot -> lobby touches none of them. Each
+# public field is a property over a private backing container — the getter returns
+# that same container, so in-place mutation (append / clear) keeps working, and the
+# setter replaces the backing value.
+var card_pool_bs: Array:  # Array of {id,name_key,cost,uses,cast_method,target,cast_range,area,keyword,effect,description_key,scope,pool,card_type,card_cat,excl_group,charge_max,upgrade_id} — *_key = l10n key
+	get:
+		_ensure_battle_data()
+		return _card_pool_bs
+	set(value):
+		_ensure_battle_data()
+		_card_pool_bs = value
+var _card_pool_bs: Array = []
+var _battle_data_loaded: bool = false
+var _training_tiles_loaded: bool = false
 
 
-func _ready() -> void:
-	_load_card_pool_bs()
-	_load_pilot_card_slots()
-	_load_pilot_skills()
-	_load_mech_skills()
-	_load_training_tiles()
+## Loads the battle tables now instead of on first read (one SQLite open, a few
+## tens of ms in the editor). Optional — any read of the fields loads them anyway;
+## call it at an idle moment (e.g. after the lobby intro) to move that cost off the
+## first BattleSim / season frame. `training` = also load `training_tiles`.
+func prewarm_battle_data(training: bool = true) -> void:
+	_ensure_battle_data()
+	if training:
+		_ensure_training_tiles()
 
 
-func _load_card_pool_bs() -> void:
+func _ensure_battle_data() -> void:
+	if _battle_data_loaded:
+		return
+	_battle_data_loaded = true
 	var db := SQLite.new()
 	db.path = db_path()
 	db.verbosity_level = SQLite.QUIET
 	if not db.open_db():
 		push_error("GameManager: cannot open data/game.db")
 		return
+	_load_card_pool_bs(db)
+	_load_pilot_card_slots(db)
+	_load_pilot_skills(db)
+	_load_mech_skills(db)
+	db.close_db()
+
+
+func _ensure_training_tiles() -> void:
+	if _training_tiles_loaded:
+		return
+	_training_tiles_loaded = true
+	var db := SQLite.new()
+	db.path = db_path()
+	db.verbosity_level = SQLite.QUIET
+	if not db.open_db():
+		push_error("GameManager: cannot open data/game.db")
+		return
+	_load_training_tiles(db)
+	db.close_db()
+
+
+func _load_card_pool_bs(db: SQLite) -> void:
 	db.query("SELECT * FROM cards ORDER BY id")
 	for row in db.query_result:
-		card_pool_bs.append({
+		_card_pool_bs.append({
 			"id":          int(row["id"]),
 			"name_key":    String(row["name_key"]),
 			"cost":        int(row["cost"]),
@@ -763,8 +807,7 @@ func _load_card_pool_bs() -> void:
 			# §15 C — id of this card's upgraded ("+") row, -1 = none (`PilotLoadout`).
 			"upgrade_id":  int(row.get("upgrade_id", -1)),
 		})
-	db.close_db()
-	print("GameManager: card pool loaded — %d cards" % card_pool_bs.size())
+	print("GameManager: card pool loaded — %d cards" % _card_pool_bs.size())
 
 
 ## cards 테이블 한 행을 id 로. 없으면 빈 Dictionary.
@@ -797,7 +840,14 @@ func card_upgrade_base(card_id: int) -> int:
 # 한 칸은 **분류가 하나라도 겹치고 시전자 제약(`scope`)이 그 포지션을 허락하는**
 # 풀 카드(`pool = 1`) 중 하나로 채운다. 같은 카드는 두 번 들지 않는다.
 const PILOT_CARDS_PER_PLAYER: int = 3
-var pilot_card_slots: Dictionary = {}   # String position → Array[Array[String]] (칸마다 분류 목록)
+var pilot_card_slots: Dictionary:   # String position → Array[Array[String]] (칸마다 분류 목록) — lazy, see card_pool_bs
+	get:
+		_ensure_battle_data()
+		return _pilot_card_slots
+	set(value):
+		_ensure_battle_data()
+		_pilot_card_slots = value
+var _pilot_card_slots: Dictionary = {}
 ## DB 의 `pilot_cards` 원문 캐시 — 선수 id → Array[int]. 옛 세이브에서 복원한
 ## 선수(필드가 비어 있다)를 같은 선수의 DB 행으로 채우는 데 쓴다.
 var _db_pilot_cards: Dictionary = {}
@@ -814,12 +864,7 @@ static func parse_card_ids(raw: String) -> Array:
 	return out
 
 
-func _load_pilot_card_slots() -> void:
-	var db := SQLite.new()
-	db.path = db_path()
-	db.verbosity_level = SQLite.QUIET
-	if not db.open_db():
-		return
+func _load_pilot_card_slots(db: SQLite) -> void:
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='pilot_card_slots'")
 	if not db.query_result.is_empty():
 		db.query("SELECT * FROM pilot_card_slots")
@@ -832,8 +877,7 @@ func _load_pilot_card_slots() -> void:
 					if not c.is_empty():
 						cats.append(c)
 				slots.append(cats)
-			pilot_card_slots[String(row["position"])] = slots
-	db.close_db()
+			_pilot_card_slots[String(row["position"])] = slots
 
 
 func _ensure_db_pilot_cards() -> void:
@@ -944,30 +988,30 @@ func _slot_candidates(pos: String, cats: Array, taken: Array, claimed: Dictionar
 # `pilot_skills` 테이블 그대로. 키는 스킬 id 이고 값은 그 행의 Dictionary 다.
 # `players.skill_id` 가 이 표를 가리킨다 — 모브 파일럿은 -1 이라 아무것도
 # 가리키지 않는다.
-var pilot_skills: Dictionary = {}   # int id → {id,key,name_key,role,type,p1,p2,keyword,description_key} — *_key = l10n key
+var pilot_skills: Dictionary:   # int id → {id,key,name_key,role,type,p1,p2,keyword,description_key} — *_key = l10n key; lazy, see card_pool_bs
+	get:
+		_ensure_battle_data()
+		return _pilot_skills
+	set(value):
+		_ensure_battle_data()
+		_pilot_skills = value
+var _pilot_skills: Dictionary = {}
 
 
 func skill_def(skill_id: int) -> Dictionary:
 	return pilot_skills.get(skill_id, {})
 
 
-func _load_pilot_skills() -> void:
-	var db := SQLite.new()
-	db.path = db_path()
-	db.verbosity_level = SQLite.QUIET
-	if not db.open_db():
-		push_error("GameManager: cannot open data/game.db")
-		return
+func _load_pilot_skills(db: SQLite) -> void:
 	# 스킬 테이블이 없는 옛 game.db 에서도 조용히 넘어간다 — 그때는 전원이
 	# 스킬 없는 파일럿으로 굴러가고 UI 는 스킬 칸을 그리지 않는다.
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='pilot_skills'")
 	if db.query_result.is_empty():
-		db.close_db()
 		print("GameManager: pilot_skills table missing — skills disabled")
 		return
 	db.query("SELECT * FROM pilot_skills ORDER BY id")
 	for row in db.query_result:
-		pilot_skills[int(row["id"])] = {
+		_pilot_skills[int(row["id"])] = {
 			"id":          int(row["id"]),
 			"key":         String(row["key"]),
 			"name_key":    String(row["name_key"]),
@@ -978,8 +1022,7 @@ func _load_pilot_skills() -> void:
 			"keyword":     String(row["keyword"]),
 			"description_key": String(row["description_key"]),
 		}
-	db.close_db()
-	print("GameManager: pilot skills loaded — %d skills" % pilot_skills.size())
+	print("GameManager: pilot skills loaded — %d skills" % _pilot_skills.size())
 
 
 # ── 주간 훈련 타일 (used by TrainingBoard / TrainingView) ───────────────
@@ -989,7 +1032,14 @@ func _load_pilot_skills() -> void:
 #
 # 문법 해석은 여기서 하지 않는다 — `TrainingTile.from_def()` 가 한 행을 타일
 # 하나로 조립한다. 이젠은 DB 행을 그대로 나르는 자리다(카드 풀과 같은 규칙).
-var training_tiles: Array = []   # Array of {id,name_key,grade,line,shape,exp,effect} — name_key = l10n key
+var training_tiles: Array:   # Array of {id,name_key,grade,line,shape,exp,effect} — name_key = l10n key; lazy (`_ensure_training_tiles`)
+	get:
+		_ensure_training_tiles()
+		return _training_tiles
+	set(value):
+		_ensure_training_tiles()
+		_training_tiles = value
+var _training_tiles: Array = []
 
 
 ## 타일 id 로 한 행을 찾는다. 없으면 빈 Dictionary — 세이브에 남은 타일을
@@ -1001,23 +1051,16 @@ func training_tile_def(tile_id: String) -> Dictionary:
 	return {}
 
 
-func _load_training_tiles() -> void:
-	var db := SQLite.new()
-	db.path = db_path()
-	db.verbosity_level = SQLite.QUIET
-	if not db.open_db():
-		push_error("GameManager: cannot open data/game.db")
-		return
+func _load_training_tiles(db: SQLite) -> void:
 	# 타일 테이블이 없는 옛 game.db 에서도 조용히 넘어간다 — 그때 훈련판은
 	# 모든 칸이 기초 훈련인 판이 되고 인벤토리만 비어 있다.
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='training_tiles'")
 	if db.query_result.is_empty():
-		db.close_db()
 		print("GameManager: training_tiles table missing — board falls back to basics")
 		return
 	db.query("SELECT * FROM training_tiles ORDER BY grade, id")
 	for row in db.query_result:
-		training_tiles.append({
+		_training_tiles.append({
 			"id":          String(row["id"]),
 			"name_key":    String(row["name_key"]),
 			"grade":       int(row["grade"]),
@@ -1026,8 +1069,7 @@ func _load_training_tiles() -> void:
 			"exp":         String(row["exp"]),
 			"effect":      String(row["effect"]),
 		})
-	db.close_db()
-	print("GameManager: training tiles loaded — %d tiles" % training_tiles.size())
+	print("GameManager: training tiles loaded — %d tiles" % _training_tiles.size())
 
 
 # ── 메크 패시브 / 메크 카드 (used by MechSkillSystem + CardPhaseManager) ──────
@@ -1042,9 +1084,31 @@ func _load_training_tiles() -> void:
 #   • `mech_card_defs` — 카드 id → 행 하나 (효과가 카드를 **지목해** 만들 때.
 #     `gen_hand:13` 처럼 id 로 부르는 절이 열 개가 넘어서 매번 배열을 뒤지면
 #     같은 선형 탐색이 카드 한 장마다 다시 돈다)
-var mech_passives:  Dictionary = {}   # int mech_id → {id,mech_id,key,name_key,p1,p2,keyword,description_key} — *_key = l10n key
-var mech_cards:     Dictionary = {}   # int mech_id → Array of card def Dictionaries
-var mech_card_defs: Dictionary = {}   # int card id → card def Dictionary
+# All three are lazy, see card_pool_bs.
+var mech_passives: Dictionary:   # int mech_id → {id,mech_id,key,name_key,p1,p2,keyword,description_key} — *_key = l10n key
+	get:
+		_ensure_battle_data()
+		return _mech_passives
+	set(value):
+		_ensure_battle_data()
+		_mech_passives = value
+var mech_cards: Dictionary:   # int mech_id → Array of card def Dictionaries
+	get:
+		_ensure_battle_data()
+		return _mech_cards
+	set(value):
+		_ensure_battle_data()
+		_mech_cards = value
+var mech_card_defs: Dictionary:   # int card id → card def Dictionary
+	get:
+		_ensure_battle_data()
+		return _mech_card_defs
+	set(value):
+		_ensure_battle_data()
+		_mech_card_defs = value
+var _mech_passives: Dictionary = {}
+var _mech_cards: Dictionary = {}
+var _mech_card_defs: Dictionary = {}
 
 
 ## 이 메크의 패시브 행. 패시브가 없는 메크(6대)는 빈 Dictionary.
@@ -1062,20 +1126,14 @@ func mech_card_def(card_id: int) -> Dictionary:
 	return mech_card_defs.get(card_id, {})
 
 
-func _load_mech_skills() -> void:
-	var db := SQLite.new()
-	db.path = db_path()
-	db.verbosity_level = SQLite.QUIET
-	if not db.open_db():
-		push_error("GameManager: cannot open data/game.db")
-		return
+func _load_mech_skills(db: SQLite) -> void:
 	# 두 표가 없는 옛 game.db 에서도 조용히 넘어간다 — 그때는 모든 메크가
 	# 패시브도 고유 카드도 없는 상태로 굴러가고 덱에는 파일럿 카드만 들어간다.
 	db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='mech_passives'")
 	if not db.query_result.is_empty():
 		db.query("SELECT * FROM mech_passives ORDER BY id")
 		for row in db.query_result:
-			mech_passives[int(row["mech_id"])] = {
+			_mech_passives[int(row["mech_id"])] = {
 				"id":          int(row["id"]),
 				"mech_id":     int(row["mech_id"]),
 				"key":         String(row["key"]),
@@ -1106,29 +1164,28 @@ func _load_mech_skills() -> void:
 				"description_key": String(row["description_key"]),
 				"upgrade_id":  int(row.get("upgrade_id", -1)),
 			}
-			mech_card_defs[int(row["id"])] = def
+			_mech_card_defs[int(row["id"])] = def
 		# §15 A — upgraded "+" rows (some row's `upgrade_id`) are not part of the mech's
 		# own card list: they only replace their base card (`MechUpgrades.card_def_for`).
 		# `base_id` = the root card, so the "+" copy keeps the base's identity
 		# (`CardData.mech_card_id` → art, `search_card` / `gen_*` matches).
 		var base_of: Dictionary = {}
-		for cid in mech_card_defs.keys():
-			var up: int = int((mech_card_defs[cid] as Dictionary)["upgrade_id"])
+		for cid in _mech_card_defs.keys():
+			var up: int = int((_mech_card_defs[cid] as Dictionary)["upgrade_id"])
 			if up >= 0:
 				base_of[up] = int(cid)
-		for cid in mech_card_defs.keys():
-			var def: Dictionary = mech_card_defs[cid]
+		for cid in _mech_card_defs.keys():
+			var def: Dictionary = _mech_card_defs[cid]
 			if base_of.has(int(cid)):
 				var root_id: int = int(cid)
 				while base_of.has(root_id):
 					root_id = int(base_of[root_id])
 				def["base_id"] = root_id
 				continue
-			if not mech_cards.has(int(def["mech_id"])):
-				mech_cards[int(def["mech_id"])] = []
-			(mech_cards[int(def["mech_id"])] as Array).append(def)
-		for mid in mech_cards.keys():
-			(mech_cards[mid] as Array).sort_custom(func(a, b): return int(a["id"]) < int(b["id"]))
-	db.close_db()
+			if not _mech_cards.has(int(def["mech_id"])):
+				_mech_cards[int(def["mech_id"])] = []
+			(_mech_cards[int(def["mech_id"])] as Array).append(def)
+		for mid in _mech_cards.keys():
+			(_mech_cards[mid] as Array).sort_custom(func(a, b): return int(a["id"]) < int(b["id"]))
 	print("GameManager: mech skills loaded — %d passives, %d cards" % [
-			mech_passives.size(), mech_card_defs.size()])
+			_mech_passives.size(), _mech_card_defs.size()])

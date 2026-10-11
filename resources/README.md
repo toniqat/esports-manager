@@ -743,9 +743,16 @@ constants that used to be hard-coded `const`s in scripts.
 ### GameDb.gd
 `class_name GameDb`, extends `RefCounted` — **the single place that resolves the game.db path**
 (moved here from `GameManager`). `GameDb.path()` returns `res://data/game.db` in the editor; in an
-exported build `_extract_to_user()` copies the DB packed in the `.pck` to `user://data/game.db`
-**on every run** (SQLite cannot open a path inside the pck; overwriting each run means a stale DB from
-an old build can never linger) and returns that copy. Computed once per run and cached.
+exported build `_extract_to_user()` makes `user://data/game.db` a byte-identical copy of the DB packed
+in the `.pck` (SQLite cannot open a path inside the pck) and returns that copy. Computed once per run and
+cached. **It writes only when the copy differs** (`_sync_copy(source, target)`): it reads the pck DB
+(~340KB) once, rejects a missing / different-size copy without reading it, otherwise byte-compares the
+existing copy, and rewrites it on any difference. No stamp file or hash — so an old build's DB can never
+survive into a new build, and a torn (crash mid-write) or edited copy is simply rewritten next launch.
+Read failure → `push_error` + returns `res://` path; write failure → same fallback (the caller's
+`open_db()` failure reports it). Measured on desktop the compare costs about what the old unconditional
+write did (~0.6 ms); the win is not rewriting flash on every mobile launch. An md5 + stamp variant was
+measured slower (~1.1 ms) and dropped.
 It is static for the same reason as `ConstTable` (which needs the path before autoloads exist);
 `GameManager.db_path()` now simply delegates to `GameDb.path()`. Details: `autoloads/README.md`,
 `docs/ios_testbuild.md`.

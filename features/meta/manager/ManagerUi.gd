@@ -32,8 +32,8 @@ static func stat_icon(stat: String) -> Texture2D:
 
 
 # ── Read-only stats ──────────────────────────────────────────────────────────
-## Six cells (`StaffSystem.STATS` order): label, value, and the specialisation part
-## (`value − base`, "+n") under it. Returns the height.
+## Six cells (`StaffSystem.STATS` order): stat icon + label, value, and the specialisation part
+## (`value − base`, just "+n") under it. Returns the height.
 static func add_stat_cells(parent: Control, pos: Vector2, width: float,
 		stats: Dictionary, base: Dictionary) -> float:
 	var n: int = StaffSystem.STATS.size()
@@ -47,16 +47,37 @@ static func add_stat_cells(parent: Control, pos: Vector2, width: float,
 		cell.size = Vector2(cell_w - 8.0, STAT_CELL_H)
 		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(cell)
-		UiHelpers.mk_label(cell, StaffSystem.stat_label(key), 20,
-				OutgameTheme.TEXT_SUB, Vector2(0, 8), Vector2(cell_w - 8.0, 28),
-				HORIZONTAL_ALIGNMENT_CENTER)
+		# Head row: icon (white glyph tinted like the label) + stat name, centred together.
+		var head := HBoxContainer.new()
+		head.alignment = BoxContainer.ALIGNMENT_CENTER
+		head.add_theme_constant_override("separation", 4)
+		head.position = Vector2(0, 8)
+		head.size = Vector2(cell_w - 8.0, 28)
+		head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_child(head)
+		var icon := TextureRect.new()
+		icon.texture = stat_icon(key)
+		icon.custom_minimum_size = Vector2(24, 24)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.self_modulate = OutgameTheme.TEXT_SUB
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		head.add_child(icon)
+		var name_lbl := Label.new()
+		name_lbl.text = StaffSystem.stat_label(key)
+		name_lbl.add_theme_font_size_override("font_size", 20)
+		name_lbl.add_theme_color_override("font_color", OutgameTheme.TEXT_SUB)
+		name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		head.add_child(name_lbl)
 		var v: int = int(stats.get(key, StaffSystem.STAT_MIN))
 		var spec: int = v - int(base.get(key, v))
 		UiHelpers.mk_label(cell, str(v), 38,
 				OutgameTheme.ACCENT_TEXT if spec > 0 else OutgameTheme.TEXT,
 				Vector2(0, 36), Vector2(cell_w - 8.0, 48), HORIZONTAL_ALIGNMENT_CENTER)
 		if spec > 0:
-			UiHelpers.mk_label(cell, Loc.t(L.MANAGER_TAB_PART_SPEC, {"n": spec}), 16, OutgameTheme.ACCENT_TEXT,
+			UiHelpers.mk_label(cell, signed(spec), 18, OutgameTheme.ACCENT_TEXT,
 					Vector2(0, 86), Vector2(cell_w - 8.0, 24), HORIZONTAL_ALIGNMENT_CENTER)
 	return STAT_CELL_H
 

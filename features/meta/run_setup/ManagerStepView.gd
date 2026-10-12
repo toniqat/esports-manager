@@ -4,8 +4,9 @@ extends Control
 # Run setup step 3 — 감독 (Manager): pick the manager preset for this run (plan §12.0 /
 # §12.2). Sits between 팀 and 편성 (`RunSetupScreen.STEPS`).
 #
-#   scroll (to the screen bottom, under the capsules): error line (red, only on an error) →
-#   preset chips → stats card (Lv · six stats) → TraitPickerView
+#   scroll (from under the fixed top team banner of `RunSetupScreen` to the screen bottom, under
+#   the capsules): error line (red, only on an error) → '감독 프리셋 설정' title + preset chips →
+#   stats card (Lv · six stats with icons) → TraitPickerView
 #   bar: 뒤로 (1) / 다음 (2)
 #
 # **The layout is `UI_View_ManagerStepView.tscn`** (scroll, error slot, chips / stats card / traits
@@ -76,12 +77,6 @@ func selected_traits() -> Array:
 ## "" when the chosen preset can start a run.
 func validation_error() -> String:
 	return ManagerProgress.validate_preset(_pm.profile, _draft, _pm.owned_trait_ids())
-
-
-## The 팀 step's choice — shown as the banner strip at the top of the body (`RunSetupScreen`
-## sets it on every entry to this step).
-func set_team(team_id: int) -> void:
-	(%RunTeamBanner_Team as RunTeamBanner).fill(team_id)
 
 
 func select_preset(idx: int) -> void:
@@ -178,4 +173,3 @@ func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(back_requested)
 	UiPreview.trace(next_requested)
-	set_team(3)

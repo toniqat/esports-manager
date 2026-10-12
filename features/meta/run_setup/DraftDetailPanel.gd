@@ -178,7 +178,7 @@ func _fill_stats() -> void:
 	for i in _chips.size():
 		var is_total: bool = i == PlayerData.STAT_KEYS.size()
 		var key: String = Loc.t(L.RUN_SETUP_STAT_TOTAL) if is_total else PlayerData.stat_label(i)
-		var val: int = PilotThumb.total_stats(_pilot) if is_total \
+		var val: int = _pilot.overall() if is_total \
 				else int(_pilot.get(String(PlayerData.STAT_KEYS[i])))
 		(_chips[i] as DraftStatChip).fill(key, str(val), is_total)
 

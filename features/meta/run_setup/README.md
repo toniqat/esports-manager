@@ -24,17 +24,17 @@ level application) is documented in `features/season/README.md` "Entry point"
 ## Files
 | File | Class | Role |
 |---|---|---|
-| `RunSetupScreen.gd` (+ `scenes/RunSetup.tscn`) | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header (`StepCapsule` — one icon per row; slides off the top in lineup CONFIRM via `TeamDraft.confirm_mode_changed`), step views (into `%Steps`), builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start (116). |
+| `RunSetupScreen.gd` (+ `scenes/RunSetup.tscn`) | `class_name RunSetupScreen extends Control` (scene root) | Orchestrator: step table `STEPS`, step header (`StepCapsule` — one icon per row; slides off the top in lineup CONFIRM via `TeamDraft.confirm_mode_changed`), the fixed top team banner `%RunTeamBanner_Top` (`_set_banner_team`: follows `ChoiceListView.selection_changed` on the team step, `team_id` on the others; hidden while no team is picked), step views (into `%Steps`), builds `run_setup`, calls `GameManager.start_run`, launch fade. `content_top()` = where step bodies start (252, under the banner). |
 | `UI_Comp_StepCapsule.tscn` + `StepCapsule.gd` | `class_name StepCapsule extends Control` | Step header: dark floating capsule (`RunSetupStepCapsule`, 400×80) with one 40px icon per `STEPS` row (팀 · 감독 · 편성) (`resources/images/ui/run_setup/step_*.svg`, white strokes tinted by `self_modulate`) and a white disc `%Selector` (`RunSetupStepSelector`) behind the current one. `setup(icons, tips)`, `set_step(i, animate)` (disc slides 0.28 s; current = dark, done = `ACCENT`, upcoming = faint `RAIL_TEXT`), `set_hidden(hide, animate)` (slides up past the screen top + notch band, 0.38 s cubic in-out = `TeamDraftView.MODE_ANIM_SEC`). |
-| `UI_View_ChoiceListView.tscn` + `.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line → scrolling card list → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_make_card(item) -> Button` / `_hint_text`. Signals `back_requested` / `next_requested`, value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
-| `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 1 — `RunRules.team_packages()` (8, `{id, name_key, short_name_key, budget, facility_level, manual_areas, desc_key}` — text fields are l10n keys) → one `TeamCard` each. Hint: higher budget = easier (`manual_areas` / `desc_key` are no longer shown on the card). Max budget for the ring ratio computed in `_items()`. Display / snapshot only — effects are M3 / M6. Scene **inherits** `UI_View_ChoiceListView.tscn` (root script swapped). `create()`. |
-| `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene (h 244 = stat cards 196 + 20 above / below + 4 mask inset each side, no slack above the cards): team banner background (`%Banner` = `TeamLogos.banner(id)`, cover crop, inside the rounded `clip_children` mask `BannerMask` (`TeamCardBannerMask`, inset 4 = `SELECT_BORDER_ON` so the selected amber border shows); `%BannerFill` = `TeamLogos.color(id)` fallback; left dark gradient `Shade` for white text). Top-left `%Logo` (`TeamLogos.texture`) + `%ShortName` (big, `TeamCardShortLabel`) over `%Name` (small, `TeamCardNameLabel`). Bottom-right two stat cards (`TeamCardStatPanel` 150×196): icon (`resources/images/ui/run_setup/icon_budget.svg` / `icon_facility.svg`) inside a radial `TextureProgressBar` ring (`%BudgetRing` = budget / highest budget, `%FacilityRing` = level / `FacilitySystem.max_level()`; lobby `ring_track.svg`, fill_mode 4) + value (`%BudgetValue` = `Loc.grouped`, `%FacilityValue` = `RUN_SETUP_LEVEL_N`). Names are `Loc.t` of `name_key` · `short_name_key`. `fill(item, max_budget)`. F6 preview uses team 3's real keys. |
-| `UI_Comp_RunTeamBanner.tscn` + `RunTeamBanner.gd` | `class_name RunTeamBanner extends Control` | The chosen team's banner after the 팀 step: banner art (`TeamLogos.banner`, fallback `TeamLogos.color`, light `Shade`), logo + short name + full name — nothing else. Two heads in the scene: `%HeadStrip` (left, vertically centred — 감독 strip) / `%HeadTop` (compact, centred along the top — lineup backdrop); `@export centered` picks one, `@export square` = `RunTeamBannerMaskSquare` instead of the rounded `RunTeamBannerMask`. `create()`, `fill(team_id)`, `top_head_bottom()` (head bottom + `TOP_HEAD_GAP` = where content on the banner starts). F6 = team 3. |
-| `UI_View_ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 2 감독 (M8/M9) — preset chips, the preset's six stats, `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
+| `UI_View_ChoiceListView.tscn` + `.gd` | `class_name ChoiceListView extends Control` | Shared "pick one card" step: hint line (in the top banner band, covered once a card is tapped) → scrolling 3-column card grid (`%List` = `GridContainer`) → bar `뒤로`(1) / `다음`(2). Subclasses fill `_items` / `_make_card(item) -> Button` / `_hint_text`. Signals `back_requested` / `next_requested` / `selection_changed(id)` (a card tap), value `selected_id`. **Nothing is pre-selected** — `다음` stays disabled until the player taps a card, so the rules (cap, team package) are read rather than skipped by tapping `다음` repeatedly. |
+| `UI_View_TeamStepView.tscn` + `.gd` | `class_name TeamStepView extends ChoiceListView` | Step 1 — `RunRules.team_packages()` (8, `{id, name_key, short_name_key, budget, facility_level, manual_areas, desc_key}` — text fields are l10n keys) → one `TeamCard` each, 3 per row. Hint: higher budget = easier (`manual_areas` / `desc_key` are not shown on the card). The tapped team shows on `RunSetupScreen`'s top banner. Display / snapshot only — effects are M3 / M6. Scene **inherits** `UI_View_ChoiceListView.tscn` (root script swapped). `create()`. |
+| `UI_Comp_TeamCard.tscn` + `.gd` | `class_name TeamCard extends Button` | Item scene, one grid cell (336 × 300, `size_flags_horizontal` expand): team banner background (`%Banner` = `TeamLogos.banner(id)`, cover crop, inside the rounded `clip_children` mask `BannerMask` (`TeamCardBannerMask`, inset 4 = `SELECT_BORDER_ON` so the selected amber border shows); `%BannerFill` = `TeamLogos.color(id)` fallback; bottom dark gradient `Shade` for white text). `%Logo` (`TeamLogos.texture`, 112) centred at the top, `%ShortName` (big, `TeamCardShortLabel`) over `%Name` (small, `TeamCardNameLabel`) under it, both centred. Bottom strip (`TeamCardStatPanel`): budget icon + `%BudgetValue` (`Loc.grouped`) · facility icon + `%FacilityValue` (`RUN_SETUP_LEVEL_N`), small (`TeamCardStatValue` 22). Names are `Loc.t` of `name_key` · `short_name_key`. `fill(item)`. F6 preview uses team 3's real keys. |
+| `UI_Comp_RunTeamBanner.tscn` + `RunTeamBanner.gd` | `class_name RunTeamBanner extends Control` | The chosen team's banner: banner art (`TeamLogos.banner`, fallback `TeamLogos.color`, light `Shade`), logo + short name + full name — nothing else. Two heads in the scene: `%HeadStrip` (left, vertically centred — the RunSetup top banner) / `%HeadTop` (compact, centred along the top — `centered`, currently unused); `@export square` = `RunTeamBannerMaskSquare` instead of the rounded `RunTeamBannerMask`; `@export plain` = no head and the art cropped to `PLAIN_REGION` (the generated 1000×320 banner's clean middle: no logo watermarks, no light edge bands — a custom-size `banner_path` image is used whole) — the lineup backdrop. `create()`, `fill(team_id)`, `top_head_bottom()`. F6 = team 3. |
+| `UI_View_ManagerStepView.tscn` + `.gd` | `class_name ManagerStepView extends Control` | Step 2 감독 (M8/M9) — `감독 프리셋 설정` title + preset chips, the preset's six stats (with icons), `TraitPickerView` (from `../manager/`) with in-place trait swaps; `preset_idx`, `selected_traits()`, `validation_error()`. Signals `back_requested` / `next_requested`. `create()`. |
 | `TeamDraft.gd` | `class_name TeamDraft extends Control` | Step 3 (lineup) data layer: owned pool (`get_pool_grid()`), the pool copies' level (`level_of`) and a duplicate for the popup (`leveled()`), salary (`salary_of`, `lineup_salary`, `salary_cap` = `RunRules.salary_cap_with(scenario, trait_ids)`), `set_traits` / `cap_bonus()` (trait `salary_cap` Σ), `validate()` = `RunRules.validate_lineup(..., cap_bonus())`. Slot table `SLOT_ROLES` / `slot_of_role` (position names: `GameEnums.role_position_label`), `skill_type_label` (localized; charge / passive reuse `term.skill_type.*`, cooldown is `term.skill_type.cooldown`). Signals `back_requested`, `start_requested(pilot_ids)`. |
-| `UI_View_TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 3 (lineup) screen: salary gauge (one row), 5 role-fixed `DraftSlot`s, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM (CONFIRM: gauge fades out, team banner `%TeamBanner` fades in above the slots; emits `TeamDraft.confirm_mode_changed` on the animated switch). Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
-| `UI_Comp_DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot — bust art button (`%Frame`: mask + `%Art`, "선택 없음", `PositionBadge`; inside the art `%LevelPlate` `Lv N` bottom-left and `%RankPlate` ★ × `p.rank` (amber) bottom-right) + under it a small `OVERALL` caption, the overall number big (`%Total`, 50px) and the salary line. Read-only (no level picker). Empty slot: plates / caption hidden, texts cleared. Signal `art_pressed`; `set_role`, `show_empty()`, `show_pilot(p, role_color, salary)`. Frame shape = variation `DraftSlotFrame` (code colours a copy), mask = `DraftSlotArtMask`, plates `DraftSlotLevelPlate` / `DraftSlotRankPlate`, stars `DraftSlotStars`. |
-| `UI_Comp_PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell, 200×240 (`CELL_W` / `CELL_H`) — face cover-cropped to fill it + top-left `PositionBadge` (`resources/`) + gold border / check when selected + bottom-left overall (`%Overall`, `p.stat_total()`, variation `PilotThumbOverall`) + bottom-right salary tag (`set_tag`). Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset, variation `PilotThumbArtMask`) has radius 14 to follow it; check / tag = `PilotThumbCheck` / `PilotThumbTag`. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_role_badge` stay for code-built callers (`../collection/`). |
+| `UI_View_TeamDraftView.tscn` + `.gd` | `class_name TeamDraftView extends Control` | Step 3 (lineup) screen: salary gauge (one row: salary icon · bar · total / cap), 5 role-fixed `DraftSlot`s on the plain team banner `%RunTeamBanner_Lineup`, role filter, scrolling thumbnail grid, PICK ↔ CONFIRM (CONFIRM: gauge fades out, the banner block centres under the top banner; emits `TeamDraft.confirm_mode_changed` on the animated switch). Child of `TeamDraft` (`TeamDraftView.create()` in `ensure_view`). |
+| `UI_Comp_DraftSlot.tscn` + `.gd` | `class_name DraftSlot extends VBoxContainer` | Item scene: one pick slot (204 × 452) — bust art button (`%Frame`: mask + `%Art`, "선택 없음"; inside the art top-left `%Overall` (`PlayerData.overall()`, big) over `%Position` (`GameEnums.role_position_label`, small — also on an empty slot), bottom-left `%RankPlate` 돌파 ★ × `p.rank` (amber), bottom-right `%LevelPlate` `Lv N`) + under it `%SalaryRow` (salary icon + number). Read-only (no level picker). Empty slot: overall / plates / salary hidden. Filled slot: **no role-colour outline** (frame border transparent). Signal `art_pressed`; `set_role`, `show_empty()`, `show_pilot(p, salary)`. Frame shape = variation `DraftSlotFrame` (code colours a copy), mask = `DraftSlotArtMask`, plates `DraftSlotRankPlate` / `DraftSlotLevelPlate`, stars `DraftSlotStars`, labels `DraftSlotOverall` / `DraftSlotPosition` / `DraftSlotInfoSalary`. |
+| `UI_Comp_PilotThumb.tscn` + `.gd` | `class_name PilotThumb extends Button` | Item scene: one grid cell, 200×240 (`CELL_W` / `CELL_H`) — face cover-cropped to fill it, the same corners as `DraftSlot`: top-left `%Overall` (`p.overall()`, `PilotThumbOverall`) over `%Position` (`PilotThumbPosition`), top-right salary tag `%Tag` (icon + number, `set_tag`, PanelContainer grows left), bottom-left `%RankPlate` (돌파 ★, hidden at rank 0), bottom-right `%LevelPlate` (`Lv N`); gold border + centre check when selected. Frame = variation `SelectableCardButton` / `SelectableCardButtonOn` (radius 18); the face mask `ArtMask` (4px inset, variation `PilotThumbArtMask`) has radius 14 to follow it; check / tag = `PilotThumbCheck` / `PilotThumbTag`. `create()`, `setup(p, sel)`. Static helpers `add_rounded_art` / `add_position_badge` stay for code-built callers (`../collection/`). |
 | `UI_View_DraftDetailPanel.tscn` + `.gd` | `class_name DraftDetailPanel extends CanvasLayer` | Pilot detail popup — **also used by ban/pick** (`features/match_flow/ban_pick/`). Layout lives in the `.tscn`; construct with `DraftDetailPanel.create()` (not `.new()`), then `open(p: PlayerData)` / `close()` / `is_open()`. See "DraftDetailPanel — scene" below. |
 | `UI_Comp_DraftStatChip.tscn` + `.gd` | `class_name DraftStatChip extends PanelContainer` | Item scene: one stat chip of the detail popup (name over value, `SunkPanel`). `create()`, `fill(key, value, is_total)` — total swaps the value to `AccentLabel`. |
 | `UI_View_ScenarioSelectView.tscn` + `ScenarioSelectView.gd` | `class_name ScenarioSelectView extends Control` | Full-screen scenario (league) pick **hosted by the lobby** (before `RunSetup.tscn`). Contract: `create()`, `open(scenario_id = 0, animate = true)`, `close(animate = true)` (hides, then `closed`), `selected_id`, signals `back_requested` / `scenario_chosen(id)` / `closed`. See "Scenario select (lobby)" below. |
@@ -48,10 +48,11 @@ Every scene in this folder except `RunSetup.tscn` shows dummy data when run on i
 (editor "Run Current Scene") — `_ready` → `UiPreview.is_standalone(self)` → `_fill_preview()` at the
 bottom of each script (`resources/UiPreview.gd`). Nothing is saved.
 - Item scenes (`StepCapsule` (감독 current), `RunTeamBanner` (team 3), `TeamCard`, `DraftStatChip`, `DraftSlot`,
-  `PilotThumb`) — hand-written values (real pilot ids for the art), selected / filled state.
+  `PilotThumb` (rank 2 · Lv 3)) — hand-written values (real pilot ids for the art), selected / filled state.
 - `ChoiceListView` (base alone: the first three real team cards) · `TeamStepView`
   (real `RunRules` tables) — second card selected.
-- `ManagerStepView` — real profile, active preset; `_preview` stops trait taps from saving the profile.
+- `ManagerStepView` — real profile, active preset; `_preview` stops trait taps from saving the profile (no team
+  banner — that lives in `RunSetup.tscn`).
 - `TeamDraftView` — no parent `TeamDraft`, so the branch runs **first** in `_ready` and injects one
   (game.db pool + real owned collection, first scenario, team 3 for the banner), then seats the strongest five within the cap.
 - `DraftDetailPanel` — opens the top-rated non-mob pilot with a skill (game.db), Lv 3.
@@ -153,22 +154,26 @@ header step (one capsule icon each).
   disc slides to the current step; done = amber, upcoming = faint. Hidden (slid off the top) only while the
   lineup step is in CONFIRM: `TeamDraft.confirm_mode_changed(confirm)` → `StepCapsule.set_hidden`; entering any
   other step shows it.
-- From the 팀 step on, the chosen team is shown as a `RunTeamBanner` (banner + logo + names only): 감독 = a strip
-  at the top of its body (`ManagerStepView.set_team`, set on every entry), 편성 = the backdrop of the 5 picks.
+- **Top team banner** (`%RunTeamBanner_Top`, a `RunTeamBanner` in `RunSetup.tscn`): full width (no side margin),
+  y 116 .. 236 right under the capsule, square, strip head (logo + names). Fixed — it never scrolls; the step bodies
+  start under it (`content_top()` = 252). Shown from the first card tap on the 팀 step (`selection_changed` →
+  `_set_banner_team`), then `team_id` on every later step entry; stays in the lineup CONFIRM mode (only the capsule
+  slides away). Before any tap the team step's hint line sits in that band. 편성 also lays the 5 picks on a plain
+  copy of the banner (no head) — see the lineup step.
 - Entering the lineup step calls `TeamDraft.set_traits` → `set_team(team_id)` → `set_scenario(scenario_id)`.
 - The pilot pool is read **once** from `GameManager.load_match_data()["players"]` (Lv1 CSV
   copies) — `season_state` is not initialised yet during run setup. A load error is shown as a
   red line on the lineup step.
 
 ## Manager step (감독) — M8/M9, plan §12.0 / §12.2
-`ManagerStepView`: one `DragScroll` body from `content_top()` to the **screen bottom, under the capsules**
-(same frame as `ChoiceListView`: scroll `offset_bottom` = bottom inset, `%BottomGap` = `OutgameTheme.bar_scroll_pad()`,
-`%BarShield` via `fit_bar_shield`, `fit_bar_scroll(%Scroll)`):
-team banner strip (`%RunTeamBanner_Team`, strip head, 148 tall, 24 side pad — `set_team(team_id)`) →
-error line (`%StatusPad` → `%Status`, red, hidden unless there is an error) → preset capsule (`ManagerPresetChips`,
-from `../manager/` — I, II, …, right-aligned) → stats card (title `Lv n` only — no manager type, the preset's six
-stats via `ManagerUi.add_stat_cells`, specialised part in amber; amber `manager_all` trait note only when such a
-bonus applies) → `TraitPickerView`.
+`ManagerStepView`: one `DragScroll` body from `content_top()` (under the fixed top team banner) to the **screen
+bottom, under the capsules** (same frame as `ChoiceListView`: scroll `offset_bottom` = bottom inset, `%BottomGap` =
+`OutgameTheme.bar_scroll_pad()`, `%BarShield` via `fit_bar_shield`, `fit_bar_scroll(%Scroll)`):
+error line (`%StatusPad` → `%Status`, red, hidden unless there is an error) → preset row: `감독 프리셋 설정`
+title (left, `run_setup.manager.preset_title`) + preset capsule (`ManagerPresetChips`, from `../manager/` — I, II, …,
+right-aligned) → stats card (title `Lv n` only — no manager type, the preset's six stats via
+`ManagerUi.add_stat_cells`: icon + name, value, specialised part as a bare `+n` in amber; amber `manager_all` trait
+note only when such a bonus applies) → `TraitPickerView`.
 - **The active preset is preselected** — the "nothing preselected" rule is for the choice lists; a
   preset is a loadout already built in the lobby `감독` tab.
 - Traits show as the equipped cards only (tap = effect tooltip). `교체` (`swap_requested`) opens the shared
@@ -183,26 +188,27 @@ bonus applies) → `TraitPickerView`.
 
 ## Lineup step (편성) — the old draft, adapted
 **Uma Musume–style character pick.** Bottom half: scrolling grid of owned pilots; above it
-one row of role filters; above that the **upper-body illustrations** of the 5 picks (level / rank
-stars inside the art, overall + salary underneath); at the top the salary gauge.
+one row of role filters; above that the **upper-body illustrations** of the 5 picks (overall + position
+top-left, rank stars bottom-left, level bottom-right inside the art, salary underneath); at the top the salary gauge.
 
 ### Grid = owned collection only
 `TeamDraft.get_pool_grid()` is the single filter: pilots in `ProfileManager.owned_levels()`
 (mobs are excluded as well — they are never collectible). Grid order is slot order, then overall
-stat descending. Each thumbnail shows that pilot's overall (bottom-left) and salary (bottom-right)
-at its rank + level.
+stat descending. Each thumbnail shows that pilot's overall + position (top-left), salary (top-right),
+rank stars (bottom-left) and level (bottom-right) at its rank + level. **Overall = `PlayerData.overall()`**
+(six-stat average, rounded) here and on every other screen (detail popup, collection, season sheet, ending).
 
 ### Rank · level (no picker)
 Pilots enter a run at their **collection rank + level** — there is no level choice. `RunSetupScreen`
 builds the pool once with `RunRules.apply_progress(pool, pm.owned_ranks(), pm.owned_levels())` (every
 named pilot at its stars, owned pilots at their rank + level — the same copies `GameManager.start_run`
 builds), so stats, salary (`RunRules.salary_of`) and swapped pilot cards are final. A filled slot
-shows `Lv N` (bottom-left) and ★ × rank (bottom-right) inside the art, then `OVERALL` + the overall
-number big + the salary line under it. The salary cap therefore constrains only **which**
+shows the overall big + position small (top-left), ★ × rank = 돌파 (bottom-left) and `Lv N` (bottom-right)
+inside the art, then the salary icon + number under it. The salary cap therefore constrains only **which**
 five are combined. The detail popup reads `TeamDraft.leveled(pid)` (a duplicate of the pool copy).
 
 ### Rules are visible while picking
-The gauge is one row with no card: `샐러리캡` label · bar · `total / cap` (the cap is
+The gauge is one row with no card: salary icon (in place of the old `샐러리캡` caption) · bar · `total / cap` (the cap is
 `RunRules.salary_cap_with` — already including the preset's trait adjustment, re-read on every entry via
 `TeamDraft.set_traits`); **over cap → red** (even before all five are picked). The red line under it
 carries **errors only**: `시작 실패: …` → `샐러리캡 초과 …` → any other `validate_lineup` error once all
@@ -213,9 +219,10 @@ five are seated; nothing while picking normally or when done. `다음` and `게�
 PICK bar: `뒤로`(1, → team step) / `다음`(2). `다음` → CONFIRM: the pick pane (filter row +
 grid + backplate) slides off the bottom, the gauge fades out, and the banner block settles centred (one
 tween, `MODE_ANIM_SEC`, cubic in-out). The five always sit on the **team banner** (`%RunTeamBanner_Lineup`,
-`RunTeamBanner` centered + square, full width): logo + names centred along its top, slot row under them
-(`top_head_bottom()`), `BANNER_PAD_BOTTOM` 14 below; it rides with the slot row in both modes and is refilled by
-`refresh_team()` (`TeamDraft.set_team` → view). Slot info lines are white on it (`DraftSlotInfo*`). The
+`RunTeamBanner` square + plain, full width): no logo / names on it (the fixed top banner names the team), no
+watermark / edge bands — just `BANNER_PAD_TOP` 12 above and `BANNER_PAD_BOTTOM` 12 below the slot row; it rides
+with the slot row in both modes and is refilled by `refresh_team()` (`TeamDraft.set_team` → view). The slot
+salary line sits on it (`DraftSlotInfoSalary`). The
 switch emits `TeamDraft.confirm_mode_changed(confirm)` so `RunSetupScreen` slides the step header away;
 CONFIRM bar: `뒤로`(1, → PICK — all of it reverses) / `게임 시작`(2).
 The pick pane (`%PickPane`) sits before `%Bar` in the scene, so the exiting grid hides behind the bar.
@@ -239,9 +246,9 @@ The old `apply_draft` swap with team 0 is gone — the AI rosters are distribute
 
 ### Things removed from the screen (kept from the draft)
 - No title / head count — the five slots filling up already say it.
-- Thumbnails carry no name / stat lines — face, position badge, overall, salary tag only.
-- No position text or name under the illustration — the position badge stands even on an empty
-  slot; the name lives in the detail popup.
+- Thumbnails carry no name / stat lines — face plus the four corners (overall + position, salary, rank, level).
+- No position badge / no role-colour outline — the position is the small text under the overall (it stands
+  even on an empty slot); the name lives in the detail popup.
 - Tapping the **illustration** opens the detail popup (emptying a slot = tapping the same
   thumbnail again in the grid, so there is no competing tap). The slot `Button` **must not be
   `flat`** — a flat button ignores the stylebox and the empty slot's frame vanishes.
@@ -344,24 +351,26 @@ Moved from code-built to `.tscn` (`docs/ui_scene_migration.md` §4 #8). Every sc
 RunSetup (scenes/RunSetup.tscn — root offset_top = safe top inset, code)
 ├ %Background  ColorRect BG (code stretches it up into the notch: ScreenMetrics.extend_background)
 ├ %Steps       step views go here (code, one per STEPS row, built on first entry)
+├ %RunTeamBanner_Top   UI_Comp_RunTeamBanner.tscn, full width, y 116 .. 236, square + strip head — fixed, drawn above the steps
 ├ %StepCapsule_Header  UI_Comp_StepCapsule.tscn, top-centre y 20 .. 100 (drawn above the steps; slides up in CONFIRM)
 └ %ErrorLabel  load error line (`NegativeLabel` 26, drawn above the steps)
 
 <step view> (ChoiceListView / ManagerStepView / TeamDraftView — same frame)
 ├ %Safe   full rect; code: offset_bottom = -bottom inset               ┐ OutgameTheme.fit_bottom_bar(%Bar, %Safe)
-│ └ body, first block at y 116 (content_top)                           │
+│ └ body, first block at y 252 (content_top)                           │
 └ %Bar    HBox sep 16, floating capsules 40 in, 32 above the safe line  │
           — FloatingBarButton_Back (BarDarkButton 30, stretch 1) / _Next  │
           (BarPrimaryButton 38, stretch 2) [/ _Start] — code places it ┘
 
-ChoiceListView: %Hint (32,116) h 44 · %Scroll (24,168 → screen bottom (+inset, code), grows right only) → %ListPad
-  (MarginContainer, bottom = `OutgameTheme.bar_scroll_pad()`) → %List VBox sep 20, min w 1032 · %BarShield (tap blocker
+ChoiceListView: %Hint (48,116 .. 236, centred, wraps — the top banner band) · %Scroll (24,252 → screen bottom (+inset, code),
+  grows right only) → %ListPad (MarginContainer, bottom = `OutgameTheme.bar_scroll_pad()`) → %List GridContainer 3 cols,
+  gap 12, min w 1032 · %BarShield (tap blocker
   over the capsule zone, `OutgameTheme.fit_bar_shield`) — the cards scroll
   under the capsules, visible but not tappable; the scroll bar ends above the capsules (`OutgameTheme.fit_bar_scroll`)
   UI_View_TeamStepView.tscn inherits it (+ one preview card under %List, cleared by code)
-ManagerStepView: %Scroll → %Body VBox: BannerPad → %RunTeamBanner_Team (UI_Comp_RunTeamBanner.tscn) · %StatusPad → %Status (error only) · %ManagerPresetChips_Chips (UI_Comp_ManagerPresetChips.tscn) · stats Card (%CardTitle, %CardNote, %Cells slot) · %TraitPickerView_Traits (UI_Comp_TraitPickerView.tscn) · %BottomGap · %BarShield · %Bar
-TeamDraftView: Gauge (no card: Row HBox [샐러리캡 label · track + %GaugeFill · %GaugeValue], %GaugeMsg error line) ·
-  %RunTeamBanner_Lineup (UI_Comp_RunTeamBanner.tscn, centered + square; behind the slot row, y / height by code) ·
+ManagerStepView: %Scroll (from 252) → %Body VBox: %StatusPad → %Status (error only) · ChipsPad [PresetTitle · %ManagerPresetChips_Chips (UI_Comp_ManagerPresetChips.tscn)] · stats Card (%CardTitle, %CardNote, %Cells slot) · %TraitPickerView_Traits (UI_Comp_TraitPickerView.tscn) · %BottomGap · %BarShield · %Bar
+TeamDraftView: Gauge (y 252, no card: Row HBox [salary icon · track + %GaugeFill · %GaugeValue], %GaugeMsg error line) ·
+  %RunTeamBanner_Lineup (UI_Comp_RunTeamBanner.tscn, square + plain; behind the slot row, y / height by code) ·
   %SlotRow HBox (DraftSlot ×5) ·
   %PickPane [%Filters HBox (6 SelectableTile buttons 26: 전체, then SLOT_ROLES order) · %GridBack (`TeamDraftGridBack`, runs past the screen bottom) ·
   %GridScroll (to the screen bottom, scroll bar ends above the capsules: `fit_bar_scroll`) → %GridPad (bottom = `bar_scroll_pad()`)
@@ -374,8 +383,8 @@ bar labels). No local StyleBoxes — this folder's own looks are the screen vari
 **Code owns** data and state: texts from tables, the per-device bottom inset
 (`OutgameTheme.fit_bottom_bar` — the bar's square shape is the `Bar*` variations), selected / not
 **variation names** (choice cards + thumbnails `SelectableCardButton` ↔ `SelectableCardButtonOn`,
-filter buttons `SelectableTile` ↔ `SelectableTileOn`), step pill colours, role colours (badges, slot
-frames), the gauge fill ratio (`anchor_right`) and its over-cap colour, the team card's banner / logo textures + ring ratios, the 감독 status line (`SubLabel` ↔ `NegativeLabel`) and stats-card note
+filter buttons `SelectableTile` ↔ `SelectableTileOn`), step pill colours, the slot frame (empty grey border / filled no
+outline), the gauge fill ratio (`anchor_right`) and its over-cap colour, the team card's banner / logo textures, the top banner team (`_set_banner_team`), the 감독 status line (`SubLabel` ↔ `NegativeLabel`) and stats-card note
 (`FaintLabel` ↔ `AccentLabel`), the gauge message colour, the slot row y (PICK / CONFIRM, tweened) and the pick-pane slide, and content built by shared
 modules into slots (`ManagerUi.add_stat_cells`); the shared `ManagerPresetChips` / `TraitPickerView` scenes are refilled (`fill`).
 - Lists / grids are containers: hidden thumbnails are skipped by the `GridContainer` (filter = toggle
@@ -392,16 +401,17 @@ lifts by the inset) — never from the viewport height.
 
 | Block | Position |
 |---|---|
-| Step header | `%StepCapsule_Header` scene offsets, y 20 .. 100, centred (bodies start at `content_top()` 116) |
-| Choice steps | hint line at `content_top()`, card list down to `bottom_bar_top() - 16` (scrolls) |
-| Lineup gauge | `content_top()` (116) .. 204: row 48 + error line (scene) — hidden in CONFIRM |
-| Lineup banner + 5-pick block (PICK) | hangs above the filter row: `%Filters` top − 32 − banner pad − slot row height (never above gauge bottom + 10 + banner head) — `_pick_row_y()` |
+| Step header | `%StepCapsule_Header` scene offsets, y 20 .. 100, centred |
+| Top team banner | `%RunTeamBanner_Top`, y 116 .. 236, full width, fixed (bodies start at `content_top()` 252) |
+| Choice steps | hint line in the top banner band (116 .. 236), 3-column card grid from `content_top()` to the screen bottom (scrolls under the capsules) |
+| Lineup gauge | `content_top()` (252) .. 340: row 48 + error line (scene) — hidden in CONFIRM |
+| Lineup banner + 5-pick block (PICK) | hangs above the filter row: `%Filters` top − 24 − pad 12 − slot row height (never above gauge bottom + 10 + pad 12) — `_pick_row_y()` |
 | Filter row / grid | grid (240px cells) shows 3.5 rows above the capsules, filter 16px above it — scene offsets from `%Safe` bottom (filters −1064 .. −1000, scroll −984) |
-| Lineup banner + 5-pick block (CONFIRM) | banner block (head 66 + slot row + pad 14), centred in the safe area, clamped between `CONFIRM_TOP_PAD` (24 — the header is gone) and the bar — `_confirm_row_y()` / `_banner_y()` |
+| Lineup banner + 5-pick block (CONFIRM) | banner block (pad 12 + slot row + pad 12), centred in the safe area, clamped between `content_top()` (the top banner stays) and the bar — `_confirm_row_y()` / `_banner_y()` |
 | Bottom bar | `%Bar` in each step scene — every step `뒤로`(1) / primary(2) |
 
-Slot row height 538 = illustration (412) + info (126: OVERALL caption + big overall + salary). At 9:16 with
-no insets the 5-pick block sits at y 286, the gauge ends at 204 — no overlap; on shorter safe areas
+Slot row height 452 = illustration (412) + salary line (40). At 9:16 with no insets the 5-pick row sits at
+y 362 (banner 350 .. 826, filters at 856), the gauge ends at 340 — no overlap; on shorter safe areas
 `_pick_row_y()` clamps below the gauge. Both y values are read from the scene nodes' rects.
 
 ## Scrolling — `DragScroll`

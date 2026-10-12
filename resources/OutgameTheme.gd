@@ -918,15 +918,27 @@ static func _add_screen_variations(th: Theme) -> void:
 		th.set_stylebox(n, &"DraftSlotFrame", slot)
 	_add_derived(th, "DraftSlotArtMask", &"SunkPanel", _mask_box(11))
 	_add_derived(th, "PilotThumbArtMask", &"SunkPanel", _mask_box(14))
-	_add_derived(th, "PilotThumbCheck", &"AccentChip", flat_style(ACCENT, 20))
-	_add_derived(th, "PilotThumbTag", &"SurfaceChip", flat_style(RAIL, 17))
+	_add_derived(th, "PilotThumbCheck", &"AccentChip", flat_style(ACCENT, 26))
+	# Salary tag (PanelContainer: icon + number) — the pill grows with its content.
+	var thumb_tag := flat_style(Color(RAIL, 0.82), 17)
+	thumb_tag.content_margin_left = 6.0
+	thumb_tag.content_margin_right = 10.0
+	thumb_tag.content_margin_top = 2.0
+	thumb_tag.content_margin_bottom = 2.0
+	_add_derived(th, "PilotThumbTag", &"SurfaceChip", thumb_tag)
 
 	# meta/run_setup TeamCard (team banner card) — C
 	# Banner mask inset by SELECT_BORDER_ON so the selected amber border stays visible.
 	_add_derived(th, "TeamCardBannerMask", &"SunkPanel", _mask_box(CARD_RADIUS - SELECT_BORDER_ON))
-	_add_derived(th, "TeamCardStatPanel", &"SunkPanel", flat_style(Color(0, 0, 0, 0.30), 16))
-	for spec in [["TeamCardShortLabel", 60], ["TeamCardNameLabel", FONT_CAPTION + 2],
-			["TeamCardStatValue", FONT_BODY]]:
+	# Small budget · facility strip along the card bottom (PanelContainer — margins are the box's).
+	var team_stat := flat_style(Color(0, 0, 0, 0.30), 14)
+	team_stat.content_margin_left = 10.0
+	team_stat.content_margin_right = 10.0
+	team_stat.content_margin_top = 4.0
+	team_stat.content_margin_bottom = 4.0
+	_add_derived(th, "TeamCardStatPanel", &"SunkPanel", team_stat)
+	for spec in [["TeamCardShortLabel", 46], ["TeamCardNameLabel", FONT_CAPTION],
+			["TeamCardStatValue", FONT_CAPTION]]:
 		var v: String = spec[0]
 		_add_label(th, v, int(spec[1]), TEXT_ON_FILL)
 		th.set_color(&"font_shadow_color", v, Color(0, 0, 0, 0.45))
@@ -951,9 +963,9 @@ static func _add_screen_variations(th: Theme) -> void:
 	_add_derived(th, "RunSetupStepSelector", &"Card", flat_style(SURFACE, 999))
 	_add_derived(th, "TeamDraftGridBack", &"Card", flat_style(SURFACE, 12, BORDER, 2))
 	# meta/run_setup lineup step (편성) — E
-	# Slot portrait corner plates (inside the clipped ArtMask, flush with its bottom edge):
-	# level bottom-left (rounded top-right), rank stars bottom-right (rounded top-left).
-	for spec in [["DraftSlotLevelPlate", true], ["DraftSlotRankPlate", false]]:
+	# Slot / thumbnail portrait corner plates (inside the clipped ArtMask, flush with its bottom edge):
+	# rank stars (돌파) bottom-left (rounded top-right), level bottom-right (rounded top-left).
+	for spec in [["DraftSlotRankPlate", true], ["DraftSlotLevelPlate", false]]:
 		var dp := flat_style(Color(RAIL, 0.78), 0)
 		if spec[1]:
 			dp.corner_radius_top_right = 10
@@ -966,22 +978,22 @@ static func _add_screen_variations(th: Theme) -> void:
 		_add_derived(th, String(spec[0]), &"SurfaceChip", dp)
 	th.set_type_variation(&"DraftSlotStars", &"OnFillLabel")
 	th.set_color(&"font_color", &"DraftSlotStars", ACCENT)
-	# Thumbnail overall (bottom-left over the face) and the CONFIRM team banner texts: white
-	# with a soft dark shadow outline so they read over any art / team colour.
-	# Slot info lines (OVERALL caption · big number · salary) sit on the lineup team banner.
-	for spec in [["PilotThumbOverall", 30], ["RunTeamBannerShort", 56],
-			["RunTeamBannerName", FONT_CAPTION + 2], ["DraftSlotInfoCaption", 18],
-			["DraftSlotInfoTotal", 50], ["DraftSlotInfoSalary", FONT_CAPTION]]:
+	# Overall (big) + position (small) at the top-left of the thumbnails / slots, and the team banner
+	# texts: white with a soft dark shadow outline so they read over any art / team colour.
+	# The slot salary line sits on the lineup team banner.
+	for spec in [["PilotThumbOverall", 38], ["PilotThumbPosition", 18], ["DraftSlotOverall", 46],
+			["DraftSlotPosition", 20], ["RunTeamBannerShort", 56],
+			["RunTeamBannerName", FONT_CAPTION + 2], ["DraftSlotInfoSalary", FONT_CAPTION + 2]]:
 		var lv: String = spec[0]
 		_add_label(th, lv, int(spec[1]), TEXT_ON_FILL)
 		th.set_color(&"font_shadow_color", lv, Color(0, 0, 0, 0.55))
 		th.set_constant(&"shadow_offset_x", lv, 0)
 		th.set_constant(&"shadow_offset_y", lv, 2)
 		th.set_constant(&"shadow_outline_size", lv, 5)
-	# The thumbnail number sits on light faces too — a crisp dark outline on top of the shadow.
-	th.set_color(&"font_outline_color", &"PilotThumbOverall", Color(RAIL, 0.85))
-	th.set_constant(&"outline_size", &"PilotThumbOverall", 6)
-	th.set_color(&"font_color", &"DraftSlotInfoCaption", Color(TEXT_ON_FILL, 0.78))
+	# The corner numbers sit on light faces too — a crisp dark outline on top of the shadow.
+	for ov in [&"PilotThumbOverall", &"PilotThumbPosition", &"DraftSlotOverall", &"DraftSlotPosition"]:
+		th.set_color(&"font_outline_color", ov, Color(RAIL, 0.85))
+		th.set_constant(&"outline_size", ov, 6)
 	th.set_color(&"font_color", &"DraftSlotInfoSalary", ACCENT_DIM)
 	# Team banner (`UI_Comp_RunTeamBanner.tscn`, 감독 strip · lineup slot backdrop): rounded mask,
 	# or square for the full-bleed lineup backdrop.

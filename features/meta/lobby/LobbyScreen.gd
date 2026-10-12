@@ -114,6 +114,9 @@ const INTRO_NAV_DELAY: float = 0.4
 ## Set before `change_scene_to_file(Lobby.tscn)` to open straight into the scenario pick
 ## (RunSetup team step 뒤로, RunResult 새 런). Cleared by the lobby once read.
 static var open_scenario_on_enter: bool = false
+## With `open_scenario_on_enter`: play the scenario view's open transition (black wipe · slab swing)
+## instead of snapping it in — set only by RunResult 새 런 (the run was abandoned / ended and settled).
+static var animate_scenario_on_enter: bool = false
 ## The intro plays once per app launch — later lobby entries (back from a run) open plain.
 static var _intro_played: bool = false
 
@@ -160,10 +163,12 @@ func _ready() -> void:
 	_build()
 	if open_scenario_on_enter:
 		# Back from RunSetup's first step / RunResult 새 런: straight into the scenario pick.
+		var animate: bool = animate_scenario_on_enter
 		open_scenario_on_enter = false
+		animate_scenario_on_enter = false
 		_intro_played = true
 		switch_tab("home")
-		open_scenario_select(false)
+		open_scenario_select(animate)
 		_open_manager_type_if_needed()
 		_preload_in_background()
 	elif not _intro_played:

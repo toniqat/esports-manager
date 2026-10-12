@@ -6,7 +6,7 @@ Manager growth and presets between runs. Contract: `docs/outgame_dev_plan.md` §
 already translated (`Loc.t`, never stored), stat names via `StaffSystem.stat_label`, trait rarity via
 `GameEnums.rarity_label`. Scene nodes the scripts fill carry `auto_translate_mode = 2`; fixed captions are key literals.
 Manager stats as a whole are `term.stat.manager` (key ref `{tx_…}` inside sentences, no "스탯"); one stat name is a ref to
-`term.manager_stat.*`. The `전문화 +n` part label is `manager.tab.part_spec` (`ManagerUi.add_stat_cells`);
+`term.manager_stat.*`. `ManagerUi.add_stat_cells` (run setup 감독 step) shows each stat with its icon (`stat_icon`) and the specialisation part as a bare `+n` (`signed`; `manager.tab.part_spec` is deprecated);
 `manager.progress.stat_at_min` gets `{min}` = `StaffSystem.STAT_MIN`. Preset names (`manager.preset.name`, toasts) get
 `{n}` = the Roman numeral the capsule shows (`ManagerUi.roman`). Keys of the old save bar / chip status / slot UI
 (`manager.tab.{use_preset,save,…}`, `manager.preset.{in_use,…}`, `manager.trait_picker.{owned_title,…}`) are `deprecated`.
@@ -24,7 +24,7 @@ Manager stats as a whole are `term.stat.manager` (key ref `{tx_…}` inside sent
 | `UI_View_TraitSwapPopup.tscn` + `TraitSwapPopup.gd` | `class_name TraitSwapPopup extends CanvasLayer` (20) | 특성 교체 modal: top sheet, bonus gauge, `장착한 특성` grid + `보유 특성` grid (equipped = amber), tooltip with 장착 / 해제, floating close. `open(equipped, owned, new_ids)`, `request_close()`, signals `applied(traits)` / `closed` |
 | `UI_Comp_ManagerPresetChips.tscn` + `.gd` | `class_name ManagerPresetChips extends HBoxContainer` | Preset **capsule** shared with the run setup `감독` step: right-aligned dark pill, one cell per preset (I, II, …), white selector sliding under the chosen one. `fill(profile, selected)`, signal `chip_pressed(idx)` |
 | `UI_Comp_ManagerPresetChip.tscn` | — (no script) | Item scene: one capsule cell (flat Button 96 × 72, `ManagerPresetCell` / `…On`) |
-| `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: read-only `add_stat_cells` (still code-built), `preset_name`, `roman`, `stat_icon` (`resources/images/ui/manager/stat_<key>.svg`), `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → `manager.unlock.*` text) |
+| `ManagerUi.gd` | `class_name ManagerUi extends RefCounted` (static) | Shared pieces: read-only `add_stat_cells` (still code-built: icon + name, value, `+n` spec part), `preset_name`, `roman`, `stat_icon` (`resources/images/ui/manager/stat_<key>.svg`), `signed`, `bonus_color`, `unlock_text` (§12.4 grammar → `manager.unlock.*` text) |
 
 ## F6 preview (standalone run)
 Every scripted scene here shows dummy data when run on its own (editor "Run Current Scene") — `_ready` →

@@ -24,8 +24,9 @@ extends Control
 # **화면은 두 모드를 오간다.** PICK 은 위와 같고, `다음`을 누르면 CONFIRM 으로
 # 넘어가 **픽창(필터 + 격자)이 화면 아래로 빠지고 선택 5인이 화면 가운데로
 # 내려온다**(`_apply_mode`). The five always sit on the chosen **team banner**
-# (`%RunTeamBanner_Lineup`: banner art backdrop, logo + names centred above them) in both modes;
-# in CONFIRM the gauge fades out and the banner block is centred; the step header
+# (`%RunTeamBanner_Lineup`, plain: banner art backdrop only, a small pad above / below the row — the
+# team logo + names are on `RunSetupScreen`'s fixed top banner) in both modes; in CONFIRM the
+# gauge fades out and the banner block is centred under the top banner; the step header
 # leaves too (`RunSetupScreen`, on `TeamDraft.confirm_mode_changed`). 거기서 **`게임 시작`**이 `TeamDraft.start_requested`
 # 를 올리고, `RunSetupScreen` 이 암전 → 가짜 로딩 → 밝아짐 뒤에서 런을 연다.
 # `뒤로`는 PICK 에서는 팀 단계로(`back_requested`), CONFIRM 에서는 PICK 으로.
@@ -38,8 +39,6 @@ extends Control
 
 const SCENE_PATH: String = "res://features/meta/run_setup/UI_View_TeamDraftView.tscn"
 
-const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
-
 # ─── 세로 배치 — 코드가 정하는 것은 선택 5인 블록의 y 둘뿐 ─────────────────────
 # 게이지 · 필터 · 격자 · 뒤판 · 하단 바의 자리와 크기는 씬(`UI_View_TeamDraftView.tscn`)이 정한다.
 # 블록의 y 는 PICK / CONFIRM 사이를 오가며 트윈되므로 그 두 값만 여기서 낸다 —
@@ -47,12 +46,11 @@ const ROLE_COLORS: Array = OutgameTheme.ROLE_COLORS
 # 에디터에서 블록을 옮겨도 따라간다.
 ## 게이지 아랫변 ↔ 선택 5인 (PICK 의 위 한계).
 const GAUGE_ROW_GAP: float = 10.0
-## CONFIRM: the top bound of the banner + slot block (the step header has left — near the safe top).
-const CONFIRM_TOP_PAD: float = 24.0
-## Team banner (backdrop of the slot row) reaches this far below the slot row.
-const BANNER_PAD_BOTTOM: float = 14.0
+## Team banner (backdrop of the slot row) reaches this far above / below the slot row.
+const BANNER_PAD_TOP: float = 12.0
+const BANNER_PAD_BOTTOM: float = 12.0
 ## 블록 아랫변 ↔ 필터 줄 (PICK).
-const SLOT_FILTER_GAP: float = 32.0
+const SLOT_FILTER_GAP: float = 24.0
 ## 블록 아랫변 ↔ 하단 바 (CONFIRM 의 아래 한계).
 const SLOT_BAR_GAP: float = 20.0
 ## CONFIRM 에서 픽창이 빠지는 거리 — 필터 줄 윗변이 화면 아래끝을 이만큼 넘는다.
@@ -138,36 +136,31 @@ func _gauge_bottom() -> float:
 	return _gauge.position.y + _gauge.size.y
 
 
-## Banner head (logo + names) above the slot row — the slot row starts this far below the banner top.
-func _banner_head() -> float:
-	return _team_banner.top_head_bottom()
-
-
-## Height of the whole banner block (head + slot row + bottom pad).
+## Height of the whole banner block (top pad + slot row + bottom pad).
 func _banner_h() -> float:
-	return _banner_head() + _slot_row.size.y + BANNER_PAD_BOTTOM
+	return BANNER_PAD_TOP + _slot_row.size.y + BANNER_PAD_BOTTOM
 
 
 ## PICK 모드에서 선택 5인 블록이 앉는 y — 필터 줄 바로 위(게이지와는 겹치지 않게). The team
 ## banner (head above the row, pad below) is part of the block.
 func _pick_row_y() -> float:
-	return maxf(_gauge_bottom() + GAUGE_ROW_GAP + _banner_head(),
+	return maxf(_gauge_bottom() + GAUGE_ROW_GAP + BANNER_PAD_TOP,
 			_filters.position.y - SLOT_FILTER_GAP - _slot_row.size.y - BANNER_PAD_BOTTOM)
 
 
-## CONFIRM 모드에서 선택 5인 블록이 내려앉는 y. The banner block (head + slot row) is centred
-## in the safe area (the gauge and the step header are gone, so the upper bound is near the
-## safe top); kept above the bottom bar.
+## CONFIRM 모드에서 선택 5인 블록이 내려앉는 y. The banner block (pads + slot row) is centred
+## in the safe area (the gauge and the step header are gone; the fixed top team banner stays, so
+## the upper bound is `RunSetupScreen.content_top()`); kept above the bottom bar.
 func _confirm_row_y() -> float:
 	var block_h: float = _banner_h()
-	var lo: float = CONFIRM_TOP_PAD
+	var lo: float = RunSetupScreen.content_top()
 	var hi: float = maxf(lo, OutgameTheme.bottom_bar_top() - block_h - SLOT_BAR_GAP)
-	return clampf((_safe.size.y - block_h) * 0.5, lo, hi) + _banner_head()
+	return clampf((_safe.size.y - block_h) * 0.5, lo, hi) + BANNER_PAD_TOP
 
 
 ## Banner y for a slot row at `row_y`.
 func _banner_y(row_y: float) -> float:
-	return row_y - _banner_head()
+	return row_y - BANNER_PAD_TOP
 
 
 ## The team chosen on the 팀 step (`TeamDraft.set_team` → here, and once in `_ready`).
@@ -402,8 +395,7 @@ func _refresh_slots() -> void:
 		if p == null:
 			slot.show_empty()
 		else:
-			var role: int = int(TeamDraft.SLOT_ROLES[i])
-			slot.show_pilot(p, ROLE_COLORS[role], _draft.salary_of(pid))
+			slot.show_pilot(p, _draft.salary_of(pid))
 	_refresh_rules()
 
 

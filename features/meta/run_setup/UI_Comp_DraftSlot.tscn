@@ -2,13 +2,13 @@
 
 [ext_resource type="Script" uid="uid://cbyfih3uq1tcl" path="res://features/meta/run_setup/DraftSlot.gd" id="1_slot"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="3_badge"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/run_setup/icon_salary.svg" id="3_salary"]
 
 [node name="DraftSlot" type="VBoxContainer"]
-editor_description = "One of the 5 role-fixed pick slots (TeamDraftView %SlotRow). Height 538 = art 412 (level plate bottom-left, rank stars bottom-right, inside the art) + info 126 (OVERALL caption, big overall number, salary line)."
+editor_description = "One of the 5 role-fixed pick slots (TeamDraftView %SlotRow). Height 452 = art 412 (top-left overall big + position text small; bottom-left rank stars = 돌파, bottom-right level — inside the art) + info 40 (salary icon + number)."
 custom_minimum_size = Vector2(204, 0)
 offset_right = 204.0
-offset_bottom = 538.0
+offset_bottom = 452.0
 mouse_filter = 2
 theme = ExtResource("2_theme")
 theme_override_constants/separation = 0
@@ -17,7 +17,7 @@ script = ExtResource("1_slot")
 [node name="Frame" type="Button" parent="."]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd _ready() · DraftSlot.gd _set_frame_style() · DraftSlot.gd show_empty() 외 1곳
-The illustration itself is the detail-popup button. Must NOT be flat (a flat button ignores the stylebox). Frame style is data (empty grey / role colour) → code; the stylebox here is an editor preview of the empty slot."
+The illustration itself is the detail-popup button. Must NOT be flat (a flat button ignores the stylebox). Frame style is data (empty = grey border, filled = no outline) → code; the stylebox here is an editor preview of the empty slot."
 custom_minimum_size = Vector2(0, 412)
 layout_mode = 2
 focus_mode = 0
@@ -52,39 +52,15 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="LevelPlate" type="PanelContainer" parent="Frame/ArtMask"]
+[node name="RankPlate" type="PanelContainer" parent="Frame/ArtMask"]
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()
-Level (Lv N), flush with the art's bottom-left corner (the mask clips the outer corner). Size follows the text. Hidden on an empty slot."
+돌파 = rank as stars (★ × p.rank, amber), flush with the art's bottom-left corner (the mask clips the outer corner). Size follows the text. Hidden on an empty slot / rank 0."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_top = -33.0
-grow_vertical = 0
-mouse_filter = 2
-theme_type_variation = &"DraftSlotLevelPlate"
-
-[node name="LevelText" type="Label" parent="Frame/ArtMask/LevelPlate"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_pilot()"
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"OnFillLabel"
-text = "Lv 3"
-
-[node name="RankPlate" type="PanelContainer" parent="Frame/ArtMask"]
-editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()
-Rank as stars (★ × p.rank, amber), flush with the art's bottom-right corner. Size follows the text. Hidden on an empty slot / rank 0."
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -33.0
-grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 theme_type_variation = &"DraftSlotRankPlate"
@@ -96,6 +72,30 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"DraftSlotStars"
 text = "★★"
+
+[node name="LevelPlate" type="PanelContainer" parent="Frame/ArtMask"]
+editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()
+Level (Lv N), flush with the art's bottom-right corner. Size follows the text. Hidden on an empty slot."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -33.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"DraftSlotLevelPlate"
+
+[node name="LevelText" type="Label" parent="Frame/ArtMask/LevelPlate"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_pilot()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+text = "Lv 3"
 
 [node name="EmptyMark" type="Label" parent="Frame"]
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
@@ -114,62 +114,67 @@ theme_override_font_sizes/font_size = 26
 text = "tx_8XPMQAH2H0"
 horizontal_alignment = 1
 
-[node name="PositionBadge" parent="Frame" instance=ExtResource("3_badge")]
-editor_description = "[필수] 지우면 오류 — DraftSlot.gd set_role()"
-unique_name_in_owner = true
+[node name="Head" type="VBoxContainer" parent="Frame"]
+editor_description = "Top-left over the art: the overall big (six-stat average) and the position name small under it. Empty slot: position only (which seat this is)."
 layout_mode = 0
-offset_left = 11.0
-offset_top = 11.0
-offset_right = 55.0
-offset_bottom = 41.0
+offset_left = 12.0
+offset_top = 6.0
+offset_right = 140.0
+offset_bottom = 100.0
+mouse_filter = 2
+theme_override_constants/separation = -6
+
+[node name="Overall" type="Label" parent="Frame/Head"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot() (PlayerData.overall())"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DraftSlotOverall"
+text = "86"
+
+[node name="Position" type="Label" parent="Frame/Head"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — DraftSlot.gd set_role() (GameEnums.role_position_label)"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DraftSlotPosition"
+text = "탑"
 
 [node name="Info" type="Control" parent="."]
-editor_description = "Under the art: small OVERALL caption (y 4), the overall number big (y 22, 50px), salary line (y 90). Absolute on purpose: the labels' line heights overlap slightly, a VBox would push them apart."
-custom_minimum_size = Vector2(0, 126)
+editor_description = "Under the art: salary icon + number, centred (the icon replaces the old '샐러리' word)."
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="OverallCaption" type="Label" parent="Info"]
-editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()
-Fixed caption (hidden on an empty slot)."
+[node name="SalaryRow" type="HBoxContainer" parent="Info"]
 unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_top = 4.0
-offset_bottom = 30.0
+anchor_bottom = 1.0
 grow_horizontal = 2
-theme_type_variation = &"DraftSlotInfoCaption"
-text = "tx_WJSXREH223"
-horizontal_alignment = 1
-vertical_alignment = 1
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
 
-[node name="Total" type="Label" parent="Info"]
+[node name="SalaryIcon" type="TextureRect" parent="Info/SalaryRow"]
+editor_description = "White glyph tinted like the number (ACCENT_DIM)."
+self_modulate = Color(0.996, 0.929, 0.808, 1)
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("3_salary")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Salary" type="Label" parent="Info/SalaryRow"]
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 22.0
-offset_bottom = 92.0
-grow_horizontal = 2
-theme_type_variation = &"DraftSlotInfoTotal"
-text = "514"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Salary" type="Label" parent="Info"]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — DraftSlot.gd show_empty() · DraftSlot.gd show_pilot()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 90.0
-offset_bottom = 120.0
-grow_horizontal = 2
+layout_mode = 2
 theme_type_variation = &"DraftSlotInfoSalary"
-text = "샐러리 51"
-horizontal_alignment = 1
+text = "51"
 vertical_alignment = 1

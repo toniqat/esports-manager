@@ -54,7 +54,7 @@ tx_3D2K7Z42ST,manager.tab.spec_points,active,ManagerTab stats chip,,,전문화 �
 tx_W2GGDAXSS9,manager.tab.formula,deprecated,ManagerTab stats formula,,,최종 = 유형 − 제거 + 전문화 · 상한 {cap},Final = Type − Removed + Spec · Cap {cap},draft,3a122de1
 tx_25JH8D9ZKC,manager.tab.part_type,deprecated,ManagerTab stat row breakdown item (joined with ·),,,유형 {n},Type {n},draft,7edaa544
 tx_REG3N92165,manager.tab.part_removed,deprecated,ManagerTab stat row breakdown item,,,제거 −{n},Removed −{n},draft,db2846b0
-tx_FSJJMA6X8A,manager.tab.part_spec,active,ManagerTab stat row breakdown item,,,전문화 +{n},Spec +{n},draft,2ab67b85
+tx_FSJJMA6X8A,manager.tab.part_spec,deprecated,ManagerTab stat row breakdown item,,,전문화 +{n},Spec +{n},draft,2ab67b85
 tx_N00VCXQP2R,manager.tab.discard_title,deprecated,ManagerTab confirm title,,,저장하지 않은 변경이 있습니다,You have unsaved changes,draft,52143b26
 tx_PC4VC518EH,manager.tab.discard_body,deprecated,ManagerTab confirm body; from/to = preset names,,,{from} 의 변경을 버리고 {to} 로 넘어갈까요?,Discard changes to {from} and switch to {to}?,draft,2b99c7e9
 tx_KGQJMSCC5A,manager.tab.discard_confirm,deprecated,ManagerTab confirm button,,,버리고 이동,Discard & Switch,draft,d5650283

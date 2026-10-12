@@ -293,7 +293,7 @@ Out-game player persona consumed by MatchFlow / BattleSim:
   The tables are the three `STAT_KEYS` / `STAT_LABELS` / `STAT_NOTES` (the last two hold
   l10n keys `term.stat.*.name|note`), and every screen reads them — text through
   `stat_label(i)` / `stat_note(i)` (current locale, "" out of range). **No short forms** ("전명" →
-  "전장 명중" everywhere; `stat_short` and `term.stat.*.short` were removed / deprecated 2026-10). Power totals are `stat_total()` / `stat_avg()`; growth coefficient → multiplier conversion is
+  "전장 명중" everywhere; `stat_short` and `term.stat.*.short` were removed / deprecated 2026-10). Power totals are `stat_total()` / `stat_avg()`; the **overall shown on every screen** is `overall()` (= `roundi(stat_avg())`, not the sum); growth coefficient → multiplier conversion is
   `static growth_mult(v)` = `v / GROWTH_STAT_BASE` (const.csv `PLAYER_GROWTH_STAT_BASE`). The old 5 stats (`laning` /
   `mechanics` / `gamesense` / `teamfight` / `mental`) were deleted
 - Run setup fields: `salary` (base salary + applied rank effects; level bonus added on read by
@@ -1146,19 +1146,19 @@ theme variation too, built in `OutgameTheme._add_screen_variations()`:
 | `RunResultSectionCard` · `RunResultSectionCardAmber` | Card | `RunResult` cards (padding 40, top 28) | — |
 | `RunResultAccentDivider` | Divider | `RunResult` amber card dividers | — |
 | `RunResultTraitCard` | Card | `RunResultTraitRow` `Card` | — |
-| `DraftSlotFrame` | SelectableCardButton | `DraftSlot` `Frame` (all button states) | fill / role border (`_set_frame_style`) |
+| `DraftSlotFrame` | SelectableCardButton | `DraftSlot` `Frame` (all button states) | fill / border (`_set_frame_style`: empty = grey, filled = transparent — no role outline) |
 | `DraftSlotArtMask` · `PilotThumbArtMask` | SunkPanel | `ArtMask` (white AA mask for `clip_children`) | — |
-| `PilotThumbCheck` · `PilotThumbTag` | AccentChip · SurfaceChip | `PilotThumb` `Check` · `Tag` | — |
+| `PilotThumbCheck` · `PilotThumbTag` | AccentChip · SurfaceChip | `PilotThumb` `Check` (centre, r26) · `Tag` (top-right salary pill, `RAIL` 82 %, PanelContainer margins 6 / 10 · 2) | — |
 | `PositionBadgePanel` | AccentChip | `PositionBadge` root (r8, 1px `POSITION_BADGE_EDGE`, padding `POSITION_BADGE_PAD_H` / `_V`) — shared widget in `resources/`, used on outgame and battle screens | role fill (`set_role`) |
 | `TeamDraftGridBack` | Card | `TeamDraftView` `GridBack` | — |
-| `DraftSlotLevelPlate` · `DraftSlotRankPlate` | SurfaceChip | `DraftSlot` `%LevelPlate` (bottom-left, r10 top-right) · `%RankPlate` (bottom-right, r10 top-left) inside the art mask — `RAIL` 78 % | — |
-| `DraftSlotStars` (Label) | OnFillLabel | `DraftSlot` `%Stars` (amber `ACCENT`) | — |
-| `PilotThumbOverall` (Label) | Label (white 30, dark outline 6 + soft shadow) | `PilotThumb` `%Overall` over the face | — |
-| `RunTeamBannerMask` · `RunTeamBannerMaskSquare` | SunkPanel | `RunTeamBanner` `%Mask` (white AA `clip_children` mask; r18 = 감독 strip, r0 = full-bleed lineup backdrop) | — |
+| `DraftSlotRankPlate` · `DraftSlotLevelPlate` | SurfaceChip | `DraftSlot` / `PilotThumb` `%RankPlate` (돌파 stars, bottom-left, r10 top-right) · `%LevelPlate` (bottom-right, r10 top-left) inside the art mask — `RAIL` 78 % | — |
+| `DraftSlotStars` (Label) | OnFillLabel | `DraftSlot` / `PilotThumb` `%Stars` (amber `ACCENT`) | — |
+| `PilotThumbOverall` · `PilotThumbPosition` · `DraftSlotOverall` · `DraftSlotPosition` (Label) | Label (white, dark outline 6 + soft shadow) | top-left of `PilotThumb` (overall 38 · position 18) / `DraftSlot` (46 · 20) over the art | — |
+| `RunTeamBannerMask` · `RunTeamBannerMaskSquare` | SunkPanel | `RunTeamBanner` `%Mask` (white AA `clip_children` mask; r18 = rounded, r0 = full-bleed: RunSetup top banner · lineup backdrop) | — |
 | `RunTeamBannerShort` · `RunTeamBannerName` (Label) | Label (white `TEXT_ON_FILL`, soft dark shadow) | `RunTeamBanner` short name (56; 36 in `%HeadTop`) · full name (24) | — |
-| `DraftSlotInfoCaption` · `DraftSlotInfoTotal` · `DraftSlotInfoSalary` (Label) | Label (white / 78% white / `ACCENT_DIM`, soft dark shadow) | `DraftSlot` `Info` lines (OVERALL 18 · overall 50 · salary 22) — they sit on the lineup team banner | — |
-| `TeamCardBannerMask` · `TeamCardStatPanel` | SunkPanel | `TeamCard` `BannerMask` (white AA `clip_children` mask, r = `CARD_RADIUS - SELECT_BORDER_ON`, inset 4 so the selected border shows) · stat cards (black 30%, r16) | — |
-| `TeamCardShortLabel` · `TeamCardNameLabel` · `TeamCardStatValue` | Label (white `TEXT_ON_FILL`, soft dark shadow) | `TeamCard` `ShortName` (60) · `Name` (24) · stat values (26) over the team banner | — |
+| `DraftSlotInfoSalary` (Label) | Label (`ACCENT_DIM`, soft dark shadow) | `DraftSlot` salary number (24, next to the salary icon) — sits on the lineup team banner | — |
+| `TeamCardBannerMask` · `TeamCardStatPanel` | SunkPanel | `TeamCard` `BannerMask` (white AA `clip_children` mask, r = `CARD_RADIUS - SELECT_BORDER_ON`, inset 4 so the selected border shows) · bottom budget / facility strip (black 30%, r14, PanelContainer margins 10 · 4) | — |
+| `TeamCardShortLabel` · `TeamCardNameLabel` · `TeamCardStatValue` | Label (white `TEXT_ON_FILL`, soft dark shadow) | `TeamCard` `ShortName` (46) · `Name` (22) · stat values (22) over the team banner | — |
 | `ScenarioSelectDot` · `ScenarioSelectDotOn` | SunkPanel | `ScenarioSelectView` league index pills (white 28 % / `ACCENT`, r7) | — |
 | `ScenarioSelectCapPill` | Button | `ScenarioSelectView` salary-cap pill (white 10 / 16 / 22 % glass, white 18 % 2px border, fully round) — tap = tooltip | — |
 | `ScenarioSelectArrow` | Button | `ScenarioSelectView` ‹ › league arrows — no plate in any state (empty boxes = tap area only), glyph drawn by `ScenarioArrowGlyph` | — |
@@ -1480,10 +1480,11 @@ The draft detail popup used it too, but that screen's candidate-card section was
 darkened like the old role badge). Replaces the per-screen texts ("탱커" / "미드" / "TANK" / `Tk`) and the old
 `run_setup/RoleBadge`.
 
-- **Used by**: `PilotThumb` · `DraftSlot` · `CollectionCell` (top-left of the art), `CollectionDetailSheet`
+- **Used by**: `CollectionCell` (top-left of the art), `CollectionDetailSheet`
   (`PilotThumb.add_position_badge`), `DraftDetailPanel` header, `SeasonPilotCard` (hub · week),
   `MechLabCard`, `RunResultPilotRow`, `IntelPilotRow`, `ShopShardRow`, `EndingView` roster, BattleSim
   `MvpView` and the victory panel's MVP row (`UI_View_BattleHud.tscn` `%PositionBadge_MvpPosition`).
+  The run setup lineup (`PilotThumb` · `DraftSlot`) shows the position as small text under the overall instead.
 - **Look**: the root attaches `OutgameTheme.tres` itself, so the badge looks the same inside dark battle scenes;
   variation `PositionBadgePanel`. Width = the widest of the five abbreviations at the current size, so text placed
   after a badge starts at the same x on every row.

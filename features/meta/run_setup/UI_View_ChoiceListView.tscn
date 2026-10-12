@@ -30,31 +30,34 @@ mouse_filter = 2
 
 [node name="Hint" type="Label" parent="Safe"]
 auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — ChoiceListView.gd _build() · ChoiceListView.gd _fill_preview()"
+editor_description = "[필수] 지우면 오류 — ChoiceListView.gd _build() · ChoiceListView.gd _fill_preview()
+Sits in the band of RunSetup.tscn's fixed top team banner (y 116 .. 236), centred — seen until a card is tapped, then the banner (drawn above the steps) covers it."
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 32.0
+offset_left = 48.0
 offset_top = 116.0
-offset_right = -32.0
-offset_bottom = 160.0
+offset_right = -48.0
+offset_bottom = 236.0
 grow_horizontal = 2
 theme_type_variation = &"SubLabel"
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 26
 text = "시나리오가 샐러리캡을 정합니다 — 다섯 선수의 샐러리 합이 캡을 넘으면 시작할 수 없습니다."
-clip_text = true
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
 [node name="Scroll" type="ScrollContainer" parent="Safe"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ChoiceListView.gd _build()
-Card list: 8px under the hint, down to the screen bottom (code adds the bottom inset) — the cards scroll under the floating bottom capsules and stay visible there; %BarShield keeps taps in that zone off the cards, %ListPad lets the last card scroll clear of it. Grows to the RIGHT only: when the list overflows, the scroll bar adds its width outside the 1032 list (same as the old code-built list), so the cards keep their x."
+Card grid: from RunSetupScreen.content_top() (252, under the top team banner band), down to the screen bottom (code adds the bottom inset) — the cards scroll under the floating bottom capsules and stay visible there; %BarShield keeps taps in that zone off the cards, %ListPad lets the last card scroll clear of it. Grows to the RIGHT only: when the list overflows, the scroll bar adds its width outside the 1032 list (same as the old code-built list), so the cards keep their x."
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = 168.0
+offset_top = 252.0
 offset_right = -24.0
 offset_bottom = 0.0
 grow_vertical = 2
@@ -69,14 +72,16 @@ size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/margin_bottom = 140
 
-[node name="List" type="VBoxContainer" parent="Safe/Scroll/ListPad"]
+[node name="List" type="GridContainer" parent="Safe/Scroll/ListPad"]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — ChoiceListView.gd _build() · ChoiceListView.gd _fill_preview()
-Cards are instantiated here by code (one item scene per row of the step's table). Minimum width 1032 = full list width, so the scroll bar overlays the cards' right edge instead of narrowing them."
+Cards are instantiated here by code (one item scene per row of the step's table), 3 per row, 12 apart (cards expand: (1032 - 24) / 3 = 336 wide). Minimum width 1032 = full list width, so the scroll bar overlays the cards' right edge instead of narrowing them."
 custom_minimum_size = Vector2(1032, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 20
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 3
 
 [node name="BarShield" type="Control" parent="."]
 unique_name_in_owner = true

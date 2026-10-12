@@ -2,13 +2,14 @@ class_name DraftSlot
 extends VBoxContainer
 
 # 편성 화면(`TeamDraftView`) 위쪽 다섯 칸 중 한 칸 — 상체 일러스트(누르면 상세 팝업).
-# Inside the art: level plate bottom-left (`Lv N`), rank as amber stars bottom-right (★ × rank —
-# not chosen here, the collection's rank / level as they are). Under the art: a small `OVERALL`
-# caption, the overall number big, then the salary line.
+# Inside the art: top-left the overall big (`PlayerData.overall()` = six-stat average) with the
+# position name small under it; bottom-left 돌파 = rank as amber stars (★ × rank), bottom-right
+# the level plate (`Lv N`) — not chosen here, the collection's rank / level as they are. Under the
+# art: salary icon + number. Same corners as the grid thumbnails (`PilotThumb`).
 #
-# **모양의 정본은 `UI_Comp_DraftSlot.tscn`** (일러스트 204×412 · 마스크 · 빈 칸 글자 · 배지 자리 ·
-# 글자 줄). 이 스크립트는 데이터만 넣는다 — 역할 배지, 일러스트 텍스처,
-# 레벨 · 별 · 샐러리 · 종합 글자, 그리고 칸 테두리(빈 칸 = 회색, 찬 칸 = 역할 색 → 데이터라 코드).
+# **모양의 정본은 `UI_Comp_DraftSlot.tscn`** (일러스트 204×412 · 마스크 · 빈 칸 글자 · 머리 / 판 자리 ·
+# 샐러리 줄). 이 스크립트는 데이터만 넣는다 — 포지션 글자, 일러스트 텍스처, 종합 · 레벨 · 별 ·
+# 샐러리 글자, 그리고 칸 테두리(빈 칸 = 회색 테두리, 찬 칸 = 테두리 없음 → 상태라 코드).
 #
 # **`%Frame` 을 `flat` 로 두면 안 된다** — flat 버튼은 스타일박스를 통째로 무시해 빈 칸의
 # 테두리가 사라진다.
@@ -22,9 +23,9 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## 칸의 역할 — 배지는 **빈 칸에도 선다**(어느 역할의 자리인지를 말한다).
+## 칸의 역할 — 포지션 글자는 **빈 칸에도 선다**(어느 역할의 자리인지를 말한다).
 func set_role(role: int) -> void:
-	(%PositionBadge as PositionBadge).set_role(role)
+	(%Position as Label).text = GameEnums.role_position_label(role)
 
 
 ## 빈 칸.
@@ -36,25 +37,26 @@ func show_empty() -> void:
 	_set_frame_style(OutgameTheme.SURFACE_SUNK, OutgameTheme.BORDER)
 	(%LevelPlate as Control).visible = false
 	(%RankPlate as Control).visible = false
-	(%OverallCaption as Control).visible = false
-	(%Salary as Label).text = ""
-	(%Total as Label).text = ""
+	(%Overall as Control).visible = false
+	(%SalaryRow as Control).visible = false
 
 
 ## 찬 칸. `p` 는 랭크 · 레벨이 반영된 사본(`p.rank` · `p.level` 을 그대로 보인다).
-func show_pilot(p: PlayerData, role_color: Color, salary: int) -> void:
+## No position-colour outline — the frame's border goes transparent (the art fills the slot).
+func show_pilot(p: PlayerData, salary: int) -> void:
 	var frame: Button = %Frame
 	(%Art as TextureRect).texture = PilotImages.bust_for(p.id)
 	(%EmptyMark as Control).visible = false
 	frame.disabled = false
-	_set_frame_style(OutgameTheme.SURFACE, role_color)
+	_set_frame_style(OutgameTheme.SURFACE, Color(OutgameTheme.SURFACE, 0.0))
 	(%LevelPlate as Control).visible = true
 	(%LevelText as Label).text = Loc.t(L.RUN_SETUP_LEVEL_N, {"n": p.level})
 	(%RankPlate as Control).visible = p.rank > 0
 	(%Stars as Label).text = "★".repeat(maxi(0, p.rank))
-	(%OverallCaption as Control).visible = true
-	(%Salary as Label).text = Loc.t(L.RUN_SETUP_SLOT_SALARY, {"n": salary})
-	(%Total as Label).text = str(p.stat_total())
+	(%Overall as Control).visible = true
+	(%Overall as Label).text = str(p.overall())
+	(%SalaryRow as Control).visible = true
+	(%Salary as Label).text = str(salary)
 
 
 ## 칸 모양(반지름 · 테두리 두께)은 테마 변형 `DraftSlotFrame` 이 정하고 — 일러스트 마스크는
@@ -78,4 +80,4 @@ func _fill_preview() -> void:
 	var p := PlayerData.new(5, "tx_A57ZKJ2RYN", role, 0, 85, 86, 82, 90, 86, 85, 20)
 	p.rank = 2
 	p.level = 3
-	show_pilot(p, OutgameTheme.ROLE_COLORS[role], 57)
+	show_pilot(p, 57)

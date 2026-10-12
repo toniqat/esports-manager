@@ -3,8 +3,8 @@ extends Control
 
 # 런 준비의 "카드 한 장 고르기" 단계 공용 틀 — 팀 단계(`TeamStepView`)가 이걸 잇는다.
 #
-#   단계 머리글 아래(`RunSetupScreen.content_top()`)부터: 안내 한 줄 → 카드 목록
-#   (세로 스크롤) → 하단 바 `뒤로`(1) / `다음`(2)
+#   단계 머리글 아래: 안내 한 줄(위 팀 배너 띠 자리 — 팀을 고르면 배너가 덮는다) → 카드 격자
+#   (3열, 세로 스크롤, `RunSetupScreen.content_top()` 부터) → 하단 바 `뒤로`(1) / `다음`(2)
 #
 # **모양의 정본은 `UI_View_ChoiceListView.tscn`** (안내 줄 · 스크롤 목록 · 카드 간격 · 하단 바).
 # 잇는 단계는 그 씬을 상속한 씬(`UI_View_TeamStepView.tscn` — 루트 스크립트만 바꾼다)이고,
@@ -21,6 +21,8 @@ extends Control
 
 signal back_requested
 signal next_requested
+## A card was tapped (`selected_id` changed) — the run setup top banner follows it.
+signal selection_changed(id: int)
 
 ## 고른 카드의 `id`. -1 = 아직 없음.
 var selected_id: int = -1
@@ -92,6 +94,7 @@ func select(id: int) -> void:
 
 func _on_card_pressed(id: int) -> void:
 	select(id)
+	selection_changed.emit(selected_id)
 
 
 func _on_next_pressed() -> void:
@@ -117,14 +120,10 @@ func _fill_preview() -> void:  # l10n-ignore
 	UiPreview.trace(next_requested)
 	if _cards.is_empty():
 		(%Hint as Label).text = "카드 한 장을 고르세요 — 고르기 전에는 다음이 잠깁니다."
-		var teams: Array = RunRules.team_packages()
-		var max_budget: int = 1
-		for raw in teams:
-			max_budget = maxi(max_budget, int((raw as Dictionary).get("budget", 0)))
-		for raw in teams.slice(0, 3):
+		for raw in RunRules.team_packages().slice(0, 3):
 			var item: Dictionary = raw
 			var card := TeamCard.create()
-			card.fill(item, max_budget)
+			card.fill(item)
 			(%List as Control).add_child(card)
 			card.pressed.connect(_on_card_pressed.bind(int(item["id"])))
 			_cards[int(item["id"])] = card

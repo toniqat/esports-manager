@@ -166,8 +166,9 @@ run, RunResult) open plain, and `open_scenario_on_enter` skips it.
 ## Scenario mode (`open_scenario_select`)
 The new-run entry: the home tab's `게임 시작` **without a run** (and the corrupt-run abandon path) calls
 `open_scenario_select(true)`; `LobbyScreen.open_scenario_on_enter = true` before loading the lobby (RunSetup's first
-step 뒤로, RunResult 새 런) makes `_ready` switch to 홈 and open it with `animate = false` (the chrome snaps; the view
-may still animate its own panel).
+step 뒤로, RunResult 새 런) makes `_ready` switch to 홈 and open it. `animate` = `animate_scenario_on_enter` (static,
+cleared with the flag): only RunResult 새 런 sets it, so the league-pick transition (black wipe · slab swing · chrome
+slide) plays **after** the abandon / run end has been settled; RunSetup's 뒤로 snaps it in (`animate = false`).
 - **Chrome slide** (`_slide_chrome` → `_apply_chrome(t)`, `CHROME_SLIDE_SEC` 0.38 s, cubic in-out): `%Wallet` moves up
   until its bottom is `CHROME_SLIDE_MARGIN` above the notch; `%NavBar` and `%ActionBar` move down until their top is
   that margin under the screen bottom. Driven by offsets from `_chrome_base` (the scene's offsets, captured in
@@ -218,7 +219,7 @@ may still animate its own panel).
   포기할까요?", the run summary, body: settled as a failure, score / currency rewards still paid, irreversible;
   danger confirm "포기하고 정산"). The run-card lines come from `HomeTab.run_texts(meta, gm)` (static, shared with the popup). Confirm (`_on_abandon_confirmed`) → `SaveSystem.load_run()` →
   `RunResult.settle_current_run("abandon")` (writes the profile, deletes `run.save`) →
-  `RunResult.SCENE_PATH`, whose `새 런` goes on to `RunSetup.tscn` (`../run_result/README.md`).
+  `RunResult.SCENE_PATH`, whose `새 런` reopens the lobby on the scenario pick with its open transition (`../run_result/README.md`).
   Load fails (corrupt run) → warning, `delete_run()`, the tab redraws as run-less and scenario mode opens (no settlement).
 
 ## SettingsPopup (l10n M5 — `docs/localization_design.md` D10 · §10.4)

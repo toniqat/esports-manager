@@ -210,8 +210,8 @@ func _fill_stats(rank: int) -> void:
 		var is_total: bool = i == PlayerData.STAT_KEYS.size()
 		if is_total:
 			key = Loc.t(L.RUN_SETUP_STAT_TOTAL)
-			val = _fielded.stat_total()
-			delta = val - _base.stat_total()
+			val = _fielded.overall()
+			delta = val - _base.overall()
 		else:
 			var sk: String = String(PlayerData.STAT_KEYS[i])
 			key = PlayerData.stat_label(i)

@@ -19,7 +19,7 @@ tx_1M14YHFYQV,run_setup.draft.no_skill,active,선수 상세 패널: 모브 선�
 tx_341YBT1HWQ,run_setup.skill_type.charge,deprecated,파일럿 스킬 타입,,merged into hud.skill.type.charge,충전식,Charge,draft,d4229706
 tx_R41SZAKCGV,run_setup.skill_type.passive,deprecated,파일럿 스킬 타입,,merged into hud.skill.type.passive,패시브,Passive,draft,70524aef
 tx_8XPMQAH2H0,run_setup.slot.empty,active,편성 슬롯: 빈 칸,,,선택 없음,Not picked,draft,6f5e091d
-tx_M4CGTEQHBN,run_setup.slot.salary,active,편성 슬롯,,,샐러리 {n},Salary {n},draft,65e3d4c9
+tx_M4CGTEQHBN,run_setup.slot.salary,deprecated,편성 슬롯,,,샐러리 {n},Salary {n},draft,65e3d4c9
 tx_86NEDS5QYC,run_setup.slot.total,active,편성 슬롯: 스탯 합계,,,{tx_24YRHG4GQQ} {n},{tx_24YRHG4GQQ} {n},draft,f70e93e2
 tx_EYBMMZBQNA,run_setup.manager.prestige_locked,active,감독 단계 상태 줄 오류,,,프레스티지 프리셋: 로비 감독 탭에서 재설정하세요,Prestige preset: reset it in the lobby Manager tab,draft,56435fef
 tx_S0XJ51Y6E7,run_setup.manager.card_title,active,감독 단계 스탯 카드 제목. type = 감독 유형 이름,,,{type} 감독 · Lv {level},{type} Manager · Lv {level},draft,62313263
@@ -40,8 +40,9 @@ tx_Z7WZT1J6Q7,run_setup.lineup.done_left,active,편성 게이지 메시지,,,{tx
 tx_RQV5HNW8TV,run_setup.lineup.done,active,편성 게이지 메시지 (캡 없음),,,편성 완료,Lineup complete,draft,b94c957c
 tx_N58C8KX6P1,run_setup.lineup.start,active,편성 하단 버튼,,,게임 시작,Start Game,draft,62d82d76
 tx_B0NGFXJ0F2,run_setup.slot.rank_level,active,편성 칸 일러스트 아래 — 보유 선수의 지금 랭크와 레벨 (런 준비에서 고를 수 없다),,,랭크 {rank} · Lv {level},Rank {rank} · Lv {level},draft,4db9996e
-tx_E2KQV3KWYX,run_setup.lineup.cap_label,active,편성 샐러리 게이지 왼쪽 라벨,,,샐러리캡,Salary Cap,draft,ba33d61b
-tx_WJSXREH223,run_setup.slot.overall_caption,active,편성 칸: 큰 종합 숫자 위 작은 캡션,,,OVERALL,OVERALL,draft,16a800f6
+tx_E2KQV3KWYX,run_setup.lineup.cap_label,deprecated,편성 샐러리 게이지 왼쪽 라벨,,,샐러리캡,Salary Cap,draft,ba33d61b
+tx_WJSXREH223,run_setup.slot.overall_caption,deprecated,편성 칸: 큰 종합 숫자 위 작은 캡션,,,OVERALL,OVERALL,draft,16a800f6
 tx_76VC17EP92,run_setup.level_n,active,런 준비 레벨 표기: 편성 초상화 좌하단 · 감독 카드 · 팀 시설 카드,,,Lv {n},Lv {n},draft,1e4d3a52
 tx_3PMG907FZ1,run_setup.scenario.choose,active,리그 선택 화면 하단 주 버튼 (고른 리그로 런 준비 시작),,,게임 시작,Start Game,draft,62d82d76
 tx_BBWCK9NDMS,run_setup.scenario.cap_tip,active,시나리오 선택 화면: 왼쪽 아래 샐러리캡 알약을 누르면 뜨는 툴팁,,,리그에서 사용할 수 있는 파일럿의 샐러리 총합의 제한입니다.,The limit on the total salary of the pilots you can field in this league.,draft,3b554aae
+tx_DX2E0REJBJ,run_setup.manager.preset_title,active,런 준비 감독 단계: 프리셋 캡슐 왼쪽 제목,,,감독 프리셋 설정,Manager Presets,draft,d8ac1d57

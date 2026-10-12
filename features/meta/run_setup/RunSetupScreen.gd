@@ -31,9 +31,11 @@ const STEPS: Array = [    # l10n-keys: run_setup.step.*
 ]
 
 # ─── 머리글 (단계 표시) ──────────────────────────────────────────────────────
-# The header capsule's place / size is the scene's (`%StepCapsule_Header`, y 20 .. 100). Step bodies
-# start below it at 116 — every step view scene puts its first block at that y.
-const CONTENT_TOP: float = 116.0
+# The header capsule's place / size is the scene's (`%StepCapsule_Header`, y 20 .. 100). Under it
+# the chosen team's banner (`%RunTeamBanner_Top`, full width, y 116 .. 236, fixed — never scrolls,
+# shown from the moment a team card is tapped through 감독 and 편성). Step bodies start below it
+# at 252 — every step view scene puts its first block at that y.
+const CONTENT_TOP: float = 252.0
 
 
 ## 단계 본문이 시작하는 y(화면째 안전 영역으로 내린 좌표계). 단계 뷰 씬의 첫 블록 자리와 같다.
@@ -73,6 +75,7 @@ func _ready() -> void:
 	ScreenMetrics.indent_to_safe_top(self)
 	ScreenMetrics.extend_background(%Background)
 	_build_header()
+	_set_banner_team(-1)
 	(%ErrorLabel as Control).visible = false
 
 	# 선수 풀은 시즌이 열리기 전이라 `season_state` 가 아니라 CSV 사본에서 온다.
@@ -136,6 +139,8 @@ func _make_step_view(id: String) -> Control:
 			%Steps.add_child(tv)
 			tv.back_requested.connect(_prev_step)
 			tv.next_requested.connect(_on_team_next.bind(tv))
+			# Tapping a card shows that team on the top banner right away.
+			tv.selection_changed.connect(_set_banner_team)
 			return tv
 		"manager":
 			_manager_view = ManagerStepView.create()
@@ -160,8 +165,8 @@ func _make_step_view(id: String) -> Control:
 
 func _on_step_entered(id: String) -> void:
 	(%ErrorLabel as Control).visible = false
-	if id == "manager" and _manager_view != null:
-		_manager_view.set_team(team_id)
+	if id != "team":
+		_set_banner_team(team_id)
 	if id == "lineup":
 		if _draft != null:
 			# Trait `salary_cap` moves the cap — set before the scenario redraws the gauge.
@@ -175,6 +180,15 @@ func _on_step_entered(id: String) -> void:
 func _on_team_next(view: TeamStepView) -> void:
 	team_id = view.selected_id
 	_next_step()
+
+
+## Top banner (`%RunTeamBanner_Top`): the tapped / chosen team; hidden while none is picked (the
+## team step's hint line sits in that band then).
+func _set_banner_team(id: int) -> void:
+	var banner: RunTeamBanner = %RunTeamBanner_Top
+	banner.visible = id >= 0
+	if id >= 0 and banner.team_id != id:
+		banner.fill(id)
 
 
 func _on_manager_next() -> void:

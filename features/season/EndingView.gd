@@ -151,7 +151,7 @@ func _refresh_roster() -> void:
 		(line.get_node("PositionBadge_Badge") as PositionBadge).set_role(r)
 		if by_role.has(r):
 			var p: PlayerData = by_role[r]
-			var total: int = p.stat_total()
+			var total: int = p.overall()
 			(line.get_node("Text") as Label).text = "%-14s  TOTAL %d" % [p.name, total]
 		else:
 			(line.get_node("Text") as Label).text = "—"

@@ -159,6 +159,13 @@ func stat_avg() -> float:
 	return float(stat_total()) / float(STAT_KEYS.size())
 
 
+## The **overall** every screen shows (lineup slots / thumbnails, detail popups, collection,
+## season pilot sheet, ending roster): the six-stat average, rounded. Sorting may keep using
+## `stat_total` — same order.
+func overall() -> int:
+	return roundi(stat_avg())
+
+
 ## 성장 계수 하나를 배율로. `GROWTH_STAT_BASE` → 1.0, 그 두 배 → 2.0.
 static func growth_mult(stat_value: int) -> float:
 	return maxf(0.0, float(stat_value) / GROWTH_STAT_BASE)

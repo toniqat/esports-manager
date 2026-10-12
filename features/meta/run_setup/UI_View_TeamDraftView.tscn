@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://d3v8rnbj0i1ll"]
+[gd_scene load_steps=7 format=3 uid="uid://d3v8rnbj0i1ll"]
 
 [ext_resource type="Script" uid="uid://h2bdsrqj6ye2" path="res://features/meta/run_setup/TeamDraftView.gd" id="1_view"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" uid="uid://18peqm35cgkn" path="res://features/meta/run_setup/UI_Comp_DraftSlot.tscn" id="3_slot"]
 [ext_resource type="PackedScene" path="res://resources/UI_Comp_FloatingBarButton.tscn" id="fbb_scene"]
 [ext_resource type="PackedScene" path="res://features/meta/run_setup/UI_Comp_RunTeamBanner.tscn" id="banner_scene"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/run_setup/icon_salary.svg" id="7_salary"]
 
 [node name="TeamDraftView" type="Control"]
 layout_mode = 3
@@ -31,14 +32,14 @@ mouse_filter = 2
 
 [node name="Gauge" type="Control" parent="Safe"]
 editor_description = "[필수] 경로로 참조 — 지우거나 이름 · 부모를 바꾸면 오류 — TeamDraftView.gd _gauge
-Salary gauge, no card: one row (샐러리캡 label · bar · total / cap) right under the step header (RunSetupScreen.content_top() = 116) + a red message line under it, used only for errors (over cap, other validate errors, start failed). Fades out in CONFIRM (code tweens modulate:a)."
+Salary gauge, no card: one row (salary icon · bar · total / cap) right under the fixed top team banner (RunSetupScreen.content_top() = 252) + a red message line under it, used only for errors (over cap, other validate errors, start failed). Fades out in CONFIRM (code tweens modulate:a)."
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 32.0
-offset_top = 116.0
+offset_top = 252.0
 offset_right = -32.0
-offset_bottom = 204.0
+offset_bottom = 340.0
 grow_horizontal = 2
 mouse_filter = 2
 
@@ -51,12 +52,16 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 20
 
-[node name="CapLabel" type="Label" parent="Safe/Gauge/Row"]
+[node name="CapIcon" type="TextureRect" parent="Safe/Gauge/Row"]
+editor_description = "Salary icon in place of the old 샐러리캡 caption (white glyph, tinted TEXT_SUB)."
+self_modulate = Color(0.541, 0.541, 0.569, 1)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
-theme_type_variation = &"SubLabel"
-theme_override_font_sizes/font_size = 28
-text = "tx_E2KQV3KWYX"
-vertical_alignment = 1
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("7_salary")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="GaugeTrack" type="ColorRect" parent="Safe/Gauge/Row"]
 custom_minimum_size = Vector2(0, 16)
@@ -107,15 +112,15 @@ clip_text = true
 
 [node name="RunTeamBanner_Lineup" parent="Safe" instance=ExtResource("banner_scene")]
 editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _team_banner
-Backdrop of the 5 picked pilots in PICK and CONFIRM: the chosen team's banner, full width (square mask), with the logo + names centred along its top (centered = true). Code sets its y / height around %SlotRow (TeamDraftView._place_banner): top = slot row y − RunTeamBanner.top_head_bottom(), bottom = slot row bottom + BANNER_PAD_BOTTOM."
+Backdrop of the 5 picked pilots in PICK and CONFIRM: the chosen team's banner, full width (square mask), plain = art only (no logo / names — those are on the fixed top banner of RunSetup.tscn; no logo watermark, no light edge bands). Code sets its y / height around %SlotRow (TeamDraftView._apply_mode): top = slot row y − BANNER_PAD_TOP, bottom = slot row bottom + BANNER_PAD_BOTTOM."
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 0
 offset_top = 200.0
 offset_right = 1080.0
 offset_bottom = 830.0
-centered = true
 square = true
+plain = true
 
 [node name="SlotRow" type="HBoxContainer" parent="Safe"]
 unique_name_in_owner = true
@@ -123,9 +128,9 @@ editor_description = "[필수] 지우면 오류 — TeamDraftView.gd _slot_row
 The 5 role-fixed pick slots (TeamDraft.SLOT_ROLES order). Its y is set by code: PICK = above the filter row (pick_row_y), CONFIRM = vertical centre (confirm_row_y), tweened. x / gap / size live here."
 layout_mode = 0
 offset_left = 6.0
-offset_top = 406.0
+offset_top = 362.0
 offset_right = 1074.0
-offset_bottom = 944.0
+offset_bottom = 814.0
 mouse_filter = 2
 theme_override_constants/separation = 12
 

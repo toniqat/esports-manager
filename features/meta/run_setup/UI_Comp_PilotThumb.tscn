@@ -2,10 +2,10 @@
 
 [ext_resource type="Script" uid="uid://cf0nhpbofrko7" path="res://features/meta/run_setup/PilotThumb.gd" id="1_thumb"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://resources/UI_Comp_PositionBadge.tscn" id="3_badge"]
+[ext_resource type="Texture2D" path="res://resources/images/ui/run_setup/icon_salary.svg" id="3_salary"]
 
 [node name="PilotThumb" type="Button"]
-editor_description = "One cell of the lineup grid (TeamDraftView %Grid). 200x240 (portrait cell; the square face is cover-cropped). Frame = variation SelectableCardButton / SelectableCardButtonOn (radius 18), switched by code (_apply_style); ArtMask radius 14 = 18 - its 4px inset. Face texture, role badge colour, overall text, salary tag text + width are data → code."
+editor_description = "One cell of the lineup grid (TeamDraftView %Grid). 200x240 (portrait cell; the square face is cover-cropped). Frame = variation SelectableCardButton / SelectableCardButtonOn (radius 18), switched by code (_apply_style); ArtMask radius 14 = 18 - its 4px inset. Same corners as the lineup slots (DraftSlot): top-left overall big + position small, top-right salary tag (icon + number), bottom-left rank stars (돌파), bottom-right level. Selected = gold border + centre check. All values are data → code."
 clip_contents = true
 custom_minimum_size = Vector2(200, 240)
 offset_right = 200.0
@@ -39,24 +39,132 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="PositionBadge" parent="." instance=ExtResource("3_badge")]
+[node name="RankPlate" type="PanelContainer" parent="ArtMask"]
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh()
+돌파 = rank as amber stars (★ × p.rank), flush with the face's bottom-left corner. Hidden at rank 0."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -33.0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"DraftSlotRankPlate"
+
+[node name="Stars" type="Label" parent="ArtMask/RankPlate"]
+auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh()"
 unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DraftSlotStars"
+text = "★★"
+
+[node name="LevelPlate" type="PanelContainer" parent="ArtMask"]
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh()
+Level (Lv N), flush with the face's bottom-right corner."
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -33.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"DraftSlotLevelPlate"
+
+[node name="LevelText" type="Label" parent="ArtMask/LevelPlate"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+text = "Lv 3"
+
+[node name="Head" type="VBoxContainer" parent="."]
+editor_description = "Top-left over the face: overall big (PlayerData.overall() = six-stat average) + position name small under it."
 layout_mode = 0
-offset_left = 10.0
+offset_left = 12.0
+offset_top = 4.0
+offset_right = 112.0
+offset_bottom = 84.0
+mouse_filter = 2
+theme_override_constants/separation = -4
+
+[node name="Overall" type="Label" parent="Head"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"PilotThumbOverall"
+text = "86"
+
+[node name="Position" type="Label" parent="Head"]
+auto_translate_mode = 2
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh() (GameEnums.role_position_label)"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"PilotThumbPosition"
+text = "정글"
+
+[node name="Tag" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd set_tag()
+Salary tag (icon + number), hangs from the top-right corner (10px in); grows left with the text."
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -66.0
 offset_top = 10.0
-offset_right = 54.0
-offset_bottom = 40.0
+offset_right = -10.0
+offset_bottom = 44.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"PilotThumbTag"
+
+[node name="Row" type="HBoxContainer" parent="Tag"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="TagIcon" type="TextureRect" parent="Tag/Row"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("3_salary")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TagText" type="Label" parent="Tag/Row"]
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd set_tag()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OnFillLabel"
+text = "51"
+vertical_alignment = 1
 
 [node name="Check" type="Panel" parent="."]
-editor_description = "[필수] 지우면 오류 — PilotThumb.gd set_selected()"
+editor_description = "[필수] 지우면 오류 — PilotThumb.gd set_selected()
+Selected mark, centred on the face (the corners hold the numbers)."
 unique_name_in_owner = true
 visible = false
-layout_mode = 0
-offset_left = 152.0
-offset_top = 8.0
-offset_right = 192.0
-offset_bottom = 48.0
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -26.0
+offset_top = -26.0
+offset_right = 26.0
+offset_bottom = 26.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 theme_type_variation = &"PilotThumbCheck"
 
@@ -68,58 +176,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_color = Color(0.11, 0.11, 0.122, 1)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 32
 text = "✓"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Overall" type="Label" parent="."]
-auto_translate_mode = 2
-editor_description = "[필수] 지우면 오류 — PilotThumb.gd _refresh()
-Overall stat (p.stat_total()), bottom-left over the face, 12px in. White with a dark shadow outline (variation PilotThumbOverall)."
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 12.0
-offset_top = -50.0
-offset_right = 92.0
-offset_bottom = -8.0
-grow_vertical = 0
-theme_type_variation = &"PilotThumbOverall"
-text = "514"
-vertical_alignment = 1
-
-[node name="Tag" type="Panel" parent="."]
-unique_name_in_owner = true
-editor_description = "[필수] 지우면 오류 — PilotThumb.gd set_tag()
-Salary tag, hangs from the bottom-right corner (10px in). Width follows the text length — code sets offset_left (set_tag)."
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -56.0
-offset_top = -44.0
-offset_right = -10.0
-offset_bottom = -10.0
-grow_horizontal = 0
-grow_vertical = 0
-mouse_filter = 2
-theme_type_variation = &"PilotThumbTag"
-
-[node name="TagText" type="Label" parent="Tag"]
-editor_description = "[필수] 지우면 오류 — PilotThumb.gd set_tag()"
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_type_variation = &"OnFillLabel"
-text = "51"
 horizontal_alignment = 1
 vertical_alignment = 1

@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://c4as16o3uog3m"]
+[gd_scene load_steps=5 format=3 uid="uid://c4as16o3uog3m"]
 
 [ext_resource type="Script" uid="uid://cwtt0der1avlr" path="res://features/meta/run_setup/RunSetupScreen.gd" id="1_setup"]
 [ext_resource type="Theme" uid="uid://co7tw5omdwmyd" path="res://resources/OutgameTheme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://features/meta/run_setup/UI_Comp_StepCapsule.tscn" id="3_capsule"]
+[ext_resource type="PackedScene" path="res://features/meta/run_setup/UI_Comp_RunTeamBanner.tscn" id="4_banner"]
 
 [node name="RunSetup" type="Control"]
 editor_description = "Run setup screen (Pattern B): code indents the whole root to the safe top (offset_top) and stretches %Background up into the notch band. Step views are instantiated into %Steps by code (RunSetupScreen.STEPS)."
@@ -38,10 +39,25 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+[node name="RunTeamBanner_Top" parent="." instance=ExtResource("4_banner")]
+unique_name_in_owner = true
+editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _set_banner_team()
+The chosen team's banner, fixed under the step capsule (y 116 .. 236), full width with no side margin, square mask, strip head (logo + names). Never scrolls. Hidden until a team card is tapped (the team step's hint line sits in this band then); stays through 감독 and 편성 (CONFIRM too). Step bodies start under it (RunSetupScreen.content_top() = 252)."
+visible = false
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 116.0
+offset_right = 0.0
+offset_bottom = 236.0
+grow_horizontal = 2
+square = true
+
 [node name="StepCapsule_Header" parent="." instance=ExtResource("3_capsule")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — RunSetupScreen.gd _build_header() · RunSetupScreen.gd go_to_step() · RunSetupScreen.gd _make_step_view()
-Step capsule (UI_Comp_StepCapsule.tscn): one icon per RunSetupScreen.STEPS row, white disc on the current step. Centred at the top, y 20..100; step bodies start at RunSetupScreen.content_top() (116). Drawn above %Steps; slides off the screen top in the lineup CONFIRM mode (code)."
+Step capsule (UI_Comp_StepCapsule.tscn): one icon per RunSetupScreen.STEPS row, white disc on the current step. Centred at the top, y 20..100; the team banner sits under it (116 .. 236); step bodies start at RunSetupScreen.content_top() (252). Drawn above %Steps; slides off the screen top in the lineup CONFIRM mode (code)."
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -61,9 +77,9 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 24.0
-offset_top = 116.0
+offset_top = 252.0
 offset_right = -24.0
-offset_bottom = 236.0
+offset_bottom = 372.0
 grow_horizontal = 2
 theme_type_variation = &"NegativeLabel"
 theme_override_font_sizes/font_size = 26

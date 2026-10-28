@@ -6,11 +6,11 @@ extends RefCounted
 # and the league team detail sheet. Screens draw what this returns
 # (`IntelView`), so the reveal rule lives in exactly one place.
 #
-# Reveal tier = the opponent team's analysis rank (§16: `IntelResearch.rank`, raised one step
-# per completed 전력 분석실 research on that team) shifted by the `analysis_tier` traits:
-#   0  name + role only
-#   1  + stats as ranges (`ANALYSIS_APPROX_STEP` wide buckets), total as "≈"
-#   2  + exact stats + top-mastery mechs (`MechMastery.top_mechs`)
+# Six stats and the total are always exact, for every team (2026-10). The reveal tier = the
+# opponent team's analysis rank (§16: `IntelResearch.rank`, raised one step per completed
+# 전력 분석실 research on that team) shifted by the `analysis_tier` traits, gates the rest:
+#   0 · 1  stats only
+#   2  + top-mastery mechs (`MechMastery.top_mechs`)
 #   3  + the three fixed pilot cards (`GameManager.pilot_card_ids_for`)
 # The player's own team is always FULL. Outside a season (MatchFlow run straight
 # from the editor) everything is FULL too — there is no research to read.
@@ -82,12 +82,12 @@ static func team_roster(state: Dictionary, team_id: int) -> Array:
 ## threat_pilot_id}`. `analyst_who` = the intel facility occupant (staff id string / "manager",
 ## `StaffImages.portrait`), "" when not delegated.
 ## `threat_pilot_id` = the pilot the analyst's "경계 대상" line names (`strongest_row`), -1 when
-## that line is not shown (manager owns analysis, tier 0, own team).
+## that line is not shown (manager owns analysis, own team).
 ## A row (one per pilot, display order 탑 → 서폿):
 ##   `{pilot_id, name, role, role_label, show_stats, exact,
 ##     stats: [{label, text, value}], total_text,
 ##     show_mechs, mechs: [{mech_id, name, text}], show_cards, cards: [String]}`
-## `value` is the exact stat for tier >= 2, the bucket midpoint at tier 1, -1 at 0.
+## Stats / total are always exact (`show_stats` · `exact` stay true for the readers).
 static func build(state: Dictionary, roster: Array, is_own: bool, team_id: int = -1) -> Dictionary:
 	var tid: int = team_id if team_id >= 0 else roster_team(roster)
 	var tier: int = tier_for(state, tid, is_own)
@@ -110,7 +110,7 @@ static func build(state: Dictionary, roster: Array, is_own: bool, team_id: int =
 		out["analyst"] = analyst_label(state)
 		out["analyst_who"] = FacilitySystem.occupant(state, INTEL_FACILITY)
 		out["notes"] = interpret(state, rows, tier)
-		if tier > TIER_NAME_ONLY:
+		if not rows.is_empty():
 			out["threat_pilot_id"] = int(strongest_row(rows).get("pilot_id", -1))
 	return out
 
@@ -125,11 +125,10 @@ static func analyst_label(state: Dictionary) -> String:
 			StaffSystem.job_label(String(e.get("job", "")))]
 
 
-## Analyst lines — at most two. Strongest lane (by visible stat total) and a
-## suggested ban (the highest-mastery mech on their side). Lower tiers say what
-## they cannot see instead of guessing.
+## Analyst lines — at most two. Strongest lane (by stat total) and a suggested ban (the
+## highest-mastery mech on their side, tier >= 2) or else the weakest lane.
 static func interpret(_state: Dictionary, rows: Array, tier: int) -> Array:
-	if tier <= TIER_NAME_ONLY or rows.is_empty():
+	if rows.is_empty():
 		return [Loc.t(L.MATCH_INTEL_NOTE_NO_DATA)]
 	var lines: Array = []
 	var best: Dictionary = strongest_row(rows)
@@ -171,32 +170,19 @@ static func _row_for(state: Dictionary, p: PlayerData, tier: int) -> Dictionary:
 	var role_label: String = GameEnums.role_position_label(p.role)
 	var row: Dictionary = {
 		"pilot_id": p.id, "name": p.name, "role": p.role, "role_label": role_label,
-		"show_stats": tier >= TIER_APPROX, "exact": tier >= TIER_MECHS,
+		"show_stats": true, "exact": true,
 		"stats": [], "total_text": "?",
 		"show_mechs": tier >= TIER_MECHS, "mechs": [],
 		"show_cards": tier >= TIER_CARDS, "cards": [],
 	}
-	var step: int = maxi(1, ConstTable.int_of("ANALYSIS_APPROX_STEP"))
 	var total: int = 0
 	var stats: Array = []
 	for i in PlayerData.STAT_KEYS.size():
 		var v: int = int(p.get(String(PlayerData.STAT_KEYS[i])))
 		total += v
-		var cell: Dictionary = {"label": PlayerData.stat_label(i), "text": "?", "value": -1}
-		if tier >= TIER_MECHS:
-			cell["text"] = "%d" % v
-			cell["value"] = v
-		elif tier >= TIER_APPROX:
-			var lo: int = v - posmod(v, step)
-			cell["text"] = "%d~%d" % [lo, lo + step - 1]
-			cell["value"] = lo + int(step * 0.5)
-		stats.append(cell)
+		stats.append({"label": PlayerData.stat_label(i), "text": "%d" % v, "value": v})
 	row["stats"] = stats
-	if tier >= TIER_MECHS:
-		row["total_text"] = "%d" % total
-	elif tier >= TIER_APPROX:
-		var tstep: int = step * 2
-		row["total_text"] = "≈%d" % (roundi(float(total) / float(tstep)) * tstep)
+	row["total_text"] = "%d" % total
 	if tier >= TIER_MECHS:
 		row["mechs"] = _mechs_for(state, p)
 	if tier >= TIER_CARDS:

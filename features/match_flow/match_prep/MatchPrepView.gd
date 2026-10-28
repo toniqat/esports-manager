@@ -18,10 +18,25 @@ extends Control
 #   • 두 팀의 선수 — `%EnemyCards` / `%OwnCards` 의 `MatchPrepPilotCard` 다섯 장(자리 순서)을
 #     `OpponentIntel.build()` 의 행으로 채운다(공개 단계는 그 행이 이미 지킨다). 카드를 누르면
 #     상세 시트: 내 선수 = `SeasonPilotDetail`, 상대(또는 런 밖의 내 선수) = `MatchPrepPilotDetail`.
+#   • 등장 연출 — `play_intro()`: 시즌에서 `SceneFade` 암전 뒤에 이 화면이 뜨고, 덮개가 걷히기
+#     시작하면(`SceneFade.on_revealing`) 배너가 화면 밖에서 미끄러져 들어오고(내 팀 ← 왼쪽, 상대 ←
+#     오른쪽), 로고 · 약칭이 같은 방향으로 서서히 나타나며 들어오고, 카드가 바깥에서 가운데 쪽으로
+#     (상대 = 위에서 아래로, 내 팀 = 아래에서 위로) 한 장씩 나타난다.
 
 signal start_pressed
 
 const SCENE_PATH: String = "res://features/match_flow/match_prep/UI_View_MatchPrepView.tscn"
+
+## Entrance (`play_intro`): every piece eases out (cubic) over `INTRO_SEC`; the start of each
+## piece is its delay below. Slides are px from the resting spot.
+const INTRO_SEC: float = 0.5
+const INTRO_BANNER_DELAY: float = 0.0
+const INTRO_LOGO_DELAY: float = 0.12
+const INTRO_LOGO_SLIDE: float = 240.0
+const INTRO_VS_DELAY: float = 0.3
+const INTRO_CARD_DELAY: float = 0.2
+const INTRO_CARD_STAGGER: float = 0.06   # between two cards of a row, seat order
+const INTRO_CARD_SLIDE: float = 140.0
 
 var _state: Dictionary = {}
 ## pilot_id → [intel (`OpponentIntel.build()`), row] of the card last filled — the detail sheet
@@ -62,6 +77,50 @@ func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,
 	_fill_versus(%EnemyLogo, %EnemyAbbr, int(enemy["team_id"]), enemy_team_name)
 	_fill_banner(%OwnBanner, int(own["team_id"]))
 	_fill_banner(%EnemyBanner, int(enemy["team_id"]))
+
+
+## Entrance animation. Hides the animated pieces now (nothing pops in before it starts) and plays
+## when the scene-change cover starts to lift (`SceneFade.on_revealing`; no cover = next frame).
+func play_intro() -> void:
+	for c in _intro_nodes():
+		(c as CanvasItem).modulate.a = 0.0
+	SceneFade.on_revealing(get_tree(), _run_intro)
+
+
+func _intro_nodes() -> Array:
+	var out: Array = [%EnemyBanner, %OwnBanner, %OwnSide, %EnemySide, %VsText]
+	out.append_array((%EnemyCards as Node).get_children())
+	out.append_array((%OwnCards as Node).get_children())
+	return out
+
+
+func _run_intro() -> void:
+	await get_tree().process_frame   # containers laid out → resting positions are final
+	if not is_inside_tree():
+		return
+	var t := create_tween().set_parallel(true)
+	for spec in [[%OwnBanner, -1.0], [%EnemyBanner, 1.0]]:
+		var b: Control = spec[0]
+		b.modulate.a = 1.0
+		_slide_in(t, b, Vector2(float(spec[1]) * b.size.x, 0.0), INTRO_BANNER_DELAY, false)
+	_slide_in(t, %OwnSide, Vector2(-INTRO_LOGO_SLIDE, 0.0), INTRO_LOGO_DELAY, true)
+	_slide_in(t, %EnemySide, Vector2(INTRO_LOGO_SLIDE, 0.0), INTRO_LOGO_DELAY, true)
+	_slide_in(t, %VsText, Vector2.ZERO, INTRO_VS_DELAY, true)
+	for spec in [[%EnemyCards, -1.0], [%OwnCards, 1.0]]:
+		var cards: Array = (spec[0] as Node).get_children()
+		for i in cards.size():
+			_slide_in(t, cards[i], Vector2(0.0, float(spec[1]) * INTRO_CARD_SLIDE),
+					INTRO_CARD_DELAY + INTRO_CARD_STAGGER * i, true)
+
+
+## Moves `c` to `offset` from its resting spot and tweens it back (cubic ease-out), fading in
+## from 0 when `fade`.
+func _slide_in(t: Tween, c: Control, offset: Vector2, delay: float, fade: bool) -> void:
+	var home: Vector2 = c.position
+	c.position = home + offset
+	t.tween_property(c, "position", home, INTRO_SEC).set_delay(delay) 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if fade:
+		t.tween_property(c, "modulate:a", 1.0, INTRO_SEC).set_delay(delay)
 
 
 ## Card-row banner: the team's banner image (`TeamLogos.banner`, `teams.csv` banner_path) with its
@@ -113,7 +172,7 @@ func _on_card_pressed(pid: int) -> void:
 ## F6 단독 실행 미리보기 — 메모리 런(`UiPreview.ensure_run`)의 다음 경기 상대(미리보기 전용
 ## 리그 일정 `UiPreview.ensure_league`)와 내 팀 로스터로 채운다. 분석 단계는 그 상대의 런 속
 ## 분석 단계(`IntelResearch.rank`) 그대로다.
-## `경기 시작` 은 출력만 한다(호스트가 없어 다음 단계로 넘어가지 않는다).
+## `경기 시작` 은 출력만 한다(호스트가 없어 다음 단계로 넘어가지 않는다). 등장 연출도 돈다.
 func _fill_preview() -> void:
 	UiPreview.stage(self)
 	UiPreview.trace(start_pressed)
@@ -129,3 +188,4 @@ func _fill_preview() -> void:
 		eid = int(m["team_b"]) if int(m["team_a"]) == pid else int(m["team_a"])
 	fill(s, OpponentIntel.team_roster(s, pid), OpponentIntel.team_roster(s, eid),
 			lm.team_name(pid), lm.team_name(eid), eid)
+	play_intro()

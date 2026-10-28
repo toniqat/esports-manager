@@ -6,8 +6,8 @@ MatchFlow's first step (`LOAD → PREP → BAN_PICK`). Contract: `docs/outgame_d
 
 | File | Role |
 |---|---|
-| `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name, enemy_team_id)` (MatchFlow passes its `enemy_team_id`) creates `MatchPrepView` under `_mf.canvas`, fills it; its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
-| `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll: the analyst note on top, then **opponent cards** (same side as ban/pick) · the centred **versus block** (own logo + short name · `VS` · opponent short name + logo) · own cards, bottom bar `경기 시작`. No team-name line, no section titles, no tier chip (2026-10). `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name, enemy_team_id = -1)` (-1 = the roster's `team_id`) · signal `start_pressed`. Card tap → detail sheet (my run pilot = `SeasonPilotDetail.open`, opponent / my pilot outside a run = `MatchPrepPilotDetail.open`) |
+| `MatchPrepController.gd` | PREP step. `enter(player_roster, enemy_roster, player_name, enemy_name, enemy_team_id)` (MatchFlow passes its `enemy_team_id`) creates `MatchPrepView` under `_mf.canvas`, fills it, starts its entrance (`play_intro`); its `start_pressed` → frees the view → `phase_finished` (pre-ban-pick autosave in `MatchFlow`) |
+| `MatchPrepView.gd` · `.tscn` | `class_name MatchPrepView` — the PREP screen. **Layout is owned by the scene** (tree below). White outgame paper, title centred (the editor-only cheat button sits top-left), a vertical scroll: the analyst note on top, then **opponent cards** (same side as ban/pick) · the centred **versus block** (own logo + short name · `VS` · opponent short name + logo) · own cards, bottom bar `경기 시작`. No team-name line, no section titles, no tier chip (2026-10). `create()` · `fill(state, player_roster, enemy_roster, player_name, enemy_name, enemy_team_id = -1)` (-1 = the roster's `team_id`) · `play_intro()` (entrance, section below) · signal `start_pressed`. Card tap → detail sheet (my run pilot = `SeasonPilotDetail.open`, opponent / my pilot outside a run = `MatchPrepPilotDetail.open`) |
 | `TeamBanner.gd` | `class_name TeamBanner` — `_draw` widget behind one card row, borderless: draws `texture` (the team's banner image, `TeamLogos.banner` = `teams.csv` `banner_path`) scaled to cover (aspect kept, centred, overflow cropped); without one, a procedural band in `color` (`TeamLogos.color`) with lighter horizontal stripes (`STRIPE_PITCH` 12, 3 thick) and a darker band along the top / bottom edge. Placed as `%OwnBanner` / `%EnemyBanner` in the PREP scene |
 | `UI_Comp_MatchPrepPilotCard.tscn` / `MatchPrepPilotCard.gd` | `class_name MatchPrepPilotCard` — one pilot card (section below). `create()` · `fill(row, own, trust, warn)` · signal `pressed(pilot_id)` |
 | `UI_View_MatchPrepPilotDetail.tscn` / `MatchPrepPilotDetail.gd` | `class_name MatchPrepPilotDetail` — `HubSheet` body for an opponent pilot: tier line + one `IntelPilotRow` (six stats / mech line / card line exactly as the reveal tier allows). `open(host, intel, row)` (sheet title = pilot name) |
@@ -55,13 +55,24 @@ MatchPrepView (Control full rect, OutgameTheme.tres)
 - The scroll spans the full screen width, so its bar sits at the screen's right edge (over the banners);
   every other row keeps the 40 / 48 page gutter itself.
 
+### Entrance (`play_intro`)
+The season's match-day `경기 시작` (`SeasonHub._launch_player_match_on_day`) changes to MatchFlow behind
+`SceneFade` (black → loading bar → lift). `play_intro()` hides the animated pieces at once and starts when
+the cover begins to lift (`SceneFade.on_revealing`; standalone F6 / no cover = next frame), all cubic ease-out:
+- banners slide in from off screen: `%OwnBanner` from the left, `%EnemyBanner` from the right (no fade);
+- `%OwnSide` (logo + short name) slides left → right, `%EnemySide` right → left, both fading in; `%VsText` fades in;
+- cards fade in while sliding toward the middle, one after another in seat order: enemy row top → down,
+  own row bottom → up.
+Timings / distances = `INTRO_*` consts in `MatchPrepView.gd`. Positions are moved inside their containers
+after the first layout, so a re-layout during the entrance just snaps them home.
+
 ## Pilot card (`UI_Comp_MatchPrepPilotCard.tscn`)
 ```
 MatchPrepPilotCard (PanelContainer `MatchPrepPilotCard` = Card look, no padding; width from the row)
 ├ Box (VBox)
 │ ├ %SeasonPilotCard_Own   own team: `UI_Comp_SeasonPilotCard.tscn` instance (bare, `SeasonPilotCardBare`):
-│ │   (164 high)           portrait in the trust ring, level / trust pills; gauges off
-│ │                        (`set_gauges_visible(false)` in `_ready`) and the instance's min height cut
+│ │   (164 high)           just the round portrait — gauges off (`set_gauges_visible(false)`), plate /
+│ │                        level ring / level chip off (`set_level_visible(false)`, both in `_ready`); min height cut
 │ │                        from 244 to 164 — filled with `show_pilot(pid, trust_points, 0)`, its own tap
 │ │                        off (`set_tappable(false)`)
 │ ├ %EnemyTop (164)        opponent: %Portrait 116 @24 (role-coloured rim, `OutgameTheme.add_round_portrait`)
@@ -71,7 +82,7 @@ MatchPrepPilotCard (PanelContainer `MatchPrepPilotCard` = Card look, no padding;
 ├ Overlay / %Warn          `MatchPrepWarnChip` (red) `경계 대상`, top-right, 16 above the card's edge
 └ %Hit                     flat Button over the card (PASS — keeps drag scroll) → pressed(pilot_id)
 ```
-- Total = the row's `total_text`: tier 0 `?` (faint), tier 1 `≈n`, tier 2+ exact; own always exact.
+- Total = the row's `total_text`, always exact (opponents too, 2026-10).
 - No name, position badge, mech chips, stress / trust / awakening gauges (removed 2026-10 — the seat
   order says the role); six stats, mechs and pilot cards are in the detail sheet.
 - Own and enemy cards are the same height (256 + card margins); portraits at the same y.
@@ -109,11 +120,13 @@ that team — `features/season/facility/README.md` → IntelResearch) + the `ana
 the league team detail (`LeagueView.open_team_detail` tid), ban/pick (`OpponentIntel.roster_team` of the enemy
 roster — enemy likely picks / mastery tags need tier >= 2).
 
+**Six stats and the total are always exact for every team** (2026-10 — no analysis needed; tiers 0 and 1
+now show the same and share the label `파일럿 스탯`).
+
 | Tier | Opponent rows show |
 |---|---|
-| 0 | portrait, role, name; stats `?` |
-| 1 | stats as ranges `ANALYSIS_APPROX_STEP` wide (`60~69`), total `≈` |
-| 2 | exact stats + top `ANALYSIS_TOP_MECHS` mechs (`MechMastery.top_mechs` with grade; falls back to `PlayerData.main_mechs` labelled `주력` while there is no mastery data) |
+| 0 · 1 | portrait, role, name, exact stats / total |
+| 2 | + top `ANALYSIS_TOP_MECHS` mechs (`MechMastery.top_mechs` with grade; falls back to `PlayerData.main_mechs` labelled `주력` while there is no mastery data) |
 | 3 | + the three fixed pilot cards (`GameManager.pilot_card_ids_for` → `card_def.name`) |
 
 - **Own team is always tier 3.** Outside a season (`season_state.active == false`, MatchFlow run straight from the editor) everything is tier 3 too.
@@ -122,7 +135,7 @@ roster — enemy likely picks / mastery tags need tier >= 2).
 - PREP shows whatever rosters `MatchFlow` passes in — if those are match copies with mastery / mods applied, the numbers shown are the match numbers.
 
 ## Auto vs manual (analyst note)
-- Staff seated in the intel facility (`FacilitySystem.is_delegated_fid(state, "intel")`) → an amber note with the occupant's thumbnail on the left (`build()["analyst_who"]` = `FacilitySystem.occupant`, `StaffImages.portrait`) and `분석 · <name> (<job>)` (`analyst_label` = the intel occupant) with up to two lines from `OpponentIntel.interpret`: the strongest lane by visible stat total (+ its highest stat), then a suggested ban (top-mastery mech on their side — ties go to the stronger pilot) from tier 2, else the weakest lane. Tier 0 says the data is too thin. Deliberately a simple heuristic, not optimal.
-- The strongest-lane pilot is also data: `build()["threat_pilot_id"]` (`strongest_row`), set only when that line is shown (delegated, tier >= 1, opponent) — PREP marks that card with the red `경계 대상` chip.
+- Staff seated in the intel facility (`FacilitySystem.is_delegated_fid(state, "intel")`) → an amber note with the occupant's thumbnail on the left (`build()["analyst_who"]` = `FacilitySystem.occupant`, `StaffImages.portrait`) and `분석 · <name> (<job>)` (`analyst_label` = the intel occupant) with up to two lines from `OpponentIntel.interpret`: the strongest lane by visible stat total (+ its highest stat), then a suggested ban (top-mastery mech on their side — ties go to the stronger pilot) from tier 2, else the weakest lane. (Stats are always visible, so this works at every tier; the no-data line is left for an empty roster.) Deliberately a simple heuristic, not optimal.
+- The strongest-lane pilot is also data: `build()["threat_pilot_id"]` (`strongest_row`), set only when that line is shown (delegated, opponent) — PREP marks that card with the red `경계 대상` chip.
 - Nobody / the manager in the intel facility → one faint line `분석 담당 없음 — 데이터만 보입니다. 해석은 감독이 직접.`; the player reads the raw data.
 - Separate from `enemy_misjudge_chance` (that is the opponent's ability, not our information).

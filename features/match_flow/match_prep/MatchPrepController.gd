@@ -27,6 +27,7 @@ func enter(player_roster: Array, enemy_roster: Array, player_team_name: String, 
 	_view.fill(_mf.gm.season_state, player_roster, enemy_roster, player_team_name, enemy_team_name,
 			enemy_team_id)
 	_view.start_pressed.connect(_on_start_pressed)
+	_view.play_intro()
 
 
 func _on_start_pressed() -> void:

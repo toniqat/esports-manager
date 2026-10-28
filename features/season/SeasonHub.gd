@@ -647,7 +647,8 @@ func _league_team_name(team_id: int) -> String:
 
 
 # Find the player's match on that matchday (priority INTL > playoff > league),
-# populate pending_match, scene-change to MatchFlow.
+# populate pending_match, scene-change to MatchFlow behind the `SceneFade` cover
+# (the PREP screen plays its entrance when the cover lifts).
 func _launch_player_match_on_day(matchday: int) -> void:
 	var ref: Dictionary = _player_match_ref(matchday)
 	if ref.is_empty():
@@ -659,7 +660,7 @@ func _launch_player_match_on_day(matchday: int) -> void:
 		"winner_side":   -1,
 	}
 	_gm.season_state["pending_match"] = pm
-	get_tree().change_scene_to_file("res://scenes/MatchFlow.tscn")
+	SceneFade.change_scene(get_tree(), "res://scenes/MatchFlow.tscn")
 
 
 ## The player's unplayed match on that matchday: `{source, idx, enemy}` (`idx` = bracket

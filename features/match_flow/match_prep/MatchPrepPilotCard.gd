@@ -4,13 +4,13 @@ extends PanelContainer
 # One pilot of the PREP screen — a vertical card shaped like the season `SeasonPilotCard`
 # (round portrait on top), five in a row in seat order per team (the seat says the role — no
 # name / role / mech labels).
-#   • Own team: the top part IS a `SeasonPilotCard` instance (trust ring / level pill; its
-#     gauges off — `set_gauges_visible(false)`; the season card has no card background of its
-#     own), so it follows whatever the season card shows.
+#   • Own team: the top part IS a `SeasonPilotCard` instance, cut down to the round portrait —
+#     gauges off (`set_gauges_visible(false)`), plate / level ring / level chip off
+#     (`set_level_visible(false)`); the season card has no card background of its own.
 #   • Opponent: portrait with a role-coloured rim at the same spot, no trust; the red
 #     "경계 대상" chip at the top-right when the analyst names this pilot
 #     (`OpponentIntel.build()["threat_pilot_id"]`).
-#   Both: the stat total as a big number (`row.total_text` — `?` / `≈n` / exact, by reveal tier).
+#   Both: the stat total as a big number (`row.total_text`, always exact).
 # Tapping the card emits `pressed(pilot_id)`; `MatchPrepView` opens the detail sheet.
 #
 # **Layout lives in `UI_Comp_MatchPrepPilotCard.tscn`.** This script fills `%` nodes, toggles the
@@ -34,12 +34,13 @@ func _ready() -> void:
 	var inner: SeasonPilotCard = %SeasonPilotCard_Own
 	inner.set_tappable(false)
 	inner.set_gauges_visible(false)
+	inner.set_level_visible(false)
 	if UiPreview.is_standalone(self):
 		_fill_preview()
 
 
 ## `row` = one entry of `OpponentIntel.build()["rows"]`. `own` = my team: the season card part
-## with `trust` (run points — ring / level pill). `warn` = the analyst's "경계 대상" pilot.
+## (`trust` = run points; only its hidden gauge reads it). `warn` = the analyst's "경계 대상" pilot.
 func fill(row: Dictionary, own: bool, trust: int, warn: bool) -> void:
 	pilot_id = int(row["pilot_id"])
 	var role: int = int(row["role"])

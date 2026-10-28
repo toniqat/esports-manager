@@ -1193,8 +1193,8 @@ tx_7A1FMDGC3E,정보 없음
 tx_4Y7CG5R478,분석 단계 {tier} · {label}
 tx_4P15WEPRM6,전력 분석실에서 연구하면 단계가 오릅니다
 tx_CHAJA53SVW,분석 · {who}
-tx_4GMKW7SCDD,이름 · 역할
-tx_Q605SZ346S,대략적인 파일럿 능력치
+tx_4GMKW7SCDD,파일럿 능력치
+tx_Q605SZ346S,파일럿 능력치
 tx_D20PGJE2CX,파일럿 능력치 · 주력 메크
 tx_AR1MKMRGM3,전부 공개
 tx_SCRCRND2B5,자료가 부족해 상대 전력을 읽기 어렵습니다.

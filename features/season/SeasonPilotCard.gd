@@ -37,6 +37,8 @@ var _gauges_on: bool = true
 var _ring_color: Color = OutgameTheme.LINK
 ## `set_week_layout` already applied.
 var _week_layout: bool = false
+## `set_level_visible` — false keeps the plate, level ring and level chip hidden.
+var _level_on: bool = true
 
 
 static func create() -> SeasonPilotCard:
@@ -55,6 +57,17 @@ func _ready() -> void:
 func set_gauges_visible(on: bool) -> void:
 	_gauges_on = on
 	_show_gauges(on and pilot_id >= 0)
+
+
+## Shows / hides the white plate, the level (EXP) ring and the `Lv N` chip (default shown; the
+## PREP screen hides them — just the round portrait stays). The portrait sits inside `%Ring`, so
+## the ring only stops drawing itself (`self_modulate`).
+func set_level_visible(on: bool) -> void:
+	_level_on = on
+	(%Plate as CanvasItem).visible = on
+	(%Ring as CanvasItem).self_modulate.a = 1.0 if on else 0.0
+	var chip: Panel = %LevelChip
+	chip.visible = chip.visible and on
 
 
 ## Whether the card reacts to taps (the detail sheet's own header card does not).
@@ -92,8 +105,8 @@ func show_empty() -> void:
 ## colour follows the portrait ring (`_set_ring`).
 func set_training_level(level: int) -> void:
 	var chip: Panel = %LevelChip
-	chip.visible = level >= 1
-	if chip.visible:
+	chip.visible = level >= 1 and _level_on
+	if level >= 1:
 		(%LevelText as Label).text = str(level)
 
 

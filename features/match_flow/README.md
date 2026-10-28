@@ -26,8 +26,8 @@ PREP is the pre-match scouting sheet (white outgame paper) — analyst note on t
 a centred versus block (team logos + short names, `VS`) and own cards, each team as **five vertical
 pilot cards** in seat order (round portrait, big stat total; own cards add the season trust ring /
 level — no name / role / mech / gauge labels; tap = detail sheet).
-**How much of the opponent is visible follows the analysis reveal tier** (M5 — name/role → stat
-ranges → exact stats + top mechs → pilot cards; own team always full), with an analyst note when
+**Opponent stats / totals are always exact; the analysis reveal tier gates the rest** (M5 — top mechs
+from tier 2 → pilot cards at 3; own team always full), with an analyst note when
 analysis is delegated and a red `경계 대상` chip on the pilot the analyst names. Details: `match_prep/README.md`. Pressing "경기 시작" (Start match) advances
 to BAN_PICK and triggers the pre-ban-pick autosave.
 

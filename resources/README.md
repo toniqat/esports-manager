@@ -794,8 +794,11 @@ fade back in** transition — the effect that says a scene has passed. `play(tre
 `on_covered` once at the moment the screen is fully covered, and `change_scene(tree, path)` does
 `change_scene_to_file` at that point. The cover is a **`CanvasLayer` (layer 100) on the SceneTree root**,
 so it survives the scene change, and that layer also holds the tweens. Timing is `FADE_OUT_SEC` 0.30 /
-`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. Used at: run setup "게임 시작" (Start game)
-(`RunSetupScreen._on_start_requested`), ban/pick confirm → battlefield
+`LOAD_SEC` 0.50 / `FADE_IN_SEC` 0.35. The layer is named `LAYER_NAME` and fires the user signal
+`REVEALING` when the cover starts to lift; `on_revealing(tree, fn)` lets the new scene start its entrance
+then (no cover / already lifting = next frame). Used at: run setup "게임 시작" (Start game)
+(`RunSetupScreen._on_start_requested`), season match-day "경기 시작" → MatchFlow PREP
+(`SeasonHub._launch_player_match_on_day`; PREP's `play_intro` waits for `on_revealing`), ban/pick confirm → battlefield
 (`MatchFlow._launch_battle`).
 
 ### DragScroll.gd

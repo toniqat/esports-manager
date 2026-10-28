@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://crhnccjwqx1as" path="res://features/season/UI_Comp_SeasonPilotCard.tscn" id="3_season_card"]
 
 [node name="MatchPrepPilotCard" type="PanelContainer"]
-editor_description = "PREP pilot card (five per team in a row, seat order). Width comes from the row (expand), height = content. Own team: SeasonPilotCard part (trust ring / level pill; gauges hidden). Opponent: EnemyTop (portrait at the same spot), red Warn chip when the analyst flags the pilot. Both: stat total (big). No name / role / mech labels (2026-10). Tap = pressed(pilot_id)."
+editor_description = "PREP pilot card (five per team in a row, seat order). Width comes from the row (expand), height = content. Own team: SeasonPilotCard part (portrait only; plate / level ring / gauges hidden). Opponent: EnemyTop (portrait at the same spot), red Warn chip when the analyst flags the pilot. Both: stat total (big). No name / role / mech labels (2026-10). Tap = pressed(pilot_id)."
 offset_right = 190.0
 offset_bottom = 256.0
 mouse_filter = 2
@@ -21,7 +21,7 @@ theme_override_constants/separation = 0
 [node name="SeasonPilotCard_Own" parent="Box" instance=ExtResource("3_season_card")]
 unique_name_in_owner = true
 editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd _ready() · fill()
-Own team only: the season card (portrait in the trust ring, level pill); it has no card of its own (SeasonPilotCardBare). Gauges off (MatchPrepPilotCard.gd _ready: set_gauges_visible(false)), so the height is cut to 164 (ring 12..152 + level pills to 154) — same as EnemyTop, portraits line up."
+Own team only: the season card cut down to the round portrait; it has no card of its own (SeasonPilotCardBare). Gauges off and plate / level ring / level chip off (MatchPrepPilotCard.gd _ready: set_gauges_visible(false) · set_level_visible(false)), so the height is cut to 164 (ring 12..152 + level pills to 154) — same as EnemyTop, portraits line up."
 visible = false
 custom_minimum_size = Vector2(0, 164)
 layout_mode = 2
@@ -62,7 +62,7 @@ vertical_alignment = 1
 unique_name_in_owner = true
 auto_translate_mode = 2
 editor_description = "[필수] 지우면 오류 — MatchPrepPilotCard.gd fill()
-Stat total, big: exact / ≈ / ? by reveal tier (OpponentIntel row total_text). Code switches HeadingLabel ↔ FaintLabel."
+Stat total, big: always exact (OpponentIntel row total_text). Code switches HeadingLabel ↔ FaintLabel."
 custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 theme_type_variation = &"HeadingLabel"

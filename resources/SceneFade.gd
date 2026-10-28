@@ -16,11 +16,17 @@ const LOAD_SEC: float = 0.50
 const FADE_IN_SEC: float = 0.35
 const BAR_W: float = 420.0
 const LAYER: int = 100
+## 덮개 레이어의 이름 — 새 씬이 `on_revealing` 으로 찾는다.
+const LAYER_NAME: String = "SceneFade"
+## 덮개가 걷히기 시작하면 레이어가 쏘는 사용자 시그널(`on_revealing`).
+const REVEALING: StringName = &"revealing"
 
 
 static func play(tree: SceneTree, on_covered: Callable) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = LAYER
+	layer.name = LAYER_NAME
+	layer.add_user_signal(REVEALING)
 	tree.root.add_child(layer)
 
 	var vp: Vector2 = ScreenMetrics.viewport_size()
@@ -54,6 +60,9 @@ static func play(tree: SceneTree, on_covered: Callable) -> void:
 	tw.tween_callback(on_covered)
 	tw.tween_property(fill, "size:x", BAR_W, LOAD_SEC) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_callback(func() -> void:
+		layer.set_meta(REVEALING, true)
+		layer.emit_signal(REVEALING))
 	tw.tween_property(cover, "modulate:a", 0.0, FADE_IN_SEC)
 	tw.tween_callback(layer.queue_free)
 
@@ -61,3 +70,13 @@ static func play(tree: SceneTree, on_covered: Callable) -> void:
 ## 덮개 뒤에서 씬을 갈아 끼운다.
 static func change_scene(tree: SceneTree, path: String) -> void:
 	play(tree, func() -> void: tree.change_scene_to_file(path))
+
+
+## `fn` 을 덮개가 걷히기 시작하는 순간(밝아짐 시작)에 한 번 부른다 — 새 씬의 등장 연출이
+## 암전 뒤에서 끝나 버리지 않게. 덮개가 없거나 이미 걷히는 중이면 다음 프레임에 바로 부른다.
+static func on_revealing(tree: SceneTree, fn: Callable) -> void:
+	var layer: Node = tree.root.get_node_or_null(LAYER_NAME)
+	if layer == null or layer.is_queued_for_deletion() or bool(layer.get_meta(REVEALING, false)):
+		fn.call_deferred()
+		return
+	layer.connect(REVEALING, fn, CONNECT_ONE_SHOT)

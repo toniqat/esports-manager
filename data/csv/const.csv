@@ -345,3 +345,5 @@ RESEARCH_STAT_MULT_MIN,0.25,ResearchSystem.gd,담당자 스탯 배율 하한 (�
 SCOUT_BASE,2,PersonnelResearch.gd,스태프 스카우트 완료 시 후보 수 기본 (명)
 SCOUT_PER_LEVEL,1,PersonnelResearch.gd,스태프 스카우트 후보 수 — 인력 개발실 레벨당 추가 (명)
 MASTERY_GAIN_LAB,12,MechResearch.gd,메크 연구 완료 시 내 선수 전원이 그 메크에 얻는 숙련도 원값 — research.csv p1(%)로 행마다 배수 (점)
+WEEK_MATCH_FIRST_HOUR,13,WeekProgressView.gd,경기일(토 · 일) 대회 스케줄의 첫 경기 시각 (시)
+WEEK_MATCH_HOUR_STEP,2,WeekProgressView.gd,경기일 대회 스케줄에서 경기 사이 시각 간격 (시간)

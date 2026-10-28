@@ -4,7 +4,7 @@
 
 [node name="WeekMatchCard" type="Panel"]
 auto_translate_mode = 2
-editor_description = "One match of the day. Other teams' match = white card, height 96. The player's match: code sets height 168, a dark fill (card_style tint RAIL) and light text, and shows %Hint."
+editor_description = "One match of the match day's schedule (match-day morning, WeekProgressView._add_match_cards). Left team | time · result | right team. Other teams' match = white card, thin (code: OTHER_MATCH_H). The player's match: code sets the thick height (MATCH_CARD_H), a dark fill (card_style tint RAIL) and light text, lifts %Row off the bottom and shows %Hint."
 custom_minimum_size = Vector2(1000, 168)
 offset_right = 1000.0
 offset_bottom = 168.0
@@ -12,62 +12,128 @@ mouse_filter = 2
 theme = ExtResource("1_theme")
 theme_type_variation = &"Card"
 
-[node name="Tag" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_match_cards()"
+[node name="Row" type="HBoxContainer" parent="."]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards() (offset_bottom set by code on my card)"
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 28.0
-offset_top = 20.0
 offset_right = -28.0
-offset_bottom = 46.0
 grow_horizontal = 2
-theme_type_variation = &"CaptionLabel"
-text = "리그"
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd"
+[node name="SideA" type="HBoxContainer" parent="Row"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards() (faded when this team lost)"
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 28.0
-offset_top = 50.0
-offset_right = -272.0
-offset_bottom = 92.0
-grow_horizontal = 2
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="LogoA" type="TextureRect" parent="Row/SideA"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameA" type="Label" parent="Row/SideA"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "Spook Shack"
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="Center" type="VBoxContainer" parent="Row"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Tag" type="Label" parent="Row/Center"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CaptionLabel"
+theme_override_font_sizes/font_size = 20
+text = "리그"
+horizontal_alignment = 1
+
+[node name="Time" type="Label" parent="Row/Center"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
+unique_name_in_owner = true
+layout_mode = 2
 theme_type_variation = &"TitleLabel"
 theme_override_font_sizes/font_size = 34
-text = "vs  Spook Shack"
+text = "15:00"
+horizontal_alignment = 1
 
-[node name="Status" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_match_cards()"
+[node name="Status" type="Label" parent="Row/Center"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -240.0
-offset_top = 50.0
-offset_right = -28.0
-offset_bottom = 92.0
-grow_horizontal = 0
+layout_mode = 2
 theme_type_variation = &"CaptionLabel"
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 24
 text = "예정"
+horizontal_alignment = 1
+
+[node name="SideB" type="HBoxContainer" parent="Row"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards() (faded when this team lost)"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 14
+alignment = 2
+
+[node name="NameB" type="Label" parent="Row/SideB"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "Iron Lynx"
 horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="LogoB" type="TextureRect" parent="Row/SideB"]
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards()"
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Hint" type="Label" parent="."]
-editor_description = "[필수] 지우면 오류 — WeekProgressView.gd _add_match_cards()"
+editor_description = "[필수] 지우면 오류: WeekProgressView.gd _add_match_cards() (my card only)"
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 12
+anchor_top = 1.0
 anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 28.0
-offset_top = 110.0
+offset_top = -46.0
 offset_right = -28.0
-offset_bottom = 138.0
+offset_bottom = -16.0
 grow_horizontal = 2
+grow_vertical = 0
 theme_type_variation = &"CaptionLabel"
 text = "경기를 시작하면 밴픽 화면으로 넘어갑니다"
+horizontal_alignment = 1

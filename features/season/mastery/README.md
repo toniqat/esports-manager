@@ -52,8 +52,8 @@ All tuning numbers are `MASTERY_*` keys in `data/csv/const.csv` — none are wri
   - **mech lab** (§16): a completed `mech_lab` research on a target mech gives every one of my five
     pilots `MASTERY_GAIN_LAB` × row `p1` % (empty = 100) on that mech, then rolls the research quirk —
     `MechResearch.on_complete` (see the facility README "MechResearch").
-  - Saturday story `mastery:` clause (§15 D, `FocusTraining.add_story_mastery`): the pilot's Saturday
-    mech, else the lab's research mech (`MechResearch.lab_mech`), else `growth_mech`.
+  - Story `mastery:` clause (§15 D, `FocusTraining.add_story_mastery`): the pilot's Saturday ban/pick
+    mech (none since 2026-10: no Saturday prep, `story_sat` is not drawn), else the lab's research mech (`MechResearch.lab_mech`), else `growth_mech`.
   - Multiplier, **my pilots only**: `knowledge_mult` (`MASTERY_KNOW_BASE + MASTERY_KNOW_PER ×
     StaffSystem.effective("knowledge")` — §16: the knowledge value of the mech-lab occupant) ×
     `FinanceSystem.mastery_mult` × trait `mastery_pct` (`TraitSystem.run_pct_mult`, M8). Opponent pilots

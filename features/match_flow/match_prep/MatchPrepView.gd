@@ -47,12 +47,6 @@ func _ready() -> void:
 		_fill_preview()
 
 
-## Relabels the bottom bar (Saturday prep: "밴픽 시작" instead of the scene's "경기 시작").
-func set_start_text(text: String) -> void:
-	var start: Button = %FloatingBarButton_Start
-	start.text = text
-
-
 ## `enemy_team_id` = the opponent (its analysis rank sets the reveal tier); -1 = read it from
 ## `enemy_roster`.
 func fill(state: Dictionary, player_roster: Array, enemy_roster: Array,

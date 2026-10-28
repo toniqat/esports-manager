@@ -2,18 +2,19 @@
 
 Owns the regular-league round-robin schedule, AI-vs-AI auto resolution,
 standings table, and the playoff cut-line check (top 4 of 8 = playoffs).
-The campaign progresses 1 week at a time, and **each league week holds one
-round, on Sunday** (`matchday = 0` = `CalendarSystem.MATCH_DAY`) — the player plays
-exactly one match per league week (ban/pick on Saturday, the match on Sunday).
+The campaign progresses 1 week at a time, and **each league week holds two
+rounds, one on Saturday (`matchday = 0`) and one on Sunday (`matchday = 1`)**
+(`CalendarSystem.MATCH_DAYS`): the player plays one match per match day, ban/pick and the
+match on the same day.
 
 ## Schedule shape
 - **Every league phase (PRESEASON · MIDSEASON · REGULAR)** — single round-robin (7 rounds,
-  28 matches, each team plays every other once). **7 league weeks**. (MID / REGULAR were a
-  double round robin before the one-match-per-week calendar.)
+  28 matches, each team plays every other once). **4 league weeks** (week 4 has Saturday only).
+  (MID / REGULAR were a double round robin in the first two-rounds-a-week calendar.)
 - **\*\_INTL** phases — no league schedule. INTL bracket lives in
-  `features/season/tournament/` (3-week 8-team SE).
-- **1 round = 1 week** (`CalendarSystem.ROUNDS_PER_WEEK`). Round `r_idx` → `phase_week = r_idx + 1`,
-  `matchday = 0` (Sunday). Each match is stamped with the Monday of its
+  `features/season/tournament/` (2-week 8-team SE).
+- **2 rounds = 1 week** (`CalendarSystem.ROUNDS_PER_WEEK`). Round `r_idx` → `phase_week = r_idx / 2 + 1`,
+  `matchday = r_idx % 2` (0 = Saturday, 1 = Sunday). Each match is stamped with the Monday of its
   phase_week so save metadata stays coherent — `weekday` stays 0 and the
   day the match actually lands on is what `matchday` says. Generating a schedule also sets
   `season_state.schedule_format = CalendarSystem.SCHEDULE_FORMAT` (old saves are migrated on load,
@@ -25,11 +26,12 @@ exactly one match per league week (ban/pick on Saturday, the match on Sunday).
     phase transition (MIDSEASON, REGULAR). INTL transitions are no-ops.
 
 ## Match-day flow
-- The player does the ban/pick on **Saturday morning** (stadium, "경기 준비" →
-  `SeasonHub.on_week_day_match_prep` → MatchFlow PREP + BAN_PICK, picks stored) and plays on
-  **Sunday morning** ("경기 시작" → `SeasonHub.on_week_day_match_start` → BattleSim with those picks).
-  On return SeasonHub records the result and settles that match day's AI matches
-  (`_resolve_ai_for_matchday`); a Sunday without a player match settles them on its "확인".
+- On each match day (Sat · Sun) the morning shows the day's schedule in a seeded random time order
+  (`SeasonHub.day_schedule`); the AI matches before mine are played when the screen opens
+  (`SeasonHub.resolve_ai_before_player` → `resolve_match(idx)`, one `match_schedule` entry). "경기 시작" →
+  `SeasonHub.on_week_day_match_start` → MatchFlow PREP → BAN_PICK → BattleSim in one go.
+  On return SeasonHub records the result and settles the rest of that match day's AI matches
+  (`_resolve_ai_for_matchday`); a match day without a player match settles them on its "확인".
 - `resolve_matchday(md)` does that work — it runs `simulate_ai_match()` on matches with
   `phase == current_phase && phase_week == current_phase_week && matchday == md` that do not
   involve the player team, and records the results.
@@ -69,13 +71,13 @@ Each entry in `season_state["match_schedule"]` is a Dictionary:
 {
   "phase":      GameEnums.SeasonPhase,
   "phase_week": int,                  # 1-indexed week within the phase
-  "matchday":   int,                  # 0 = Sunday (the only match day; old saves: 0 Sat / 1 Sun)
+  "matchday":   int,                  # 0 = Saturday, 1 = Sunday
   "round":      int,                  # round-robin round index
   "year":       int, "month": int, "day": int, "weekday": int,
   "team_a":     int, "team_b": int,
   "played":     bool,
   "winner":     int,                  # team_id or -1 if not played
-  "void":       bool,                 # optional — old-save round that no longer fit (played, winner -1, phase_week 0)
+  "void":       bool,                 # optional: old-save round that no longer fit (played, winner -1, phase_week 0)
 }
 ```
 

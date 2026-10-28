@@ -132,9 +132,9 @@ tx_PJXWJ5R6J6,season.pilot_detail.research_title,active,SeasonPilotDetail sheet 
 tx_X988TMMPYD,season.pilot_detail.research,active,"SeasonPilotDetail: research mech, its mastery tier and value",,,{mech} · {tier} ({value} / {max}),{mech} · {tier} ({value} / {max}),draft,979471d5
 tx_H106HT101H,season.pilot_detail.research_none,active,SeasonPilotDetail: no research mech set,,,연구소 연구 메크 없음,No mech lab research,draft,25e8911b
 tx_DY69B79HB4,season.week.stage.evening,active,"WeekProgressView bottom bar stage slot (training day, evening incident)",,,저녁,Evening,draft,05a95a7c
-tx_34NK587JXR,season.week.btn_match_prep,active,"WeekProgressView bottom button, Saturday morning: opens scouting + ban/pick for Sunday's match",,,경기 준비,Match Prep,draft,7f43f241
-tx_2PHY0EQHSZ,season.week.hint_prep,active,"Match card hint (my match), Saturday",,,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일,Scout the opponent and finish ban/pick today · the match is tomorrow,draft,c0d437a9
-tx_3MV5ZYWADH,season.week.hint_match_ready,active,"Match card hint (my match), Sunday with the Saturday picks stored",,,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다,Ban/pick done · Start Match goes straight into the match,draft,11939e9e
+tx_34NK587JXR,season.week.btn_match_prep,deprecated,"WeekProgressView bottom button, Saturday morning: opens scouting + ban/pick for Sunday's match",,,경기 준비,Match Prep,draft,7f43f241
+tx_2PHY0EQHSZ,season.week.hint_prep,deprecated,"Match card hint (my match), Saturday",,,오늘 상대를 분석하고 밴픽을 마칩니다 · 경기는 내일,Scout the opponent and finish ban/pick today · the match is tomorrow,draft,c0d437a9
+tx_3MV5ZYWADH,season.week.hint_match_ready,deprecated,"Match card hint (my match), Sunday with the Saturday picks stored",,,밴픽 완료 · 경기 시작을 누르면 바로 경기에 들어갑니다,Ban/pick done · Start Match goes straight into the match,draft,11939e9e
 tx_W7VJT121B2,season.week.afternoon_focus,active,Afternoon done card head (visit: focus training),,,오후: {name} 집중 훈련 · {course},Afternoon: Focus training with {name} · {course},draft,6ac7d0f7
 tx_64BZGJ4BTM,season.week.afternoon_story,active,Afternoon done card head (visit: story),,,오후: {name}{wa} 이야기,Afternoon: Talk with {name},draft,8a34f947
 tx_VTXA6YGJ8E,season.week.afternoon_coach,active,Afternoon card line: coach points left this week / the weekly grant,,,코치 포인트 {n} / 주간 {max},Coach points {n} / {max} this week,draft,d6eee030

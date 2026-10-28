@@ -38,22 +38,21 @@ extends Control
 # **A settled day is never settled again** — back from a match or after a reload the same
 # record is redrawn.
 #
-# ── Weekend (Sat · Sun) ── one player match per week, on Sunday ─────────────
-#   Sat STADIUM   stadium map; "경기 준비" → MatchFlow PREP + BAN_PICK (picks stored,
-#                 `SeasonHub.on_week_day_match_prep`), then AFTERNOON → EVENING on the
-#                 team map (no training).
-#   Sun STADIUM   stadium map; "경기 시작" → BattleSim with the Saturday picks
-#                 (`SeasonHub.on_week_day_match_start`) → standings → PRESS
-#                 (stadium map, "기자회견" → `SeasonHub.open_press`) → AFTERNOON (team
-#                 map, visit, §15 D) → EVENING (the incident rolls) → "주 마감 →".
-# A weekend day without a player match runs AFTERNOON → EVENING only. The weekend
-# stages are read from the records too (picks in `pending_match`, the week's result,
-# `MentalSystem.press_answered`, the afternoon / dusk records).
+# ── Match days (Sat · Sun) ── one player match a day ─────────────────────────
+#   MATCH     no map and no map tokens: only the day's tournament schedule (one panel per
+#             match in time order, `SeasonHub.day_schedule`: left team | time · result |
+#             right team; mine thick and dark, the others thin). "경기 시작" → MatchFlow
+#             PREP → BAN_PICK → BattleSim (`SeasonHub.on_week_day_match_start`) →
+#             standings → AFTERNOON (team map, visit, §15 D) → EVENING → next day /
+#             "주 마감 →" on Sunday.
+# A match day without a player match runs AFTERNOON → EVENING only. The stages are read
+# from the records too (my unplayed match, the afternoon / dusk records).
 #
 # ── Scene ──────────────────────────────────────────────────────────────────
 # **Layout and style belong to `UI_View_WeekProgressView.tscn`** (top bar · day bar · header ·
 # the pilot row under the map · scroll · bottom bar). The map (`WeekMapSection` (+ `BaseMap` ·
-# `WeekMapPilot`)) goes into the fixed `%MapPin`, the list's cards are item scenes
+# `WeekMapPilot`)) goes into the fixed `%MapPin` (hidden on the MATCH stage: the list then
+# runs down to the pilot row), the list's cards are item scenes
 # (`WeekMatchCard` · `WeekNoteCard` · `WeekIncidentCard` · `WeekAfternoonCard` ·
 # `WeekAfternoonDoneCard`) added to `%List`. This script fills `%` nodes, paints data colours
 # (lead bars · my match card · ups / downs · masked tokens) and device insets only.
@@ -77,12 +76,21 @@ const DAY_ABBR: Array = [  # l10n-keys: term.day.abbr.*
 	L.TERM_DAY_ABBR_FRI, L.TERM_DAY_ABBR_SAT, L.TERM_DAY_ABBR_SUN,
 ]
 
-## Day stage, read from the records (`_stage`). STADIUM / PRESS are weekend-only.
-enum Stage { OFF, MORNING, RESULT, AFTERNOON, EVENING, STADIUM, PRESS }
+## Day stage, read from the records (`_stage`). MATCH = a match day's morning (Sat · Sun).
+enum Stage { OFF, MORNING, RESULT, AFTERNOON, EVENING, MATCH }
 
 # ── 데이터에 따라 바뀌는 치수 (나머지 배치는 씬) ──
-const MATCH_CARD_H: float = 168.0    # the player's match card (others: OTHER_MATCH_H)
-const OTHER_MATCH_H: float = 96.0
+const MATCH_CARD_H: float = 168.0    # the player's match panel (thick; others: OTHER_MATCH_H)
+const OTHER_MATCH_H: float = 116.0
+## My match panel: the team row stops this far above the bottom, the hint line sits under it.
+const MATCH_HINT_H: float = 44.0
+## A schedule panel's losing side is faded to this alpha.
+const LOSER_ALPHA: float = 0.4
+## Gap between the card list and the map / pilot row (as the scene's offsets).
+const LIST_GAP: float = 14.0
+## Match-day schedule clock: the first match's hour and the hours between two matches.
+static var MATCH_FIRST_HOUR: int = ConstTable.int_of("WEEK_MATCH_FIRST_HOUR")
+static var MATCH_HOUR_STEP: int = ConstTable.int_of("WEEK_MATCH_HOUR_STEP")
 const EVE_PORTRAIT_D: float = 84.0
 # Result FX (RESULT stage): each line rises FX_RISE px and fades over FX_TIME s, the next
 # line of the same pilot starts FX_STAGGER s later; the afternoon starts FX_TAIL s after the last.
@@ -306,13 +314,13 @@ func _busy() -> bool:
 ## Training days (Mon–Fri): no `week_day_log[day]` = MORNING, settled = RESULT, afternoon
 ## rolled (`AfternoonAway.started`) = AFTERNOON, evening marked (`MentalSystem.dusk_started`) =
 ## EVENING. (An old save's morning-talk record is ignored: RESULT moves on to the afternoon.)
-## Weekend: STADIUM while the Saturday prep / Sunday match is open, PRESS until the
-## Sunday press conference is answered, then the afternoon / evening records.
+## Match days: MATCH while my match of the day is unplayed, then the afternoon / evening
+## records.
 func _stage() -> int:
 	var s: Dictionary = _gm.season_state
 	if not CalendarSystem.is_training_day(_day):
-		if _weekend_stage() != Stage.OFF:
-			return _weekend_stage()
+		if _match_stage() != Stage.OFF:
+			return Stage.MATCH
 		if AfternoonAway.started(s, _day):
 			return Stage.EVENING if MentalSystem.dusk_started(s, _day) else Stage.AFTERNOON
 		return Stage.EVENING if MentalSystem.dusk_started(s, _day) else Stage.OFF
@@ -323,27 +331,19 @@ func _stage() -> int:
 	return Stage.RESULT
 
 
-## STADIUM / PRESS of a weekend day, else OFF. Needs the hub (F6 preview: OFF).
-func _weekend_stage() -> int:
-	if _hub == null:
-		return Stage.OFF
-	if _day == CalendarSystem.PREP_DAY and _hub.needs_match_prep(_day):
-		return Stage.STADIUM
-	if _day == CalendarSystem.MATCH_DAY:
-		if _hub.has_player_match_on_day(_day):
-			return Stage.STADIUM
-		if _hub.press_pending():
-			return Stage.PRESS
+## MATCH while my match of this match day is unplayed, else OFF. Needs the hub (F6 preview: OFF).
+func _match_stage() -> int:
+	if _hub != null and _hub.has_player_match_on_day(_day):
+		return Stage.MATCH
 	return Stage.OFF
 
 
-## Weekend days move on by themselves once nothing is left to decide: a weekend day
-## without stadium / press opens its afternoon (`AfternoonAway.begin`) — the Sunday of a
-## match too, after the press (§15 D: STADIUM → PRESS → AFTERNOON (visit) → EVENING).
-## Recorded and saved, so a reload lands on the same stage. (Old saves whose match
-## Sunday already rolled its evening stay in the evening.)
+## Match days move on by themselves once nothing is left to decide: a match day without an
+## unplayed match of mine opens its afternoon (`AfternoonAway.begin`), after my match too
+## (§15 D: MATCH → AFTERNOON (visit) → EVENING). Recorded and saved, so a reload lands on
+## the same stage.
 func _advance_weekend() -> void:
-	if _hub == null or CalendarSystem.is_training_day(_day) or _weekend_stage() != Stage.OFF:
+	if _hub == null or CalendarSystem.is_training_day(_day) or _match_stage() != Stage.OFF:
 		return
 	var s: Dictionary = _gm.season_state
 	if not AfternoonAway.started(s, _day) and not MentalSystem.dusk_started(s, _day):
@@ -506,13 +506,13 @@ func _refresh_header() -> void:
 
 
 # ── Time row (오전 · 오후 · 저녁) ────────────────────────────────────────────
-## Half of the day a stage belongs to: 0 오전 (morning stages, the Saturday / Sunday stadium),
-## 1 오후 (afternoon, the Sunday press), 2 저녁 (evening); -1 = no stage.
+## Half of the day a stage belongs to: 0 오전 (morning stages, the match-day schedule),
+## 1 오후 (afternoon), 2 저녁 (evening); -1 = no stage.
 static func _stage_half(stage: int) -> int:
 	match stage:
 		Stage.OFF:
 			return -1
-		Stage.AFTERNOON, Stage.PRESS:
+		Stage.AFTERNOON:
 			return 1
 		Stage.EVENING:
 			return 2
@@ -634,7 +634,10 @@ func _rebuild_list() -> void:
 			+ _list_scroll.offset_right - _list_scroll.offset_left
 
 	var stage: int = _stage()
-	if stage != Stage.OFF:
+	if stage == Stage.MATCH:
+		# Match-day morning: the day's schedule only, no map (the pilot cards stay).
+		_add_match_cards()
+	elif stage != Stage.OFF:
 		# Base map (pinned), then what the player still has to decide: the afternoon
 		# card first (its buttons must not fall below the fold), then the incident.
 		_add_map_section(stage)
@@ -646,15 +649,13 @@ func _rebuild_list() -> void:
 		if CalendarSystem.is_training_day(_day) and stage != Stage.MORNING \
 				and (_week_log().get(_day, []) as Array).is_empty():
 			_add_note_card(Loc.t(L.SEASON_WEEK_NO_TRAINING_LOG))
-	# The round's matches: on Sunday (the match day), and on Saturday while the
-	# prep for them is open.
-	var md: int = CalendarSystem.matchday_of(_day)
-	if stage == Stage.STADIUM and _day == CalendarSystem.PREP_DAY:
-		md = CalendarSystem.matchday_of(CalendarSystem.MATCH_DAY)
-	if md >= 0:
-		_add_match_cards(md)
-	elif stage == Stage.OFF:
+	elif CalendarSystem.matchday_of(_day) >= 0:
+		_add_match_cards()
+	else:
 		_add_note_card(Loc.t(L.SEASON_WEEK_NO_SCHEDULE))
+	# Without the map the list runs down to the pilot row (the map's slot).
+	_list_scroll.offset_bottom = _map_pin.offset_top - LIST_GAP if _map_pin.visible \
+			else _map_pin.offset_bottom
 
 	# The end marker stays last: the separation before it is the gap under the last card.
 	_list_body.move_child(_list_end, -1)
@@ -682,10 +683,8 @@ func _add_map_section(stage: int) -> void:
 	_map_pin.add_child(section)
 	_map_pin.visible = true
 
-	var stadium: bool = stage == Stage.STADIUM or stage == Stage.PRESS
-	var map: BaseMap = BaseMap.create_stadium() if stadium \
-			else BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
-	map.name = "BaseMap_Stadium" if stadium else "BaseMap_Team"
+	var map: BaseMap = BaseMap.create(RunRules.team_map_id(int(s.get("player_team_id", 0))))
+	map.name = "BaseMap_Team"
 	_map = map
 	# 1200-wide map centred on the full-width holder; the screen crops 60 px each side.
 	BaseMap.mount(map, section.get_node("%MapHolder") as Control)
@@ -717,15 +716,13 @@ func _add_map_section(stage: int) -> void:
 			facility = String((groups.get(seat, {}) as Dictionary).get("facility", ""))
 		# The training's facility (joint training = one shared spot), else its colour's spot.
 		var spot: String = BaseMap.spot_of_facility(facility if facility != "" else color)
-		if stadium:
-			spot = _stadium_spot(stage)
 		var away: String = AfternoonAway.away_of(s, _day, pid) \
 				if stage == Stage.AFTERNOON or stage == Stage.EVENING else ""
 		if away == AfternoonAway.AWAY_DORM:
 			spot = BaseMap.SPOT_DORM
 		elif away == AfternoonAway.AWAY_SELF_OUTING:
 			spot = BaseMap.SPOT_ENTRANCE
-		elif not stadium and (stage == Stage.AFTERNOON or stage == Stage.EVENING):
+		elif stage == Stage.AFTERNOON or stage == Stage.EVENING:
 			spot = _wander_spot(map, pid)
 		var token: Control = _add_map_token(map, stage, pid, String(names.get(seat, "")), away)
 		_tokens[pid] = token
@@ -762,10 +759,6 @@ func _stage_hour(stage: int) -> float:
 			return 15.0
 		Stage.EVENING:
 			return 18.5
-		Stage.STADIUM:
-			return 10.0 if _day == CalendarSystem.PREP_DAY else 13.0
-		Stage.PRESS:
-			return 16.5
 	return 12.0
 
 
@@ -809,14 +802,6 @@ func _input(event: InputEvent) -> void:
 	if _map_pin.get_global_rect().has_point(at):
 		_map.finish_animation()
 		get_viewport().set_input_as_handled()
-
-
-## Where my pilots stand on the stadium map: the team room on Saturday (analysis and
-## ban/pick), the stage booths on Sunday morning, the press room after the match.
-func _stadium_spot(stage: int) -> String:
-	if stage == Stage.PRESS:
-		return BaseMap.SPOT_PRESS
-	return BaseMap.SPOT_TEAM_ROOM if _day == CalendarSystem.PREP_DAY else BaseMap.SPOT_BOOTH
 
 
 ## One pilot token on the map (`UI_Comp_WeekMapPilot.tscn`). No name under the portrait:
@@ -1036,35 +1021,53 @@ func _on_map_pilot_picked(pid: int) -> void:
 	_start_visit(pid)
 
 
-## 이번 주 그 경기일의 경기들. 플레이어 경기가 맨 위, 나머지는 그 아래로.
-func _add_match_cards(matchday: int) -> void:
-	var entries: Array = _matches_on_day(matchday)
-	if entries.is_empty():
+## The match day's schedule in time order (`SeasonHub.day_schedule`): one panel per match,
+## left team | tag · time · result | right team. My match is the thick dark panel (and its
+## hint), the other teams' matches thin white ones; a played match fades its loser. The
+## matches before mine are played by the time the screen shows them, the ones after it read
+## "예정" until the day's AI matches resolve.
+func _add_match_cards() -> void:
+	var rows: Array = _schedule_rows()
+	if rows.is_empty():
 		_add_note_card(Loc.t(L.SEASON_WEEK_NO_MATCH_DAY, {"day": OutgameTheme.day_name(_day)}))
 		return
-	for e_raw in entries:
-		var e: Dictionary = e_raw
-		var is_player: bool = bool(e["player"])
+	for row_raw in rows:
+		var e: Dictionary = row_raw
+		var mine: bool = bool(e["player"])
 		var card: Panel = _add_item(MATCH_CARD_SCENE) as Panel
-		card.custom_minimum_size.y = MATCH_CARD_H if is_player else OTHER_MATCH_H
+		card.custom_minimum_size.y = MATCH_CARD_H if mine else OTHER_MATCH_H
 		var tag: Label = card.get_node("%Tag")
-		var title: Label = card.get_node("%Title")
+		var time_lbl: Label = card.get_node("%Time")
 		var status: Label = card.get_node("%Status")
 		var hint: Label = card.get_node("%Hint")
+		var name_a: Label = card.get_node("%NameA")
+		var name_b: Label = card.get_node("%NameB")
 		tag.text = String(e["tag"])
-		title.text = String(e["title"])
+		time_lbl.text = String(e["time"])
 		status.text = String(e["status"])
-		hint.text = String(e["hint"])
-		hint.visible = is_player
+		var winner: int = int(e["winner"])
+		var team_a: int = int(e["team_a"])
+		var team_b: int = int(e["team_b"])
+		(card.get_node("%LogoA") as TextureRect).texture = TeamLogos.texture(team_a)
+		(card.get_node("%LogoB") as TextureRect).texture = TeamLogos.texture(team_b)
+		name_a.text = String(_gm.team_name(team_a))
+		name_b.text = String(_gm.team_name(team_b))
+		if winner >= 0:
+			(card.get_node("%SideA") as CanvasItem).modulate.a = 1.0 if winner == team_a else LOSER_ALPHA
+			(card.get_node("%SideB") as CanvasItem).modulate.a = 1.0 if winner == team_b else LOSER_ALPHA
+		hint.visible = mine
 		var fg_sub: Color = OutgameTheme.TEXT_SUB
-		if is_player:
+		if mine:
 			# 내 경기는 어두운 색면 — "이 화면을 떠나는" 버튼과 같은 색.
 			card.add_theme_stylebox_override("panel",
 					OutgameTheme.card_style(OutgameTheme.CARD_RADIUS, OutgameTheme.RAIL))
+			(card.get_node("%Row") as Control).offset_bottom = -MATCH_HINT_H
+			hint.text = Loc.t(L.SEASON_WEEK_HINT_DONE if bool(e["played"]) else L.SEASON_WEEK_HINT_START)
 			fg_sub = OutgameTheme.RAIL_TEXT
 			tag.add_theme_color_override("font_color", fg_sub)
 			hint.add_theme_color_override("font_color", fg_sub)
-			title.add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
+			for lbl in [name_a, name_b, time_lbl]:
+				(lbl as Label).add_theme_color_override("font_color", OutgameTheme.TEXT_ON_FILL)
 		var status_col: Color = fg_sub
 		if String(e["result"]) == "win":
 			status_col = OutgameTheme.POSITIVE
@@ -1073,100 +1076,47 @@ func _add_match_cards(matchday: int) -> void:
 		status.add_theme_color_override("font_color", status_col)
 
 
-## 그 경기일에 잡힌 경기 목록을 화면이 읽을 모양으로. 리그는 스케줄에서,
-## 토너먼트는 대진표에서 온다 — 둘의 필드 이름이 거의 같아 한 함수로 모은다.
-func _matches_on_day(matchday: int) -> Array:
-	var s: Dictionary = _gm.season_state
-	var pid: int = int(s["player_team_id"])
-	var phase: int = int(s["current_phase"])
-	var pweek: int = int(s["phase_week"])
+## `SeasonHub.day_schedule(_day)` as panel rows, in time order: `{player, played, tag, time,
+## status, result, team_a, team_b, winner}`. Time = `MATCH_FIRST_HOUR` + slot ×
+## `MATCH_HOUR_STEP`. No hub (F6 preview) = [].
+func _schedule_rows() -> Array:
+	if _hub == null:
+		return []
+	var pid: int = int(_gm.season_state["player_team_id"])
 	var out: Array = []
-
-	var league: LeagueManager = null
-	var tm: TournamentManager = null
-	var intl: InternationalTournament = null
-	if _hub != null:
-		league = _hub.get_node_or_null("LeagueManager") as LeagueManager
-		tm = _hub.get_node_or_null("TournamentManager") as TournamentManager
-		intl = _hub.get_node_or_null("InternationalTournament") as InternationalTournament
-
-	# 토너먼트가 돌고 있으면 그쪽이 이번 주의 경기다 (리그 라운드는 안 선다).
-	#
-	# **대진표를 가진 쪽과 팀 이름을 아는 쪽이 다를 수 있다** — 국제대회는
-	# 외부 4팀(id 100..)까지 알아야 해서 `team_name` 을 직접 갖지만,
-	# 플레이오프는 국내 8팀뿐이라 `LeagueManager` 의 표를 그대로 쓴다
-	# (`TournamentManager` 에는 `team_name` 이 없다). 그래서 둘을 따로 든다.
-	var bracket_owner: Node = null
-	var namer: Node = league
-	if intl != null and intl.is_active():
-		bracket_owner = intl
-		namer = intl
-	elif tm != null and tm.is_active():
-		bracket_owner = tm
-	if bracket_owner != null:
-		for m_raw in (s["current_tournament"]["bracket"] as Array):
-			var m: Dictionary = m_raw
-			if int(m["phase_week"]) != pweek:
-				continue
-			if int(m.get("matchday", 0)) != matchday:
-				continue
-			if int(m["team_a"]) < 0 or int(m["team_b"]) < 0:
-				continue
-			out.append(_match_row(m, pid,
-					String(bracket_owner.call("slot_label", int(m["slot"]))),
-					namer))
-	elif league != null:
-		for m_raw2 in (s["match_schedule"] as Array):
-			var m2: Dictionary = m_raw2
-			if int(m2.get("phase", -1)) != phase or int(m2.get("phase_week", -1)) != pweek:
-				continue
-			if int(m2.get("matchday", 0)) != matchday:
-				continue
-			out.append(_match_row(m2, pid, Loc.t(L.SEASON_WEEK_TAG_LEAGUE), league))
-
-	# 플레이어 경기를 맨 위로.
-	out.sort_custom(func(a, b): return bool(a["player"]) and not bool(b["player"]))
+	var list: Array = _hub.day_schedule(_day)
+	for i in list.size():
+		var e: Dictionary = list[i]
+		var m: Dictionary = e["m"]
+		var tag: String = Loc.t(L.SEASON_WEEK_TAG_LEAGUE)
+		match String(e["source"]):
+			"intl":
+				tag = (_hub.get_node("InternationalTournament") as InternationalTournament).slot_label(int(m["slot"]))
+			"playoff":
+				tag = (_hub.get_node("TournamentManager") as TournamentManager).slot_label(int(m["slot"]))
+		out.append(_match_row(m, pid, tag, "%02d:00" % (MATCH_FIRST_HOUR + i * MATCH_HOUR_STEP)))
 	return out
 
 
-func _match_row(m: Dictionary, pid: int, tag: String, namer: Node) -> Dictionary:
+func _match_row(m: Dictionary, pid: int, tag: String, time_text: String) -> Dictionary:
 	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
 	var is_player: bool = (ta == pid or tb == pid)
 	var played: bool = bool(m["played"])
+	var winner: int = int(m["winner"]) if played else -1
 	# `result` = the player's own outcome ("win" / "loss" / "") and colours the status;
 	# `status` is display text only.
 	var status: String = Loc.t(L.SEASON_WEEK_RESULT_SCHEDULED)
 	var result: String = ""
 	if played:
-		var winner: int = int(m["winner"])
 		if is_player:
 			result = "win" if winner == pid else "loss"
 			status = Loc.t(L.SEASON_WEEK_RESULT_WIN if winner == pid else L.SEASON_WEEK_RESULT_LOSS)
 		else:
-			status = Loc.t(L.SEASON_WEEK_TEAM_WIN, {"team": _team_name(namer, winner)})
-	var title: String = "%s  vs  %s" % [_team_name(namer, ta), _team_name(namer, tb)]
-	if is_player:
-		var opp: int = tb if ta == pid else ta
-		title = "vs  %s" % _team_name(namer, opp)
-	# Hint under my card: Saturday = today's prep, Sunday = straight to the match when the
-	# picks are stored (else the full PREP → ban/pick flow), afterwards = over.
-	var hint_key: String = L.SEASON_WEEK_HINT_DONE
-	if is_player and not played:
-		hint_key = L.SEASON_WEEK_HINT_START
-		if _day == CalendarSystem.PREP_DAY:
-			hint_key = L.SEASON_WEEK_HINT_PREP
-		elif _hub != null and _hub.match_picks_ready():
-			hint_key = L.SEASON_WEEK_HINT_MATCH_READY
+			status = Loc.t(L.SEASON_WEEK_TEAM_WIN, {"team": String(_gm.team_short_name(winner))})
 	return {
-		"player": is_player, "tag": tag, "title": title, "status": status, "result": result,
-		"hint": Loc.t(hint_key),  # l10n-dynamic: season.week.hint_*
+		"player": is_player, "played": played, "tag": tag, "time": time_text, "status": status,
+		"result": result, "team_a": ta, "team_b": tb, "winner": winner,
 	}
-
-
-static func _team_name(namer: Node, team_id: int) -> String:
-	if namer != null and namer.has_method("team_name"):
-		return String(namer.call("team_name", team_id))
-	return "Team %d" % team_id
 
 
 ## Quirk events → `[[text, colour]]`. Row shape (§14.1):
@@ -1235,16 +1185,13 @@ func _refresh_action_button() -> void:
 	if _action_btn == null:
 		return
 	var stage: int = _stage()
-	if stage == Stage.STADIUM:
+	if stage == Stage.MATCH:
 		# 하단 바의 칸이라 **바 변형끼리만 갈아입는다** — `DarkButton` 이면 모서리가
 		# 도로 둥글어져 이 칸만 화면에서 떠오른다. 갈아입은 뒤 인셋 몫을 다시 얹는다.
-		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_MATCH_PREP if _day == CalendarSystem.PREP_DAY
-				else L.SEASON_WEEK_BTN_START_MATCH)
+		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_START_MATCH)
 		_set_action_kind(&"BarDarkButton")
 		return
-	if stage == Stage.PRESS:
-		_action_btn.text = Loc.t(L.TERM_ACTIVITY_PRESS)
-	elif _day >= CalendarSystem.DAYS_PER_WEEK - 1 and (stage == Stage.EVENING or stage == Stage.OFF):
+	if _day >= CalendarSystem.DAYS_PER_WEEK - 1 and (stage == Stage.EVENING or stage == Stage.OFF):
 		_action_btn.text = Loc.t(L.SEASON_WEEK_BTN_END_WEEK)
 	elif stage != Stage.OFF:
 		_action_btn.text = Loc.t(L.UI_BUTTON_NEXT)
@@ -1262,17 +1209,9 @@ func _on_action_pressed() -> void:
 	if _busy() or (_skip_popup != null and _skip_popup.is_open()):
 		return
 	match _stage():
-		Stage.STADIUM:
-			if _hub == null:
-				return
-			if _day == CalendarSystem.PREP_DAY:
-				_hub.on_week_day_match_prep()
-			else:
-				_hub.on_week_day_match_start()
-			return
-		Stage.PRESS:
+		Stage.MATCH:
 			if _hub != null:
-				_hub.open_press()
+				_hub.on_week_day_match_start()
 			return
 		Stage.MORNING:
 			_settle_day()

@@ -2,9 +2,9 @@
 
 The screen where the week passes **one day at a time, Monday to Sunday**. `Screen.WEEK` in
 `SeasonHub`. Training days (Mon–Fri) show the **team base map** and run as **morning → afternoon → evening**.
-The weekend carries the week's one player match: **Saturday morning** = stadium map + match prep
-(ban/pick), **Sunday morning** = stadium map + the match, then the press conference, the afternoon
-(visit) and the evening — see "Weekend (Sat · Sun)". Every afternoon is a **visit (방문, §15 D)**: tap a pilot →
+Saturday and Sunday are **match days** (one player match each): the morning shows **no map and no
+map tokens**, only the day's tournament schedule panels; "경기 시작" runs ban/pick and the match in one
+go, then the afternoon (visit) and the evening follow on the team map. See "Match days (Sat · Sun)". Every afternoon is a **visit (방문, §15 D)**: tap a pilot →
 집중 훈련 / 이야기 / 외출 (`VisitMenu`, "Afternoon visit" below).
 
 | File | Role |
@@ -13,11 +13,11 @@ The weekend carries the week's one player match: **Saturday morning** = stadium 
 | `UI_View_WeekProgressView.tscn` | The screen layout (tree below) |
 | `WeekDayTrack.gd` | `class_name WeekDayTrack extends Control` — `_draw` widget of the day progress bar (`%DayTrack`): thin line + 7 circles at the centres of 7 equal cells, filled left → right up to `progress` (circle index, fractions while sliding), `today` = the larger circle with a white core; `dot_x(i)` |
 | `WeekBannerStreak.gdshader` | Canvas shader on the top `%TeamBanner`: the right 30 % (`fade_from` 0.7) dissolves into transparency through coarse horizontal fBm streaks (the `ScenarioWipe` look, still). Uses the node-local vertex position, so it works on the banner's cropped `draw_texture_rect_region`; `rect_size` set by code |
-| `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers) + the weekend `UI_Comp_BaseMap_Stadium.tscn`. See `base_map/README.md` |
-| `UI_Comp_WeekMapSection.tscn` | The map slot (fills `%MapPin`, full screen width): `%MapHolder` (plain Control) that receives the team's `BaseMap` / the stadium via `BaseMap.mount` (1200 × 761, centred, 60 px cropped each side). No caption and no facility research bubbles on this screen (both removed 2026-10; the hub keeps the bubbles) |
+| `base_map/` | `BaseMap` widget + one `UI_Comp_BaseMap_<Name>.tscn` per team base map (art + spot markers) (+ `UI_Comp_BaseMap_Stadium.tscn`, no longer used by this screen). See `base_map/README.md` |
+| `UI_Comp_WeekMapSection.tscn` | The map slot (fills `%MapPin`, full screen width): `%MapHolder` (plain Control) that receives the team's `BaseMap` via `BaseMap.mount` (1200 × 761, centred, 60 px cropped each side). No caption and no facility research bubbles on this screen (both removed 2026-10; the hub keeps the bubbles) |
 | `UI_Comp_WeekMapPilot.tscn` | One pilot token on the map, 92 × 92, **portrait only** (`%Portrait` slot 84 · `%Mask` black circle over the portrait; the stress / trust gauges moved to the pilot cards under the map 2026-10) · morning speech bubble `%Bubble` / `%BubbleText` + `%BubbleTail` · afternoon away chip `%Away` / `%Name` over the portrait top · rising result texts `%Floats` with the `%FloatLine` template · `%Hit` over the whole token · the portrait disc, black outline, tail and shadow are not in the scene — `BaseMap` draws them under the token, `base_map/README.md`). No name, no role badge |
 | `WeekFade.gd` | `class_name WeekFade` (static): **fade through black** — `through(mid)` fades a full-screen black (own `CanvasLayer` 90 under the root, survives the view being hidden / rebuilt) in, runs `mid`, fades out; `clear_delay()` = seconds until the screen is clear (animations started in `mid` wait for it). Used for every dialog / awakening open and close, the visit result close and every move to the next half / day |
-| `UI_Comp_WeekMatchCard.tscn` | Item: one match of the match day (`%Tag` · `%Title` · `%Status` · `%Hint`) |
+| `UI_Comp_WeekMatchCard.tscn` | Item: one schedule panel of the match day: `%Row` HBox (`%SideA` [`%LogoA` 64 · `%NameA`], `Center` VBox [`%Tag` · `%Time` · `%Status`], `%SideB` [`%NameB` · `%LogoB`]) + `%Hint` at the bottom (my match only). See "Schedule panels" |
 | `UI_Comp_WeekNoteCard.tscn` | Item: one-line placeholder card (`%Text`) |
 | `UI_Comp_WeekIncidentCard.tscn` | Item: the day's incident (`%Portrait` slot · `%Head` · `%Line` · `%Hit`) |
 | `UI_Comp_WeekAfternoonCard.tscn` | Item: 오후 before the visit — `PanelContainer` (Card, height = content) ─ Box VBox: Head · `%Hint` (only when nobody can be visited) · `%Coach` (coach points left / weekly grant). The "tap a pilot on the map …" instruction was removed 2026-10 |
@@ -65,16 +65,17 @@ WeekProgressView (Control, full rect, PASS, theme OutgameTheme.tres)
   ├ %TimeRow    x 40 … −40, y 326 … 398, clips: %TimePrev · %TimeNow · %TimeNext (TitleLabel 52, 320 wide, centre
   │             anchored, 300 apart; the sides scale 0.55 + alpha 0.45) — half of the day, see "Time row"
   ├ %MapPin     full width, centred on the safe area's height **+ 70** (anchors 0.5, −310 … 451 = 761 map height),
-  │             hidden by default: fixed slot for the map (WeekMapSection)
+  │             hidden by default: fixed slot for the map (WeekMapSection); stays hidden on the MATCH stage
   ├ %Scroll     x 40 … −40, y 410 … (centre − 324 = map top − 14), anchors_preset −1 (grows right only): the card
-  │             list **above the map**
+  │             list **above the map**; code sets `offset_bottom` per build: map top − `LIST_GAP` with the map,
+  │             `%MapPin`'s bottom (= the pilot row top − gap) without it (MATCH stage)
   │ └ %List     VBox, separation 14 (card gap) — item scenes + %ListEnd (kept last = gap under the last card)
   ├ %PilotBanner TeamBanner, full width (edge to edge), centre + 465 … 755: my team's banner as the strap behind the cards
   ├ %PilotRow   HBox sep 12, x 40 … −40, centre + 465 … 755 (map bottom + 14, 290 tall): SeasonPilotCard_Pilot0..4
   │             (seat order, `set_week_layout()`), **always shown**
   └ %Bar        HBox capsule row, sep 16, align End, y −128 … −32, 40 side insets — code: `OutgameTheme.fit_bottom_bar(%Bar, %SafeArea)`
     └ %FloatingBarButton_Action BarPrimaryButton, 262 wide (40 % of the old 2/3 slot), shrink-end = right
-                                (다음 / 확인 / 기자회견 / 주 마감 →); `BarDarkButton` for 경기 준비 / 경기 시작 + `fit_bar_button`
+                                (다음 / 확인 / 주 마감 →); `BarDarkButton` for 경기 시작 + `fit_bar_button`
 ```
 
 The old dark weekday rail (`Rail` · `%DayHighlight` · seven `WeekDayChip` chips with numbers) and the bar's stage
@@ -130,16 +131,16 @@ say the same.
   `WeekFade.clear_delay()`); other redraws place everything at once. Circles up to today are filled amber, later ones
   are white with a grey ring.
 * **Time row** (`_refresh_time_row`, static `_half_memory`): `%TimeNow` = the half of the day (`_stage_half`: 오전 = the
-  morning stages and the weekend stadium, 오후 = afternoon / press, 저녁 = evening), `%TimePrev` = the half before (hidden
+  morning stages and the match-day schedule, 오후 = afternoon, 저녁 = evening), `%TimePrev` = the half before (hidden
   in the morning), `%TimeNext` = the half after (after 저녁 the next 오전). When the day moved on by one half (evening →
   next morning included) the row shifts left over `TIME_SHIFT`: the old previous slides out left and fades, the current
   shrinks into the previous slot and dims, the next grows into the centre, a new next fades in from the right.
 * **Header** (below the bubble) — the **phase name only**, centred (`GameEnums.phase_label`).
 * **Body** — the card list, vertical scroll (`%Scroll`, drag-scrolled by `DragScroll.attach` in `_ready`) between the
   time row and the map; the map sits 70 px under the safe area's centre (`%MapPin`), the pilot cards (`%PilotRow`) under it.
-* **Bottom bar**: one short capsule at the right: `다음` (Next) on every stage, **`경기 준비`** (Match prep, Saturday
-  stadium) / **`경기 시작`** (Start match, Sunday stadium) in the dark fill ("you are leaving this screen"), `기자회견`
-  (Press conference, Sunday afternoon, `term.activity.press`), `주 마감 →` (End of week) on the Sunday evening,
+  On the MATCH stage there is no map: the list runs down to the pilot row.
+* **Bottom bar**: one short capsule at the right: `다음` (Next) on every stage, **`경기 시작`** (Start match, MATCH
+  stage of Sat · Sun) in the dark fill ("you are leaving this screen"), `주 마감 →` (End of week) on the Sunday evening,
   `확인` (OK) on a day without any stage.
 
 ## What each weekday does
@@ -147,13 +148,12 @@ say the same.
 | Weekday | What happens |
 |---|---|
 | 월~금 (Mon–Fri) | **Training days**: 오전 (training: settles by itself, results rise) → 오후 (afternoon) → 저녁 (evening incident), see "Training day: morning → afternoon → evening". The settlement is `TrainingBoard.apply_day_training(day)`, which settles that row of the board and actually raises player stats. |
-| 토 (Sat) | **Prep day**: `STADIUM` (stadium map, "경기 준비" → MatchFlow PREP + BAN_PICK, picks stored) → `AFTERNOON` → `EVENING` on the team map, **no training**. Sunday's matches show as cards while the prep is open. |
-| 일 (Sun) | **Match day** (`CalendarSystem.MATCH_DAY`): `STADIUM` ("경기 시작" → BattleSim with the Saturday picks) → standings → `PRESS` (stadium map, "기자회견") → `AFTERNOON` (team map, visit — the story is about the match) → `EVENING` (incident) → "주 마감 →". The day's matches show as cards. |
+| 토 · 일 (Sat · Sun) | **Match days** (`CalendarSystem.MATCH_DAYS`): `MATCH` (no map, the day's schedule panels; "경기 시작" → MatchFlow PREP → BAN_PICK → BattleSim) → standings → `AFTERNOON` (team map, visit: the story is about the match) → `EVENING` (incident) → next day / Sunday "주 마감 →". **No training.** |
 
 ### Training day: morning → afternoon → evening (base map)
 
 **Time passing on the map** (`_animate_map`, after every map build): each stage has an hour (`_stage_hour`: MORNING 8 ·
-RESULT 9.5 · AFTERNOON 15 · EVENING 18.5 · STADIUM Sat 10 / Sun 13 · PRESS 16.5). The last drawn map is kept
+RESULT 9.5 · AFTERNOON 15 · EVENING 18.5; the MATCH stage draws no map). The last drawn map is kept
 in the static `_map_memory` (`{scene, day, stage, hour, tokens}`, survives the view being re-made per day). When the day
 or the stage changed since then, the map's clock runs from the old hour to the new one (`STAGE_TIME` 1.4 s; a new day
 runs through the night, `NIGHT_TIME` 2.8 s) and, on the same map scene, my pilots walk the roads from where they stood
@@ -179,7 +179,7 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   **the day's change** (`SeasonPilotCard.set_day_deltas`: ring segment from the value before + `+N` stress / `+N%` trust (no brackets)
   under the value, nothing at 0; they pop when the result FX starts), and the portrait ring shows the day's level EXP as a
   light segment. `_day_delta(pid, kind)` (kind `stress` · `trust` · `tlexp`) = training row `stress` / `tlexp` + self-outing relief (stress) + `kind` / `<kind>_all` notes of the
-  day's incident / afternoon (visit · evening) outcomes. Not counted (not in the day record): the Sunday press answer,
+  day's incident / afternoon (visit · evening) outcomes. Not counted (not in the day record):
   the match's level EXP; `<kind>_all` notes are nominal (unclamped). Tap = `SeasonPilotDetail` sheet.
 * **Moving on by itself** (`_next_auto` → `_run_auto`, always through black, `WeekFade`): once nothing is open or queued
   (dialog, visit popup, result FX, awakening, limit-break event, incident) — the result FX ended → afternoon; the
@@ -199,33 +199,38 @@ stored on its own (`_stage`), so re-entering the day (after a match, after a rel
   An empty training cell is the basic course, not a rest.
 * Old saves with a morning-talk record (`days["<day>"].talk`) ignore it: `RESULT` replays the FX, then the afternoon.
 
-### Weekend (Sat · Sun)
+### Match days (Sat · Sun)
 
-The stages are read from the records like the training days (`_stage` → `_weekend_stage`), so a reload
+The stages are read from the records like the training days (`_stage` → `_match_stage`), so a reload
 lands on the same spot:
 
-| Day | Stage | Record | Map | Action |
-|---|---|---|---|---|
-| Sat | `STADIUM` | `SeasonHub.needs_match_prep(5)`: a player match this Sunday, no `pending_match.picks` | stadium, pilots in the team room (`SPOT_TEAM_ROOM`) | **경기 준비** → `SeasonHub.on_week_day_match_prep` (MatchFlow split mode) |
-| Sat | `AFTERNOON` → `EVENING` | `AfternoonAway` / dusk records (opened by itself, `_advance_weekend`) | team map, everyone on `W` (no training), away spots | as on a training day |
-| Sun | `STADIUM` | `has_player_match_on_day(6)` | stadium, pilots on the stage booths (`SPOT_BOOTH`) | **경기 시작** → `SeasonHub.on_week_day_match_start` (picks → BattleSim) |
-| Sun | `PRESS` | `SeasonHub.press_pending()`: my match of the week played, press unanswered | stadium, press room (`SPOT_PRESS`) | **기자회견** → `SeasonHub.open_press` (the standings' 확인 opens it directly) |
-| Sun | `AFTERNOON` | after the press `_advance_weekend` runs `AfternoonAway.begin` (§15 D) | team map | visit as on a training day; **다음** → evening |
-| Sun | `EVENING` | `_begin_evening` → `MentalSystem.begin_dusk` (incident roll) | team map | **주 마감 →** (a limit-break event / an incident opens by itself first) |
+| Stage | Record | Map | Action |
+|---|---|---|---|
+| `MATCH` | `SeasonHub.has_player_match_on_day(day)`: my match of the day is unplayed | **none** (`%MapPin` hidden, no tokens; the pilot cards under it stay); the list = the day's schedule panels | **경기 시작** → `SeasonHub.on_week_day_match_start` (MatchFlow PREP → BAN_PICK → BattleSim in one go) |
+| `AFTERNOON` | after my match `_advance_weekend` runs `AfternoonAway.begin` (§15 D) | team map, everyone on `W` (no training), away spots | visit as on a training day; **다음** → evening |
+| `EVENING` | `_begin_evening` → `MentalSystem.begin_dusk` (incident roll) | team map | next day (Saturday) / **주 마감 →** (Sunday; a limit-break event / an incident opens by itself first) |
 
-* A weekend day **without a player match** runs `AFTERNOON` → `EVENING` only (opened by itself).
-* `_advance_weekend` (called by `refresh`) records + saves the automatic step (`afternoon`). Old saves whose match
-  Sunday already rolled its evening stay in the evening.
-* Match card hint (my match): Saturday `season.week.hint_prep`, Sunday with picks
-  `season.week.hint_match_ready`, Sunday without picks (old save) `season.week.hint_start`.
+* A match day **without a player match** (league week 4 Sunday, INTL week 2 Sunday) runs `AFTERNOON` → `EVENING` only.
+* `_advance_weekend` (called by `refresh`) records + saves the automatic step (`afternoon`).
+* The press conference is out of the week (no PRESS stage), and the stadium map is no longer drawn.
 
 ### Training results
-### Match card
+### Schedule panels (MATCH stage)
 
-Lists every match of that match day (Sunday; on Saturday while the prep is open, Sunday's matches), with **the player's match on top** in a dark fill
-(the rest are white cards at half height). Two sources — the bracket if a tournament is running,
-otherwise the league schedule (`_matches_on_day`). The status cell is `예정` (Scheduled) /
-`승` (Win) / `패` (Loss) / `<팀> 승` (<team> wins).
+`_add_match_cards` draws `SeasonHub.day_schedule(day)` (`_schedule_rows`): every match of that match day **in time
+order**, one `UI_Comp_WeekMatchCard` each: left team (logo `TeamLogos.texture` + `GameManager.team_name`), centre
+tag (`리그` / bracket slot label) · time · result, right team. The order is a shuffle seeded by the week
+(`MentalSystem.week_key`) and the day, so **my match sits at a random slot** and a reload keeps it. Time =
+`WEEK_MATCH_FIRST_HOUR` + slot × `WEEK_MATCH_HOUR_STEP` (const.csv), shown as `HH:00`.
+
+* **My match**: thick (`MATCH_CARD_H`), dark fill (`card_style(…, RAIL)`), light text, `%Row` lifted by
+  `MATCH_HINT_H` and `%Hint` (`season.week.hint_start`, played: `hint_done`) under it.
+* **Other teams' matches**: thin (`OTHER_MATCH_H`) white cards.
+* **Result**: the matches before mine are already played when the screen opens (`SeasonHub.resolve_ai_before_player`,
+  run by `_show_week`), so they show `<팀 약칭> 승` and fade the loser side (`LOSER_ALPHA`); mine and the ones after
+  it read `예정` (Scheduled) until played (`승` / `패` on mine).
+* Bracket entries whose teams are not known yet are left out. A match day without matches shows the
+  `season.week.no_match_day` note card.
 
 ### Mon–Fri: 오후 (afternoon) card + incident card (M7)
 
@@ -279,17 +284,16 @@ not settled again** (`_settle_day`, run by the morning's Next). The screen is re
 after MatchFlow / BattleSim and after a reload —
 
 ```
-WEEK Sat  →  경기 준비  →  MatchFlow PREP → BAN_PICK  →  picks stored  →  re-enter Season  →  WEEK Sat (afternoon)
-WEEK Sun  →  경기 시작  →  MatchFlow LAUNCH → BattleSim  →  re-enter Season
+WEEK Sat / Sun  →  경기 시작  →  MatchFlow PREP → BAN_PICK → BattleSim  →  re-enter Season
         →  SeasonHub applies the result + settles that match day's AI matches  →  STANDINGS
-        →  확인  →  PRESS  →  WEEK Sun (evening)  →  주 마감 →
+        →  확인  →  WEEK (afternoon → evening)  →  next day / 주 마감 →
 ```
 
 There are three pieces of week-progress state (all in `season_state`, all saved).
 
 | Key | Meaning |
 |---|---|
-| `week_day` | The weekday currently shown, 0..6. **-1 means the week has not been opened yet** — the hub · press conference (기자회견) · training plan stretch is all -1, and that value decides whether the standings' "확인" returns to the week or to the hub (`SeasonHub.on_standings_confirmed`). |
+| `week_day` | The weekday currently shown, 0..6. **-1 means the week has not been opened yet**: the hub · training plan stretch is all -1, and that value decides whether the standings' "확인" returns to the week or to the hub (`SeasonHub.on_standings_confirmed`). |
 | `week_day_log` | `day(int) → Array[row]` (rows keep `pilot_id` only — the pilot card name is `GameManager.pilot_name(pilot_id)`; row key `color` = that day's cell colour, an empty cell = the basic course's colour). Integer keys, so on load it goes through `_int_keyed_dict_in` — otherwise `log[3]` returns an empty array forever and the same weekday's training is applied twice. |
 | `training_exp_carry` | The leftover-EXP bank. See the `TrainingBoard` entry. |
 
@@ -306,7 +310,7 @@ re-entering the weekday (after a match, after load) redraws from the record and 
 
 | Direction | Functions |
 |---|---|
-| Screen → hub | `has_player_match_on_day(day)` · `needs_match_prep(day)` · `match_picks_ready()` · `press_pending()` · `player_result_this_week()` · `opponent_name_on_day(day)` · `on_week_day_match_prep()` · `on_week_day_match_start()` · `open_press()` · `on_week_day_confirmed()` |
+| Screen → hub | `has_player_match_on_day(day)` · `day_schedule(day)` · `on_week_day_match_start()` · `on_week_day_confirmed()` |
 | Hub → screen | `ensure_view()` (on every routing) |
 
 `on_week_day_confirmed()` sweeps up that day's AI matches **before moving on**
@@ -316,8 +320,9 @@ day's league must still run, so the next standings shown match the date.
 ## Localization
 Display text is l10n keys (`season` domain, `season.week.*` · `season.week_*` scene keys; the map / afternoon
 keys are `season.week.stage.*` (time row) · `season.week.map.*` · `season.week.afternoon_*` · `season.week.skip.*`;
-weekend: `season.week.btn_match_prep` · `season.week.hint_prep` · `season.week.hint_match_ready`; the press button
-reuses `term.activity.press`; day bar: `season.week.rail_day` (scene, the bubble's "DAY") · `term.day.abbr.*`). The
+match days: `season.week.btn_start_match` · `season.week.hint_start` / `hint_done` · `season.week.result_*` ·
+`season.week.team_win` · `season.week.tag_league` (deprecated 2026-10 with the Saturday prep: `season.week.btn_match_prep`
+· `season.week.hint_prep` · `season.week.hint_match_ready`); day bar: `season.week.rail_day` (scene, the bubble's "DAY") · `term.day.abbr.*`). The
 pills show numbers only (no text). **Deleted 2026-10** (rows removed): the morning talk's `season.week.talk_*` ·
 `season.week.sub_talk` · `season.week.skip_talk.*` (and `mental.ui.mod_source.talk`); earlier: `season.week.map_hint.*`
 (the map caption), `season.week.date`, `season.week.day_count`, `season.week.afternoon_pick` / `talk_pick`.

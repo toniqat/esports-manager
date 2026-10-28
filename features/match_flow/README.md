@@ -36,23 +36,17 @@ directly to BAN_PICK (or LAUNCH for post-ban-pick snapshots) since the player
 already committed when the save was written. On `LAUNCH`,
 `GameManager.match_ctx` is populated and the scene transitions to `BattleSim.tscn`.
 
-**In a season the flow is split over the weekend** (one player match per week, on Sunday —
-`features/season/calendar/README.md`):
+**In a season the whole flow runs on the match day itself** (Saturday or Sunday, one player match a
+day: `features/season/calendar/README.md`):
 
 ```
-Saturday  SeasonHub "경기 준비"  → MatchFlow (pending_match.split) PREP → BAN_PICK
-          → _store_picks_and_return: pending_match.picks = LAUNCH snapshot, match_resume = null,
-            autosave, fade back to Season.tscn (Saturday afternoon)
-Sunday    SeasonHub "경기 시작"  → match_resume = pending_match.picks (pre_match autosave)
-          → MatchFlow resume at LAUNCH (_resume_at_launch, no UI) → BattleSim
+Sat / Sun  SeasonHub "경기 시작"  → MatchFlow PREP → BAN_PICK → LAUNCH → BattleSim
 ```
 
-The Sunday half **is** the existing `match_resume` LAUNCH path — no parallel launcher. Roster mods,
-mastery, quirks and stress are applied there (`_finalize_rosters`), i.e. with Sunday's state, not the
-Saturday one. Without stored picks (old save) SeasonHub opens the full PREP → BAN_PICK → LAUNCH flow.
-`is_prep_only()` = `pending_match.split`; in that mode the PREP bar reads `밴픽 시작`
-(`match.flow.prep_to_ban_pick`, `MatchPrepView.set_start_text`) and the assign-step bar `준비 완료`
-(`match.flow.picks_done`, `BanPickController._build_assign_prompt`).
+The weekend split of 2026-10 (Saturday PREP + BAN_PICK storing `pending_match.picks`, Sunday resuming
+at LAUNCH) was removed with it: `is_prep_only()`, `_store_picks_and_return()` and
+`MatchPrepView.set_start_text` are gone, and the keys `match.flow.prep_to_ban_pick` /
+`match.flow.picks_done` are deprecated.
 
 ---
 
@@ -331,16 +325,14 @@ from a season (`pending_match` exists)** — exported builds and standalone Matc
 ---
 
 ## Save hooks
-`MatchFlow.gd` owns the two Saturday autosave triggers (the others — run start, Sunday pre-match,
-post-match, weekly flow — live in `SeasonHub`):
+`MatchFlow.gd` owns the two match-day autosave triggers (the others: run start, post-match, weekly
+flow, live in `SeasonHub`):
 
 - **Pre-ban-pick** — fires in `_on_prep_finished()` when the player
   presses "경기 시작" on the PREP dashboard. Writes
   `season_state.match_resume = {phase: BAN_PICK, player_side, ...empty
   arrays}`. Skipped when running MatchFlow standalone (no `pending_match`).
-- **Post-ban-pick** — Saturday (split): `_store_picks_and_return()` writes the snapshot below into
-  `pending_match.picks`, clears `match_resume` (so the lobby continues into the season) and saves.
-  Unsplit (old-save fallback, standalone): fires in `_on_ban_pick_finished()` right after assignment
+- **Post-ban-pick**: fires in `_on_ban_pick_finished()` right after assignment
   completes, before `_launch_battle` scene-changes to BattleSim, into `match_resume`. The jungle direction used
   to come in here too and this save lived in `_on_jungle_finished()`, but once that choice moved
   to BattleSim the save point was pulled one step earlier — resume replays the battle from scratch
@@ -363,7 +355,7 @@ player already committed when the save was written) and:
   comes up again even on resume.
 
 `match_resume` is cleared in-memory on consumption; on disk it's only
-overwritten by the next save (Sunday's is the post-match save). Closing mid-battle
+overwritten by the next save (the post-match save). Closing mid-battle
 keeps the disk save at the post-ban-pick snapshot, so the resume path
 replays the battle from scratch with the same locked-in picks.
 

@@ -8,9 +8,8 @@ extends Node2D
 # UI on enter() and emits phase_finished when done. MatchFlow advances the state
 # machine and feeds GameManager.match_ctx.
 #
-# In a season the flow is split over the weekend: Saturday runs PREP + BAN_PICK
-# only (`pending_match.split` → `_store_picks_and_return`), Sunday resumes at
-# LAUNCH from those picks through `match_resume` (`_resume_at_launch`).
+# In a season the whole flow runs on the match day itself (Saturday or Sunday):
+# the week screen's "경기 시작" → PREP → BAN_PICK → BattleSim.
 #
 # **열거값 둘이 자리만 지킨다 — `ASSIGN` 과 `JUNGLE_START`.**
 #   • 메크 배정은 밴픽 화면이 끝난 자리에서 그대로 이어진다
@@ -187,10 +186,6 @@ func _on_ban_pick_finished(result: Dictionary) -> void:
 	enemy_picked_mech_ids  = result["enemy_picks"]
 	gm.match_ctx["player_roster"] = result["player_roster"]
 	gm.match_ctx["enemy_roster"]  = result["enemy_roster"]
-	# Saturday prep: store the picks for Sunday and go back to the season.
-	if is_prep_only():
-		_store_picks_and_return()
-		return
 	# Mechs are assigned — pilot mods + mastery go onto the copies, and the
 	# pairing is recorded in pending_match before the post-ban-pick save.
 	_finalize_rosters(result["player_roster"], result["enemy_roster"])
@@ -221,29 +216,6 @@ func _launch_snapshot() -> Dictionary:
 		"enemy_assigned_mech_ids":  _roster_mech_ids(gm.match_ctx.get("enemy_roster",  [])),
 		"jungle_start_dir": int(GameEnums.JungleStartDir.LEFT),
 	}
-
-
-## Saturday prep from the season (`pending_match.split`): PREP + BAN_PICK only — the
-## picks wait for Sunday in the run (`SeasonHub.on_week_day_match_start`).
-func is_prep_only() -> bool:
-	if not bool(gm.season_state.get("active", false)):
-		return false
-	var pm: Variant = gm.season_state.get("pending_match", null)
-	return pm is Dictionary and bool((pm as Dictionary).get("split", false))
-
-
-## End of the Saturday prep: the LAUNCH snapshot goes into `pending_match.picks` (not
-## `match_resume`, so the lobby's continue opens the season, not MatchFlow), the run is
-## saved and the season takes over again (Saturday afternoon). Sunday copies the picks
-## into `match_resume` and MatchFlow resumes at LAUNCH (`_resume_at_launch`), where the
-## roster mods / stress are applied with Sunday's state.
-func _store_picks_and_return() -> void:
-	var pm: Dictionary = gm.season_state["pending_match"]
-	pm["picks"] = _launch_snapshot()
-	pm.erase("split")
-	gm.season_state["match_resume"] = null
-	_autosave("post_ban_pick")
-	SceneFade.change_scene(get_tree(), "res://scenes/Season.tscn")
 
 
 func _launch_battle() -> void:

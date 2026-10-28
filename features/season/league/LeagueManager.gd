@@ -3,8 +3,8 @@ extends Node
 
 # Round-robin schedule + standings + AI-vs-AI resolution. Reads/writes
 # GameManager.season_state. Each league phase = a single round robin (7 rounds),
-# one round per week on Sunday (4 matches across 8 teams) — the player plays
-# exactly one match per league week.
+# one round a day on Saturday and Sunday (4 matches across 8 teams each): the player
+# plays one match per match day (the last league week has Saturday only).
 
 @onready var _hub: SeasonHub = get_parent() as SeasonHub
 @onready var _gm: Node = get_node("/root/GameManager")
@@ -49,8 +49,8 @@ func _phase_already_scheduled(phase: int) -> bool:
 
 # Generate the round-robin schedule for the given league phase. Resets the
 # standings and writes match entries into season_state["match_schedule"].
-# Every league phase = single round-robin (7 rounds × 1 round/week = 7 weeks,
-# all on Sunday, `matchday` 0). Each match is stamped with the Monday of its
+# Every league phase = single round-robin (7 rounds, 2 per week on Sat · Sun = 4
+# weeks, `matchday` 0 = Saturday, 1 = Sunday). Each match is stamped with the Monday of its
 # phase_week so save metadata and views stay coherent.
 func generate_phase_schedule(phase: int) -> void:
 	if not is_league_phase(phase):
@@ -73,13 +73,13 @@ func generate_phase_schedule(phase: int) -> void:
 	var sched: Array = (s["match_schedule"] as Array).filter(
 			func(m): return int(m.get("phase", -1)) != phase)
 
-	# One round per week (`ROUNDS_PER_WEEK` = 1): round r → week r + 1, Sunday
-	# (`matchday` 0 = `CalendarSystem.MATCH_DAY`). `weekday` stays 0 (the save card
-	# shows the week's Monday); the day the match stands on is `matchday`.
+	# Two rounds per week (`ROUNDS_PER_WEEK`): round r → week r / 2 + 1, Saturday for an
+	# even r, Sunday for an odd one (`matchday` = `CalendarSystem.MATCH_DAYS`). `weekday`
+	# stays 0 (the save card shows the week's Monday); the day the match stands on is
+	# `matchday`.
 	var per_week: int = CalendarSystem.ROUNDS_PER_WEEK
 	for r_idx in rounds.size():
-		@warning_ignore("integer_division")
-		var week_idx: int = r_idx / per_week
+		var week_idx: int = floori(r_idx / float(per_week))
 		var matchday: int = r_idx % per_week
 		var pweek: int = week_idx + 1
 		var date: Dictionary = {"year": int(s["year"]), "month": int(s["month"]), "day": int(s["day"])}
@@ -134,7 +134,7 @@ func resolve_current_week() -> void:
 	resolve_matchday(-1)
 
 
-## Resolves the AI matches of one matchday (0 = Sunday, the only one); `matchday < 0` =
+## Resolves the AI matches of one matchday (0 = Saturday, 1 = Sunday); `matchday < 0` =
 ## the whole week (the week-end sweep). The player's match is left for SeasonHub.
 func resolve_matchday(matchday: int) -> void:
 	if _hub != null:
@@ -152,13 +152,30 @@ func resolve_matchday(matchday: int) -> void:
 			continue
 		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
 			continue
-		var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
-		if ta == pid or tb == pid:
-			continue  # player match — SeasonHub handles via MatchFlow
-		var winner: int = simulate_ai_match(ta, tb)
-		m["played"] = true
-		m["winner"] = winner
-		record_result(ta, tb, winner)
+		if int(m["team_a"]) == pid or int(m["team_b"]) == pid:
+			continue  # player match: SeasonHub handles via MatchFlow
+		_resolve_ai(m)
+
+
+## Resolves one AI match of `match_schedule` by index: the match day's time slots before
+## the player's match (`SeasonHub.resolve_ai_before_player`). Played / player matches: no-op.
+func resolve_match(idx: int) -> void:
+	var sched: Array = _gm.season_state["match_schedule"]
+	if idx < 0 or idx >= sched.size():
+		return
+	var m: Dictionary = sched[idx]
+	var pid: int = int(_gm.season_state["player_team_id"])
+	if bool(m["played"]) or int(m["team_a"]) == pid or int(m["team_b"]) == pid:
+		return
+	_resolve_ai(m)
+
+
+func _resolve_ai(m: Dictionary) -> void:
+	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
+	var winner: int = simulate_ai_match(ta, tb)
+	m["played"] = true
+	m["winner"] = winner
+	record_result(ta, tb, winner)
 
 
 # ── Standings ───────────────────────────────────────────────────────────────
@@ -246,7 +263,7 @@ func player_match_this_week() -> Variant:
 	return player_match_on_day(-1)
 
 
-## My unplayed league match this week on that matchday (0 = Sunday), or null.
+## My unplayed league match this week on that matchday (0 = Saturday, 1 = Sunday), or null.
 ## `matchday < 0` = any day of this week. Played matches do not count, so the week
 ## screen does not offer the same match again after it was played.
 func player_match_on_day(matchday: int) -> Variant:

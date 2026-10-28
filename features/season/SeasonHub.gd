@@ -9,21 +9,18 @@ extends Control
 #
 #   HUB (before the week) → TRAINING (tile board) → WEEK
 #     Mon–Fri  training days (morning training → afternoon → evening)
-#     Sat      morning = stadium → MatchFlow PREP + BAN_PICK (split: picks are
-#              stored in `pending_match.picks`, MatchFlow returns here), then a
-#              normal afternoon / evening without training
-#     Sun      morning = stadium → MatchFlow resumes at LAUNCH with the stored
-#              picks → BattleSim → result → STANDINGS → PRESS (result-reactive)
-#              → afternoon (visit, §15 D) → evening → week end → HUB
+#     Sat, Sun match days: morning = the day's schedule (`day_schedule`, the AI
+#              matches before mine already played) → MatchFlow PREP → BAN_PICK →
+#              BattleSim → result → STANDINGS → afternoon (visit, §15 D) →
+#              evening → next day / week end → HUB
 #
-# One player match per week, always on Sunday (`CalendarSystem.MATCH_DAY`); the
-# AI matches of that round resolve on Sunday too. A week without a player match
-# has plain Sat / Sun (no stadium, no press). Training is settled per weekday
+# One player match per match day (`CalendarSystem.MATCH_DAYS`: Saturday, Sunday);
+# the AI matches of that day resolve the same day. A match day without a player
+# match runs its afternoon / evening only. Training is settled per weekday
 # (`TrainingBoard.apply_day_training(day)`).
 #
 # Autosave triggers: run start (first HUB), pre-ban-pick / post-ban-pick
-# (MatchFlow, Saturday), pre-match (Sunday launch, `match_resume` = the stored
-# picks), post-match, and every step of the week (`autosave(reason)`).
+# (MatchFlow), post-match, and every step of the week (`autosave(reason)`).
 
 @onready var _gm: Node = get_node("/root/GameManager")
 @onready var _placeholder: Label = get_node_or_null("Placeholder")
@@ -95,8 +92,8 @@ func _ready() -> void:
 		if _run_end_screen < 0:
 			current_screen = _post_match_screen()
 		_gm.season_state["match_resume"] = null
-		# Only on the match day — a result consumed on another day (editor cheat on
-		# Saturday) leaves the round's AI matches for Sunday.
+		# Only on a match day: a result consumed on another day (editor cheat on a
+		# training day) leaves the round's AI matches for their own day.
 		var md: int = CalendarSystem.matchday_of(week_day())
 		if md >= 0:
 			_resolve_ai_for_matchday(md)
@@ -111,8 +108,8 @@ func _ready() -> void:
 
 
 ## Where a freshly loaded run continues: the week screen when a week is running
-## (`week_day` ≥ 0 — every day stage, the Saturday picks, the Sunday press and open
-## dialogs are read back from the records), else the hub. Entering a screen other
+## (`week_day` ≥ 0: every day stage and open dialogs are read back from the records),
+## else the hub. Entering a screen other
 ## than HUB skips `_show_hub`, so the schedule / tournament bootstrap it does runs
 ## here first.
 func _resume_screen() -> int:
@@ -280,6 +277,9 @@ func _show_press() -> void:
 
 
 func _show_week() -> void:
+	# A match day's earlier time slots are over by the time the screen shows it.
+	if resolve_ai_before_player(week_day()):
+		autosave("match_day")
 	_ensure_week_view()
 	_hide_all_screens()
 	if _week_view:
@@ -403,15 +403,10 @@ func _ensure_ending_view() -> void:
 
 # ── Weekly flow handlers (called by views) ────────────────────────
 
-## The press conference is answered (Sunday afternoon) → back to the week (Sunday
-## evening). Outside a running week (old saves) → the training plan.
+## The press conference view's close. The press is out of the week flow (no screen
+## opens it any more); kept so the view still has a way back.
 func on_press_finished() -> void:
 	goto(Screen.WEEK if week_day() >= 0 else Screen.TRAINING)
-
-
-## The week screen's "기자회견" (Sunday afternoon, `press_pending`).
-func open_press() -> void:
-	goto(Screen.PRESS)
 
 
 ## TrainingView "훈련 확정" → **주가 시작된다**. 판을 정산하지 않고
@@ -442,64 +437,6 @@ func has_player_match_on_day(day: int) -> bool:
 	return _find_player_match_source(md) != ""
 
 
-## Saturday morning still needs the match prep: a player match is scheduled this
-## Sunday and its picks are not stored yet (`match_picks_ready`).
-func needs_match_prep(day: int) -> bool:
-	if day != CalendarSystem.PREP_DAY or bool(_gm.season_state.get("run_over", false)):
-		return false
-	if not has_player_match_on_day(CalendarSystem.MATCH_DAY):
-		return false
-	return not match_picks_ready()
-
-
-## The Saturday ban/pick of this week's Sunday match is stored (`pending_match.picks`)
-## and still belongs to that match.
-func match_picks_ready() -> bool:
-	var pm: Variant = _gm.season_state.get("pending_match", null)
-	if not (pm is Dictionary) or not ((pm as Dictionary).get("picks", null) is Dictionary):
-		return false
-	var ref: Dictionary = _player_match_ref(CalendarSystem.matchday_of(CalendarSystem.MATCH_DAY))
-	return not ref.is_empty() and String(ref["source"]) == String((pm as Dictionary).get("source", "")) \
-			and int(ref["idx"]) == int((pm as Dictionary).get("schedule_idx", -1))
-
-
-## "win" / "loss" of my match played this week, "" when none was played yet.
-func player_result_this_week() -> String:
-	var s: Dictionary = _gm.season_state
-	var pid: int = int(s["player_team_id"])
-	var phase: int = int(s["current_phase"])
-	var pweek: int = int(s["phase_week"])
-	var t: Variant = s.get("current_tournament", null)
-	if t is Dictionary and int((t as Dictionary).get("phase_at_start", phase)) == phase:
-		for m_raw in ((t as Dictionary).get("bracket", []) as Array):
-			var r: String = _own_result(m_raw, pid, pweek)
-			if r != "":
-				return r
-	for m_raw in (s.get("match_schedule", []) as Array):
-		if int((m_raw as Dictionary).get("phase", -1)) != phase or bool((m_raw as Dictionary).get("void", false)):
-			continue
-		var r2: String = _own_result(m_raw, pid, pweek)
-		if r2 != "":
-			return r2
-	return ""
-
-
-static func _own_result(m_raw: Variant, pid: int, pweek: int) -> String:
-	var m: Dictionary = m_raw
-	if not bool(m.get("played", false)) or int(m.get("phase_week", -1)) != pweek:
-		return ""
-	if int(m.get("team_a", -1)) != pid and int(m.get("team_b", -1)) != pid:
-		return ""
-	return "win" if int(m.get("winner", -1)) == pid else "loss"
-
-
-## Sunday afternoon: my match of the week is played and its press conference is not
-## answered yet.
-func press_pending() -> bool:
-	return week_day() == CalendarSystem.MATCH_DAY and player_result_this_week() != "" \
-			and not MentalSystem.press_answered(_gm.season_state)
-
-
 ## 그 요일의 상대 팀 이름 (없으면 빈 문자열). 화면의 경기 카드가 쓴다.
 func opponent_name_on_day(day: int) -> String:
 	var md: int = CalendarSystem.matchday_of(day)
@@ -526,30 +463,90 @@ func opponent_name_on_day(day: int) -> String:
 	return ""
 
 
-## The week screen's "경기 시작" (Sunday morning) → this day's player match. With the
-## Saturday picks stored, MatchFlow resumes at LAUNCH from them (`match_resume`, the
-## same path as a mid-match resume) and goes straight to BattleSim; without them
-## (old save, skipped prep) the whole PREP → BAN_PICK → BattleSim flow runs.
+## The week screen's "경기 시작" (match-day morning) → this day's player match:
+## MatchFlow PREP → BAN_PICK → BattleSim in one go.
 func on_week_day_match_start() -> void:
 	var md: int = CalendarSystem.matchday_of(week_day())
 	if md < 0:
 		return
-	if match_picks_ready():
-		var s: Dictionary = _gm.season_state
-		s["match_resume"] = ((s["pending_match"] as Dictionary)["picks"] as Dictionary).duplicate(true)
-		autosave("pre_match")
-		get_tree().change_scene_to_file("res://scenes/MatchFlow.tscn")
-		return
 	_launch_player_match_on_day(md)
 
 
-## The week screen's "경기 준비" (Saturday morning) → MatchFlow PREP + BAN_PICK for
-## this Sunday's match. `pending_match.split` makes MatchFlow store the picks and come
-## back here instead of launching BattleSim.
-func on_week_day_match_prep() -> void:
-	if not needs_match_prep(week_day()):
-		return
-	_launch_player_match_on_day(CalendarSystem.matchday_of(CalendarSystem.MATCH_DAY), true)
+# ── Match-day schedule ───────────────────────────────────────
+
+## The matches of `day` in their **time order**: `[{source, idx, m}]` (`source` "league" /
+## "playoff" / "intl", `idx` = `match_schedule` / bracket index, `m` = the entry). The
+## order is a shuffle seeded by the week and the day, so my match sits anywhere in the
+## day and a redraw / reload keeps it. Bracket entries whose teams are not known yet are
+## left out. [] on a day without matches.
+func day_schedule(day: int) -> Array:
+	var md: int = CalendarSystem.matchday_of(day)
+	if md < 0:
+		return []
+	var s: Dictionary = _gm.season_state
+	var pweek: int = int(s["phase_week"])
+	var out: Array = []
+	var source: String = ""
+	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
+	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
+	if intl != null and intl.is_active():
+		source = "intl"
+	elif tm != null and tm.is_active():
+		source = "playoff"
+	if source != "":
+		var b: Array = s["current_tournament"]["bracket"]
+		for i in b.size():
+			var m: Dictionary = b[i]
+			if int(m["phase_week"]) == pweek and int(m.get("matchday", 0)) == md \
+					and int(m["team_a"]) >= 0 and int(m["team_b"]) >= 0:
+				out.append({"source": source, "idx": i, "m": m})
+	else:
+		var phase: int = int(s["current_phase"])
+		var sched: Array = s["match_schedule"]
+		for i in sched.size():
+			var m: Dictionary = sched[i]
+			if int(m.get("phase", -1)) == phase and int(m.get("phase_week", -1)) == pweek \
+					and int(m.get("matchday", 0)) == md and not bool(m.get("void", false)):
+				out.append({"source": "league", "idx": i, "m": m})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%s|%d|schedule" % [MentalSystem.week_key(s), day])
+	for i in range(out.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var tmp: Variant = out[i]
+		out[i] = out[j]
+		out[j] = tmp
+	return out
+
+
+## Plays the AI matches that stand before my unplayed match in `day_schedule(day)` (they
+## are over by the time my match starts). Returns true when anything was resolved. A day
+## without an unplayed match of mine: nothing (that day's AI matches resolve when the day
+## is confirmed / after my match).
+func resolve_ai_before_player(day: int) -> bool:
+	if bool(_gm.season_state.get("run_over", false)):
+		return false
+	var pid: int = int(_gm.season_state["player_team_id"])
+	var list: Array = day_schedule(day)
+	var mine: int = -1
+	for i in list.size():
+		var m: Dictionary = (list[i] as Dictionary)["m"]
+		if not bool(m["played"]) and (int(m["team_a"]) == pid or int(m["team_b"]) == pid):
+			mine = i
+			break
+	var any: bool = false
+	for i in maxi(mine, 0):
+		var e: Dictionary = list[i]
+		if bool((e["m"] as Dictionary)["played"]):
+			continue
+		match String(e["source"]):
+			"intl":
+				(get_node("InternationalTournament") as InternationalTournament).resolve_slot(int(e["idx"]))
+			"playoff":
+				(get_node("TournamentManager") as TournamentManager).resolve_slot(int(e["idx"]))
+			_:
+				(get_node("LeagueManager") as LeagueManager).resolve_match(int(e["idx"]))
+		any = true
+	return any
 
 
 ## 시간 경과 화면의 "확인" → 다음 날로. 일요일이면 주를 닫는다.
@@ -573,11 +570,8 @@ func on_week_day_confirmed() -> void:
 ## 순위 · 대진표 화면의 "확인" → 주가 돌고 있으면 그 요일로, 아니면 허브로.
 ## 허브에서 "리그 순위"로 궸어본 경우와 경기 직후에 띄운 경우가 같은 버튼을
 ## 나눠 쓰므로, 돌아갈 자리는 버튼이 아니라 **주 진행 상태**가 정한다.
-## Right after the Sunday match the press conference comes next (Sunday afternoon).
 func on_standings_confirmed() -> void:
-	if press_pending():
-		goto(Screen.PRESS)
-	elif week_day() >= 0:
+	if week_day() >= 0:
 		goto(Screen.WEEK)
 	else:
 		goto(Screen.HUB)
@@ -597,7 +591,7 @@ func _end_week() -> void:
 	for t in ResearchSystem.tick_week(s):
 		hub_toasts.append(String(t))
 	MentalSystem.end_week(s)
-	# A match that never got a result (stale Saturday picks) does not outlive its week.
+	# A match that never got a result (MatchFlow left before BattleSim) does not outlive its week.
 	var pm: Variant = s.get("pending_match", null)
 	if pm is Dictionary and int((pm as Dictionary).get("winner_side", -1)) < 0:
 		s["pending_match"] = null
@@ -653,9 +647,8 @@ func _league_team_name(team_id: int) -> String:
 
 
 # Find the player's match on that matchday (priority INTL > playoff > league),
-# populate pending_match, scene-change to MatchFlow. `split` = Saturday prep:
-# MatchFlow stops after ban/pick and stores the picks (`pending_match.picks`).
-func _launch_player_match_on_day(matchday: int, split: bool = false) -> void:
+# populate pending_match, scene-change to MatchFlow.
+func _launch_player_match_on_day(matchday: int) -> void:
 	var ref: Dictionary = _player_match_ref(matchday)
 	if ref.is_empty():
 		return
@@ -665,8 +658,6 @@ func _launch_player_match_on_day(matchday: int, split: bool = false) -> void:
 		"enemy_team_id": int(ref["enemy"]),
 		"winner_side":   -1,
 	}
-	if split:
-		pm["split"] = true
 	_gm.season_state["pending_match"] = pm
 	get_tree().change_scene_to_file("res://scenes/MatchFlow.tscn")
 
@@ -715,15 +706,14 @@ func _league_match_idx(matchday: int) -> int:
 	return -1
 
 
-## Resolves only that matchday's AI matches (matchday 0 = Sunday, the only one).
+## Resolves only that matchday's AI matches (0 = Saturday, 1 = Sunday).
 func _resolve_ai_for_matchday(matchday: int) -> void:
-	if matchday == 0:
-		var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
-		if intl != null and intl.is_active():
-			intl.resolve_current_week()
-		var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
-		if tm != null and tm.is_active():
-			tm.resolve_current_week()
+	var intl: InternationalTournament = get_node_or_null("InternationalTournament") as InternationalTournament
+	if intl != null and intl.is_active():
+		intl.resolve_matchday(matchday)
+	var tm: TournamentManager = get_node_or_null("TournamentManager") as TournamentManager
+	if tm != null and tm.is_active():
+		tm.resolve_matchday(matchday)
 	var league: LeagueManager = get_node_or_null("LeagueManager") as LeagueManager
 	if league != null:
 		league.resolve_matchday(matchday)
@@ -765,9 +755,6 @@ func _consume_pending_match_result() -> bool:
 		return false
 	var winner_side: int = int(pm.get("winner_side", -1))
 	if winner_side < 0:
-		# Saturday ban/pick done, Sunday match still to come — keep it with its picks.
-		if (pm as Dictionary).get("picks", null) is Dictionary:
-			return false
 		s["pending_match"] = null
 		return false
 	var idx: int = int(pm["schedule_idx"])
@@ -791,7 +778,7 @@ func _consume_pending_match_result() -> bool:
 	# match unlocks the bar before the match EXP lands.
 	LimitBreak.record_match(s, pm as Dictionary)
 	Awakening.on_match(s, pm as Dictionary)
-	MentalSystem.record_match(s, pm as Dictionary)   # §15 D Sunday story (K/D/A, MVP)
+	MentalSystem.record_match(s, pm as Dictionary)   # §15 D match-day story (K/D/A, MVP)
 
 	if source == "playoff":
 		_apply_playoff_result(idx, winner_team_id)

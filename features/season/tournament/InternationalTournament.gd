@@ -5,8 +5,8 @@ extends Node
 # Phase 8 — INTL bracket manager. Activates on the first week of an INTL
 # phase (PRESEASON_INTL, MIDSEASON_INTL, REGULAR_INTL). 8-team single
 # elimination using the previous league phase's top-4 + 4 fixed external
-# INTL teams. Each round happens in its own week (1 match per week per
-# team): QF in week 1 (4 matches), SF in week 2 (2 matches), F in week 3.
+# INTL teams. One round a match day (1 match a day per team): QF on week 1
+# Saturday (4 matches), SF on week 1 Sunday (2 matches), F on week 2 Saturday.
 # AI matches resolve at week-advance time; player matches go through
 # SeasonHub → MatchFlow → BattleSim with pending_match.source = "intl".
 #
@@ -113,11 +113,11 @@ func _bootstrap_intl(phase: int) -> void:
 
 	var cal: CalendarSystem = _hub.get_node_or_null("CalendarSystem") as CalendarSystem
 	var qf_date: Dictionary = cal.date_of_week_offset(0) if cal != null else _today()
-	var sf_date: Dictionary = cal.date_of_week_offset(1) if cal != null else _today()
-	var f_date:  Dictionary = cal.date_of_week_offset(2) if cal != null else _today()
+	var f_date:  Dictionary = cal.date_of_week_offset(1) if cal != null else _today()
 
-	# 8-team bracket. QF1..QF4 in week 1 (4 different teams pair up so each
-	# team plays once), SF1+SF2 in week 2, F in week 3. High-low pairing
+	# 8-team bracket. QF1..QF4 on week 1 Saturday (matchday 0; 4 different pairs so
+	# each team plays once), SF1+SF2 on week 1 Sunday (matchday 1), F on week 2
+	# Saturday. High-low pairing
 	# intercrosses league seed against INTL seed:
 	#   QF1: L1 vs I4 → SF1.team_a
 	#   QF4: L4 vs I1 → SF1.team_b
@@ -125,13 +125,13 @@ func _bootstrap_intl(phase: int) -> void:
 	#   QF3: L3 vs I2 → SF2.team_b
 	var pweek: int = int(s["phase_week"])  # always 1 here
 	var b: Array = []
-	b.append(_mk_match(0, 1, top4[0], intl_ids[3], pweek,     qf_date))   # QF1
-	b.append(_mk_match(1, 1, top4[1], intl_ids[2], pweek,     qf_date))   # QF2
-	b.append(_mk_match(2, 1, top4[2], intl_ids[1], pweek,     qf_date))   # QF3
-	b.append(_mk_match(3, 1, top4[3], intl_ids[0], pweek,     qf_date))   # QF4
-	b.append(_mk_match(4, 2, -1, -1,               pweek + 1, sf_date))   # SF1
-	b.append(_mk_match(5, 2, -1, -1,               pweek + 1, sf_date))   # SF2
-	b.append(_mk_match(6, 3, -1, -1,               pweek + 2, f_date))    # F
+	b.append(_mk_match(0, 1, top4[0], intl_ids[3], pweek,     0, qf_date))   # QF1
+	b.append(_mk_match(1, 1, top4[1], intl_ids[2], pweek,     0, qf_date))   # QF2
+	b.append(_mk_match(2, 1, top4[2], intl_ids[1], pweek,     0, qf_date))   # QF3
+	b.append(_mk_match(3, 1, top4[3], intl_ids[0], pweek,     0, qf_date))   # QF4
+	b.append(_mk_match(4, 2, -1, -1,               pweek,     1, qf_date))   # SF1
+	b.append(_mk_match(5, 2, -1, -1,               pweek,     1, qf_date))   # SF2
+	b.append(_mk_match(6, 3, -1, -1,               pweek + 1, 0, f_date))    # F
 
 	s["current_tournament"] = {
 		"type":           "INTL",
@@ -142,7 +142,8 @@ func _bootstrap_intl(phase: int) -> void:
 	intl_started.emit(phase)
 
 
-func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int, date: Dictionary) -> Dictionary:
+func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int, matchday: int,
+		date: Dictionary) -> Dictionary:
 	return {
 		"slot":       slot,
 		"round":      round_,
@@ -153,9 +154,8 @@ func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int
 		"month":      int(date["month"]),
 		"day":        int(date["day"]),
 		"weekday":    0,
-		# Every match stands on Sunday (matchday 0 = `CalendarSystem.MATCH_DAY`), one
-		# bracket round per week.
-		"matchday":   0,
+		# 0 = Saturday, 1 = Sunday (`CalendarSystem.MATCH_DAYS`).
+		"matchday":   matchday,
 		"played":     false,
 		"winner":     -1,
 	}
@@ -168,6 +168,13 @@ func _today() -> Dictionary:
 
 # ── Week-level resolution ───────────────────────────────────────────────────
 func resolve_current_week() -> void:
+	resolve_matchday(-1)
+
+
+## Resolves the AI matches of one matchday (0 = Saturday, 1 = Sunday) of this week;
+## `matchday < 0` = the whole week (the week-end sweep). Slot order, so a round seeds the
+## next before it is looked at.
+func resolve_matchday(matchday: int) -> void:
 	if not is_active():
 		return
 	var s: Dictionary = _gm.season_state
@@ -180,16 +187,37 @@ func resolve_current_week() -> void:
 			continue
 		if int(m["phase_week"]) != pweek:
 			continue
+		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
+			continue
 		var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
 		if ta < 0 or tb < 0:
 			continue   # next round not seeded yet
 		if ta == pid or tb == pid:
-			continue   # player match — SeasonHub launches MatchFlow
-		var winner: int = simulate_ai_match(ta, tb)
-		m["played"] = true
-		m["winner"] = winner
-		_seed_next_round(int(m["slot"]), winner)
+			continue   # player match: SeasonHub launches MatchFlow
+		_resolve_ai(m)
 	_maybe_complete()
+
+
+## Resolves one AI bracket match by index: the match day's time slots before the player's
+## match (`SeasonHub.resolve_ai_before_player`). Played, unseeded or player matches: no-op.
+func resolve_slot(slot: int) -> void:
+	var b: Array = bracket()
+	if slot < 0 or slot >= b.size():
+		return
+	var m: Dictionary = b[slot]
+	var pid: int = int(_gm.season_state["player_team_id"])
+	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
+	if bool(m["played"]) or ta < 0 or tb < 0 or ta == pid or tb == pid:
+		return
+	_resolve_ai(m)
+	_maybe_complete()
+
+
+func _resolve_ai(m: Dictionary) -> void:
+	var winner: int = simulate_ai_match(int(m["team_a"]), int(m["team_b"]))
+	m["played"] = true
+	m["winner"] = winner
+	_seed_next_round(int(m["slot"]), winner)
 
 
 # Apply a player-match result. Called by SeasonHub._consume_pending_match_result
@@ -306,8 +334,8 @@ func find_player_match_this_week_idx() -> int:
 	return find_player_match_on_day_idx(-1)
 
 
-## Index of my unplayed bracket match this week on that matchday (0 = Sunday, the only
-## one), -1 when none. `matchday < 0` = any day of this week.
+## Index of my unplayed bracket match this week on that matchday (0 = Saturday, 1 =
+## Sunday), -1 when none. `matchday < 0` = any day of this week.
 func find_player_match_on_day_idx(matchday: int) -> int:
 	if not is_active():
 		return -1

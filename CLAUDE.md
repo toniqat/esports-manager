@@ -16,7 +16,7 @@ Godot 4.5-stable, GDScript · 2D mobile portrait 1080×1920 · main scene `res:/
 ```
 Lobby ─scenario──▶ RunSetup ──start_run──▶ Season (SeasonHub) ◀──────────┐
   │  (nav: 기록 · 컬렉션 · 홈 · 패스 · 상점)     │ week: HUB → TRAINING → WEEK         │
-  └──continue─────────────────────────────▶   │ 토 ban/pick · 일 match ▼ → PRESS   │
+  └──continue─────────────────────────────▶   │ 토 · 일 each: ban/pick + match ▼   │
                                                MatchFlow (PREP → BAN_PICK) ──▶ BattleSim
                                                run over ▶ RunResult ▶ Lobby     (result back)
 ```
@@ -29,8 +29,8 @@ Lobby ─scenario──▶ RunSetup ──start_run──▶ Season (SeasonHub) 
 | Data | `data/csv/*.csv` → `data/game.db` (SQLite) → `GameDb` / `ConstTable`; tuning numbers only in `const.csv` | `data/`, `resources/` |
 | UI kit | Outgame = white theme via `OutgameTheme` + bottom action bar; screen coords via `ScreenMetrics`. BattleSim = the same white paper via `BattleTheme` (only plate-less text over the field keeps outlines) | `resources/`, `docs/mobile_safe_area.md` |
 
-Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`, 36 weeks), one week at a time, days 월~금 training /
-토 stadium + ban/pick / 일 stadium match + press (one player match a week); rules in `features/season/README.md` + `calendar/README.md`.
+Campaign = 6 phases (`PRESEASON` … `REGULAR_INTL`, 21 weeks), one week at a time, days 월~금 training /
+토 · 일 match days (each: schedule → ban/pick + match → afternoon / evening; one player match a day); rules in `features/season/README.md` + `calendar/README.md`.
 
 ---
 

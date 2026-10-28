@@ -19,21 +19,19 @@ never shows the test run.
 Auto-save fires at discrete points (no manual save UI):
 
 1. **Post-run-start** — first HUB entry of a fresh run (`SeasonHub._is_run_start`).
-2. **Pre-ban-pick** (Saturday) — MatchFlow `_on_prep_finished()`, right before BAN_PICK starts.
-3. **Post-ban-pick** (Saturday) — MatchFlow `_store_picks_and_return()`: mech (메크) assignment is
-   done, the picks go into `pending_match.picks`, `match_resume` is cleared, back to the season.
-4. **Pre-match** (Sunday) — SeasonHub `on_week_day_match_start()`: `match_resume` = the stored picks
-   (phase LAUNCH), then MatchFlow → BattleSim.
-5. **Post-match** — SeasonHub `_ready()` after `_consume_pending_match_result`
+2. **Pre-ban-pick** (match day, Sat · Sun): MatchFlow `_on_prep_finished()`, right before BAN_PICK starts.
+3. **Post-ban-pick** (match day): MatchFlow `_on_ban_pick_finished()`: mech (메크) assignment is
+   done, `match_resume` = the LAUNCH snapshot, then BattleSim.
+4. **Post-match**: SeasonHub `_ready()` after `_consume_pending_match_result`
    applies the result and clears `match_resume`.
-6. **Weekly flow** — every step of the week (`SeasonHub.autosave(reason)`, public so the
+5. **Weekly flow**: every step of the week (`SeasonHub.autosave(reason)`, public so the
    press / week screens call it): week start (training confirmed), each day-stage change
-   (settlement → afternoon → evening incident roll; the weekend's automatic afternoon /
-   evening), a talk / interview / outing opened (record with `choice = -1`), every answer picked, the
-   Sunday press answer, next day, end of week. See the table below.
+   (settlement → afternoon → evening incident roll; the match day's automatic afternoon / evening;
+   `match_day` when a match day's earlier AI matches were played), a talk / interview / outing opened
+   (record with `choice = -1`), every answer picked, next day, end of week. See the table below.
 
 No save fires while BattleSim is running — closing mid-battle resumes from
-the Sunday pre-match snapshot and replays the battle (the jungle start screen shows again too).
+the post-ban-pick snapshot and replays the battle (the jungle start screen shows again too).
 
 **Run end** — `RunResult.settle_current_run(outcome)` (SeasonHub on ENDING / GAME_OVER
 entry, the lobby on abandon) writes the profile (non-test runs), calls `SaveSystem.delete_run()`
@@ -102,10 +100,9 @@ What v2 changed vs v1:
 The `meta` block is denormalized info for the lobby's run card, computed
 once at save time, so the lobby can render it without loading the full
 season_state (and without instantiating LeagueManager).
-`match_in_progress` is true when the run was saved with a `match_resume` (mid Saturday ban/pick, or
-the Sunday launch / battle) — the lobby shows a "경기 진행 중" (Match in progress) chip and
-routes "이어하기" (Continue) to MatchFlow.tscn instead of Season.tscn. Between the Saturday ban/pick
-and the Sunday match it is false (the picks wait in `pending_match.picks`).
+`match_in_progress` is true when the run was saved with a `match_resume` (mid ban/pick, or
+the launch / battle): the lobby shows a "경기 진행 중" (Match in progress) chip and
+routes "이어하기" (Continue) to MatchFlow.tscn instead of Season.tscn.
 `team_id` is the player team (the lobby shows `GameManager.team_name(team_id)` — before a run
 is loaded that falls back to the `teams.csv` package table). `scenario` comes from
 `season_state.run_setup` (-1 for a run without one); a screen showing it resolves the name
@@ -175,17 +172,16 @@ Resource-typed entries:
   turns the JSON floats back into ints (levels, points, done counts, boosts, ranks); for a run saved **before**
   §16 (no `facilities`) it builds the seven facilities at the old `finance.facility_level` (key dropped) and seats
   the run staff by job, as at run start (manager slots empty). Every `FacilitySystem` read also migrates lazily.
-- `pending_match` round-trips as-is. Non-null from the Saturday "경기 준비" (`split: true`) through
-  `_consume_pending_match_result` on Sunday. After the Saturday ban/pick it carries **`picks`** — the
-  LAUNCH snapshot (shape of `match_resume` below) — with `match_resume` null; Sunday copies `picks`
-  into `match_resume`. Numbers come back as floats after JSON (`_resume_at_launch` wraps them in
-  `int()`). A `pending_match` without a result is dropped at week end.
-- `schedule_format` — int, `CalendarSystem.SCHEDULE_FORMAT` (2 = one Sunday match per week). Missing
-  in older files → read as 1 and `load_run` runs `CalendarSystem.migrate_weekly_format`
-  (`features/season/calendar/README.md` "Old saves"); the next save writes 2.
+- `pending_match` round-trips as-is. Non-null from the match day's "경기 시작" through
+  `_consume_pending_match_result` after BattleSim. Numbers come back as floats after JSON
+  (`_resume_at_launch` wraps them in `int()`). A `pending_match` without a result is dropped at week
+  end (and by the format-3 migration: old stored Saturday picks).
+- `schedule_format`: int, `CalendarSystem.SCHEDULE_FORMAT` (3 = one round a day on Sat · Sun). Missing
+  (read as 1) or 2 → `load_run` runs `CalendarSystem.migrate_weekly_format`
+  (`features/season/calendar/README.md` "Old saves"); the next save writes 3.
 - `current_tournament` rounds-trips as a plain dict.
-- `match_resume` is the mid-match snapshot. Non-null from the Saturday pre-ban-pick save until the
-  ban/pick ends, and from the Sunday pre-match save until the post-match save. Shape:
+- `match_resume` is the mid-match snapshot. Non-null from the pre-ban-pick save until the
+  post-match save. Shape:
   ```
   { phase: int (MatchPhase.BAN_PICK or LAUNCH),
     player_side: int,
@@ -203,13 +199,12 @@ Resource-typed entries:
 | # | When | Where | match_resume |
 |---|---|---|---|
 | 1 | First HUB entry after `start_run` | `SeasonHub._show_hub()` (`_is_run_start`) | null (cleared) |
-| 2 | Pre-ban-pick (Saturday, before BAN_PICK starts) | `MatchFlow._on_prep_finished()` | `{phase: BAN_PICK, ...}` |
-| 3 | Post-ban-pick (Saturday, mech assignment done) | `MatchFlow._store_picks_and_return()` | null — picks in `pending_match.picks` |
-| 3b | Pre-match (`pre_match`, Sunday "경기 시작") | `SeasonHub.on_week_day_match_start()` | `{phase: LAUNCH, ...}` (= the picks) |
+| 2 | Pre-ban-pick (match day, before BAN_PICK starts) | `MatchFlow._on_prep_finished()` | `{phase: BAN_PICK, ...}` |
+| 3 | Post-ban-pick (match day, mech assignment done) | `MatchFlow._on_ban_pick_finished()` | `{phase: LAUNCH, ...}` |
 | 4 | Post-match (return from BattleSim, result applied) | `SeasonHub._ready()` | null (cleared by `_consume_pending_match_result`) |
-| 5 | Press answer (`press_answer`, Sunday afternoon) | `PressConferenceView._on_answer_picked` | null |
+| 5 | Match-day earlier AI matches played (`match_day`) | `SeasonHub._show_week` (`resolve_ai_before_player`) | null |
 | 6 | Week start (`week_start`, `week_day = 0`) | `SeasonHub.on_training_confirmed` | null |
-| 7 | Training settled (`training_settled`) · afternoon (`afternoon`) · incident rolled (`incident`) | `WeekProgressView._settle_day` · `_finish_result_fx` · `_begin_afternoon` · `_begin_evening` · `_advance_weekend` | null (or the Saturday picks in `pending_match`) |
+| 7 | Training settled (`training_settled`) · afternoon (`afternoon`) · incident rolled (`incident`) | `WeekProgressView._settle_day` · `_finish_result_fx` · `_begin_afternoon` · `_begin_evening` · `_advance_weekend` | null |
 | 8 | Dialog opened (`talk_open` / `afternoon_open`) · answer picked (`choice`) | `WeekProgressView._on_talk_pressed` · `_on_afternoon_action` · `_on_overlay_choice` | null |
 | 9 | Next day (`next_day`) · end of week (`post_week`) | `SeasonHub.on_week_day_confirmed` · `_end_week` | null |
 
@@ -217,7 +212,7 @@ Both `_autosave` helpers call `SaveSystem.save_run()` unconditionally — which 
 it lands in is decided by `use_test_run` (above).
 
 ## Mid-match resume
-Closing the game during the Saturday ban/pick (after save #2) or between the Sunday save #3b and
+Closing the game during the ban/pick (after save #2) or between save #3 and
 save #4 leaves `match_resume` non-null on disk. On `이어하기` (Continue) in the lobby:
 
 - The lobby branches on `season_state.match_resume`. Non-null →
@@ -225,14 +220,12 @@ save #4 leaves `match_resume` non-null on disk. On `이어하기` (Continue) in 
 - `MatchFlow._ready()` reads `season_state.match_resume`, clears it
   in-memory, and skips ahead:
   - `phase == BAN_PICK`: restore `player_side`, fall into the normal
-    entry path (`pending_match.split` is still set, so the ban/pick ends by storing the picks and
-    returning to the season).
+    entry path (the ban/pick ends by launching BattleSim).
   - `phase == LAUNCH`: rebuild `match_ctx` (rosters, assigned mechs,
     bans, jungle dir) from the resume payload, scene-change directly to
     BattleSim. No phase UI runs.
-- Closing mid-battle leaves the disk save at #3b, so the next resume drops back into BattleSim with
-  the same locked-in picks. Closing between the Saturday ban/pick and the Sunday match resumes in the
-  season (Saturday afternoon / Sunday morning) with the picks intact in `pending_match.picks`.
+- Closing mid-battle leaves the disk save at #3, so the next resume drops back into BattleSim with
+  the same locked-in picks.
 
 ## New-run vs continue flow (lobby)
 - **새 런, no run**: `reset_season_state()` → RunSetup.tscn (`features/meta/run_setup/`) →
@@ -244,8 +237,7 @@ save #4 leaves `match_resume` non-null on disk. On `이어하기` (Continue) in 
 - **이어하기**: `SaveSystem.load_run()` overwrites `season_state` (active=true) →
   MatchFlow.tscn if `match_resume != null`, else Season.tscn (skips `init_season()`).
   Season.tscn then picks the screen from the state (`SeasonHub._resume_screen`): **WEEK** when a week
-  is running (`week_day >= 0` — the week screen reads its day stage, the Saturday picks, the Sunday
-  press and any open dialog back from the records), else HUB (the week-start press conference is gone,
+  is running (`week_day >= 0`: the week screen reads its day stage and any open dialog back from the records), else HUB (the week-start press conference is gone,
   so there is no TRAINING resume any more). A non-HUB entry runs the schedule / tournament
   bootstrap (`_ensure_schedule`) that `_show_hub` normally does. Old-format runs are migrated on load
   (`schedule_format`).

@@ -12,7 +12,7 @@ pilots stand on its spots.
 | `BaseMapBuilding.gd` | `@tool class_name BaseMapBuilding extends Polygon2D`: one building = its **roof** polygon + `height` (walls / footprint / shadow derived) |
 | `BaseMapRoads.gd` | `@tool class_name BaseMapRoads extends Node2D` (`Roads` node): Line2D children → road graph, `route` (A*), `snap` — see "Roads and walking" below |
 | `UI_Comp_BaseMap_<Name>.tscn` (10) | One map each: art + spot markers. `map_id` order = `SCENES` = the image numbering in `resources/images/base_map/` minus 2 (the indoor Schale maps 00 / 01 were deleted 2026-10, `teams.csv` `map_id` shifted down by 2) |
-| `UI_Comp_BaseMap_Stadium.tscn` | **Weekend stadium** (not a team map, not in `SCENES`): `BaseMap.create_stadium()` (`STADIUM_SCENE`). Placeholder art = flat `ColorRect` `Art` (`editor_description = "TODO: stadium art …"`) + three `Zone_*` blocks; spots `Spot_TeamRoom` (Saturday prep) · `Spot_Booth` (Sunday match) · `Spot_Press` (Sunday press) · `Spot_W` · `Spot_Entrance` |
+| `UI_Comp_BaseMap_Stadium.tscn` | **Stadium** (not a team map, not in `SCENES`): `BaseMap.create_stadium()` (`STADIUM_SCENE`). **Unused since 2026-10**: the week screen's match-day morning draws no map (schedule panels only); scene and spots kept in code. Placeholder art = flat `ColorRect` `Art` (`editor_description = "TODO: stadium art …"`) + three `Zone_*` blocks; spots `Spot_TeamRoom` (Saturday prep) · `Spot_Booth` (Sunday match) · `Spot_Press` (Sunday press) · `Spot_W` · `Spot_Entrance` |
 
 | `map_id` | Scene | Art |
 |---|---|---|
@@ -109,9 +109,8 @@ BaseMap_<Name> (Control DESIGN_SIZE 1200 × 761, mouse Ignore, script BaseMap.gd
   `%Facilities` layer): the tail tip of that facility's research bubble (body ~104 × 124 above it). They were placed
   so no two bubbles overlap (|dx| ≥ 108 or |dy| ≥ 120); a bubble near the top edge is clamped down over its spot.
 * The week screen instances the map with `BaseMap.create`, names it `BaseMap_Team` and mounts it on
-  `WeekMapSection` `%MapHolder` (`BaseMap.mount`). On the weekend `STADIUM` / `PRESS` stages it instances
-  `BaseMap.create_stadium()` instead (`BaseMap_Stadium`) and stands all five pilots on
-  `SPOT_TEAM_ROOM` (Saturday) / `SPOT_BOOTH` (Sunday morning) / `SPOT_PRESS` (Sunday afternoon).
+  `WeekMapSection` `%MapHolder` (`BaseMap.mount`). The match-day `MATCH` stage (Sat · Sun morning) mounts
+  no map at all; the stadium (`create_stadium`, `SPOT_TEAM_ROOM` / `SPOT_BOOTH` / `SPOT_PRESS`) is no longer instanced.
 * The F6 preview of any map scene shows five random pilots (portraits, `PilotImages.circle_for`, no mobs) on random `Spot_*` markers (not `Spot_Fac_*`), the first 5 / 3 / 1 / 4 / 2 of them on one shared spot per round, no facility bubbles.
 
 ## Time of day (`Lighting`, `BaseMapLighting`)

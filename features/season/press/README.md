@@ -1,12 +1,13 @@
 # Press conference (기자회견) (press)
 
-A **messenger screen** that opens once a week, on **Sunday afternoon right after the match**.
-`Screen.PRESS` in `SeasonHub`. (It used to open right before the week started; that conference was
-removed — HUB now goes straight to TRAINING.)
+A **messenger screen**, `Screen.PRESS` in `SeasonHub`. **Unused, out of the flow (2026-10)**: it opened on
+the Sunday afternoon right after the match, but Sat · Sun are now both match days without a conference;
+`SeasonHub.press_pending` / `open_press` and the week screen's PRESS stage were deleted. The view,
+`Screen.PRESS` and `SeasonHub.on_press_finished` stay in code; nothing routes here. (Before that it opened
+right before the week started.)
 
 ```
-Sunday match → standings "확인" → PRESS → (pick an answer) → WEEK (Sunday evening)
-                (or the week screen's "기자회견" when the run was reloaded in between)
+(old) Sunday match → standings "확인" → PRESS → (pick an answer) → WEEK (Sunday evening)
 ```
 
 | File | Role |

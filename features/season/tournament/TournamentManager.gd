@@ -2,9 +2,8 @@ class_name TournamentManager
 extends Node
 
 # Phase 7 — playoff bracket manager. Activates on the first week after the
-# league weeks end. 4-team single elimination: SF1 (#1 vs #4), SF2 (#2 vs #3),
-# then F. Distributed across 2 weeks (SF week + F week) since the campaign
-# now progresses one match per week per team.
+# league weeks end. 4-team single elimination: SF1 (#1 vs #4), SF2 (#2 vs #3)
+# on Saturday, then F on Sunday of the same week (one match a day per team).
 #
 # Every league phase must end with a title (§3 M2 — six tournaments, any
 # non-title ends the run). Two ways out, both routed to GAME_OVER by SeasonHub:
@@ -95,17 +94,15 @@ func _bootstrap_playoff(phase: int) -> void:
 		top4.append(int(ranked[i]["team_id"]))
 
 	var cal: CalendarSystem = _hub.get_node_or_null("CalendarSystem") as CalendarSystem
-	var sf_date: Dictionary = cal.date_of_week_offset(0) if cal != null else _today()
-	var f_date:  Dictionary = cal.date_of_week_offset(1) if cal != null else _today()
+	var date: Dictionary = cal.date_of_week_offset(0) if cal != null else _today()
 
-	# 4-team SE. Both semis happen this week (SF1 = #1 vs #4, SF2 = #2 vs #3),
-	# F next week. Different teams in SF1 vs SF2 so 1-match-per-week is
-	# preserved per-team.
+	# 4-team SE in one week: both semis on Saturday (matchday 0; SF1 = #1 vs #4,
+	# SF2 = #2 vs #3), the final on Sunday (matchday 1).
 	var phase_week: int = int(s["phase_week"])
 	var b: Array = []
-	b.append(_mk_match(0, 1, top4[0], top4[3], phase_week,     sf_date))
-	b.append(_mk_match(1, 1, top4[1], top4[2], phase_week,     sf_date))
-	b.append(_mk_match(2, 2, -1,      -1,      phase_week + 1, f_date))
+	b.append(_mk_match(0, 1, top4[0], top4[3], phase_week, 0, date))
+	b.append(_mk_match(1, 1, top4[1], top4[2], phase_week, 0, date))
+	b.append(_mk_match(2, 2, -1,      -1,      phase_week, 1, date))
 
 	s["current_tournament"] = {
 		"type":           "PLAYOFF",
@@ -116,7 +113,8 @@ func _bootstrap_playoff(phase: int) -> void:
 	playoff_started.emit(phase)
 
 
-func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int, date: Dictionary) -> Dictionary:
+func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int, matchday: int,
+		date: Dictionary) -> Dictionary:
 	return {
 		"slot":       slot,
 		"round":      round_,
@@ -127,9 +125,8 @@ func _mk_match(slot: int, round_: int, team_a: int, team_b: int, phase_week: int
 		"month":      int(date["month"]),
 		"day":        int(date["day"]),
 		"weekday":    0,
-		# Every match stands on Sunday (matchday 0 = `CalendarSystem.MATCH_DAY`), one
-		# bracket round per week.
-		"matchday":   0,
+		# 0 = Saturday, 1 = Sunday (`CalendarSystem.MATCH_DAYS`).
+		"matchday":   matchday,
 		"played":     false,
 		"winner":     -1,
 	}
@@ -142,6 +139,13 @@ func _today() -> Dictionary:
 
 # ── Week-level resolution (called by SeasonHub during weekly advance) ───────
 func resolve_current_week() -> void:
+	resolve_matchday(-1)
+
+
+## Resolves the AI matches of one matchday (0 = Saturday, 1 = Sunday) of this week;
+## `matchday < 0` = the whole week (the week-end sweep). Slot order, so the semis seed the
+## final before it is looked at.
+func resolve_matchday(matchday: int) -> void:
 	if not is_active():
 		return
 	var s: Dictionary = _gm.season_state
@@ -157,18 +161,40 @@ func resolve_current_week() -> void:
 			continue
 		if int(m["phase_week"]) != pweek:
 			continue
+		if matchday >= 0 and int(m.get("matchday", 0)) != matchday:
+			continue
 		var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
 		if ta < 0 or tb < 0:
 			continue   # final not yet seeded (SF results pending)
 		if ta == pid or tb == pid:
-			continue   # player match — SeasonHub launches MatchFlow
-		var winner: int = ta
-		if _league != null:
-			winner = _league.simulate_ai_match(ta, tb)
-		m["played"] = true
-		m["winner"] = winner
-		_seed_next_round(int(m["slot"]), winner)
+			continue   # player match: SeasonHub launches MatchFlow
+		_resolve_ai(m)
 	_maybe_complete()
+
+
+## Resolves one AI bracket match by index: the match day's time slots before the player's
+## match (`SeasonHub.resolve_ai_before_player`). Played, unseeded or player matches: no-op.
+func resolve_slot(slot: int) -> void:
+	var b: Array = bracket()
+	if slot < 0 or slot >= b.size():
+		return
+	var m: Dictionary = b[slot]
+	var pid: int = int(_gm.season_state["player_team_id"])
+	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
+	if bool(m["played"]) or ta < 0 or tb < 0 or ta == pid or tb == pid:
+		return
+	_resolve_ai(m)
+	_maybe_complete()
+
+
+func _resolve_ai(m: Dictionary) -> void:
+	var ta: int = int(m["team_a"]); var tb: int = int(m["team_b"])
+	var winner: int = ta
+	if _league != null:
+		winner = _league.simulate_ai_match(ta, tb)
+	m["played"] = true
+	m["winner"] = winner
+	_seed_next_round(int(m["slot"]), winner)
 
 
 # Apply a player-match result (slot + winner) to the bracket. Called by
@@ -261,8 +287,8 @@ func find_player_match_this_week_idx() -> int:
 	return find_player_match_on_day_idx(-1)
 
 
-## Index of my unplayed bracket match this week on that matchday (0 = Sunday, the only
-## one), -1 when none. `matchday < 0` = any day of this week.
+## Index of my unplayed bracket match this week on that matchday (0 = Saturday, 1 =
+## Sunday), -1 when none. `matchday < 0` = any day of this week.
 func find_player_match_on_day_idx(matchday: int) -> int:
 	if not is_active():
 		return -1

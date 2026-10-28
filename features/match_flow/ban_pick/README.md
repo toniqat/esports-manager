@@ -424,9 +424,9 @@ Pressing the assignment step's start bar (`_on_start_pressed`, the only hook in 
 `BanPickLoadoutPicker.open_if_needed(self, my roster, _finish)` when a season run is active and at least one of
 my pilots owns 2+ card presets (`PilotLoadout`, `features/season/awakening/README.md`); otherwise `_finish`
 runs as before. Mechs can still be re-seated: 취소 closes the popup and returns to the assignment. 확인 writes
-each pilot's choice with `PilotLoadout.set_active` (run state — the Saturday prep split keeps it for Sunday)
+each pilot's choice with `PilotLoadout.set_active` (run state, kept for a mid-match resume)
 and calls `_finish`; `MatchFlow._finalize_rosters` → `PilotLoadout.apply_to` puts the active preset on the
-roster copies (fresh launch, Sunday resume and mid-match resume alike).
+roster copies (fresh launch and mid-match resume alike).
 - Scene: CanvasLayer 20 (above the ban/pick canvas), `DimPanel`, `%SafeArea` (device insets), centred
   `PopupCard`: title · hint · `%Rows` (one duplicate of `%RowTemplate` per pilot, seat order: `SunkPanel` row —
   round portrait · name · position · preset tabs (`TabTemplate` duplicates, `SelectableTile` / `SelectableTileOn`,

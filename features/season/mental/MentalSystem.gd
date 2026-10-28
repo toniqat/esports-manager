@@ -201,17 +201,14 @@ static func finish_focus(state: Dictionary, day: int, course: String) -> Diction
 
 
 ## Story pools for `day`, most specific first; the first that has a row for the pilot wins
-## (`begin_evening`). Mon–Fri `story` (that morning's training); Saturday with the ban/pick
-## stored `story_sat`; Sunday after my match `story_sun`; the old `interview` rows always last.
+## (`begin_evening`). Mon–Fri `story` (that morning's training); a match day (Sat · Sun)
+## after my match of this week `story_sun` (about the match); the old `interview` rows always
+## last. (`story_sat`, about a ban/pick stored the day before the match, has no day any more.)
 static func story_kinds_for(state: Dictionary, day: int) -> Array:
 	var out: Array = []
 	if CalendarSystem.is_training_day(day):
 		out.append(MentalEvents.KIND_STORY)
-	elif day == CalendarSystem.PREP_DAY:
-		var pm: Variant = state.get("pending_match", null)
-		if pm is Dictionary and (pm as Dictionary).get("picks", null) is Dictionary:
-			out.append(MentalEvents.KIND_STORY_SAT)
-	elif day == CalendarSystem.MATCH_DAY:
+	elif CalendarSystem.matchday_of(day) >= 0:
 		if String(last_match_of(state).get("week", "")) == week_key(state):
 			out.append(MentalEvents.KIND_STORY_SUN)
 	out.append(MentalEvents.KIND_INTERVIEW)

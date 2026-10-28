@@ -60,8 +60,8 @@ tx_46B6F94E0X,match.ban_pick.role.support,active,"Mech role tag on ban/pick filt
 tx_WYAR6ATGZK,match.ban_pick.role.sniper,active,"Mech role tag on ban/pick filter tabs, sheet and mech detail: English caps in every locale by design",,,SNIPER,SNIPER,draft,77a2ac8b
 tx_51C591RCKG,match.prep.warn_badge,active,PREP pilot card red badge on the opponent pilot the analyst flags,6,,경계 대상,Threat,draft,6074eff5
 tx_FVQ03DD4B3,match.prep.overall,active,PREP pilot card caption above the big stat total,,,종합,Overall,draft,f7c86d76
-tx_P5GRXR0NQ6,match.flow.prep_to_ban_pick,active,"Match prep bottom button on Saturday (prep only, the match is on Sunday)",,,밴픽 시작,Start Ban/Pick,draft,978f73c2
-tx_E2AWTQEV33,match.flow.picks_done,active,Ban/pick assign-step bottom button on Saturday: stores the picks and returns to the season (the match is on Sunday),,,준비 완료,Ready,draft,439878df
+tx_P5GRXR0NQ6,match.flow.prep_to_ban_pick,deprecated,"Match prep bottom button on Saturday (prep only, the match is on Sunday)",,,밴픽 시작,Start Ban/Pick,draft,978f73c2
+tx_E2AWTQEV33,match.flow.picks_done,deprecated,Ban/pick assign-step bottom button on Saturday: stores the picks and returns to the season (the match is on Sunday),,,준비 완료,Ready,draft,439878df
 tx_KG4ED588AK,match.mech_detail_panel.upgrade_title,active,UI_View_MechDetailPanel.tscn UpgradeBlock/UpgradeTitle text,,,메크 강화 (숙련 Lv3 · 4 · 5),Mech upgrades (mastery Lv3 · 4 · 5),draft,1e3b3a19
 tx_P850G2PZ26,match.mech_detail.upgrade_pilot,active,MechDetailPanel upgrade block — the tapped seat's pilot and how many steps are unlocked,,,"{pilot} — 숙련 {level}, 해금 {n} / {total}","{pilot} — mastery {level}, {n} / {total} unlocked",draft,115e7286
 tx_PK6V12WXVN,match.mech_detail.upgrade_open,active,MechDetailPanel upgrade row — step unlocked for that pilot,,,해금,Unlocked,draft,d1496ce8

@@ -35,9 +35,8 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   show the change as level progress (`MentalEvents.trust_delta_text`: +4 → `+16%`) and add a `trust_level` note when
   the level changes. It affects **only** outing unlock (level ≥ `TRUST_OUTING_LEVEL`) and the true ending — no match stat effect.
 - **A training day** (Mon–Fri) has two halves after the morning training (`features/season/week/README.md`):
-  **afternoon** (visit) → **evening** (forced incident). **Saturday** (after the stadium prep) and a plain
-  weekend day have the **afternoon + evening** only; the **Sunday of a match** has the press conference, then
-  the afternoon (visit) and the evening (§15 D). The afternoon / evening / incident entry points accept any
+  **afternoon** (visit) → **evening** (forced incident). A **match day** (Sat · Sun) has the **afternoon +
+  evening** only, after the match (§15 D); there is no press conference in the week any more. The afternoon / evening / incident entry points accept any
   weekday 0..6 (`CalendarSystem.is_week_day`).
 - The **morning talk** (훈련 소감, `begin_morning` · `begin_talk` · `finish_talk` · `pass_talk`, kinds `talk` /
   `talk_pair`, `STRESS_TALK_RELIEF`) was **deleted 2026-10** with its events: the morning now settles and moves
@@ -62,7 +61,7 @@ Interview / outing / incident dialogues use `VnDialogueView`; the press conferen
   target = a random pilot of mine.
   A pending incident opens its dialog by itself and must be answered; checks use
   `StaffSystem.effective_for_incident(state)` (staff can cover).
-- **Press** (once per week, **Sunday afternoon after the match**): one `press` row per week. Rows with `mention=mvp|worst`
+- **Press** (**out of the week flow since 2026-10**: nothing opens the conference; the rules below stay in code): one `press` row per week. Rows with `mention=mvp|worst`
   target the last own match's MVP (if mine) / my lowest MVP-metric pilot (`run_stats.matches`);
   generic rows move whole-team trust or add a temporary manager-stat mod (`StaffSystem.add_mod`).
   **Result pools**: rows whose cond has a `last=win` / `last=loss` token are the result pool, the rest the
@@ -122,9 +121,9 @@ folder records and applies.
   the locked bar opens, level unchanged); the `FOCUS_AWAKEN` EXP then lands on the open bar.
 - **Story pools** (`story_kinds_for(state, day)`, the first pool with a row for the pilot wins):
   Mon–Fri `story` (about that morning's training: the answer pair `train_bonus:std` + stress vs `stress_train:-2`);
-  Saturday with the ban/pick stored (`pending_match.picks`) `story_sat` (`mastery:+N` on that pilot's ban/pick mech);
-  Sunday after my match (`mental.last_match` of this week) `story_sun` (conds `last` · `mvp` · `kda` · `kills` ·
-  `deaths`); the old `interview` rows are always the fallback (a plain weekend day uses only them).
+  a match day (Sat · Sun) after my match of this week (`mental.last_match`) `story_sun` (conds `last` · `mvp` ·
+  `kda` · `kills` · `deaths`); the old `interview` rows are always the fallback. `story_sat` (about a ban/pick stored
+  the day before the match) is no longer drawn: the Saturday prep is gone (rows kept).
 - **Last match** (`record_match`, `SeasonHub._consume_pending_match_result`): `mental.last_match =
   {week, won, mvp, lines: {"<pid>": {k, d, a}}}` (my pilots), read by `last_match_of` / `match_line`.
 
@@ -166,7 +165,7 @@ after the morning settlement), some of my pilots are away and cannot be asked fo
   }},
   "fatigue": {"<pid>": day},        # training day whose EXP is cut (≥5 = next week, shifted by end_week)
   "press": {week, event, pilot_id, choice, outcome{}},
-  "last_match": {week, won, mvp, lines: {"<pid>": {k, d, a}}},   # §15 D Sunday story (kept over week ends)
+  "last_match": {week, won, mvp, lines: {"<pid>": {k, d, a}}},   # §15 D match-day story (kept over week ends)
 }
 ```
 `outcome` = `{checked, ok, chance, pilot_id, partner_id, say: [text_key], notes: [note dict]}` — **no display text is saved**
@@ -224,7 +223,7 @@ A note whose stat is `all` reads `training.stat.all` ("모든 파일럿 능력�
 | `smod:<stat>:<delta>:<weeks>` | temporary manager-stat mod (`StaffSystem.add_mod`, `stat` ∈ `StaffSystem.STATS`, weeks > 0) |
 | `awaken:+N` | target pilot 깨달음 레벨 EXP + N × `LEVEL_EXP_PER_AWAKEN` (old awakening points; `FocusTraining.add_training_exp`, a `tlexp` note) — stories, incidents. N ≤ 0 does nothing |
 | `tlexp:+N` | target pilot 깨달음 레벨 EXP + N (`TrainingLevel.add_exp`; a locked bar / the cap adds nothing, note says so) |
-| `mastery:+N` | mastery + N on the target's story mech (`FocusTraining.story_mech`: Saturday ban/pick mech, else research mech, else the coach's pick; `MechMastery.gain`) |
+| `mastery:+N` | mastery + N on the target's story mech (`FocusTraining.story_mech`: the old Saturday ban/pick mech (none since 2026-10), else research mech, else the coach's pick; `MechMastery.gain`) |
 | `train_bonus:std` / `train_bonus:N` | today's stat EXP of the target again × `STORY_TRAIN_BONUS_PCT` % (`std`) or N %, through the leftover bank (`FocusTraining.add_stat_exp`, also training EXP). No training row today = nothing |
 | `stress_train:<±N>` | target stress + N × the stress today's training gave it (`-2` = relieve it twice over). No training row = nothing |
 | `chk:<±N>` | adjusts this entry's check chance by N percentage points |

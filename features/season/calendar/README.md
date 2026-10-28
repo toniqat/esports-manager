@@ -33,67 +33,70 @@ Text: `season.phase_intro.*`. F6 = the 미드시즌 card, static.
   LeagueManager schedules the new phase here; tournament managers clear
   their own bracket type.
 
-## Weekdays — one player match per week, on Sunday
+## Weekdays: one player match a day on Saturday and Sunday
 A week is **seven days, 월~일 (Mon–Sun)** (`DAYS_PER_WEEK`).
 
 | Weekday (요일) index | | What happens |
 |---|---|---|
 | 0..4 | 월~금 (Mon–Fri) | **Training days** (`TRAINING_DAYS` = 5, the five rows of the training board) |
-| 5 | 토 (Sat) | **Prep day** (`PREP_DAY`): morning = stadium → MatchFlow PREP + BAN_PICK for Sunday's match (picks stored in the run); afternoon / evening = a normal day **without training** |
-| 6 | 일 (Sun) | **Match day** (`MATCH_DAY`, match-day number 0 — `MATCH_DAYS = {6: 0}`): morning = stadium → BattleSim with the Saturday picks; afternoon = press conference (result-reactive); evening = normal → week end |
+| 5 | 토 (Sat) | **Match day** 0 (`MATCH_DAYS = {5: 0, 6: 1}`): morning = the day's tournament schedule → "경기 시작" → MatchFlow PREP → BAN_PICK → BattleSim in one go → standings; afternoon / evening = a normal day **without training** |
+| 6 | 일 (Sun) | **Match day** 1: same as Saturday; its evening closes the week |
 
-**One round per week** (`ROUNDS_PER_WEEK` = 1). Every player match — league, playoff, INTL — and
-the AI matches of that round stand on **Sunday**; schedule and bracket entries all carry
-`matchday = 0`. A week without a player match (should not happen with the current tables) has plain
-Sat / Sun (afternoon + evening only, no stadium / press).
+**Two rounds per week** (`ROUNDS_PER_WEEK` = 2): one on Saturday (`matchday = 0`), one on Sunday
+(`matchday = 1`). Every player match (league, playoff, INTL) and the AI matches of that round stand on
+their day. There is no press conference in the week any more, and no Saturday ban/pick for a Sunday
+match: ban/pick and the match run back to back on the match day. A match day without a player match
+(league week 4 Sunday, INTL week 2 Sunday) has the afternoon + evening only.
 
-Static helpers: `is_training_day(day)` (Mon–Fri) · `matchday_of(day)` (Sunday → 0, else -1) ·
-`is_week_day(day)` (0..6 — every day has an afternoon / evening) · `day_in_phase(state)` (day number inside
-the current phase from 1, `(phase_week − 1) × 7 + week_day + 1`, `week_day` −1 counts as Monday — the week
+Static helpers: `is_training_day(day)` (Mon–Fri) · `matchday_of(day)` (Saturday → 0, Sunday → 1, else -1) ·
+`is_week_day(day)` (0..6, every day has an afternoon / evening) · `day_in_phase(state)` (day number inside
+the current phase from 1, `(phase_week − 1) × 7 + week_day + 1`, `week_day` −1 counts as Monday: the week
 screen's `DAY N`). They do not answer whether a match
-is actually **scheduled** — the schedule answers that (`SeasonHub.has_player_match_on_day`).
+is actually **scheduled**: the schedule answers that (`SeasonHub.has_player_match_on_day`).
 
 ## Phase boundaries (CalendarSystem.PHASE_WEEKS)
-Every league phase is a **single round robin** (8 teams → 7 rounds) at one round per week.
+Every league phase is a **single round robin** (8 teams → 7 rounds) at two rounds per week.
 
 | Phase           | Rounds | League weeks | Playoff weeks | Total |
 |---|---|---|---|---|
-| PRESEASON       | 7 (single RR) | 7 | 2 (SF / F)      | 9 |
-| PRESEASON_INTL  | —             | — | 3 (QF / SF / F) | 3 |
-| MIDSEASON       | 7 (single RR) | 7 | 2               | 9 |
-| MIDSEASON_INTL  | —             | — | 3               | 3 |
-| REGULAR         | 7 (single RR) | 7 | 2               | 9 |
-| REGULAR_INTL    | —             | — | 3               | 3 |
+| PRESEASON       | 7 (single RR) | 4 (week 4: Saturday only) | 1 (SF1 · SF2 Sat, F Sun) | 5 |
+| PRESEASON_INTL  | -             | - | 2 (QF Sat · SF Sun, F next Sat) | 2 |
+| MIDSEASON       | 7 (single RR) | 4 | 1               | 5 |
+| MIDSEASON_INTL  | -             | - | 2               | 2 |
+| REGULAR         | 7 (single RR) | 4 | 1               | 5 |
+| REGULAR_INTL    | -             | - | 2               | 2 |
 
-**Total = 36 weeks, 36 player matches** on a full clear (7 league + 2 playoff per league phase,
-3 per INTL). History: 50 weeks (1 round/week, double RR in MID / REGULAR) → 33 weeks (2 rounds/week
-on Sat · Sun) → 36 weeks (this table).
+**Total = 21 weeks, 36 player matches** on a full clear (7 league + 2 playoff per league phase,
+3 per INTL). `PLAYOFF_WEEKS` = 1. History: 50 weeks (1 round/week, double RR in MID / REGULAR) → 33 weeks
+(2 rounds/week on Sat · Sun) → 36 weeks (1 round/week on Sunday, Saturday ban/pick, Sunday press) →
+21 weeks (this table).
 
 ## Helpers
 - `is_league_match_week()` — true iff inside the league portion of a
   league phase (`phase_week <= LEAGUE_WEEKS[phase]`).
 - `is_playoff_week()` — true iff inside the trailing playoff weeks.
-- `is_playoff_bootstrap_week()` — true iff `phase_week == LEAGUE_WEEKS + 1`
-  (the SF week). Used by TournamentManager to bootstrap the bracket.
+- `is_playoff_bootstrap_week()`: true iff `phase_week == LEAGUE_WEEKS + 1`
+  (the playoff week). Used by TournamentManager to bootstrap the bracket.
 - `date_of_week_offset(n)` — returns `{year, month, day, weekday}` of the
   Monday `n` weeks ahead. Schedulers stamp matches with this so save
   metadata stays coherent.
 
 ## Old saves (`migrate_weekly_format`)
-`season_state.schedule_format` (`SCHEDULE_FORMAT` = 2) marks the one-match-per-week calendar; it is
+`season_state.schedule_format` (`SCHEDULE_FORMAT` = 3) marks the two-match-days calendar; it is
 written by `LeagueManager.generate_phase_schedule` and saved. `SaveSystem.load_run` calls the static
-`CalendarSystem.migrate_weekly_format(state)` on every load; a run without the key (format 1: two
-rounds on Sat · Sun, 4 preseason league weeks, double RR in MID / REGULAR) is normalised once:
-- **League week**: the current phase's unplayed rounds are re-stamped one per week from the current
-  `phase_week` (`matchday` 0 = Sunday). Rounds that no longer fit before the playoffs are voided
-  (`played` true, `winner` -1, `phase_week` 0, `void` true) — entries stay in the array so a
-  `pending_match.schedule_idx` keeps pointing at the right match. Standings are untouched.
-- **Playoff week**: `phase_week` and the playoff bracket's `phase_week`s move by the added league
-  weeks (preseason +3).
-- INTL phases are unchanged (3 weeks before and after); tournament `matchday` 0 simply means Sunday now.
-- A mid-week old save keeps its day; the week screen then runs the new weekend (an old Saturday
-  becomes the prep day). An old Sunday whose picks were never made falls back to the full
-  PREP → BAN_PICK → BattleSim flow.
+`CalendarSystem.migrate_weekly_format(state)` on every load; a run in format 1 (no key: two rounds on
+Sat · Sun with the old phase lengths) or format 2 (one round per week on Sunday, Saturday ban/pick) is
+normalised once:
+- **League phase**: every match of the phase is re-stamped by its round (round r → week r / 2 + 1,
+  `matchday` r % 2), results kept. In a league week `phase_week` moves to the week of the first
+  unplayed round. A format-1 double round robin's second-half rounds no longer fit and are voided
+  (`played` true, `winner` -1, `phase_week` 0, `void` true; entries stay in the array so a
+  `pending_match.schedule_idx` keeps pointing at the right match).
+- **Playoffs**: `phase_week` = the one playoff week, bracket re-stamped (SF Saturday, F Sunday).
+- **INTL**: QF week 1 Saturday, SF week 1 Sunday, F week 2 Saturday; `phase_week` follows the first
+  unplayed bracket round.
+- A `pending_match` without a result (old stored Saturday picks) is dropped.
+- Moving `phase_week` mid-week starts a fresh mental week record (`MentalSystem.week_key` changes).
 
 ## Detail moved from root CLAUDE.md
 
@@ -105,8 +108,9 @@ All three managers (LeagueManager, TournamentManager,
 InternationalTournament) listen to `week_advanced` and either bootstrap
 their bracket (`is_playoff_bootstrap_week()` for playoff,
 `phase_week == 1 && is_intl_phase` for INTL) or no-op. Match resolution is
-explicit: `SeasonHub` calls `_resolve_ai_for_matchday(0)` on Sunday (after the player's match, or
-on Sunday's "확인" when there is none), never on signal.
+explicit: `SeasonHub` calls `_resolve_ai_for_matchday(md)` on each match day (after the player's
+match, or on that day's "확인"), never on signal; the AI matches scheduled before my match in the day's
+time order are played when the day's screen opens (`SeasonHub.resolve_ai_before_player`).
 
 ### Week-end order (`SeasonHub._end_week`)
 Runs when Sunday is closed, **before** `advance_week()` — every step still sees the
@@ -117,8 +121,8 @@ week that just ended (`current_phase` / `phase_week`). Order is fixed (plan §11
    `SeasonHub.hub_toasts` and shown on the next HUB.
 3. `ResearchSystem.tick_week(state)` — §16 research gauges (mech mastery comes from the mech lab's
    completions, `features/season/facility/README.md`); toasts queued in `hub_toasts`.
-4. `MentalSystem.end_week(state)` — weekly mental reset; a `pending_match` that never got a result
-   (stale Saturday picks) is dropped.
+4. `MentalSystem.end_week(state)`: weekly mental reset; a `pending_match` that never got a result
+   (MatchFlow left before BattleSim) is dropped.
 5. `StaffSystem.decay_mods(state)` → `PilotMods.decay_week(state)` — temporary mods tick down.
 6. `CalendarSystem.advance_week()` → `week_advanced` (+ `phase_changed`).
 7. `TrainingBoard.reset_for_new_week()` — the next week's board starts empty.
@@ -133,4 +137,3 @@ opened yet**). Three pieces of week-progress state live in `season_state` and ar
 `week_day_log` (per-weekday training result log; **integer keys**, so they are converted back on load),
 `training_exp_carry` (the leftover-EXP bank). All three are cleared by
 `TrainingBoard.reset_week_progress()`, which runs in two places: training confirm and week end.
-The Saturday picks live in `season_state.pending_match.picks` (`features/save_load/README.md`).
